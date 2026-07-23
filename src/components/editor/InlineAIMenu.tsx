@@ -57,6 +57,8 @@ export const InlineAIMenu: React.FC<InlineAIMenuProps> = ({
   const [instruction, setInstruction] = useState("");
   const [language, setLanguage] = useState("English");
 
+  const [showDiff, setShowDiff] = useState(true);
+
   // Reset on open/close
   useEffect(() => {
     if (!open) {
