@@ -1,9 +1,10 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { GripVertical, Trash2, Plus, Palette, ChevronRight } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Palette, ChevronRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Block, BlockType, createBlock, detectBlockPrefix, generateBlockId } from '@/types/block';
 import { SlashCommandMenu } from './SlashCommandMenu';
+import { InlineAIMenu } from './InlineAIMenu';
 import { LineInkColor, LINE_INK_COLORS } from '@/types/noteLine';
 
 interface BlockEditorProps {
@@ -18,6 +19,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
   const [slashMenu, setSlashMenu] = useState<{ blockId: string; query: string; position: { top: number; left: number } } | null>(null);
   const [showInlineColor, setShowInlineColor] = useState<string | null>(null);
   const [typingBlockId, setTypingBlockId] = useState<string | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiTargetId, setAiTargetId] = useState<string | null>(null);
   const inputRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const typingTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
