@@ -442,6 +442,24 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
           />
         );
       })()}
+
+      {/* @-mention popup */}
+      <MentionPopup
+        isOpen={!!mentionMenu}
+        query={mentionMenu?.query || ''}
+        position={mentionMenu?.position || { top: 0, left: 0 }}
+        tasks={mentionTasks}
+        onSelect={handleMentionSelect}
+        onClose={() => setMentionMenu(null)}
+      />
+
+      {/* Block comments thread */}
+      <BlockCommentsThread
+        blockId={commentBlockId}
+        notebookId={notebookId}
+        open={!!commentBlockId}
+        onClose={() => setCommentBlockId(null)}
+      />
     </div>
   );
 };
