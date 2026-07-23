@@ -119,8 +119,38 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
       return;
     }
 
+    // @-mention detection
+    const el = inputRefs.current.get(blockId);
+    const caret = el ? el.selectionStart : text.length;
+    const before = text.slice(0, caret);
+    const at = before.lastIndexOf('@');
+    const validAt = at !== -1 && (at === 0 || /\s/.test(before[at - 1]));
+    const query = validAt ? before.slice(at + 1) : '';
+    if (validAt && !/\s/.test(query) && query.length <= 40) {
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        setMentionMenu({ blockId, query, anchor: at, position: { top: rect.bottom + 4, left: rect.left } });
+      }
+    } else if (mentionMenu?.blockId === blockId) {
+      setMentionMenu(null);
+    }
+
     updateBlock(blockId, { content: text });
-  }, [updateBlock, slashMenu, focusBlock]);
+  }, [updateBlock, slashMenu, focusBlock, mentionMenu]);
+
+  const handleMentionSelect = useCallback((item: MentionItem) => {
+    if (!mentionMenu) return;
+    const { blockId, anchor } = mentionMenu;
+    const block = blocks.find(b => b.id === blockId);
+    if (!block) return;
+    const el = inputRefs.current.get(blockId);
+    const caret = el ? el.selectionStart : block.content.length;
+    const token = `@[${item.label}](${item.type}:${item.id}) `;
+    const next = block.content.slice(0, anchor) + token + block.content.slice(caret);
+    updateBlock(blockId, { content: next });
+    setMentionMenu(null);
+    focusBlock(blockId, anchor + token.length);
+  }, [mentionMenu, blocks, updateBlock, focusBlock]);
 
   const handleSlashSelect = useCallback((type: BlockType) => {
     if (!slashMenu) return;
