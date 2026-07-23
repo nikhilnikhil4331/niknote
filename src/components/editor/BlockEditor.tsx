@@ -358,6 +358,47 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
         onSelect={handleSlashSelect}
         onClose={() => setSlashMenu(null)}
       />
+
+      {/* Floating Ask AI button — mobile-first, always reachable */}
+      <button
+        type="button"
+        onClick={() => {
+          const targetId = focusedBlockId || blocks[blocks.length - 1]?.id || null;
+          setAiTargetId(targetId);
+          setAiOpen(true);
+        }}
+        aria-label="Ask AI"
+        className="fixed z-40 bottom-24 right-4 sm:bottom-6 sm:right-6 h-14 w-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-xl shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-transform"
+      >
+        <Sparkles className="w-6 h-6" />
+      </button>
+
+      {/* Inline AI menu */}
+      {(() => {
+        const targetIdx = blocks.findIndex(b => b.id === aiTargetId);
+        const target = targetIdx >= 0 ? blocks[targetIdx] : null;
+        const targetText = target?.content || '';
+        const ctx = targetIdx >= 0
+          ? [blocks[targetIdx - 1]?.content, blocks[targetIdx + 1]?.content].filter(Boolean).join('\n')
+          : '';
+        return (
+          <InlineAIMenu
+            open={aiOpen}
+            onClose={() => setAiOpen(false)}
+            text={targetText}
+            context={ctx}
+            onAccept={(newText) => {
+              if (!aiTargetId) return;
+              const t = blocks.find(b => b.id === aiTargetId);
+              if (!t) return;
+              // If block was empty or "continue" style, append; otherwise replace.
+              const shouldAppend = (t.content || '').trim().length > 0 && newText.startsWith(t.content.trim());
+              const finalText = shouldAppend ? newText : newText;
+              updateBlock(aiTargetId, { content: finalText });
+            }}
+          />
+        );
+      })()}
     </div>
   );
 };
