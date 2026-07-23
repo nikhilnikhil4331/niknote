@@ -32,7 +32,7 @@ const WorkspaceSidebar = lazy(() => import('@/components/workspace/WorkspaceSide
 import {
   Settings2, Edit3, FileDown, Palette, Crown, LogIn,
   Gem, MoreVertical, Moon, Sun, RotateCcw, Share2, Image, FileText, Sparkles,
-  LayoutGrid, Scan, Brain, PanelLeft, ChevronDown, MessageSquare
+  LayoutGrid, Scan, Brain, PanelLeft, ChevronDown, MessageSquare, Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
