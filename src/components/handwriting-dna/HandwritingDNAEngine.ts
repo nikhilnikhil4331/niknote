@@ -37,7 +37,7 @@ export interface HandwritingDNA {
   closestFont?: string;
   confidence?: number;        // 0-1 match confidence
   characterSize?: number;
-  sampleQuality?: number;
+  sampleQuality?: number | string;
   fontModifications?: Record<string, unknown>;
 }
 
