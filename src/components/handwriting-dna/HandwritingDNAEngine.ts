@@ -36,6 +36,7 @@ export interface HandwritingDNA {
   strokeSpeed?: number;       // relative speed multiplier
   closestFont?: string;
   confidence?: number;        // 0-1 match confidence
+  characterSize?: number;
   fontModifications?: Record<string, unknown>;
 }
 
@@ -346,7 +347,19 @@ export const DNA_PROFILES = DNA_PRESETS;
 
 // Default DNA profile
 export function getDefaultDNA(): HandwritingDNA {
-  return DNA_PRESETS.neat_student;
+  return {
+    ...DNA_PRESETS.neat_student,
+    letterSpacing: 0.5,
+    wordSpacing: 6,
+    baselineDrift: 2,
+    penPressure: 0.6,
+    strokeThickness: 1,
+    strokeSpeed: 1,
+    closestFont: 'font-handwriting-1',
+    confidence: 0,
+    characterSize: 16,
+    fontModifications: {},
+  };
 }
 
 // Legacy analyzeHandwriting function (for HandwritingAnalyzer.tsx)

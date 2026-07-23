@@ -677,8 +677,8 @@ const AdminPanelNikhil: React.FC = () => {
 
       // Top exporters
       if (action.includes('export') && activity.user_id) {
-        const name = profileMap.get(activity.user_id) || 'Unknown';
-        exporterMap.set(name, (exporterMap.get(name) || 0) + 1);
+        const name = (profileMap.get(activity.user_id) as string | undefined) || 'Unknown';
+        exporterMap.set(name, ((exporterMap.get(name) as number | undefined) || 0) + 1);
       }
 
       // Moods

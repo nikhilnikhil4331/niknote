@@ -43,7 +43,7 @@ const BLOCK_TEMPLATES: Partial<Record<BlockType, { content: string; extra?: Part
   bookmark: { content: '', extra: { url: '' } }, video: { content: '', extra: { url: '' } },
   audio: { content: '', extra: { url: '' } }, embed: { content: '', extra: { url: '' } },
   pdf: { content: '', extra: { url: '' } }, file: { content: '', extra: { url: '' } },
-  table: { content: '', extra: { tableData: { headers: ['Column 1', 'Column 2', 'Column 3'], rows: [['', '', ''], ['', '', '']], colCount: 3 } } },
+  table: { content: '', extra: { tableData: { headers: ['Column 1', 'Column 2', 'Column 3'], rows: [[{id:'c1',content:'',type:'text' as const},{id:'c2',content:'',type:'text' as const},{id:'c3',content:'',type:'text' as const}], [{id:'c4',content:'',type:'text' as const},{id:'c5',content:'',type:'text' as const},{id:'c6',content:'',type:'text' as const}]], colCount: 3 } } },
   'ai-generated': { content: '' }, mermaid: { content: 'graph TD\n  A[Start] --> B[End]' },
   synced: { content: '', extra: { syncId: `sync-${Date.now()}` } },
   breadcrumb: { content: '' }, 'table_of_contents': { content: '' }, mention: { content: '' }, comment: { content: '' },
@@ -141,7 +141,7 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
   const [typingBlockId, setTypingBlockId] = useState<string | null>(null);
   const [aiLoadingBlock, setAiLoadingBlock] = useState<string | null>(null);
   const inputRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
-  const typingTimerRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const typingTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const editorRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
 

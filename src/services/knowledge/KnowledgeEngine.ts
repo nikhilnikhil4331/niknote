@@ -250,7 +250,7 @@ export class KnowledgeEngine {
     const stopWords = new Set(['the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'shall', 'can', 'need', 'dare', 'ought', 'used', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'out', 'off', 'over', 'under', 'again', 'further', 'then', 'once', 'and', 'but', 'or', 'nor', 'not', 'so', 'yet', 'both', 'either', 'neither', 'each', 'every', 'all', 'any', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'only', 'own', 'same', 'than', 'too', 'very', 'just', 'because', 'if', 'when', 'where', 'how', 'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those', 'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself', 'it', 'its', 'itself', 'they', 'them', 'their', 'theirs', 'themselves', 'का', 'की', 'के', 'में', 'से', 'पर', 'और', 'या', 'नहीं', 'है', 'हैं', 'था', 'थे', 'हो', 'कर', 'इस', 'उस', 'एक', 'यह', 'वह', 'कि', 'भी', 'तो', 'लिए', 'द्वारा', 'ही']);
     
     for (const word of words) {
-      const w = word.toLowerCase().replace(/[^a-z0-9अ-ह]+)/g, '');
+      const w = word.toLowerCase().replace(/[^a-z0-9अ-ह]+/g, '');
       if (w.length > 2 && !stopWords.has(w)) {
         wordFreq[w] = (wordFreq[w] || 0) + 1;
       }

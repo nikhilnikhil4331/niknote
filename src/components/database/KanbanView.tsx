@@ -115,8 +115,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                   draggable
                   onDragStart={(e) => {
                     setDraggingCard(card.id);
-                    e.dataTransfer.setData('text/plain', `${card.id}:${column.id}`);
-                    e.dataTransfer.effectAllowed = 'move';
+                    const dt = (e as unknown as React.DragEvent).dataTransfer;
+                    dt?.setData('text/plain', `${card.id}:${column.id}`);
+                    if (dt) dt.effectAllowed = 'move';
                   }}
                   onDragEnd={() => setDraggingCard(null)}
                   onClick={() => onCardClick?.(card)}

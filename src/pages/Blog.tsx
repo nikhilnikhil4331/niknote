@@ -11,7 +11,7 @@ interface BlogPost {
   excerpt: string;
   category: string;
   readTime: string;
-  date: string;
+  date?: string;
   tags: string[];
   content: string;
 }
