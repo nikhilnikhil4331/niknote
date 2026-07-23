@@ -20,12 +20,21 @@ interface BlockEditorProps {
 export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange, currentColor = 'blue', onColorChange, notebookId = null }) => {
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
   const [slashMenu, setSlashMenu] = useState<{ blockId: string; query: string; position: { top: number; left: number } } | null>(null);
+  const [mentionMenu, setMentionMenu] = useState<{ blockId: string; query: string; anchor: number; position: { top: number; left: number } } | null>(null);
   const [showInlineColor, setShowInlineColor] = useState<string | null>(null);
   const [typingBlockId, setTypingBlockId] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiTargetId, setAiTargetId] = useState<string | null>(null);
+  const [commentBlockId, setCommentBlockId] = useState<string | null>(null);
   const inputRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const typingTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Tasks derived from todo blocks — feeds MentionPopup
+  const mentionTasks = useMemo<MentionItem[]>(() =>
+    blocks.filter(b => b.type === 'todo' && b.content.trim())
+      .map(b => ({ id: b.id, type: 'task' as const, label: b.content.slice(0, 60) })),
+    [blocks]
+  );
 
   // Focus a block by id
   const focusBlock = useCallback((id: string, cursorPos?: number) => {
