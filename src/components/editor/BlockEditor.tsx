@@ -464,13 +464,14 @@ interface BlockContainerProps {
   onDelete: () => void;
   onToggleColor: () => void;
   onColorPick: (color: LineInkColor) => void;
+  onOpenComments: () => void;
   inputRef: (el: HTMLTextAreaElement | null) => void;
 }
 
 const BlockContainer: React.FC<BlockContainerProps> = ({
   block, index, isFocused, isTyping, currentColor, showInlineColor,
   onFocus, onTextChange, onKeyDown, onPaste, onToggleTodo, onToggleCollapse, onDelete,
-  onToggleColor, onColorPick, inputRef,
+  onToggleColor, onColorPick, onOpenComments, inputRef,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
