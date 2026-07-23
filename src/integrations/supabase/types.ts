@@ -173,6 +173,56 @@ export type Database = {
         }
         Relationships: []
       }
+      block_comments: {
+        Row: {
+          author_id: string
+          block_id: string
+          body: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          mentions: Json
+          notebook_id: string | null
+          resolved: boolean
+          thread_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          block_id: string
+          body: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          mentions?: Json
+          notebook_id?: string | null
+          resolved?: boolean
+          thread_id?: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          block_id?: string
+          body?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          mentions?: Json
+          notebook_id?: string | null
+          resolved?: boolean
+          thread_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "block_comments_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       error_logs: {
         Row: {
           component: string | null
