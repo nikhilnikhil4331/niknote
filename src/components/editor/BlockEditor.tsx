@@ -373,6 +373,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
             onDelete={() => removeBlock(block.id)}
             onToggleColor={() => setShowInlineColor(showInlineColor === block.id ? null : block.id)}
             onColorPick={(color) => { updateBlock(block.id, { color }); onColorChange?.(color); setShowInlineColor(null); }}
+            onOpenComments={() => setCommentBlockId(block.id)}
             inputRef={(el) => {
               if (el) inputRefs.current.set(block.id, el);
               else inputRefs.current.delete(block.id);
