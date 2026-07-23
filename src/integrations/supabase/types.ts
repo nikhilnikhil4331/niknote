@@ -495,6 +495,36 @@ export type Database = {
         }
         Relationships: []
       }
+      referrals: {
+        Row: {
+          coins_awarded: number
+          created_at: string
+          id: string
+          premium_days_awarded: number
+          referred_user_id: string
+          referrer_id: string
+          reward_granted: boolean
+        }
+        Insert: {
+          coins_awarded?: number
+          created_at?: string
+          id?: string
+          premium_days_awarded?: number
+          referred_user_id: string
+          referrer_id: string
+          reward_granted?: boolean
+        }
+        Update: {
+          coins_awarded?: number
+          created_at?: string
+          id?: string
+          premium_days_awarded?: number
+          referred_user_id?: string
+          referrer_id?: string
+          reward_granted?: boolean
+        }
+        Relationships: []
+      }
       user_badges: {
         Row: {
           badge_id: string
@@ -523,6 +553,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_rewards: {
+        Row: {
+          coins: number
+          created_at: string
+          last_spin_at: string | null
+          referral_code: string
+          referred_by: string | null
+          total_earned: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coins?: number
+          created_at?: string
+          last_spin_at?: string | null
+          referral_code?: string
+          referred_by?: string | null
+          total_earned?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coins?: number
+          created_at?: string
+          last_spin_at?: string | null
+          referral_code?: string
+          referred_by?: string | null
+          total_earned?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -610,6 +673,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_referral_bonus: {
+        Args: { p_referral_code: string; p_user_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -617,6 +684,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      redeem_coins_for_premium: {
+        Args: { p_days?: number; p_user_id: string }
+        Returns: Json
+      }
+      spin_daily_wheel: { Args: { p_user_id: string }; Returns: Json }
       update_user_streak: { Args: { p_user_id: string }; Returns: Json }
     }
     Enums: {
