@@ -1,10 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { GripVertical, Trash2, Plus, Palette, ChevronRight, Sparkles } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Palette, ChevronRight, Sparkles, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Block, BlockType, createBlock, detectBlockPrefix, generateBlockId } from '@/types/block';
 import { SlashCommandMenu } from './SlashCommandMenu';
 import { InlineAIMenu } from './InlineAIMenu';
+import { MentionPopup, MentionItem } from './MentionPopup';
+import { BlockCommentsThread } from './BlockCommentsThread';
 import { LineInkColor, LINE_INK_COLORS } from '@/types/noteLine';
 
 interface BlockEditorProps {
@@ -12,9 +14,10 @@ interface BlockEditorProps {
   onBlocksChange: (blocks: Block[]) => void;
   currentColor?: LineInkColor;
   onColorChange?: (color: LineInkColor) => void;
+  notebookId?: string | null;
 }
 
-export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange, currentColor = 'blue', onColorChange }) => {
+export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange, currentColor = 'blue', onColorChange, notebookId = null }) => {
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
   const [slashMenu, setSlashMenu] = useState<{ blockId: string; query: string; position: { top: number; left: number } } | null>(null);
   const [showInlineColor, setShowInlineColor] = useState<string | null>(null);
