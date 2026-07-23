@@ -37,6 +37,7 @@ export interface HandwritingDNA {
   closestFont?: string;
   confidence?: number;        // 0-1 match confidence
   characterSize?: number;
+  sampleQuality?: number;
   fontModifications?: Record<string, unknown>;
 }
 
@@ -394,8 +395,9 @@ export function generateLineVariation(dna: HandwritingDNA, lineIndex: number): R
   };
 }
 
-export function generateWordVariation(dna: HandwritingDNA, wordIndex: number): Record<string, number> {
-  const seed = wordIndex * 73.7;
+export function generateWordVariation(dna: HandwritingDNA, lineIndex: number, wordIndex?: number): Record<string, number> {
+  const idx = wordIndex ?? lineIndex;
+  const seed = idx * 73.7 + lineIndex * 11.3;
   return {
     offsetX: Math.sin(seed) * dna.spacing * 0.05,
     offsetY: Math.cos(seed) * 1,
