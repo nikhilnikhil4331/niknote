@@ -1,10 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { GripVertical, Trash2, Plus, Palette, ChevronRight, Sparkles } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Palette, ChevronRight, Sparkles, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Block, BlockType, createBlock, detectBlockPrefix, generateBlockId } from '@/types/block';
 import { SlashCommandMenu } from './SlashCommandMenu';
 import { InlineAIMenu } from './InlineAIMenu';
+import { MentionPopup, MentionItem } from './MentionPopup';
+import { BlockCommentsThread } from './BlockCommentsThread';
 import { LineInkColor, LINE_INK_COLORS } from '@/types/noteLine';
 
 interface BlockEditorProps {
@@ -12,17 +14,27 @@ interface BlockEditorProps {
   onBlocksChange: (blocks: Block[]) => void;
   currentColor?: LineInkColor;
   onColorChange?: (color: LineInkColor) => void;
+  notebookId?: string | null;
 }
 
-export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange, currentColor = 'blue', onColorChange }) => {
+export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange, currentColor = 'blue', onColorChange, notebookId = null }) => {
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
   const [slashMenu, setSlashMenu] = useState<{ blockId: string; query: string; position: { top: number; left: number } } | null>(null);
+  const [mentionMenu, setMentionMenu] = useState<{ blockId: string; query: string; anchor: number; position: { top: number; left: number } } | null>(null);
   const [showInlineColor, setShowInlineColor] = useState<string | null>(null);
   const [typingBlockId, setTypingBlockId] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiTargetId, setAiTargetId] = useState<string | null>(null);
+  const [commentBlockId, setCommentBlockId] = useState<string | null>(null);
   const inputRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const typingTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Tasks derived from todo blocks — feeds MentionPopup
+  const mentionTasks = useMemo<MentionItem[]>(() =>
+    blocks.filter(b => b.type === 'todo' && b.content.trim())
+      .map(b => ({ id: b.id, type: 'task' as const, label: b.content.slice(0, 60) })),
+    [blocks]
+  );
 
   // Focus a block by id
   const focusBlock = useCallback((id: string, cursorPos?: number) => {
@@ -107,8 +119,38 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
       return;
     }
 
+    // @-mention detection
+    const el = inputRefs.current.get(blockId);
+    const caret = el ? el.selectionStart : text.length;
+    const before = text.slice(0, caret);
+    const at = before.lastIndexOf('@');
+    const validAt = at !== -1 && (at === 0 || /\s/.test(before[at - 1]));
+    const query = validAt ? before.slice(at + 1) : '';
+    if (validAt && !/\s/.test(query) && query.length <= 40) {
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        setMentionMenu({ blockId, query, anchor: at, position: { top: rect.bottom + 4, left: rect.left } });
+      }
+    } else if (mentionMenu?.blockId === blockId) {
+      setMentionMenu(null);
+    }
+
     updateBlock(blockId, { content: text });
-  }, [updateBlock, slashMenu, focusBlock]);
+  }, [updateBlock, slashMenu, focusBlock, mentionMenu]);
+
+  const handleMentionSelect = useCallback((item: MentionItem) => {
+    if (!mentionMenu) return;
+    const { blockId, anchor } = mentionMenu;
+    const block = blocks.find(b => b.id === blockId);
+    if (!block) return;
+    const el = inputRefs.current.get(blockId);
+    const caret = el ? el.selectionStart : block.content.length;
+    const token = `@[${item.label}](${item.type}:${item.id}) `;
+    const next = block.content.slice(0, anchor) + token + block.content.slice(caret);
+    updateBlock(blockId, { content: next });
+    setMentionMenu(null);
+    focusBlock(blockId, anchor + token.length);
+  }, [mentionMenu, blocks, updateBlock, focusBlock]);
 
   const handleSlashSelect = useCallback((type: BlockType) => {
     if (!slashMenu) return;
@@ -331,6 +373,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
             onDelete={() => removeBlock(block.id)}
             onToggleColor={() => setShowInlineColor(showInlineColor === block.id ? null : block.id)}
             onColorPick={(color) => { updateBlock(block.id, { color }); onColorChange?.(color); setShowInlineColor(null); }}
+            onOpenComments={() => setCommentBlockId(block.id)}
             inputRef={(el) => {
               if (el) inputRefs.current.set(block.id, el);
               else inputRefs.current.delete(block.id);
@@ -399,6 +442,25 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
           />
         );
       })()}
+
+      {/* @-mention popup */}
+      <MentionPopup
+        isOpen={!!mentionMenu}
+        query={mentionMenu?.query || ''}
+        position={mentionMenu?.position || { top: 0, left: 0 }}
+        tasks={mentionTasks}
+        onSelect={handleMentionSelect}
+        onClose={() => setMentionMenu(null)}
+      />
+
+      {/* Block comments thread */}
+      <BlockCommentsThread
+        blockId={commentBlockId}
+        notebookId={notebookId}
+        open={!!commentBlockId}
+        onClose={() => setCommentBlockId(null)}
+        tasks={mentionTasks}
+      />
     </div>
   );
 };
@@ -421,13 +483,14 @@ interface BlockContainerProps {
   onDelete: () => void;
   onToggleColor: () => void;
   onColorPick: (color: LineInkColor) => void;
+  onOpenComments: () => void;
   inputRef: (el: HTMLTextAreaElement | null) => void;
 }
 
 const BlockContainer: React.FC<BlockContainerProps> = ({
   block, index, isFocused, isTyping, currentColor, showInlineColor,
   onFocus, onTextChange, onKeyDown, onPaste, onToggleTodo, onToggleCollapse, onDelete,
-  onToggleColor, onColorPick, inputRef,
+  onToggleColor, onColorPick, onOpenComments, inputRef,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -656,8 +719,16 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
           </AnimatePresence>
         </div>
 
-        {/* Color + Delete buttons */}
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
+        {/* Comment + Color + Delete buttons */}
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
+          <button
+            onClick={onOpenComments}
+            className="p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+            title="Comment"
+            tabIndex={-1}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+          </button>
           <button
             onClick={onToggleColor}
             className="p-1 rounded hover:bg-muted/50 transition-colors"
