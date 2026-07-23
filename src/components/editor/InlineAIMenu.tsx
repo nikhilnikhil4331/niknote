@@ -8,10 +8,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Wand2, SpellCheck, ChevronsRightLeft, StretchHorizontal,
-  ArrowDownToLine, Languages, FileText, HelpCircle, X, Check, RotateCw, Loader2,
+  ArrowDownToLine, Languages, FileText, HelpCircle, X, Check, RotateCw, Loader2, Eye, GitCompare,
 } from "lucide-react";
 import { useAIStream, AIAction } from "@/hooks/useAIStream";
+import { AIDiffView } from "./AIDiffView";
 import { cn } from "@/lib/utils";
+
+// Actions where a side-by-side diff makes sense (text is being transformed in-place)
+const DIFF_ACTIONS: AIAction[] = ["improve", "fix_grammar", "shorten", "lengthen", "translate"];
 
 interface InlineAIMenuProps {
   open: boolean;
