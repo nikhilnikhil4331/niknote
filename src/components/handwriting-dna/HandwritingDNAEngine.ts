@@ -11,21 +11,32 @@ export interface HandwritingDNA {
   size: number;            // 0 (tiny) to 100 (large)
   spacing: number;         // 0 (tight) to 100 (wide)
   lineHeight: number;      // 0 (short) to 100 (tall)
-  
+
   // Style parameters
   connectedness: number;   // 0 (printed) to 100 (cursive)
   loopiness: number;       // 0 (angular) to 100 (loopy)
   roundedness: number;     // 0 (angular) to 100 (round)
   baseline: number;        // -50 (descending) to 50 (ascending)
   consistency: number;     // 0 (variable) to 100 (consistent)
-  
+
   // Ink parameters
   strokeWidth: number;     // 0 (thin) to 100 (thick)
   inkFlow: number;         // 0 (dry) to 100 (wet/flowing)
-  
+
   // Derived style name
   styleName: string;
   styleDescription: string;
+
+  // Extended/legacy fields consumed by DNA v2 UI (optional for backwards compat)
+  letterSpacing?: number;
+  wordSpacing?: number;
+  baselineDrift?: number;
+  penPressure?: number;       // 0-1 normalized
+  strokeThickness?: number;   // 0.5-2.5 multiplier
+  strokeSpeed?: number;       // relative speed multiplier
+  closestFont?: string;
+  confidence?: number;        // 0-1 match confidence
+  fontModifications?: Record<string, unknown>;
 }
 
 // Preset DNA profiles for quick selection
