@@ -459,6 +459,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
         notebookId={notebookId}
         open={!!commentBlockId}
         onClose={() => setCommentBlockId(null)}
+        tasks={mentionTasks}
       />
     </div>
   );
