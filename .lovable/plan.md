@@ -1,159 +1,136 @@
+## Sprint 1 — AI-First Editor Layer (Mobile-First)
 
-
-# NikNote 3.0 — Complete Enhancement Blueprint
-
-## Executive Summary
-Transform NikNote from a handwriting generator into a full-fledged "Notion for Indian Students" by enhancing the existing 70+ component codebase across 4 phases. No rebuilds — only upgrades, polish, and new features layered on top.
+Scope committed based on your answers: **AI layer first**, **fix TS errors first**, **mobile first**. Later sprints will handle command palette v2, @mentions across people/pages, missing block types, virtualization, collab, and version history.
 
 ---
 
-## Phase 1: Mobile UI Polish + 4th AI Tab (Priority: IMMEDIATE)
+### Phase 1 — TypeScript cleanup pass (unblock refactor)
 
-### 1A. Add 4th "AI" Tab to Bottom Nav
-- **File:** `MobileBottomNav.tsx` — Add `✨ AI` as 4th tab
-- **File:** `Index.tsx` — Handle `mobileTab === 'ai'` → navigate to `/ai-solver` or render inline AI modal
+Fix the ~60 pre-existing errors in one pass so the AI work doesn't fight the compiler.
 
-### 1B. Style Bottom Sheet Improvements
-- **File:** `MobileStyleSheet.tsx` — Add missing sections: Voice Input button, AI Tools section, better section headings with icons
-- Improve swipe-down dismiss gesture smoothness
+Buckets:
+1. **Missing icon/module imports** — `Zap`, `Toast`, etc. (find via `tsgo`, add imports).
+2. **Supabase generated types drift** — add missing tables (`analytics_events`, `notebook_pages`, etc.) via a lightweight `types-augment.d.ts` module augmentation rather than regenerating (safer).
+3. **HandwritingDNA type renames** — align call sites to current interface in `HandwritingDNAContext`.
+4. **Node types** — replace `NodeJS.Timeout` with `ReturnType<typeof setTimeout>` project-wide.
+5. **Blog `date` field, misc prop mismatches** — patch call sites.
 
-### 1C. Quick Styles Bar Enhancement
-- **File:** `QuickStylesBar.tsx` — Show 4 recent colors + 3 recent fonts (currently 3+2), persist via localStorage
-
-### 1D. Empty States & Loading Polish
-- Add friendly empty state illustrations to editor (when no lines), preview (when empty), and notebooks list
-- Skeleton loaders for all data-fetching screens
+Exit criteria: `bunx tsgo --noEmit` clean, app still boots.
 
 ---
 
-## Phase 2: Handwriting DNA v2 + AI Prominence (Priority: HIGH)
+### Phase 2 — AI backend (server boundary)
 
-### 2A. Enhanced Analysis Pipeline
-- **File:** `supabase/functions/analyze-handwriting/index.ts`
-- Replace prompt with forensic analysis prompt (slant, pressure, stroke thickness, baseline jitter, letter spacing variation)
-- Return all new fields, save to `handwriting_models` table (columns: `slant`, `stroke_thickness`, `pen_pressure_feel` already exist)
-- Add `letter_spacing_variation` column via migration if missing
+Add ONE streaming Edge Function that powers every AI action.
 
-### 2B. Apply Parameters in Rendering
-- **File:** `HandwritingLine.tsx` — Apply CSS `transform: skewX()` for slant, `font-weight` variation for pressure, random `margin` for letter spacing
-- **File:** `HandwrittenText.tsx` — Same parameter application
-
-### 2C. Analysis UI Magic Flow
-- **File:** `HandwritingAnalyzer.tsx` — 3-step wizard:
-  - Step 1: Upload with example good/bad samples
-  - Step 2: Animated sequential messages (Framer Motion)
-  - Step 3: Side-by-side comparison + parameter meters + Save/Retry
-
-### 2D. AI Solver Prominence
-- Add glowing `✨ AI` floating button on top-right of every screen
-- Full-screen AI modal with clear sections: Solver (8 modes) + Writer (inline assist)
-- Text selection → "Ask AI" context menu option
+- `supabase/functions/editor-ai/index.ts` — streaming chat via AI SDK + Lovable AI Gateway (`google/gemini-3.6-flash` default). Accepts `{ action, blocks, selection, mentions, instruction }`.
+- Actions: `rewrite`, `improve`, `shorten`, `lengthen`, `translate`, `summarize`, `continue`, `explain`, `fix_grammar`, `custom`.
+- Streams `UIMessage` deltas via `toUIMessageStreamResponse`.
+- Uses `_shared/ai-gateway.ts` helper (create if absent).
+- Rate limit per user (reuse existing `rate_limits` table).
 
 ---
 
-## Phase 3: Notion-Level Features (Priority: MEDIUM)
+### Phase 3 — Mention-aware context resolver (lightweight v1)
 
-### 3A. Rich Content in Editor
-- **File:** `LineBasedEditor.tsx` + `noteLine.ts`
-- Detect prefixes: `[] ` → checkbox, `# ` → heading, `## ` → subheading, `- ` → bullet, `1. ` → numbered
-- Toggle checkboxes on tap (strikethrough when checked)
-- Render in preview with hand-drawn style (larger text for headings, drawn checkboxes)
+Not full @mention UI yet — just the context plumbing the AI layer needs.
 
-### 3B. Slash Commands (/)
-- **New:** `SlashCommandMenu.tsx` — dropdown menu triggered by `/` in editor
-- Commands: Heading 1, Heading 2, To-do, Bullet List, Numbered List, Quote, Divider, Table, Image, Callout
-- Each command inserts the appropriate prefix or block type
+- `src/lib/editor/context.ts` — given current block + selection, gather:
+  - Current block text
+  - Previous/next 3 blocks (surrounding context)
+  - Any `@notebook:<id>` tokens in the instruction → fetch that notebook's blocks
+  - Current page title
+- Returns a compact context object sent to the edge function.
 
-### 3C. Notebooks & Folders System
-- **New:** `src/pages/MyNotebooks.tsx` with route `/notebooks`
-- Query existing `notebooks` table, display as cards
-- **Migration:** Add `folder text` column to `notebooks`
-- Create/rename/delete folders, drag notebooks between folders
-- Search bar for notebook titles
-
-### 3D. Tags System
-- **Migration:** Add `tags text[]` column to `notebooks`
-- Tag input UI on notebook creation/edit
-- Filter by tag in notebooks view
-- Colored tag chips
-
-### 3E. Universal Search
-- Search overlay in notebooks view
-- Full-text search across notebook titles + page content (JSONB)
-- Highlighted results
-
-### 3F. Templates Gallery
-- **New:** `src/pages/Templates.tsx`
-- Pre-built templates: Lecture Notes, Assignment, Project Planner, Daily Journal, Exam Revision
-- Store as JSON in `app_settings` or a new `templates` table
-- One-tap create notebook from template
+Full @people/@pages picker UI ships in Sprint 2.
 
 ---
 
-## Phase 4: Share + Drawing + PDF-to-Notes (Priority: LOWER)
+### Phase 4 — Mobile-first inline AI menu (the headline UX)
 
-### 4A. Share as Exact Copy
-- Preview screen: "Share as Image" + "Share as PDF" buttons
-- Image: `html2canvas` → PNG → `navigator.share({ files })` with download fallback
-- PDF: existing `exportToPDF` → share via Web Share API
-- "Made with NikNote" watermark (removable for Pro via `usePremium`)
+New component `src/components/editor/InlineAIMenu.tsx`:
 
-### 4B. Drawing Tool
-- **New:** `DrawingCanvas.tsx` using HTML Canvas API with pressure sensitivity (`pointerevents` pressure data)
-- Tools: Pen, Highlighter, Eraser, thickness slider
-- Drawings saved as data URLs in page content
-- Hand-drawn effect filter on output
+- **Mobile**: bottom sheet (drawer) that slides up when user taps the ✨ AI button on a block or long-presses selected text. Full-width, thumb-reachable action list, large tap targets (min-h-11), swipe-to-dismiss.
+- **Desktop**: floating popover anchored to selection/block.
+- Action list: Improve · Fix grammar · Shorten · Lengthen · Continue writing · Summarize · Translate → · Explain · Custom prompt…
+- Streaming preview area with **Accept / Retry / Discard** buttons.
+- Diff-style highlight of proposed change vs original.
+- Escape / tap-outside / back-gesture dismiss.
 
-### 4C. Image/PDF to Handwritten Notes
-- **New:** `src/components/DocumentToNotes.tsx`
-- Upload PDF/image → send to edge function using GPT-4o Vision
-- Extract text blocks with (x, y) coordinates and dimensions
-- Recreate layout in NikNote editor with user's handwriting style applied
-- Edge function: `supabase/functions/document-to-notes/index.ts`
-
-### 4D. Profile Page Enhancement
-- **File:** `src/pages/Account.tsx` — Add avatar upload, bio, My Handwriting Styles gallery, theme selector, usage stats (notes count, streak, badges)
+Integration points:
+- `BlockEditor` block hover/focus → show ✨ handle (mobile: always visible on active block).
+- Text selection → floating "Ask AI" pill (mobile: appears above selection, above keyboard).
+- Result stream writes into a preview overlay; on Accept, replaces block content and pushes to undo stack.
 
 ---
 
-## Component Upgrade Summary
+### Phase 5 — `/ai` slash commands
 
-| Component | Change |
-|---|---|
-| `MobileBottomNav.tsx` | Add 4th AI tab |
-| `MobileStyleSheet.tsx` | Add Voice Input + AI Tools sections |
-| `QuickStylesBar.tsx` | 4 colors + 3 fonts |
-| `LineBasedEditor.tsx` | Prefix detection (checkbox, heading, bullet), slash commands |
-| `HandwritingLine.tsx` | Apply slant/pressure/jitter CSS transforms |
-| `HandwrittenText.tsx` | Same parameter application |
-| `HandwritingAnalyzer.tsx` | 3-step magic wizard UI |
-| `NotebookPreview.tsx` | Render rich content (checkboxes, headings, bullets) |
-| `Index.tsx` | AI tab handling, share buttons in preview |
-| `Account.tsx` | Profile enhancement |
+Extend existing `SlashCommandMenu` and `types/block.ts`:
 
-## New Components/Pages
+- New AI category commands:
+  - `/ai write` — freeform prompt → new block(s)
+  - `/ai continue` — extend from cursor
+  - `/ai outline` — generate outline from a topic
+  - `/ai brainstorm` — bullet ideas
+  - `/ai summarize page` — full-page summary block
+  - `/ai translate page` — page-level translation
+- Each opens a compact prompt input inline; streams result into the block.
+- Mobile: prompt input auto-focuses and keeps keyboard open; scroll-into-view above keyboard.
 
-| Component | Purpose |
-|---|---|
-| `MyNotebooks.tsx` | Notebook/folder management |
-| `Templates.tsx` | Template gallery |
-| `SlashCommandMenu.tsx` | Slash command dropdown |
-| `DrawingCanvas.tsx` | Drawing/sketching tool |
-| `DocumentToNotes.tsx` | PDF/Image to handwritten notes |
-| `document-to-notes/index.ts` | Edge function for layout extraction |
+---
 
-## Database Migrations
+### Phase 6 — Mobile keyboard & viewport polish
 
-1. Add `folder text` to `notebooks`
-2. Add `tags text[]` to `notebooks`
-3. Add `letter_spacing_variation numeric default 0` to `handwriting_models` (if missing)
-4. Optional: `templates` table for template gallery
+Fixes that make the AI UX feel native on phones:
 
-## Implementation Order
-1. **Phase 1** — Mobile polish + AI tab (1-2 sessions)
-2. **Phase 2** — Handwriting DNA v2 + AI prominence (2-3 sessions)
-3. **Phase 3** — Notion features: rich content, slash commands, notebooks, tags, search, templates (3-4 sessions)
-4. **Phase 4** — Share, drawing, PDF-to-notes, profile (2-3 sessions)
+- Replace `h-screen` with `h-dvh` on editor surfaces.
+- Visual Viewport API listener → keep active block + AI sheet above the keyboard.
+- Prevent iOS input zoom (font-size ≥16px on all editor inputs).
+- Haptic feedback on Accept/Discard (reuse `useHaptics`).
+- Prevent body scroll when AI sheet is open.
 
-Shall I start with Phase 1?
+---
 
+### Phase 7 — QA loop
+
+- Manual test matrix on mobile viewport (375×667, 390×844) via Playwright screenshots.
+- Verify: each action streams, Accept replaces content, Retry re-runs, Discard restores, keyboard doesn't cover input, undo works after Accept.
+- AI Gateway log check (`list_ai_gateway_requests`) after each action to confirm real calls succeed.
+- Fix any 400/429/402 handling — surface toasts.
+
+---
+
+### Technical details
+
+**Files created:**
+- `supabase/functions/editor-ai/index.ts`
+- `supabase/functions/_shared/ai-gateway.ts` (if missing)
+- `src/components/editor/InlineAIMenu.tsx`
+- `src/components/editor/AIActionSheet.tsx` (mobile drawer)
+- `src/components/editor/AIStreamPreview.tsx`
+- `src/lib/editor/context.ts`
+- `src/lib/editor/aiActions.ts`
+- `src/hooks/useAIStream.ts`
+
+**Files modified:**
+- `src/components/editor/BlockEditor.tsx` — add AI trigger handles, integrate menu
+- `src/components/editor/SlashCommandMenu.tsx` — wire `/ai` prompt input
+- `src/types/block.ts` — extend `ai-generated` block metadata
+- `src/index.css` — sheet animations, keyboard-aware padding
+- ~20 files touched during Phase 1 typecheck cleanup
+
+**Model routing:** default `google/gemini-3.6-flash` streaming through `@ai-sdk/openai-compatible` + Lovable AI Gateway. No OpenAI Responses API needed for v1 (no reasoning UI in Sprint 1).
+
+**Out of scope for this sprint** (Sprint 2+):
+- Full @mention picker UI (people/pages/dates)
+- Emoji picker rebuild
+- Command palette v2 with previews
+- New block types (toggle, columns, table v2, equation, embed, TOC)
+- Virtualization for 10k+ blocks
+- Version history, comments, collaboration
+- Autosave overhaul
+
+---
+
+Approve to start with Phase 1 (typecheck cleanup). If you want a different sequencing (e.g. skip cleanup, or start directly with the inline AI menu), tell me and I'll adjust.
