@@ -700,8 +700,16 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
           </AnimatePresence>
         </div>
 
-        {/* Color + Delete buttons */}
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
+        {/* Comment + Color + Delete buttons */}
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
+          <button
+            onClick={onOpenComments}
+            className="p-1 rounded hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+            title="Comment"
+            tabIndex={-1}
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+          </button>
           <button
             onClick={onToggleColor}
             className="p-1 rounded hover:bg-muted/50 transition-colors"
