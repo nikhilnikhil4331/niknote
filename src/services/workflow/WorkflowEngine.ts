@@ -401,7 +401,7 @@ export class WorkflowEngine {
 
   private async executeOCRNode(node: WorkflowNode, inputs: any): Promise<any> {
     // Delegate to OCRPipeline
-    const { OCRPipeline } = await import('./OCREngine');
+    const { OCRPipeline } = await import('../ocr/OCREngine');
     const pipeline = new OCRPipeline();
     
     const fileInput = inputs.start?.file || inputs.file;

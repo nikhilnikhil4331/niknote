@@ -34,7 +34,7 @@ export const useBlockEditor = () => {
   const [historyLength, setHistoryLength] = useState(0);
   const currentColorRef = useRef<LineInkColor>('black');
   const historyRef = useRef<HistoryEntry[]>([]);
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── HISTORY (Undo/Redo) ───
   const pushHistory = useCallback((newBlocks: Block[]) => {

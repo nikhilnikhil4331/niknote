@@ -1,9 +1,10 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { GripVertical, Trash2, Plus, Palette, ChevronRight } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Palette, ChevronRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Block, BlockType, createBlock, detectBlockPrefix, generateBlockId } from '@/types/block';
 import { SlashCommandMenu } from './SlashCommandMenu';
+import { InlineAIMenu } from './InlineAIMenu';
 import { LineInkColor, LINE_INK_COLORS } from '@/types/noteLine';
 
 interface BlockEditorProps {
@@ -18,8 +19,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
   const [slashMenu, setSlashMenu] = useState<{ blockId: string; query: string; position: { top: number; left: number } } | null>(null);
   const [showInlineColor, setShowInlineColor] = useState<string | null>(null);
   const [typingBlockId, setTypingBlockId] = useState<string | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiTargetId, setAiTargetId] = useState<string | null>(null);
   const inputRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
-  const typingTimerRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const typingTimerRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Focus a block by id
   const focusBlock = useCallback((id: string, cursorPos?: number) => {
@@ -133,7 +136,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
       embed: { content: '', extra: { url: '' } },
       pdf: { content: '', extra: { url: '' } },
       file: { content: '', extra: { url: '' } },
-      table: { content: '', extra: { tableData: { headers: ['Column 1', 'Column 2', 'Column 3'], rows: [['', '', ''], ['', '', '']], colCount: 3 } } },
+      table: { content: '', extra: { tableData: { headers: ['Column 1', 'Column 2', 'Column 3'], rows: [[{id:'c1',content:'',type:'text' as const},{id:'c2',content:'',type:'text' as const},{id:'c3',content:'',type:'text' as const}], [{id:'c4',content:'',type:'text' as const},{id:'c5',content:'',type:'text' as const},{id:'c6',content:'',type:'text' as const}]], colCount: 3 } } },
       column: { content: '' },
       'ai-generated': { content: '✨ AI will generate content here...' },
       mermaid: { content: 'graph TD\n  A[Start] --> B[Process]\n  B --> C[End]' },
@@ -355,6 +358,47 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
         onSelect={handleSlashSelect}
         onClose={() => setSlashMenu(null)}
       />
+
+      {/* Floating Ask AI button — mobile-first, always reachable */}
+      <button
+        type="button"
+        onClick={() => {
+          const targetId = focusedBlockId || blocks[blocks.length - 1]?.id || null;
+          setAiTargetId(targetId);
+          setAiOpen(true);
+        }}
+        aria-label="Ask AI"
+        className="fixed z-40 bottom-24 right-4 sm:bottom-6 sm:right-6 h-14 w-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-xl shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-transform"
+      >
+        <Sparkles className="w-6 h-6" />
+      </button>
+
+      {/* Inline AI menu */}
+      {(() => {
+        const targetIdx = blocks.findIndex(b => b.id === aiTargetId);
+        const target = targetIdx >= 0 ? blocks[targetIdx] : null;
+        const targetText = target?.content || '';
+        const ctx = targetIdx >= 0
+          ? [blocks[targetIdx - 1]?.content, blocks[targetIdx + 1]?.content].filter(Boolean).join('\n')
+          : '';
+        return (
+          <InlineAIMenu
+            open={aiOpen}
+            onClose={() => setAiOpen(false)}
+            text={targetText}
+            context={ctx}
+            onAccept={(newText) => {
+              if (!aiTargetId) return;
+              const t = blocks.find(b => b.id === aiTargetId);
+              if (!t) return;
+              // If block was empty or "continue" style, append; otherwise replace.
+              const shouldAppend = (t.content || '').trim().length > 0 && newText.startsWith(t.content.trim());
+              const finalText = shouldAppend ? newText : newText;
+              updateBlock(aiTargetId, { content: finalText });
+            }}
+          />
+        );
+      })()}
     </div>
   );
 };

@@ -63,7 +63,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
     return folders;
   }, [notebooks, searchQuery]);
 
-  const favorites = useMemo(() => notebooks.filter(n => n.is_favorite), [notebooks]);
+  const favorites = useMemo(() => notebooks.filter((n) => (n as unknown as { is_favorite?: boolean }).is_favorite), [notebooks]);
 
   const toggleFolder = (folder: string) => {
     setExpandedFolders(prev => {

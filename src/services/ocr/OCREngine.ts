@@ -420,7 +420,7 @@ export function blocksToMarkdown(blocks: OCRBlock[]): string {
       case 'divider':
         return '---';
       case 'image':
-        return `![${block.metadata?.caption || 'Image'}](${block.metadata?.imageUrl || ''})`;
+        return `![${(block.metadata as { caption?: string } | undefined)?.caption || 'Image'}](${block.metadata?.imageUrl || ''})`;
       case 'footnote':
         return `[^${block.id}]: ${block.content}`;
       default:
