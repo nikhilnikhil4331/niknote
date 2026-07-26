@@ -7,6 +7,7 @@ import { SlashCommandMenu } from './SlashCommandMenu';
 import { InlineAIMenu } from './InlineAIMenu';
 import { MentionPopup, MentionItem } from './MentionPopup';
 import { BlockCommentsThread } from './BlockCommentsThread';
+import { FlashcardBlock } from './blocks/FlashcardBlock';
 import { LineInkColor, LINE_INK_COLORS } from '@/types/noteLine';
 
 interface BlockEditorProps {
@@ -187,6 +188,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
       'table_of_contents': { content: '📋 Table of Contents (Auto-generated)' },
       mention: { content: '@user' },
       comment: { content: '💬 Add a comment...' },
+      flashcard: { content: '', extra: { front: '', back: '' } },
     };
 
     if (type === 'divider') {
@@ -374,6 +376,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
             onToggleColor={() => setShowInlineColor(showInlineColor === block.id ? null : block.id)}
             onColorPick={(color) => { updateBlock(block.id, { color }); onColorChange?.(color); setShowInlineColor(null); }}
             onOpenComments={() => setCommentBlockId(block.id)}
+            onBlockUpdate={(updates) => updateBlock(block.id, updates)}
             inputRef={(el) => {
               if (el) inputRefs.current.set(block.id, el);
               else inputRefs.current.delete(block.id);
@@ -484,13 +487,14 @@ interface BlockContainerProps {
   onToggleColor: () => void;
   onColorPick: (color: LineInkColor) => void;
   onOpenComments: () => void;
+  onBlockUpdate: (updates: Partial<Block>) => void;
   inputRef: (el: HTMLTextAreaElement | null) => void;
 }
 
 const BlockContainer: React.FC<BlockContainerProps> = ({
   block, index, isFocused, isTyping, currentColor, showInlineColor,
   onFocus, onTextChange, onKeyDown, onPaste, onToggleTodo, onToggleCollapse, onDelete,
-  onToggleColor, onColorPick, onOpenComments, inputRef,
+  onToggleColor, onColorPick, onOpenComments, onBlockUpdate, inputRef,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -560,6 +564,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             )}
           </AnimatePresence>
 
+          {block.type !== 'flashcard' && (
           <textarea
             ref={(el) => {
               setRef(el);
@@ -587,6 +592,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
               getBlockTextClass(block.type)
             )}
           />
+          )}
 
           {/* Special block previews — ALL types */}
           {block.type === 'image' && (block.url || block.content) && (
@@ -686,6 +692,9 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             <div className="mt-1 p-2 rounded-lg bg-muted/20 border border-border/30">
               <span className="text-xs font-medium text-muted-foreground">📋 Table of Contents</span>
             </div>
+          )}
+          {block.type === 'flashcard' && (
+            <FlashcardBlock block={block} onUpdate={onBlockUpdate} />
           )}
           {block.type === 'synced' && (
             <div className="mt-1 p-2 rounded-lg bg-blue-50/50 border border-blue-100">

@@ -57,6 +57,7 @@ const FeedbackPage = lazy(() =>
 const HandbookPage = lazy(() => import("@/pages/Handbook"));
 const AgentConsolePage = lazy(() => import("@/pages/AgentConsole"));
 const AuditReportsPage = lazy(() => import("@/pages/AuditReports"));
+const FlashcardsPage = lazy(() => import("@/pages/Flashcards"));
 
 // Simple page loader
 const PageLoader = () => (
@@ -145,6 +146,7 @@ const App = () => {
                     <Route path="/handbook" element={<HandbookPage />} />
                     <Route path="/agents" element={<AgentConsolePage />} />
                     <Route path="/audit" element={<AuditReportsPage />} />
+                    <Route path="/flashcards" element={<FlashcardsPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

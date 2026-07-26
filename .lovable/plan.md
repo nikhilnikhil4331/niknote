@@ -1,61 +1,68 @@
-# Sprint 2 — Collaborative & Interactive Editor Layer
+# Make Every Function Actually Work — NikNote Editor
 
-Mobile-first, no new heavy deps. Builds on Sprint 1's `BlockEditor` + `InlineAIMenu` + `editor-ai` streaming function. Framer Motion stays pinned at ^11.15.0.
+Goal: har button, slash-command, aur block type ka real behavior. Notion-parity where feasible in this codebase.
 
-## 1. Inline AI Diff Preview
-Extend `InlineAIMenu` so Improve / Fix / Translate / Shorten stream into a **diff view** instead of replacing text immediately.
-- New `src/components/editor/AIDiffView.tsx`: word-level diff using a tiny in-house LCS (no dep). Removed = red strikethrough, added = green highlight, unchanged = muted.
-- Sheet gets three actions: **Accept**, **Reject**, **Regenerate**. Accept commits to the block; Reject closes; Regenerate re-runs same action.
-- Continue / Summarize / Explain skip diff (they append or produce net-new content) — keep current flow.
+## Scope (in order)
 
-## 2. @Mention Popup
-- New `src/components/editor/MentionPopup.tsx` — portal-positioned popup (reuses SlashCommandMenu positioning pattern) with tabs: People, Pages, Tasks.
-- Data sources:
-  - People: `profiles` table (id, display_name, avatar).
-  - Pages: `notebooks` (id, title).
-  - Tasks: derive from current doc's `todo` blocks.
-- Fuzzy search via existing `filteredCommands`-style filter; debounced (`useDebounce`, 120ms).
-- Trigger: typing `@` in a block input. Insert token `@[type:id|label]` at cursor; render as pill via a small parser in the block textarea's display (kept as plain text in storage, styled in preview only for now).
-- Keyboard nav (↑↓ Enter Esc) matches slash menu.
+### 1. Slash menu + block types (BlockEditor.tsx)
+- Fuzzy-search working `/` menu with keyboard nav (↑↓ Enter Esc)
+- Insert & fully edit these block types: `text`, `heading1/2/3`, `bulleted`, `numbered`, `todo` (checkbox toggle), `toggle` (collapsible), `quote`, `callout`, `divider`, `code` (with language + copy), `flashcard` (new), `image`, `table` (existing TableBlock wired in)
+- Enter/Backspace/Tab behavior per block (indent, outdent, split, merge)
+- Block hover toolbar buttons all wired: drag handle, duplicate, delete, turn-into, comment, AI
 
-## 3. Block-Level Comments
-- Migration `supabase/migrations/xxxx_block_comments.sql`:
-  - `block_comments` (id, block_id text, notebook_id uuid, thread_id uuid, author_id uuid, body text, mentions jsonb, created_at, updated_at, deleted_at nullable).
-  - GRANTs to `authenticated` + `service_role`; RLS: users can select/insert/update/delete their own; select all in notebooks they own.
-- UI:
-  - `src/components/editor/BlockCommentsThread.tsx` — thread panel (mobile bottom sheet, desktop right rail).
-  - Comment icon appears in block hover toolbar (`BlockEditor`); badge shows count.
-  - Composer supports `@` mentions (reuses MentionPopup). Mentions stored in `mentions` jsonb.
-- Realtime subscription per open thread via Supabase channel.
+### 2. Flashcards + Study Mode (new)
+- `flashcard` block: front / back inline edit, click to flip (framer-motion)
+- `/flashcards` route: review all flashcards from all pages
+- Simple SM-2-lite spaced-repetition (Again / Hard / Good / Easy)
+- Progress stored in `flashcard_reviews` table (user_id, block_id, ease, due_at, interval)
 
-## 4. Drag-and-Drop Block Reordering
-- Native HTML5 DnD (already used in `KanbanView`) — no new dep.
-- Drag handle already exists in `BlockEditor` hover toolbar; make it `draggable`.
-- Show blue insertion line between blocks during drag (CSS pseudo-element toggled via `dragover`).
-- Uses existing `moveBlock`/`setBlocks` from `useBlockEditor`; add `moveBlockToIndex(id, index)` helper.
-- Preserve focused block id across move; disable text selection during drag.
-- Mobile: long-press (400ms) on drag handle enables drag via touch events (polyfilled with pointer events).
+### 3. Drag-and-drop reorder
+- Native HTML5 DnD on block rows with drop indicators
+- Works with keyboard (Alt+↑ / Alt+↓) too
 
-## 5. Slash Command Menu Wiring
-Menu component (`SlashCommandMenu.tsx`) already exists. Wire it into `BlockEditor`:
-- On `/` at empty position, capture query until space/Esc, show menu at caret coords.
-- Selection converts current block to chosen type via `convertBlock` (or inserts new block for media types).
-- Add a few **template** commands (weekly review, meeting notes) that expand into multiple blocks.
+### 4. AI menu end-to-end (InlineAIMenu)
+- Confirm all 8 actions stream, Diff view toggles, Accept/Reject/Retry buttons work, error toast on 402/429
 
-## Technical notes
-- All new UIs use existing Tailwind tokens; no hardcoded colors.
-- Framer Motion only for sheet/popup enter/exit — already imported.
-- Typecheck via `tsgo` after each phase.
-- Backend rules: RLS + GRANT on every new public table (per project rules).
+### 5. Comments + Mentions + Backlinks
+- `@` popup: real search across `profiles` + `notebooks` (debounced)
+- Block comments: open thread on button click, realtime, resolve/delete works
+- Backlinks panel: shows blocks that mention current page
 
-## Order of execution
-1. Slash menu wiring (smallest, unblocks demo of block insertion).
-2. Drag & drop (self-contained, visual win).
-3. Diff preview (extends existing sheet).
-4. @Mention popup (shared by comments).
-5. Comments (migration + UI + realtime).
+### 6. Global wiring pass
+- Verify every button in AppHeader, BottomNavBar, StepStyle, StepPreview, Dashboard, MyNotebooks, Handbook, AgentConsole, AuditReports calls its handler and produces visible feedback (toast + haptic)
+- Fix any dead `onClick={() => {}}` stubs found during pass
 
-## Out of scope this sprint
-- Rich pill rendering of mentions inside textareas (needs contenteditable rework — deferred).
-- Comment resolution/threading beyond flat replies.
-- Cross-doc mention navigation.
+## Technical
+
+**New table**
+```sql
+flashcard_reviews(user_id uuid, block_id text, ease numeric default 2.5,
+                  interval_days int default 0, due_at timestamptz default now(),
+                  reps int default 0, last_reviewed_at timestamptz)
+-- PK (user_id, block_id), RLS: own rows only, GRANTs to authenticated + service_role
+```
+
+**Files touched (major)**
+- `src/components/editor/BlockEditor.tsx` — slash menu fuzzy + DnD + keybinds + flashcard render
+- `src/components/editor/SlashCommandMenu.tsx` — add flashcard, fix ordering
+- `src/components/editor/blocks/FlashcardBlock.tsx` — NEW
+- `src/pages/Flashcards.tsx` — NEW (study mode)
+- `src/hooks/useFlashcards.ts` — NEW (SRS scheduling)
+- `src/components/editor/BacklinksAndMentions.tsx` — wire real query
+- `src/components/editor/MentionPopup.tsx` — Supabase search
+- `src/components/editor/BlockContextMenu.tsx` — wire duplicate/turn-into/delete
+- `src/App.tsx` — add `/flashcards` route
+- `src/components/app/BottomNavBar.tsx` — add Flashcards entry
+
+**Non-goals (this pass)**
+- Real-time multi-cursor collab
+- Full database views (Kanban/Calendar/Gallery already stubbed — left as-is)
+- Rich-text formatting toolbar (bold/italic inline) — separate follow-up
+
+## Delivery order
+1. DB migration for `flashcard_reviews` (needs approval first)
+2. Flashcard block + study page + SRS hook
+3. Slash menu + DnD + block behaviors polish
+4. Mentions/comments/backlinks real queries
+5. Dead-click sweep across pages
+6. Manual smoke test via Playwright, screenshots to confirm.
