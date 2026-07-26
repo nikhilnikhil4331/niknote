@@ -36,6 +36,7 @@ export type BlockType =
   | 'table_of_contents' // Auto TOC
   | 'mention'       // @mention
   | 'comment'       // Inline comment
+  | 'flashcard'     // Study flashcard (front/back, spaced repetition)
 
 export interface BlockColumn {
   id: string;
@@ -76,6 +77,9 @@ export interface Block {
   // Metadata
   createdAt?: number;
   updatedAt?: number;
+  // Flashcard
+  front?: string;
+  back?: string;
 }
 
 export const generateBlockId = (): string =>
@@ -136,6 +140,9 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { id: 'table_of_contents', label: 'Table of Contents', description: 'Auto-generated TOC', icon: '📑', category: 'advanced' },
   { id: 'breadcrumb', label: 'Breadcrumb', description: 'Page breadcrumb', icon: '🗂️', category: 'advanced' },
   { id: 'synced', label: 'Synced Block', description: 'Synced across pages', icon: '🔄', category: 'advanced' },
+
+  // Study blocks
+  { id: 'flashcard', label: 'Flashcard', description: 'Study flashcard (front / back)', icon: '🎴', category: 'basic' },
 
   // AI blocks
   { id: 'ai-generated', label: 'AI Generate', description: 'AI-generated content', icon: '✨', category: 'ai' },
