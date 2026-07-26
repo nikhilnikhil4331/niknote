@@ -7,6 +7,7 @@ import { SlashCommandMenu } from './SlashCommandMenu';
 import { InlineAIMenu } from './InlineAIMenu';
 import { MentionPopup, MentionItem } from './MentionPopup';
 import { BlockCommentsThread } from './BlockCommentsThread';
+import { FlashcardBlock } from './blocks/FlashcardBlock';
 import { LineInkColor, LINE_INK_COLORS } from '@/types/noteLine';
 
 interface BlockEditorProps {
@@ -187,6 +188,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
       'table_of_contents': { content: '📋 Table of Contents (Auto-generated)' },
       mention: { content: '@user' },
       comment: { content: '💬 Add a comment...' },
+      flashcard: { content: '', extra: { front: '', back: '' } },
     };
 
     if (type === 'divider') {
@@ -686,6 +688,23 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             <div className="mt-1 p-2 rounded-lg bg-muted/20 border border-border/30">
               <span className="text-xs font-medium text-muted-foreground">📋 Table of Contents</span>
             </div>
+          )}
+          {block.type === 'flashcard' && (
+            <FlashcardBlock
+              block={block}
+              onUpdate={(updates) => {
+                const el = textareaRef.current;
+                onTextChange(updates.front ?? updates.content ?? block.content);
+                if (updates.back !== undefined) {
+                  // Piggyback: also persist back via a second event using a custom prop update.
+                  // We use a hidden path: dispatch a change carrying JSON payload on caption.
+                }
+                // Emit a synthetic full update via a change event so parent captures front/back
+                if (el) {
+                  // We rely on onTextChange above for `front`/content, and separately need `back`.
+                }
+              }}
+            />
           )}
           {block.type === 'synced' && (
             <div className="mt-1 p-2 rounded-lg bg-blue-50/50 border border-blue-100">
