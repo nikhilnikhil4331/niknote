@@ -3,7 +3,11 @@
 //   (a) a valid Supabase JWT belonging to a user with role 'admin', OR
 //   (b) an admin session token (x-admin-token header) stored in admin_sessions.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-admin-token",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
