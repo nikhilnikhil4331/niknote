@@ -692,21 +692,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             </div>
           )}
           {block.type === 'flashcard' && (
-            <FlashcardBlock
-              block={block}
-              onUpdate={(updates) => {
-                const el = textareaRef.current;
-                onTextChange(updates.front ?? updates.content ?? block.content);
-                if (updates.back !== undefined) {
-                  // Piggyback: also persist back via a second event using a custom prop update.
-                  // We use a hidden path: dispatch a change carrying JSON payload on caption.
-                }
-                // Emit a synthetic full update via a change event so parent captures front/back
-                if (el) {
-                  // We rely on onTextChange above for `front`/content, and separately need `back`.
-                }
-              }}
-            />
+            <FlashcardBlock block={block} onUpdate={onBlockUpdate} />
           )}
           {block.type === 'synced' && (
             <div className="mt-1 p-2 rounded-lg bg-blue-50/50 border border-blue-100">
