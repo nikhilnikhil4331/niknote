@@ -54,6 +54,9 @@ const B2BPage = lazy(() =>
 const FeedbackPage = lazy(() =>
   import("@/pages/Feedback").then(m => ({ default: m.default }))
 );
+const HandbookPage = lazy(() => import("@/pages/Handbook"));
+const AgentConsolePage = lazy(() => import("@/pages/AgentConsole"));
+const AuditReportsPage = lazy(() => import("@/pages/AuditReports"));
 
 // Simple page loader
 const PageLoader = () => (
@@ -139,6 +142,9 @@ const App = () => {
                     <Route path="/schools" element={<Suspense fallback={<PageLoader />}><B2BPage /></Suspense>} />
                     <Route path="/institutions" element={<Suspense fallback={<PageLoader />}><B2BPage /></Suspense>} />
                     <Route path="/feedback" element={<Suspense fallback={<PageLoader />}><FeedbackPage /></Suspense>} />
+                    <Route path="/handbook" element={<HandbookPage />} />
+                    <Route path="/agents" element={<AgentConsolePage />} />
+                    <Route path="/audit" element={<AuditReportsPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
