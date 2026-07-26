@@ -376,6 +376,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
             onToggleColor={() => setShowInlineColor(showInlineColor === block.id ? null : block.id)}
             onColorPick={(color) => { updateBlock(block.id, { color }); onColorChange?.(color); setShowInlineColor(null); }}
             onOpenComments={() => setCommentBlockId(block.id)}
+            onBlockUpdate={(updates) => updateBlock(block.id, updates)}
             inputRef={(el) => {
               if (el) inputRefs.current.set(block.id, el);
               else inputRefs.current.delete(block.id);
@@ -486,13 +487,14 @@ interface BlockContainerProps {
   onToggleColor: () => void;
   onColorPick: (color: LineInkColor) => void;
   onOpenComments: () => void;
+  onBlockUpdate: (updates: Partial<Block>) => void;
   inputRef: (el: HTMLTextAreaElement | null) => void;
 }
 
 const BlockContainer: React.FC<BlockContainerProps> = ({
   block, index, isFocused, isTyping, currentColor, showInlineColor,
   onFocus, onTextChange, onKeyDown, onPaste, onToggleTodo, onToggleCollapse, onDelete,
-  onToggleColor, onColorPick, onOpenComments, inputRef,
+  onToggleColor, onColorPick, onOpenComments, onBlockUpdate, inputRef,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
