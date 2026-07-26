@@ -24,7 +24,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     <motion.header
       initial={{ y: -10, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="h-13 flex items-center justify-between px-4 border-b border-border/30 bg-background/95 backdrop-blur-lg z-40 flex-shrink-0"
+      className="flex items-center justify-between px-4 pb-2 border-b border-border/30 bg-background/95 backdrop-blur-lg z-40 flex-shrink-0"
+      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)', minHeight: 52 }}
     >
       {/* Left: Editable Title + Stats */}
       <div className="flex-1 min-w-0 mr-3">
