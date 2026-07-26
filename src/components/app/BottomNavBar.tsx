@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { PenLine, Palette, Eye, Trophy } from 'lucide-react';
+import { PenLine, Palette, Eye, Trophy, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
@@ -59,11 +59,23 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentStep, onStepC
           );
         })}
 
+        {/* Flashcards tab */}
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={() => navigate('/flashcards')}
+          className="flex-1 flex flex-col items-center justify-center gap-1 text-muted-foreground"
+          aria-label="Flashcards"
+        >
+          <Layers className="w-5 h-5" />
+          <span className="text-[10px] font-medium">Cards</span>
+        </motion.button>
+
         {/* Achievements tab */}
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => navigate('/achievements')}
           className="flex-1 flex flex-col items-center justify-center gap-1 text-muted-foreground"
+          aria-label="Achievements"
         >
           <Trophy className="w-5 h-5" />
           <span className="text-[10px] font-medium">Badges</span>
