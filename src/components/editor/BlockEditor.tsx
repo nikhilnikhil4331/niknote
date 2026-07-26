@@ -564,6 +564,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             )}
           </AnimatePresence>
 
+          {block.type !== 'flashcard' && (
           <textarea
             ref={(el) => {
               setRef(el);
@@ -591,6 +592,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
               getBlockTextClass(block.type)
             )}
           />
+          )}
 
           {/* Special block previews — ALL types */}
           {block.type === 'image' && (block.url || block.content) && (
