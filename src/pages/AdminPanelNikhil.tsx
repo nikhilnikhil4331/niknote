@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Shield, LogOut, RefreshCw, Lock, Menu, X,
+  Shield, ShieldCheck, LogOut, RefreshCw, Lock, Menu, X,
   LayoutDashboard, Users, Activity, Bug, Settings,
   BarChart3, Download, Radio, MessageCircle
 } from 'lucide-react';
@@ -22,6 +22,7 @@ import { AdminControls } from '@/components/admin/AdminControls';
 import { AdminCSVExport } from '@/components/admin/AdminCSVExport';
 import { AdminFeatureHeatmap } from '@/components/admin/AdminFeatureHeatmap';
 import { AdminUserDrawer } from '@/components/admin/AdminUserDrawer';
+import { AdminCommandCenter } from '@/components/admin/AdminCommandCenter';
 
 interface UserData {
   id: string;
@@ -78,7 +79,7 @@ const AdminPanelNikhil: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('command');
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [userDrawerOpen, setUserDrawerOpen] = useState(false);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
@@ -908,6 +909,7 @@ const AdminPanelNikhil: React.FC = () => {
   }
 
   const tabs = [
+    { id: 'command', label: 'Command Center', icon: ShieldCheck },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'users', label: 'Users', icon: Users },
@@ -1038,6 +1040,11 @@ const AdminPanelNikhil: React.FC = () => {
               <Menu className="w-4 h-4" />
             </Button>
           </div>
+
+          {/* Command Center Tab — full per-user control */}
+          <TabsContent value="command" className="mt-4">
+            <AdminCommandCenter />
+          </TabsContent>
 
           {/* Dashboard Tab */}
           <TabsContent value="dashboard" className="space-y-4 mt-4">
