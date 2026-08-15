@@ -615,7 +615,7 @@ const Index = () => {
             <img 
               src="/niknote-logo.png" 
               alt="NikNote" 
-              className={cn("select-none", isMobile ? "h-7" : "h-8")}
+              className={cn("select-none", isMobile ? "h-8" : "h-10")}
               style={{ WebkitTapHighlightColor: 'transparent' }}
             />
             
