@@ -618,7 +618,7 @@ const Index = () => {
               className={cn("select-none", isMobile ? "h-7" : "h-8")}
               style={{ WebkitTapHighlightColor: 'transparent' }}
             />
-            <span className={cn("font-extrabold bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 bg-clip-text text-transparent select-none", isMobile ? "text-sm" : "text-base")}>NikNote</span>
+            
           </div>
 
           {/* Center: Mood pills (desktop) */}
