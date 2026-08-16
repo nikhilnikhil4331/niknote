@@ -65,7 +65,15 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-    const { action, payload = {} } = await req.json();
+    const raw = await req.text();
+    let parsed: any = {};
+    try { parsed = raw ? JSON.parse(raw) : {}; } catch { parsed = {}; }
+    const { action, payload = {} } = parsed;
+    if (!action) {
+      return new Response(JSON.stringify({ error: "Missing action" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // ---------- LIST ----------
     if (action === "list_users") {
