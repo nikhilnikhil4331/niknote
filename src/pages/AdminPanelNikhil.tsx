@@ -72,6 +72,73 @@ interface SystemCheckResult {
   message?: string;
 }
 
+const AdminGateForm: React.FC<{ onSuccess: () => void; onBack: () => void }> = ({ onSuccess, onBack }) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('admin-auth', {
+        body: { username, password },
+      });
+      if (fnError || !data?.success || !data?.token) {
+        const msg = data?.error || 'Invalid admin credentials';
+        setError(msg);
+        toast.error(msg);
+        return;
+      }
+      sessionStorage.setItem('admin_token', data.token);
+      sessionStorage.setItem('admin_expires', String(data.expiresAt));
+      toast.success('Welcome back, Admin');
+      onSuccess();
+    } catch (err) {
+      console.error('Admin login error:', err);
+      setError('Server error. Please try again.');
+      toast.error('Admin login failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      {error && (
+        <div className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2">
+          {error}
+        </div>
+      )}
+      <input
+        type="text"
+        autoComplete="username"
+        placeholder="Admin username"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        className="w-full h-11 px-3 rounded-xl border border-input bg-muted/50 text-base"
+      />
+      <input
+        type="password"
+        autoComplete="current-password"
+        placeholder="Admin password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="w-full h-11 px-3 rounded-xl border border-input bg-muted/50 text-base"
+      />
+      <Button type="submit" className="w-full rounded-xl" disabled={submitting || !username || !password}>
+        {submitting ? 'Verifying…' : 'Enter control center'}
+      </Button>
+      <Button type="button" onClick={onBack} variant="outline" className="w-full rounded-xl">
+        Back to Home
+      </Button>
+    </form>
+  );
+};
+
+
 const AdminPanelNikhil: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -364,17 +431,27 @@ const AdminPanelNikhil: React.FC = () => {
   }, [isAdmin]);
 
   const checkAdminStatus = async () => {
-    // First check for admin session token
+    // 1) Server-validated admin session token
     const adminToken = sessionStorage.getItem('admin_token');
-    const expiresAt = sessionStorage.getItem('admin_expires');
-    
-    if (adminToken && expiresAt && Date.now() < parseInt(expiresAt)) {
-      setIsAdmin(true);
-      setLoading(false);
-      return;
+    if (adminToken) {
+      try {
+        const { data } = await supabase.functions.invoke('admin-auth', {
+          body: { action: 'validate', token: adminToken },
+        });
+        if (data?.valid) {
+          sessionStorage.setItem('admin_expires', String(new Date(data.expiresAt).getTime()));
+          setIsAdmin(true);
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        console.warn('Admin session validation failed:', e);
+      }
+      sessionStorage.removeItem('admin_token');
+      sessionStorage.removeItem('admin_expires');
     }
 
-    // Check if user is admin via database role
+    // 2) Signed-in user with the admin role
     if (user) {
       try {
         const { data, error } = await supabase
@@ -398,6 +475,7 @@ const AdminPanelNikhil: React.FC = () => {
     setIsAdmin(false);
     setLoading(false);
   };
+
 
   const loadAllData = useCallback(async () => {
     setRefreshing(true);
@@ -837,7 +915,7 @@ const AdminPanelNikhil: React.FC = () => {
     );
   }
 
-  // In demo mode, skip user check since no login is required
+  // Not an admin — real credential login (server-verified)
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -853,60 +931,18 @@ const AdminPanelNikhil: React.FC = () => {
               </div>
               <CardTitle>NikNote Admin</CardTitle>
               <CardDescription>
-                Enter admin PIN to access the control center
+                Sign in with your admin credentials to open the control center
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  placeholder="Enter PIN"
-                  className="flex-1 h-10 px-3 rounded-xl border border-input bg-muted/50 text-sm"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const pin = (e.target as HTMLInputElement).value;
-                      // Admin PIN: 4331 (matches nikhil4331)
-                      if (pin === '4331') {
-                        sessionStorage.setItem('admin_token', 'nikhil-admin-' + Date.now());
-                        sessionStorage.setItem('admin_expires', String(Date.now() + 24 * 60 * 60 * 1000));
-                        setIsAdmin(true);
-                        toast.success('Welcome, Admin!');
-                      } else {
-                        toast.error('Invalid PIN');
-                      }
-                    }
-                  }}
-                />
-                <Button 
-                  onClick={() => {
-                    const input = document.querySelector('input[type="password"]') as HTMLInputElement;
-                    if (input && input.value === '4331') {
-                      sessionStorage.setItem('admin_token', 'nikhil-admin-' + Date.now());
-                      sessionStorage.setItem('admin_expires', String(Date.now() + 24 * 60 * 60 * 1000));
-                      setIsAdmin(true);
-                      toast.success('Welcome, Admin!');
-                    } else {
-                      toast.error('Invalid PIN');
-                    }
-                  }}
-                  className="rounded-xl"
-                >
-                  Enter
-                </Button>
-              </div>
-              <Button 
-                onClick={() => navigate('/')} 
-                variant="outline"
-                className="w-full rounded-xl"
-              >
-                Back to Home
-              </Button>
+            <CardContent>
+              <AdminGateForm onSuccess={() => setIsAdmin(true)} onBack={() => navigate('/')} />
             </CardContent>
           </Card>
         </motion.div>
       </div>
     );
   }
+
 
   const tabs = [
     { id: 'command', label: 'Command Center', icon: ShieldCheck },

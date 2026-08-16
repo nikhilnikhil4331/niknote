@@ -37,6 +37,12 @@ interface AdminUser {
   last_activity_at: string | null;
   banned_until: string | null;
   is_banned: boolean;
+  is_admin?: boolean;
+  has_profile?: boolean;
+  provider?: string;
+  email_confirmed?: boolean;
+  last_sign_in_at?: string | null;
+
 }
 
 interface UserDetail {
@@ -225,9 +231,17 @@ export const AdminCommandCenter: React.FC = () => {
                         {(u.display_name || u.email || '?').slice(0, 1).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <div className="font-medium truncate">{u.display_name || u.email || u.user_id.slice(0, 8)}</div>
-                        <div className="text-[11px] text-muted-foreground truncate">{u.email || 'no email'}</div>
+                        <div className="font-medium truncate flex items-center gap-1.5">
+                          {u.display_name || u.email || u.user_id.slice(0, 8)}
+                          {u.is_admin && <Badge variant="outline" className="text-[9px] px-1 py-0">admin</Badge>}
+                          {!u.has_profile && <Badge variant="outline" className="text-[9px] px-1 py-0">legacy</Badge>}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground truncate">
+                          {u.email || 'no email'} · {u.provider || 'email'}
+                          {u.email_confirmed === false && ' · unverified'}
+                        </div>
                       </div>
+
                     </div>
                   </td>
                   <td className="px-3 py-2">

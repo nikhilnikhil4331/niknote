@@ -69,19 +69,26 @@ Deno.serve(async (req) => {
 
     // ---------- LIST ----------
     if (action === "list_users") {
-      const { data: profiles } = await admin
-        .from("profiles")
-        .select("user_id, display_name, avatar_url, created_at, onboarding_completed, use_case")
-        .order("created_at", { ascending: false })
-        .limit(1000);
+      // Source of truth = auth.users (so OLD signups without a profile row still appear)
+      const authUsers: any[] = [];
+      for (let page = 1; page <= 20; page++) {
+        const { data: pageData, error: pageErr } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+        if (pageErr) break;
+        const batch = pageData?.users || [];
+        authUsers.push(...batch);
+        if (batch.length < 200) break;
+      }
 
-      const ids = (profiles || []).map(p => p.user_id);
-      const [{ data: subs }, { data: rewards }, { data: streaks }, { data: authList }] = await Promise.all([
+      const ids = authUsers.map(u => u.id);
+      const [{ data: profileRows }, { data: subs }, { data: rewards }, { data: streaks }, { data: roleRows }] = await Promise.all([
+        admin.from("profiles").select("user_id, display_name, avatar_url, created_at, onboarding_completed, use_case").in("user_id", ids),
         admin.from("user_subscriptions").select("user_id, plan_code, status, current_period_end").in("user_id", ids),
         admin.from("user_rewards").select("user_id, coins, total_earned, referral_code").in("user_id", ids),
         admin.from("user_streaks").select("user_id, current_streak, longest_streak, last_active_date").in("user_id", ids),
-        admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+        admin.from("user_roles").select("user_id, role").in("user_id", ids),
       ]);
+      const profileMap = new Map((profileRows || []).map(p => [p.user_id, p]));
+
 
       // Counts per user (notebooks, pages, activities in last 7d, ai requests this month)
       const { data: notebookRows } = await admin.from("notebooks").select("user_id");
@@ -123,33 +130,37 @@ Deno.serve(async (req) => {
         }
       });
 
-      const authMap = new Map<string, { email?: string; banned_until?: string | null; last_sign_in_at?: string | null }>();
-      (authList?.data?.users || []).forEach((u: any) => {
-        authMap.set(u.id, {
-          email: u.email,
-          banned_until: u.banned_until,
-          last_sign_in_at: u.last_sign_in_at,
-        });
-      });
+      const adminIds = new Set((roleRows || []).filter(r => r.role === "admin").map(r => r.user_id));
 
       const now = Date.now();
-      const users = (profiles || []).map(p => {
-        const sub = subs?.find(s => s.user_id === p.user_id);
-        const rw = rewards?.find(r => r.user_id === p.user_id);
-        const st = streaks?.find(s => s.user_id === p.user_id);
-        const au = authMap.get(p.user_id) || {};
-        const isPremium = sub?.status === "active" && sub.current_period_end
-          ? new Date(sub.current_period_end).getTime() > now : false;
+      const users = authUsers.map((au: any) => {
+        const uid = au.id;
+        const p: any = profileMap.get(uid) || {};
+        const sub = subs?.find(s => s.user_id === uid);
+        const rw = rewards?.find(r => r.user_id === uid);
+        const st = streaks?.find(s => s.user_id === uid);
+        const activeStatus = sub?.status === "active" || sub?.status === "trialing";
+        // No end date on an active sub = lifetime/ongoing
+        const notExpired = !sub?.current_period_end
+          || new Date(sub.current_period_end).getTime() > now;
+        const isPremium = !!(activeStatus && notExpired);
         return {
-          user_id: p.user_id,
-          email: au.email || null,
-          display_name: p.display_name,
-          avatar_url: p.avatar_url,
-          created_at: p.created_at,
-          onboarding_completed: p.onboarding_completed,
-          use_case: p.use_case,
+          user_id: uid,
+          email: au.email || au.user_metadata?.email || null,
+          display_name: p.display_name
+            || au.user_metadata?.full_name
+            || au.user_metadata?.name
+            || (au.email ? au.email.split("@")[0] : null),
+          avatar_url: p.avatar_url || au.user_metadata?.avatar_url || null,
+          created_at: au.created_at || p.created_at,
+          has_profile: !!p.user_id,
+          email_confirmed: !!(au.email_confirmed_at || au.confirmed_at),
+          provider: au.app_metadata?.provider || "email",
+          is_admin: adminIds.has(uid),
+          onboarding_completed: p.onboarding_completed ?? false,
+          use_case: p.use_case ?? null,
           plan: isPremium ? (sub?.plan_code || "premium") : "free",
-          premium_until: isPremium ? sub?.current_period_end : null,
+          premium_until: isPremium ? (sub?.current_period_end ?? null) : null,
           sub_status: sub?.status || "none",
           coins: rw?.coins ?? 0,
           total_earned: rw?.total_earned ?? 0,
@@ -157,15 +168,17 @@ Deno.serve(async (req) => {
           current_streak: st?.current_streak ?? 0,
           longest_streak: st?.longest_streak ?? 0,
           last_active_date: st?.last_active_date ?? null,
-          notebooks: notebookCount.get(p.user_id) || 0,
-          pages: pageCount.get(p.user_id) || 0,
-          activity_7d: activity7d.get(p.user_id) || 0,
-          ai_requests_month: aiUsage.get(p.user_id) || 0,
-          last_activity_at: lastActive.get(p.user_id) || au.last_sign_in_at || null,
+          notebooks: notebookCount.get(uid) || 0,
+          pages: pageCount.get(uid) || 0,
+          activity_7d: activity7d.get(uid) || 0,
+          ai_requests_month: aiUsage.get(uid) || 0,
+          last_sign_in_at: au.last_sign_in_at || null,
+          last_activity_at: lastActive.get(uid) || au.last_sign_in_at || null,
           banned_until: au.banned_until || null,
           is_banned: !!(au.banned_until && new Date(au.banned_until).getTime() > now),
         };
-      });
+      }).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+
 
       return Response.json({ users }, { headers: corsHeaders });
     }
