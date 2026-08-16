@@ -53,7 +53,9 @@ interface UserDetail {
 
 async function callAdmin(action: string, payload: Record<string, unknown> = {}) {
   const adminToken = sessionStorage.getItem('admin_token');
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  // NOTE: do NOT set Content-Type here — supabase-js then skips JSON.stringify
+  // and the body arrives as "[object Object]".
+  const headers: Record<string, string> = {};
   if (adminToken) headers['x-admin-token'] = adminToken;
   const { data, error } = await supabase.functions.invoke('admin-user-management', {
     body: { action, payload },
