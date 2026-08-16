@@ -848,7 +848,7 @@ const AdminPanelNikhil: React.FC = () => {
     );
   }
 
-  // In demo mode, skip user check since no login is required
+  // Not an admin — real credential login (server-verified)
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -864,60 +864,18 @@ const AdminPanelNikhil: React.FC = () => {
               </div>
               <CardTitle>NikNote Admin</CardTitle>
               <CardDescription>
-                Enter admin PIN to access the control center
+                Sign in with your admin credentials to open the control center
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex gap-2">
-                <input
-                  type="password"
-                  placeholder="Enter PIN"
-                  className="flex-1 h-10 px-3 rounded-xl border border-input bg-muted/50 text-sm"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const pin = (e.target as HTMLInputElement).value;
-                      // Admin PIN: 4331 (matches nikhil4331)
-                      if (pin === '4331') {
-                        sessionStorage.setItem('admin_token', 'nikhil-admin-' + Date.now());
-                        sessionStorage.setItem('admin_expires', String(Date.now() + 24 * 60 * 60 * 1000));
-                        setIsAdmin(true);
-                        toast.success('Welcome, Admin!');
-                      } else {
-                        toast.error('Invalid PIN');
-                      }
-                    }
-                  }}
-                />
-                <Button 
-                  onClick={() => {
-                    const input = document.querySelector('input[type="password"]') as HTMLInputElement;
-                    if (input && input.value === '4331') {
-                      sessionStorage.setItem('admin_token', 'nikhil-admin-' + Date.now());
-                      sessionStorage.setItem('admin_expires', String(Date.now() + 24 * 60 * 60 * 1000));
-                      setIsAdmin(true);
-                      toast.success('Welcome, Admin!');
-                    } else {
-                      toast.error('Invalid PIN');
-                    }
-                  }}
-                  className="rounded-xl"
-                >
-                  Enter
-                </Button>
-              </div>
-              <Button 
-                onClick={() => navigate('/')} 
-                variant="outline"
-                className="w-full rounded-xl"
-              >
-                Back to Home
-              </Button>
+            <CardContent>
+              <AdminGateForm onSuccess={() => setIsAdmin(true)} onBack={() => navigate('/')} />
             </CardContent>
           </Card>
         </motion.div>
       </div>
     );
   }
+
 
   const tabs = [
     { id: 'command', label: 'Command Center', icon: ShieldCheck },
