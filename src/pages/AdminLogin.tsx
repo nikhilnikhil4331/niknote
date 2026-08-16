@@ -127,7 +127,7 @@ export default function AdminLogin() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter PIN (4331)"
+                  placeholder="Enter admin password"
                   className="pl-11 pr-11 h-12 bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 rounded-xl focus:border-red-500 focus:ring-red-500/20"
                   required
                 />
