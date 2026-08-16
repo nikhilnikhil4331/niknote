@@ -364,17 +364,27 @@ const AdminPanelNikhil: React.FC = () => {
   }, [isAdmin]);
 
   const checkAdminStatus = async () => {
-    // First check for admin session token
+    // 1) Server-validated admin session token
     const adminToken = sessionStorage.getItem('admin_token');
-    const expiresAt = sessionStorage.getItem('admin_expires');
-    
-    if (adminToken && expiresAt && Date.now() < parseInt(expiresAt)) {
-      setIsAdmin(true);
-      setLoading(false);
-      return;
+    if (adminToken) {
+      try {
+        const { data } = await supabase.functions.invoke('admin-auth', {
+          body: { action: 'validate', token: adminToken },
+        });
+        if (data?.valid) {
+          sessionStorage.setItem('admin_expires', String(new Date(data.expiresAt).getTime()));
+          setIsAdmin(true);
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        console.warn('Admin session validation failed:', e);
+      }
+      sessionStorage.removeItem('admin_token');
+      sessionStorage.removeItem('admin_expires');
     }
 
-    // Check if user is admin via database role
+    // 2) Signed-in user with the admin role
     if (user) {
       try {
         const { data, error } = await supabase
@@ -398,6 +408,7 @@ const AdminPanelNikhil: React.FC = () => {
     setIsAdmin(false);
     setLoading(false);
   };
+
 
   const loadAllData = useCallback(async () => {
     setRefreshing(true);
