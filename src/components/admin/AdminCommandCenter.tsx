@@ -37,6 +37,12 @@ interface AdminUser {
   last_activity_at: string | null;
   banned_until: string | null;
   is_banned: boolean;
+  is_admin?: boolean;
+  has_profile?: boolean;
+  provider?: string;
+  email_confirmed?: boolean;
+  last_sign_in_at?: string | null;
+
 }
 
 interface UserDetail {
