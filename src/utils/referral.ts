@@ -17,7 +17,7 @@ export function generateReferralCode(userId: string): string {
 // Get referral link
 export function getReferralLink(userId?: string): string {
   const code = userId ? generateReferralCode(userId) : 'NIKNOTE';
-  return `https://niknote.online/?ref=${code}`;
+  return `https://www.niknote.online/?ref=${code}`;
 }
 
 // Check if user came from a referral

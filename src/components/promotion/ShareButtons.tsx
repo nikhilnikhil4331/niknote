@@ -23,7 +23,7 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ variant = 'floating'
   );
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText('https://niknote.online');
+    await navigator.clipboard.writeText('https://www.niknote.online');
     setCopied(true);
     toast.success('Link copied! Share with classmates 🎓');
     setTimeout(() => setCopied(false), 2000);

@@ -167,7 +167,7 @@ const Index = () => {
               action: {
                 label: 'Share 📱',
                 onClick: () => {
-                  const msg = encodeURIComponent('🎓 NikNote — Free AI Study App! ✨\n\n✍️ Handwriting notes (16+ styles)\n🧠 AI Teacher (Hindi!)\n📝 Quiz + Flashcards\n\nDownload FREE: https://niknote.online');
+                  const msg = encodeURIComponent('🎓 NikNote — Free AI Study App! ✨\n\n✍️ Handwriting notes (16+ styles)\n🧠 AI Teacher (Hindi!)\n📝 Quiz + Flashcards\n\nDownload FREE: https://www.niknote.online');
                   window.open(`https://wa.me/?text=${msg}`, '_blank');
                 }
               }
@@ -495,7 +495,7 @@ const Index = () => {
             label: 'WhatsApp Share 📱',
             onClick: () => {
               const msg = encodeURIComponent(
-                `🎓 NikNote — Free AI Study App! ✨\n\n✍️ Handwriting notes (16+ styles)\n🧠 AI Teacher (Hindi!)\n📝 Quiz + Flashcards generator\n\nDownload FREE: https://niknote.online\n3 dosto ko bhejo — Premium free! 🎁`
+                `🎓 NikNote — Free AI Study App! ✨\n\n✍️ Handwriting notes (16+ styles)\n🧠 AI Teacher (Hindi!)\n📝 Quiz + Flashcards generator\n\nDownload FREE: https://www.niknote.online\n3 dosto ko bhejo — Premium free! 🎁`
               );
               window.open(`https://wa.me/?text=${msg}`, '_blank');
               try {

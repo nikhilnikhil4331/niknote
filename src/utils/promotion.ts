@@ -7,8 +7,8 @@ export const SITE_CONFIG = {
   name: 'NikNote',
   tagline: 'AI-Powered Handwriting Notes for Indian Students',
   description: 'Convert typed text into realistic handwritten notes. 16+ handwriting styles, AI teacher, smart editor, exam-focused notes. Free for Indian students!',
-  url: 'https://niknote.online',
-  logo: 'https://niknote.online/niknote-logo.png',
+  url: 'https://www.niknote.online',
+  logo: 'https://www.niknote.online/niknote-logo.png',
   keywords: [
     'handwriting notes', 'AI notes', 'handwritten notes app', 'student notes',
     'Indian students', 'NCERT notes', 'exam preparation', 'AI teacher',
@@ -103,7 +103,7 @@ Yeh app Indian students ke liye GAME CHANGER hai:
 ✅ 16+ Handwriting styles
 ✅ 100% FREE!
 
-👉 Try now: https://niknote.online
+👉 Try now: https://www.niknote.online
 
 Share karo apne classmates ko! 🎓`,
 
@@ -115,7 +115,7 @@ Free app jahan:
 • Quiz + Flashcards auto-generate
 • NCERT focused content
 
-🔗 https://niknote.online`,
+🔗 https://www.niknote.online`,
   ],
   telegram: [
     `🚀 NikNote — India's #1 AI Study App!
@@ -125,7 +125,7 @@ Free app jahan:
 📚 28+ Built-in Topics
 🆓 100% Free
 
-Try: https://niknote.online`,
+Try: https://www.niknote.online`,
   ],
   twitter: [
     `📚 NikNote — AI Study App for Indian Students!
@@ -135,7 +135,7 @@ Try: https://niknote.online`,
 📝 Quiz + Flashcards
 🆓 100% Free
 
-Try now → https://niknote.online
+Try now → https://www.niknote.online
 
 #NikNote #AIStudy #IndianStudents #EdTech #StudyApp`,
   ],
@@ -149,7 +149,7 @@ Features:
 - Exam-focused: NCERT, CBSE, ICSE patterns
 - 100% free, no ads
 
-Link: https://niknote.online
+Link: https://www.niknote.online
 
 Would love feedback from fellow students!`,
   ],
@@ -163,7 +163,7 @@ What makes it different:
 📚 28+ built-in topics covering Physics, Chemistry, Math, Biology & more
 🆓 Completely free
 
-Check it out: https://niknote.online
+Check it out: https://www.niknote.online
 
 #EdTech #AI #Education #IndianStudents #NikNote`,
   ],
