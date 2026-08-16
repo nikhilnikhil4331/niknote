@@ -69,19 +69,26 @@ Deno.serve(async (req) => {
 
     // ---------- LIST ----------
     if (action === "list_users") {
-      const { data: profiles } = await admin
-        .from("profiles")
-        .select("user_id, display_name, avatar_url, created_at, onboarding_completed, use_case")
-        .order("created_at", { ascending: false })
-        .limit(1000);
+      // Source of truth = auth.users (so OLD signups without a profile row still appear)
+      const authUsers: any[] = [];
+      for (let page = 1; page <= 20; page++) {
+        const { data: pageData, error: pageErr } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+        if (pageErr) break;
+        const batch = pageData?.users || [];
+        authUsers.push(...batch);
+        if (batch.length < 200) break;
+      }
 
-      const ids = (profiles || []).map(p => p.user_id);
-      const [{ data: subs }, { data: rewards }, { data: streaks }, { data: authList }] = await Promise.all([
+      const ids = authUsers.map(u => u.id);
+      const [{ data: profileRows }, { data: subs }, { data: rewards }, { data: streaks }, { data: roleRows }] = await Promise.all([
+        admin.from("profiles").select("user_id, display_name, avatar_url, created_at, onboarding_completed, use_case").in("user_id", ids),
         admin.from("user_subscriptions").select("user_id, plan_code, status, current_period_end").in("user_id", ids),
         admin.from("user_rewards").select("user_id, coins, total_earned, referral_code").in("user_id", ids),
         admin.from("user_streaks").select("user_id, current_streak, longest_streak, last_active_date").in("user_id", ids),
-        admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+        admin.from("user_roles").select("user_id, role").in("user_id", ids),
       ]);
+      const profileMap = new Map((profileRows || []).map(p => [p.user_id, p]));
+
 
       // Counts per user (notebooks, pages, activities in last 7d, ai requests this month)
       const { data: notebookRows } = await admin.from("notebooks").select("user_id");
