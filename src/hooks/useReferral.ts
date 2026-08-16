@@ -132,8 +132,8 @@ export function useReferral() {
 
   // Get shareable link
   const getShareLink = useCallback(() => {
-    if (!stats.referralCode) return "https://niknote.online";
-    return `https://niknote.online?ref=${stats.referralCode}`;
+    if (!stats.referralCode) return "https://www.niknote.online";
+    return `https://www.niknote.online?ref=${stats.referralCode}`;
   }, [stats.referralCode]);
 
   // Get WhatsApp share text

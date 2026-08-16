@@ -241,7 +241,7 @@ export const StudyStreakWidget: React.FC = () => {
                   <button
                     onClick={() => {
                       const msg = encodeURIComponent(
-                        `🔥 I'm on a ${streakData.currentStreak}-day study streak on NikNote!\n\n${showRewardPopup.label}\nJoin me: https://niknote.online`
+                        `🔥 I'm on a ${streakData.currentStreak}-day study streak on NikNote!\n\n${showRewardPopup.label}\nJoin me: https://www.niknote.online`
                       );
                       window.open(`https://wa.me/?text=${msg}`, '_blank');
                     }}
