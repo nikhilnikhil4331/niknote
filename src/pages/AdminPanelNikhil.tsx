@@ -72,6 +72,73 @@ interface SystemCheckResult {
   message?: string;
 }
 
+const AdminGateForm: React.FC<{ onSuccess: () => void; onBack: () => void }> = ({ onSuccess, onBack }) => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('admin-auth', {
+        body: { username, password },
+      });
+      if (fnError || !data?.success || !data?.token) {
+        const msg = data?.error || 'Invalid admin credentials';
+        setError(msg);
+        toast.error(msg);
+        return;
+      }
+      sessionStorage.setItem('admin_token', data.token);
+      sessionStorage.setItem('admin_expires', String(data.expiresAt));
+      toast.success('Welcome back, Admin');
+      onSuccess();
+    } catch (err) {
+      console.error('Admin login error:', err);
+      setError('Server error. Please try again.');
+      toast.error('Admin login failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      {error && (
+        <div className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-xl px-3 py-2">
+          {error}
+        </div>
+      )}
+      <input
+        type="text"
+        autoComplete="username"
+        placeholder="Admin username"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        className="w-full h-11 px-3 rounded-xl border border-input bg-muted/50 text-base"
+      />
+      <input
+        type="password"
+        autoComplete="current-password"
+        placeholder="Admin password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        className="w-full h-11 px-3 rounded-xl border border-input bg-muted/50 text-base"
+      />
+      <Button type="submit" className="w-full rounded-xl" disabled={submitting || !username || !password}>
+        {submitting ? 'Verifying…' : 'Enter control center'}
+      </Button>
+      <Button type="button" onClick={onBack} variant="outline" className="w-full rounded-xl">
+        Back to Home
+      </Button>
+    </form>
+  );
+};
+
+
 const AdminPanelNikhil: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
