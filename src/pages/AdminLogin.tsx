@@ -31,59 +31,32 @@ export default function AdminLogin() {
     setError('');
     setIsLoading(true);
 
-    // Quick PIN bypass — if username is "admin" and password is "4331"
-    if (username === 'admin' && password === '4331') {
-      sessionStorage.setItem('admin_token', 'nikhil-admin-' + Date.now());
-      sessionStorage.setItem('admin_expires', String(Date.now() + 24 * 60 * 60 * 1000));
-      toast.success('Admin access granted! 🔓');
-      navigate('/admin-panel-nikhil');
-      setIsLoading(false);
-      return;
-    }
-
-    // Try Supabase edge function
     try {
       const { data, error: fnError } = await supabase.functions.invoke('admin-auth', {
         body: { username, password }
       });
 
-      if (fnError || !data?.success) {
-        // Edge function failed — try direct PIN check as fallback
-        if (password === '4331') {
-          sessionStorage.setItem('admin_token', 'nikhil-admin-' + Date.now());
-          sessionStorage.setItem('admin_expires', String(Date.now() + 24 * 60 * 60 * 1000));
-          toast.success('Admin access granted! 🔓');
-          navigate('/admin-panel-nikhil');
-          return;
-        }
-        setError(data?.error || 'Invalid credentials. Username: admin, PIN: 4331');
-        toast.error('Authentication failed');
+      if (fnError || !data?.success || !data?.token) {
+        const msg = data?.error || 'Invalid credentials';
+        setError(msg);
+        toast.error(msg);
         return;
       }
 
-      // Store admin session
       sessionStorage.setItem('admin_token', data.token);
       sessionStorage.setItem('admin_expires', data.expiresAt.toString());
-      
-      toast.success('Admin access granted! 🔓');
+
+      toast.success('Admin access granted');
       navigate('/admin-panel-nikhil');
-      
     } catch (err) {
       console.error('Admin login error:', err);
-      // Edge function crashed — fallback to PIN check
-      if (password === '4331') {
-        sessionStorage.setItem('admin_token', 'nikhil-admin-' + Date.now());
-        sessionStorage.setItem('admin_expires', String(Date.now() + 24 * 60 * 60 * 1000));
-        toast.success('Admin access granted! 🔓');
-        navigate('/admin-panel-nikhil');
-        return;
-      }
-      setError('Server error. Try username: admin, password: 4331');
-      toast.error('Authentication failed — try PIN: 4331');
+      setError('Server error. Please try again.');
+      toast.error('Authentication failed');
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
