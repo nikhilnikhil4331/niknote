@@ -122,7 +122,7 @@ const Admin: React.FC = () => {
     try {
       const newStatus = currentStatus ? 'cancelled' : 'active';
       
-      const { error } = await supabase.functions.invoke('record-payment', {
+      const { data, error } = await supabase.functions.invoke('record-payment', {
         body: {
           userId,
           planCode: 'admin_granted',
@@ -130,7 +130,7 @@ const Admin: React.FC = () => {
         },
       });
 
-      if (error) throw error;
+      if (error || !data?.success) throw error || new Error(data?.error || 'Subscription update failed');
       
       toast.success(`Premium ${currentStatus ? 'revoked' : 'granted'} successfully`);
       await loadDashboardData();
