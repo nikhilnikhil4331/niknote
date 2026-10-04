@@ -83,6 +83,7 @@ export default function PaymentPage() {
   const initialPlan = (searchParams.get("plan") as PlanCode) || "monthly";
   const [selectedPlan, setSelectedPlan] = useState<PlanCode>(initialPlan);
   const [paymentStep, setPaymentStep] = useState<PaymentStep>("select");
+  const [verificationPending, setVerificationPending] = useState(false);
 
   const plan = plans.find((p) => p.code === selectedPlan)!;
 
@@ -119,6 +120,7 @@ export default function PaymentPage() {
       return;
     }
 
+    setVerificationPending(false);
     setPaymentStep("processing");
 
     try {
@@ -192,6 +194,7 @@ export default function PaymentPage() {
             setTimeout(() => navigate("/"), 2500);
           } catch (err) {
             console.error("Verification error:", err);
+            setVerificationPending(true);
             setPaymentStep("error");
             toast.error(err instanceof Error ? err.message : "Payment verification failed. Contact support@niknote.online before retrying.");
           }
@@ -277,12 +280,12 @@ export default function PaymentPage() {
             <AlertCircle className="w-10 h-10 text-destructive" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground mb-2">Payment Failed</h1>
+            <h1 className="text-xl font-bold text-foreground mb-2">{verificationPending ? "Verification Pending" : "Payment Failed"}</h1>
             <p className="text-muted-foreground text-sm">
-              Your payment couldn't be processed. Please try again.
+              {verificationPending ? "If your account was charged, do not pay again. Contact support@niknote.online with your payment ID." : "Your payment couldn't be processed. Please try again."}
             </p>
           </div>
-          <Button onClick={handleRetry} className="rounded-xl">Try Again</Button>
+          {verificationPending ? <Button onClick={() => navigate("/")} className="rounded-xl">Back to Editor</Button> : <Button onClick={handleRetry} className="rounded-xl">Try Again</Button>}
         </motion.div>
       </div>
     );
