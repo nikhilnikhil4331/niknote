@@ -8,6 +8,13 @@
       "when": 1791125398357,
       "tag": "0000_protect_feedback_and_verified_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791125424551,
+      "tag": "0001_activate_only_unique_verified_purchase",
+      "breakpoints": true
     }
   ]
 }

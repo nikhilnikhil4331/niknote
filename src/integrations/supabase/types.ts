@@ -750,6 +750,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_verified_purchase: {
+        Args: {
+          _amount_paise: number
+          _order_id: string
+          _payment_id: string
+          _plan_code: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
       claim_referral_bonus: {
         Args: { p_referral_code: string; p_user_id: string }
         Returns: Json
