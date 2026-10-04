@@ -105,45 +105,9 @@ serve(async (req) => {
       );
     }
 
-    // Regular user operation: record their own payment
-    if (!planCode || !["weekly", "monthly"].includes(planCode)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid plan code" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log(`Recording payment for user ${callerId}, plan: ${planCode}`);
-
-    const periodDays = planCode === "weekly" ? 7 : 30;
-    const periodEnd = new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString();
-
-    const { error: upsertError } = await adminClient
-      .from("user_subscriptions")
-      .upsert(
-        {
-          user_id: callerId,
-          plan_code: planCode,
-          status: "pending_verification",
-          current_period_end: periodEnd,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
-
-    if (upsertError) {
-      console.error("Failed to record subscription:", upsertError);
-      return new Response(
-        JSON.stringify({ error: "Failed to record payment" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log(`Payment recorded successfully for user ${callerId}`);
-
     return new Response(
-      JSON.stringify({ success: true, message: "Payment recorded. Awaiting verification." }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Use verified checkout to activate a subscription" }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Error in record-payment function:", error);

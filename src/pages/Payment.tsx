@@ -183,33 +183,7 @@ export default function PaymentPage() {
             });
 
             if (verifyError || !verifyData?.success) {
-              // Payment was made but verification failed — still activate (manual verify later)
-              console.warn("Verification failed but payment was made. Activating manually.");
-              // Try manual activation via direct database update
-              try {
-                const periodDays = selectedPlan === "weekly" ? 7 : 30;
-                const periodEnd = new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString();
-                await supabase.from("user_subscriptions").upsert({
-                  user_id: user.id,
-                  plan_code: selectedPlan,
-                  status: "active",
-                  current_period_end: periodEnd,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  updated_at: new Date().toISOString(),
-                }, { onConflict: "user_id" });
-                await refreshPremium();
-                setPaymentStep("success");
-                toast.success("🎉 Payment successful! Premium activated!");
-                setTimeout(() => navigate("/"), 2500);
-                return;
-              } catch (manualErr) {
-                console.error("Manual activation also failed:", manualErr);
-                // Payment done but activation pending — contact support
-                setPaymentStep("success"); // Show success anyway, we'll manually verify
-                toast.success("🎉 Payment received! Premium activate hoga 5 minute mein.");
-                setTimeout(() => navigate("/"), 3000);
-                return;
-              }
+              throw new Error("Payment could not be verified. Contact support@niknote.online with your payment ID; do not pay again yet.");
             }
 
             await refreshPremium();
@@ -218,10 +192,8 @@ export default function PaymentPage() {
             setTimeout(() => navigate("/"), 2500);
           } catch (err) {
             console.error("Verification error:", err);
-            // Don't show hard error — payment was likely successful
-            setPaymentStep("success");
-            toast.success("Payment received! Premium 5 min mein activate hoga.");
-            setTimeout(() => navigate("/"), 3000);
+            setPaymentStep("error");
+            toast.error(err instanceof Error ? err.message : "Payment verification failed. Contact support@niknote.online before retrying.");
           }
         },
         modal: {

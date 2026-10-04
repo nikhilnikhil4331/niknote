@@ -65,7 +65,7 @@ serve(async (req) => {
     const userId = userData.user.id;
 
     const body = await req.json();
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planCode, examPacks } = body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planCode } = body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !planCode) {
       return new Response(JSON.stringify({ error: "Missing payment details" }), {
@@ -79,7 +79,11 @@ serve(async (req) => {
       `${razorpay_order_id}|${razorpay_payment_id}`
     );
 
-    if (expectedSignature !== razorpay_signature) {
+    const expected = new TextEncoder().encode(expectedSignature);
+    const supplied = new TextEncoder().encode(String(razorpay_signature));
+    let mismatch = expected.length !== supplied.length;
+    for (let i = 0; i < expected.length; i++) mismatch = (supplied[i] !== expected[i]) || mismatch;
+    if (mismatch) {
       console.error(`Signature mismatch for user ${userId}`);
       return new Response(JSON.stringify({ error: "Payment verification failed" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -88,59 +92,30 @@ serve(async (req) => {
 
     console.log(`Payment verified for user ${userId}, payment: ${razorpay_payment_id}, plan: ${planCode}`);
 
-    // Get period days
-    const periodDays = PLAN_PERIOD_DAYS[planCode] || 30;
-    const periodEnd = new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString();
-
-    // Activate subscription
-    const { error: upsertError } = await adminClient
-      .from("user_subscriptions")
-      .upsert({
-        user_id: userId,
-        plan_code: planCode,
-        status: "active",
-        current_period_end: periodEnd,
-        razorpay_payment_id: razorpay_payment_id,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id" });
-
-    if (upsertError) {
-      console.error("Failed to activate subscription:", upsertError);
+    const credentials = btoa(`${Deno.env.get("RAZORPAY_KEY_ID")}:${razorpayKeySecret}`);
+    const paymentResponse = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(razorpay_payment_id)}`, { headers: { Authorization: `Basic ${credentials}` } });
+    const orderResponse = await fetch(`https://api.razorpay.com/v1/orders/${encodeURIComponent(razorpay_order_id)}`, { headers: { Authorization: `Basic ${credentials}` } });
+    if (!paymentResponse.ok || !orderResponse.ok) {
+      return new Response(JSON.stringify({ error: "Payment provider could not confirm purchase" }), {
+        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const payment = await paymentResponse.json();
+    const order = await orderResponse.json();
+    const amount = planCode === "weekly" ? 4900 : planCode === "monthly" ? 9900 : 0;
+    if (!amount || payment.id !== razorpay_payment_id || payment.order_id !== razorpay_order_id || !["captured", "authorized"].includes(payment.status) || payment.amount !== amount || payment.currency !== "INR" || order.id !== razorpay_order_id || order.amount !== amount || order.currency !== "INR" || order.notes?.user_id !== userId || order.notes?.plan_code !== planCode) {
+      return new Response(JSON.stringify({ error: "Purchase details do not match" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { error: activationError } = await adminClient.rpc("activate_verified_purchase", {
+      _user_id: userId, _payment_id: razorpay_payment_id, _order_id: razorpay_order_id, _plan_code: planCode, _amount_paise: amount,
+    });
+    if (activationError) {
+      console.error("Failed to activate verified purchase:", activationError);
       return new Response(JSON.stringify({ error: "Failed to activate subscription" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    }
-
-    // Record payment
-    try {
-      await adminClient.from("billing_plans").upsert({
-        user_id: userId,
-        plan_code: planCode,
-        amount_paid: body.amount || 0,
-        currency: "INR",
-        payment_id: razorpay_payment_id,
-        order_id: razorpay_order_id,
-        status: "paid",
-        created_at: new Date().toISOString(),
-      });
-    } catch (e) {
-      console.error("Failed to record payment (non-critical):", e);
-    }
-
-    // Record exam pack purchases
-    if (examPacks && Array.isArray(examPacks)) {
-      for (const pack of examPacks) {
-        try {
-          await adminClient.from("feature_usage").upsert({
-            user_id: userId,
-            feature_name: `exam_pack_${pack}`,
-            usage_count: 1,
-            usage_month: new Date().toISOString().slice(0, 7),
-          });
-        } catch (e) {
-          console.error(`Failed to record exam pack ${pack} (non-critical):`, e);
-        }
-      }
     }
 
     // Record analytics event
@@ -151,7 +126,6 @@ serve(async (req) => {
         event_data: {
           plan_code: planCode,
           payment_id: razorpay_payment_id,
-          exam_packs: examPacks || [],
         },
         created_at: new Date().toISOString(),
       });
@@ -159,13 +133,13 @@ serve(async (req) => {
       console.error("Failed to record analytics (non-critical):", e);
     }
 
-    console.log(`Subscription activated for ${userId}, plan: ${planCode}, period: ${periodDays} days`);
+    console.log(`Subscription activated for ${userId}, plan: ${planCode}`);
 
     return new Response(JSON.stringify({ 
       success: true, 
       message: "Payment verified and subscription activated!",
       planCode,
-      periodDays,
+      periodDays: PLAN_PERIOD_DAYS[planCode],
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
