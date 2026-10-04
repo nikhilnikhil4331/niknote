@@ -195,7 +195,6 @@ export default function PaymentPage() {
           } catch (err) {
             console.error("Verification error:", err);
             setVerificationPending(true);
-            setVerificationPending(true);
             setPaymentStep("error");
             toast.error(err instanceof Error ? err.message : "Payment verification failed. Contact support@niknote.online before retrying.");
           }
