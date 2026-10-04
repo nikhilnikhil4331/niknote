@@ -121,7 +121,7 @@ export default function Signup() {
           transition={{ delay: 0.1 }}
         >
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 overflow-hidden">
-            <img src="/niknote-logo.png" alt="NikNote" className="w-full h-full object-contain" />
+            <img src="/icons/icon-192x192.png" alt="NikNote" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Create Account</h1>
           <p className="text-muted-foreground">Join NikNote and transform your handwriting</p>
