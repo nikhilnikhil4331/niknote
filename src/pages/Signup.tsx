@@ -14,6 +14,7 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [website, setWebsite] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
@@ -61,6 +62,11 @@ export default function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (website) return;
+    if (fullName.trim().length < 2 || password.length < 8) {
+      toast.error('Enter your name and a password of at least 8 characters.');
+      return;
+    }
     playClick();
     setLoading(true);
 
@@ -129,6 +135,7 @@ export default function Signup() {
           transition={{ delay: 0.2 }}
         >
           <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="absolute -left-[10000px]" aria-hidden="true"><label htmlFor="signup-website">Website</label><input id="signup-website" tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)} /></div>
             {/* Google Sign Up Button */}
             <Button
               type="button"
@@ -198,6 +205,9 @@ export default function Signup() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
+                  minLength={2}
+                  maxLength={100}
+                  autoComplete="name"
                   className="pl-12 h-12 rounded-xl bg-muted/50 border-0 focus:ring-2 focus:ring-primary/20"
                 />
               </div>
@@ -216,6 +226,7 @@ export default function Signup() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoComplete="email"
                   className="pl-12 h-12 rounded-xl bg-muted/50 border-0 focus:ring-2 focus:ring-primary/20"
                 />
               </div>
@@ -234,11 +245,12 @@ export default function Signup() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={8}
+                  autoComplete="new-password"
                   className="pl-12 h-12 rounded-xl bg-muted/50 border-0 focus:ring-2 focus:ring-primary/20"
                 />
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Minimum 6 characters</p>
+              <p className="text-xs text-muted-foreground mt-1">Minimum 8 characters</p>
             </div>
 
             <Button
@@ -261,6 +273,7 @@ export default function Signup() {
               )}
             </Button>
           </form>
+          <p className="mt-4 text-center text-xs text-muted-foreground">By creating an account, you agree to our <Link to="/terms" className="underline">Terms</Link> and <Link to="/privacy" className="underline">Privacy Policy</Link>.</p>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">

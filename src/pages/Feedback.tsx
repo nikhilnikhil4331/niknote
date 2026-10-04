@@ -1,7 +1,7 @@
 // ============================================================
 // NikNote 4.0 — Feedback Page
 // Beautiful feedback form for users
-// Saves to Supabase + sends email notification
+// Saves to Supabase for the support team
 // ============================================================
 
 import React, { useState } from 'react';
@@ -58,6 +58,9 @@ const FeedbackPage = () => {
     if (website) return;
     setFormError('');
     if (!user) { setFormError('Sign in to submit feedback.'); return; }
+    if (localStorage.getItem('niknote_feedback_sent_at') && Date.now() - Number(localStorage.getItem('niknote_feedback_sent_at')) < 60000) {
+      setFormError('Please wait a minute before sending another message.'); return;
+    }
     if (!title.trim()) {
       toast.error('Please enter a title');
       return;
@@ -87,6 +90,7 @@ const FeedbackPage = () => {
 
       if (error) throw error;
 
+      localStorage.setItem('niknote_feedback_sent_at', String(Date.now()));
       setSubmitted(true);
       toast.success('Thank you for your feedback! 🎉');
     } catch (err) {
