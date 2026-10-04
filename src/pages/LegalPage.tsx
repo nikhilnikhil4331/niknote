@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useState } from 'react';
 
 const policies = {
   privacy: {
@@ -39,6 +40,7 @@ const policies = {
 
 export default function LegalPage({ policy }: { policy: keyof typeof policies }) {
   const content = policies[policy];
+  const [choice, setChoice] = useState(() => localStorage.getItem('niknote_optional_analytics'));
   useDocumentTitle({ title: `${content?.title ?? 'Policies'} — NikNote`, description: content?.intro ?? 'NikNote policies and contact details.' });
 
   if (!content) return <main className="min-h-screen bg-background p-8"><Link to="/">Back to NikNote</Link></main>;
@@ -50,6 +52,7 @@ export default function LegalPage({ policy }: { policy: keyof typeof policies })
       <p className="mt-4 text-muted-foreground">{content.intro}</p>
       <p className="mt-2 text-sm text-muted-foreground">Last updated: 4 October 2026</p>
       <div className="mt-10 space-y-9">{content.sections.map(([heading, text]) => <section key={heading}><h2 className="text-xl font-semibold">{heading}</h2><p className="mt-2 leading-7 text-muted-foreground">{text}</p></section>)}</div>
+      {policy === 'privacy' && <div className="mt-10"><Button variant="outline" onClick={() => { window.dispatchEvent(new Event('niknote:cookie-settings')); setChoice(localStorage.getItem('niknote_optional_analytics')); }}>Cookie settings{choice ? `: ${choice === 'accepted' ? 'analytics allowed' : 'essential only'}` : ''}</Button></div>}
       <div className="mt-12 border-t border-border pt-6 flex flex-wrap gap-5 text-sm text-primary"><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link><Link to="/refunds">Refunds</Link><a href="mailto:support@niknote.online">Contact support</a></div>
     </main>
   </div>;

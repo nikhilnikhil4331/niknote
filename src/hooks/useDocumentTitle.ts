@@ -27,9 +27,12 @@ export function useDocumentTitle(meta: PageMeta) {
         descEl.setAttribute('content', meta.description);
       }
     }
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical) canonical.setAttribute('href', `https://www.niknote.online${window.location.pathname}`);
 
     return () => {
       document.title = prevTitle;
+      if (canonical) canonical.setAttribute('href', 'https://www.niknote.online/');
     };
   }, [meta.title, meta.description]);
 }
