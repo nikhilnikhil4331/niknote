@@ -77,21 +77,22 @@ export default function PaymentPage() {
   useDocumentTitle({ title: 'Go Premium — NikNote | ₹49/week Student Pro, ₹99/month Premium', description: 'Upgrade to NikNote Premium — Unlimited AI notes, 16+ handwriting styles, voice dictation, priority AI. Starting ₹49/week.' });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { refresh: refreshPremium, isPremium } = usePremium();
 
   const initialPlan = (searchParams.get("plan") as PlanCode) || "monthly";
   const [selectedPlan, setSelectedPlan] = useState<PlanCode>(initialPlan);
   const [paymentStep, setPaymentStep] = useState<PaymentStep>("select");
+  const [verificationPending, setVerificationPending] = useState(false);
 
-  const plan = plans.find((p) => p.code === selectedPlan)!;
+  const plan = plans.find((p) => p.code === selectedPlan) ?? plans[1];
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       toast.error("Please sign in to subscribe");
       navigate("/auth?redirect=/payment");
     }
-  }, [user, navigate]);
+  }, [authLoading, user, navigate]);
 
   const handlePay = async () => {
     if (!user) {
@@ -119,6 +120,7 @@ export default function PaymentPage() {
       return;
     }
 
+    setVerificationPending(false);
     setPaymentStep("processing");
 
     try {
@@ -183,33 +185,7 @@ export default function PaymentPage() {
             });
 
             if (verifyError || !verifyData?.success) {
-              // Payment was made but verification failed — still activate (manual verify later)
-              console.warn("Verification failed but payment was made. Activating manually.");
-              // Try manual activation via direct database update
-              try {
-                const periodDays = selectedPlan === "weekly" ? 7 : 30;
-                const periodEnd = new Date(Date.now() + periodDays * 24 * 60 * 60 * 1000).toISOString();
-                await supabase.from("user_subscriptions").upsert({
-                  user_id: user.id,
-                  plan_code: selectedPlan,
-                  status: "active",
-                  current_period_end: periodEnd,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  updated_at: new Date().toISOString(),
-                }, { onConflict: "user_id" });
-                await refreshPremium();
-                setPaymentStep("success");
-                toast.success("🎉 Payment successful! Premium activated!");
-                setTimeout(() => navigate("/"), 2500);
-                return;
-              } catch (manualErr) {
-                console.error("Manual activation also failed:", manualErr);
-                // Payment done but activation pending — contact support
-                setPaymentStep("success"); // Show success anyway, we'll manually verify
-                toast.success("🎉 Payment received! Premium activate hoga 5 minute mein.");
-                setTimeout(() => navigate("/"), 3000);
-                return;
-              }
+              throw new Error("Payment could not be verified. Contact support@niknote.online with your payment ID; do not pay again yet.");
             }
 
             await refreshPremium();
@@ -218,10 +194,9 @@ export default function PaymentPage() {
             setTimeout(() => navigate("/"), 2500);
           } catch (err) {
             console.error("Verification error:", err);
-            // Don't show hard error — payment was likely successful
-            setPaymentStep("success");
-            toast.success("Payment received! Premium 5 min mein activate hoga.");
-            setTimeout(() => navigate("/"), 3000);
+            setVerificationPending(true);
+            setPaymentStep("error");
+            toast.error(err instanceof Error ? err.message : "Payment verification failed. Contact support@niknote.online before retrying.");
           }
         },
         modal: {
@@ -252,7 +227,7 @@ export default function PaymentPage() {
     setPaymentStep("select");
   };
 
-  if (!user) return null;
+  if (authLoading || !user) return null;
 
   // Success Screen
   if (paymentStep === "success") {
@@ -305,12 +280,12 @@ export default function PaymentPage() {
             <AlertCircle className="w-10 h-10 text-destructive" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground mb-2">Payment Failed</h1>
+            <h1 className="text-xl font-bold text-foreground mb-2">{verificationPending ? "Verification Pending" : "Payment Failed"}</h1>
             <p className="text-muted-foreground text-sm">
-              Your payment couldn't be processed. Please try again.
+              {verificationPending ? "If your account was charged, do not pay again. Contact support@niknote.online with your payment ID." : "Your payment couldn't be processed. Please try again."}
             </p>
           </div>
-          <Button onClick={handleRetry} className="rounded-xl">Try Again</Button>
+          {verificationPending ? <Button onClick={() => navigate("/")} className="rounded-xl">Back to Editor</Button> : <Button onClick={handleRetry} className="rounded-xl">Try Again</Button>}
         </motion.div>
       </div>
     );
