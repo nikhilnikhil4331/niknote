@@ -7,7 +7,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 
 interface AuthContextType {
   user: User | null;
@@ -160,12 +159,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
         sessionStorage.setItem('niknote_post_auth_redirect', redirect);
       }
-      const result = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin,
-        extraParams: { prompt: 'select_account' },
+      // Use our own Google OAuth credentials (shows "Niknote" on the Google screen)
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          queryParams: { prompt: 'select_account' },
+        },
       });
-      if (result.error) {
-        return { error: result.error instanceof Error ? result.error : new Error(String(result.error)) };
+      if (error) {
+        return { error: error as Error };
       }
       return { error: null };
     } catch (err) {
