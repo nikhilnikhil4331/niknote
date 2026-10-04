@@ -718,6 +718,33 @@ export type Database = {
         }
         Relationships: []
       }
+      verified_payments: {
+        Row: {
+          amount_paise: number
+          created_at: string
+          order_id: string
+          payment_id: string
+          plan_code: string
+          user_id: string
+        }
+        Insert: {
+          amount_paise: number
+          created_at?: string
+          order_id: string
+          payment_id: string
+          plan_code: string
+          user_id: string
+        }
+        Update: {
+          amount_paise?: number
+          created_at?: string
+          order_id?: string
+          payment_id?: string
+          plan_code?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
