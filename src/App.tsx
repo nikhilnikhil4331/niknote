@@ -149,7 +149,9 @@ const App = () => {
                     <Route path="/agents" element={<AgentConsolePage />} />
                     <Route path="/audit" element={<AuditReportsPage />} />
                     <Route path="/flashcards" element={<FlashcardsPage />} />
-                     <Route path="/:policy(privacy|terms|refunds)" element={<LegalPage />} />
+                     <Route path="/privacy" element={<LegalPage policy="privacy" />} />
+                     <Route path="/terms" element={<LegalPage policy="terms" />} />
+                     <Route path="/refunds" element={<LegalPage policy="refunds" />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

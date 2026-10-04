@@ -5,7 +5,7 @@
 // ============================================================
 
 const ANALYTICS_KEY = 'niknote_analytics';
-import { CONSENT_KEY } from '@/components/CookieConsent';
+const CONSENT_KEY = 'niknote_optional_analytics';
 
 interface AnalyticsEvent {
   event: string;

@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -37,9 +37,8 @@ const policies = {
   },
 } as const;
 
-export default function LegalPage() {
-  const { policy } = useParams();
-  const content = policies[policy as keyof typeof policies];
+export default function LegalPage({ policy }: { policy: keyof typeof policies }) {
+  const content = policies[policy];
   useDocumentTitle({ title: `${content?.title ?? 'Policies'} — NikNote`, description: content?.intro ?? 'NikNote policies and contact details.' });
 
   if (!content) return <main className="min-h-screen bg-background p-8"><Link to="/">Back to NikNote</Link></main>;
