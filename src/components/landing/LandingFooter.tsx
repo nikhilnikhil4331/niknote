@@ -109,7 +109,7 @@ export const LandingFooter: React.FC = () => {
             <h4 className="font-semibold text-foreground mb-3 text-sm">Resources</h4>
             <ul className="space-y-2">
               <li><Link to="/upgrade" className="text-sm text-muted-foreground hover:text-foreground transition-colors">💎 Premium Plans</Link></li>
-              <li><a href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">❓ FAQ</a></li>
+              <li><Link to="/landing#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">❓ FAQ</Link></li>
               <li><a href="mailto:support@niknote.online" className="text-sm text-muted-foreground hover:text-foreground transition-colors">📧 Contact Us</a></li>
             </ul>
           </div>
@@ -159,9 +159,10 @@ export const LandingFooter: React.FC = () => {
             © {new Date().getFullYear()} NikNote. All rights reserved. Founded by Nikhil Jatav.
           </div>
           <div className="flex items-center gap-4">
-            <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a>
-            <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Terms of Service</a>
-            <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Refund Policy</a>
+            <Link to="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Terms of Service</Link>
+            <Link to="/refunds" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Refund Policy</Link>
+            <button type="button" onClick={() => window.dispatchEvent(new Event('niknote:cookie-settings'))} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Cookie settings</button>
           </div>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
             Made with <Heart className="w-3 h-3 text-red-500 fill-red-500" /> in India 🇮🇳 by Nikhil Jatav

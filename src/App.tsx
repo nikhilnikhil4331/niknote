@@ -31,6 +31,8 @@ import Achievements from "./pages/Achievements";
 import MyNotebooks from "./pages/MyNotebooks";
 import PremiumLanding from "./pages/PremiumLanding";
 import Onboarding from "./pages/Onboarding";
+import LegalPage from "./pages/LegalPage";
+import { CookieConsent } from "./components/CookieConsent";
 
 // Lazy load heavy/new pages — if they crash, main app stays alive
 const AISolverPage = lazy(() =>
@@ -147,12 +149,14 @@ const App = () => {
                     <Route path="/agents" element={<AgentConsolePage />} />
                     <Route path="/audit" element={<AuditReportsPage />} />
                     <Route path="/flashcards" element={<FlashcardsPage />} />
+                     <Route path="/:policy(privacy|terms|refunds)" element={<LegalPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
               </BrowserRouter>
               <InstallBanner />
               <ShareButtons variant="floating" />
+               <CookieConsent />
             </TooltipProvider>
           </HandwritingDNAProvider>
         </PremiumProvider>
