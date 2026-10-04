@@ -14,7 +14,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 }) => {
   const handleWhatsAppShare = () => {
     const msg = encodeURIComponent(
-      '🎓 NikNote — Free AI Study App for Indian Students!\n\n✍️ Convert text to 16+ handwriting styles\n🧠 AI Teacher, Quiz Generator, Flashcards\n📱 Works on phone & laptop\n\nTry free: https://niknote.online'
+      '🎓 NikNote — Free AI Study App for Indian Students!\n\n✍️ Convert text to 16+ handwriting styles\n🧠 AI Teacher, Quiz Generator, Flashcards\n📱 Works on phone & laptop\n\nTry free: https://www.niknote.online'
     );
     window.open(`https://wa.me/?text=${msg}`, '_blank');
   };

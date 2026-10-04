@@ -145,7 +145,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({ open, onOpenChange, 
             </div>
             <button
               onClick={() => {
-                const msg = encodeURIComponent('🎓 NikNote — Free AI Study App! ✨\n\n✍️ Handwriting notes (16+ styles)\n🧠 AI Teacher (Hindi!)\n📝 Quiz + Flashcards\n\nDownload FREE: https://niknote.online');
+                const msg = encodeURIComponent('🎓 NikNote — Free AI Study App! ✨\n\n✍️ Handwriting notes (16+ styles)\n🧠 AI Teacher (Hindi!)\n📝 Quiz + Flashcards\n\nDownload FREE: https://www.niknote.online');
                 window.open(`https://wa.me/?text=${msg}`, '_blank');
                 onOpenChange(false);
               }}
