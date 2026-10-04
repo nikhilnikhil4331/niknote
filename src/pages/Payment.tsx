@@ -77,7 +77,7 @@ export default function PaymentPage() {
   useDocumentTitle({ title: 'Go Premium — NikNote | ₹49/week Student Pro, ₹99/month Premium', description: 'Upgrade to NikNote Premium — Unlimited AI notes, 16+ handwriting styles, voice dictation, priority AI. Starting ₹49/week.' });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { refresh: refreshPremium, isPremium } = usePremium();
 
   const initialPlan = (searchParams.get("plan") as PlanCode) || "monthly";
@@ -85,14 +85,14 @@ export default function PaymentPage() {
   const [paymentStep, setPaymentStep] = useState<PaymentStep>("select");
   const [verificationPending, setVerificationPending] = useState(false);
 
-  const plan = plans.find((p) => p.code === selectedPlan)!;
+  const plan = plans.find((p) => p.code === selectedPlan) ?? plans[1];
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       toast.error("Please sign in to subscribe");
       navigate("/auth?redirect=/payment");
     }
-  }, [user, navigate]);
+  }, [authLoading, user, navigate]);
 
   const handlePay = async () => {
     if (!user) {
@@ -227,7 +227,7 @@ export default function PaymentPage() {
     setPaymentStep("select");
   };
 
-  if (!user) return null;
+  if (authLoading || !user) return null;
 
   // Success Screen
   if (paymentStep === "success") {
