@@ -1,7 +1,7 @@
 // ============================================================
 // NikNote 4.0 — Feedback Page
 // Beautiful feedback form for users
-// Saves to Supabase + sends email notification
+// Saves to Supabase for the support team
 // ============================================================
 
 import React, { useState } from 'react';
@@ -50,15 +50,27 @@ const FeedbackPage = () => {
   const [email, setEmail] = useState(user?.email || '');
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [website, setWebsite] = useState('');
+  const [formError, setFormError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (website) return;
+    setFormError('');
+    if (!user) { setFormError('Sign in to submit feedback.'); return; }
+    if (localStorage.getItem('niknote_feedback_sent_at') && Date.now() - Number(localStorage.getItem('niknote_feedback_sent_at')) < 60000) {
+      setFormError('Please wait a minute before sending another message.'); return;
+    }
     if (!title.trim()) {
       toast.error('Please enter a title');
       return;
     }
     if (!description.trim()) {
       toast.error('Please describe your feedback');
+      return;
+    }
+    if (title.trim().length < 3 || description.trim().length < 10) {
+      setFormError('Please enter a title of at least 3 characters and a description of at least 10 characters.');
       return;
     }
     if (rating === 0) {
@@ -69,39 +81,22 @@ const FeedbackPage = () => {
     setSubmitting(true);
 
     try {
-      // Save to Supabase
-      const { error } = await supabase.from('analytics_events').insert({
-        user_id: user?.id || null,
-        event_type: 'user_feedback',
-        event_data: {
-          feedback_type: feedbackType,
-          category,
-          rating,
-          title: title.trim(),
-          description: description.trim(),
-          email: email.trim(),
-          page: window.location.href,
-          user_agent: navigator.userAgent,
-          timestamp: new Date().toISOString(),
-        },
+      const { error } = await supabase.from('feedback').insert({
+        user_id: user.id,
+        type: feedbackType,
+        rating,
+        message: `[${category}] ${title.trim()}\n\n${description.trim()}${email.trim() ? `\n\nReply to: ${email.trim()}` : ''}`,
       });
 
-      if (error) {
-        console.error('Feedback save error:', error);
-      }
+      if (error) throw error;
 
-      // Also send via mailto as backup
-      const subject = encodeURIComponent(`NikNote Feedback: [${feedbackType.toUpperCase()}] ${title}`);
-      const body = encodeURIComponent(
-        `Type: ${feedbackType}\nCategory: ${category}\nRating: ${rating}/5 ⭐\nTitle: ${title}\n\n${description}\n\nEmail: ${email}\nUser: ${user?.id || 'anonymous'}`
-      );
-      window.open(`mailto:nikhilnikhil4331@gmail.com?subject=${subject}&body=${body}`, '_blank');
-
+      localStorage.setItem('niknote_feedback_sent_at', String(Date.now()));
       setSubmitted(true);
       toast.success('Thank you for your feedback! 🎉');
     } catch (err) {
       console.error('Feedback error:', err);
       toast.error('Something went wrong. Please try again.');
+      setFormError('Feedback could not be sent. Please try again or email support@niknote.online.');
     } finally {
       setSubmitting(false);
     }
@@ -132,7 +127,7 @@ const FeedbackPage = () => {
             </p>
           </div>
           <div className="space-y-3">
-            <Button onClick={() => navigate('/')} className="w-full rounded-xl">
+              <Button onClick={() => navigate('/')} className="w-full rounded-xl">
               Back to Editor
             </Button>
             <Button
@@ -168,6 +163,7 @@ const FeedbackPage = () => {
 
       <main className="max-w-lg mx-auto px-4 py-6">
         <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="absolute -left-[10000px]" aria-hidden="true"><label htmlFor="feedback-website">Website</label><input id="feedback-website" tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)} /></div>
           {/* Feedback Type */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <h2 className="text-sm font-semibold mb-3">What type of feedback?</h2>
@@ -298,6 +294,7 @@ const FeedbackPage = () => {
           </motion.div>
 
           {/* Submit */}
+          {formError && <p role="alert" className="text-sm text-destructive">{formError} {!user && <a className="underline" href="/login">Sign in</a>}</p>}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <Button
               type="submit"

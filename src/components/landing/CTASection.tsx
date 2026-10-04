@@ -10,7 +10,7 @@ interface CTASectionProps {
 export const CTASection: React.FC<CTASectionProps> = ({ onStartWriting }) => {
   const handleWhatsAppShare = () => {
     const msg = encodeURIComponent(
-      '🎓 NikNote — Free AI Study App for Indian Students!\n\n✍️ 16+ handwriting styles\n🧠 AI Teacher (Hindi + English)\n📝 Quiz & Flashcard Generator\n📱 Works offline too!\n\nTry free: https://niknote.online'
+      '🎓 NikNote — Free AI Study App for Indian Students!\n\n✍️ 16+ handwriting styles\n🧠 AI Teacher (Hindi + English)\n📝 Quiz & Flashcard Generator\n📱 Works offline too!\n\nTry free: https://www.niknote.online'
     );
     window.open(`https://wa.me/?text=${msg}`, '_blank');
   };

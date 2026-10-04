@@ -1,13 +1,5 @@
 User-agent: *
 Allow: /
-Allow: /landing
-Allow: /blog
-Allow: /schools
-Allow: /institutions
-Allow: /upgrade
-Allow: /feedback
-Allow: /ai
-Allow: /ai-solver
 Disallow: /admin-panel-nikhil
 Disallow: /admin-login
 Disallow: /admin
@@ -15,18 +7,15 @@ Disallow: /payment
 Disallow: /auth
 Disallow: /login
 Disallow: /signup
+Disallow: /account
+Disallow: /notebooks
+Disallow: /feedback
+Disallow: /history
+Disallow: /qa
 
-# Crawlers — allow all major search engines
-User-agent: Googlebot
-Allow: /
-User-agent: Bingbot
-Allow: /
-User-agent: YandexBot
-Allow: /
-
-Sitemap: https://niknote.online/sitemap.xml
+Sitemap: https://www.niknote.online/sitemap.xml
 
 # NikNote — AI-Powered Learning & Handwriting Platform
 # Made for Indian Students 🇮🇳
 # Founded by Nikhil Jatav
-# https://niknote.online
+# https://www.niknote.online

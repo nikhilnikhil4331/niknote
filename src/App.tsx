@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -31,6 +31,8 @@ import Achievements from "./pages/Achievements";
 import MyNotebooks from "./pages/MyNotebooks";
 import PremiumLanding from "./pages/PremiumLanding";
 import Onboarding from "./pages/Onboarding";
+import LegalPage from "./pages/LegalPage";
+import { CookieConsent } from "./components/CookieConsent";
 
 // Lazy load heavy/new pages — if they crash, main app stays alive
 const AISolverPage = lazy(() =>
@@ -75,6 +77,12 @@ import { trackPageView } from "@/utils/analytics";
 
 const queryClient = new QueryClient();
 
+function RouteAnalytics() {
+  const { pathname } = useLocation();
+  useEffect(() => { trackPageView(pathname); }, [pathname]);
+  return null;
+}
+
 const App = () => {
   useEffect(() => {
     document.documentElement.classList.remove("dark");
@@ -115,6 +123,7 @@ const App = () => {
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
+                   <RouteAnalytics />
                   <Suspense fallback={<PageLoader />}>
                     <Routes>
                       <Route path="/" element={<Index />} />
@@ -147,8 +156,12 @@ const App = () => {
                     <Route path="/agents" element={<AgentConsolePage />} />
                     <Route path="/audit" element={<AuditReportsPage />} />
                     <Route path="/flashcards" element={<FlashcardsPage />} />
+                     <Route path="/privacy" element={<LegalPage policy="privacy" />} />
+                     <Route path="/terms" element={<LegalPage policy="terms" />} />
+                     <Route path="/refunds" element={<LegalPage policy="refunds" />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                   <CookieConsent />
                 </Suspense>
               </BrowserRouter>
               <InstallBanner />

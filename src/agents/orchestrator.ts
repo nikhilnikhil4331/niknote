@@ -1349,20 +1349,8 @@ RULES:
 };
 
 // ============================================================
-// AI BRAIN — Multi-provider FREE system (5 tiers!)
-// Tier 1: Local Knowledge Base (instant, offline)
-// Tier 2: Google Gemini Flash (FREE, 1500 req/day, BEST quality)
-// Tier 3: Groq Llama 3.3 70B (FREE, fastest, good quality)
-// Tier 4: Pollinations AI (FREE, no key, always works)
-// Tier 5: Supabase edge function (OpenAI/Gemini, needs key)
-// Tier 6: Dynamic response engine (always works, offline)
+// AI BRAIN — local knowledge, authenticated AI function, offline fallback.
 // ============================================================
-
-// Free API keys — set these in .env for better AI quality
-// Get Gemini key FREE: https://aistudio.google.com/apikey
-// Get Groq key FREE: https://console.groq.com/keys
-const GEMINI_KEY = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_GEMINI_KEY) || '';
-const GROQ_KEY = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_GROQ_KEY) || '';
 
 async function callAIBrain(
   messages: AgentMessage[],
@@ -1393,144 +1381,7 @@ async function callAIBrain(
     return response;
   }
 
-  // Prepare messages for API calls
-  const apiMessages = [
-    { role: 'system' as const, content: systemPrompt },
-    ...messages.slice(-8).map(m => ({ role: m.role, content: m.content })),
-  ];
-  const userMessage = lastMessage;
-
-  // 2. Try Google Gemini Flash (FREE, BEST quality free model)
-  if (GEMINI_KEY) {
-    try {
-      const geminiController = new AbortController();
-      const geminiTimeout = setTimeout(() => geminiController.abort(), 25000);
-      
-      const geminiContents = apiMessages.map(m => ({
-        role: m.role === 'system' ? 'user' : m.role,
-        parts: [{ text: m.content }],
-      }));
-      // Gemini needs alternating user/model — merge consecutive same-role messages
-      const mergedContents = geminiContents.reduce((acc: any[], curr) => {
-        if (acc.length > 0 && acc[acc.length - 1].role === curr.role) {
-          acc[acc.length - 1].parts[0].text += '\n' + curr.parts[0].text;
-        } else {
-          acc.push({ ...curr });
-        }
-        return acc;
-      }, []);
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: mergedContents,
-            generationConfig: {
-              temperature: 0.8,
-              maxOutputTokens: 4096,
-              topP: 0.95,
-              topK: 40,
-            },
-          }),
-          signal: geminiController.signal,
-        }
-      );
-      clearTimeout(geminiTimeout);
-
-      if (response.ok) {
-        const data = await response.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text && text.length > 50 && !text.includes('SAFETY')) {
-          return enhanceResponse(text, agentType);
-        }
-      }
-    } catch (err: any) {
-      if (err?.name === 'AbortError') {
-        console.warn('Gemini timeout (25s), trying next tier...');
-      } else {
-        console.warn('Gemini error:', err?.message || err);
-      }
-    }
-  }
-
-  // 3. Try Groq (FREE, fastest inference, Llama 3.3 70B)
-  if (GROQ_KEY) {
-    try {
-      const groqController = new AbortController();
-      const groqTimeout = setTimeout(() => groqController.abort(), 20000);
-
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GROQ_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: apiMessages,
-          temperature: 0.7,
-          max_tokens: 4096,
-          top_p: 0.9,
-        }),
-        signal: groqController.signal,
-      });
-      clearTimeout(groqTimeout);
-
-      if (response.ok) {
-        const data = await response.json();
-        const text = data?.choices?.[0]?.message?.content;
-        if (text && text.length > 50) {
-          return enhanceResponse(text, agentType);
-        }
-      }
-    } catch (err: any) {
-      if (err?.name === 'AbortError') {
-        console.warn('Groq timeout (20s), trying next tier...');
-      } else {
-        console.warn('Groq error:', err?.message || err);
-      }
-    }
-  }
-
-  // 4. Try Pollinations AI — FREE, no API key, always available
-  try {
-    // Try multiple models for better quality
-    const models = ['openai', 'mistral'];
-    for (const model of models) {
-      try {
-        const pollinationsController = new AbortController();
-        const pollinationsTimeout = setTimeout(() => pollinationsController.abort(), 20000);
-        const response = await fetch('https://text.pollinations.ai/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: apiMessages,
-            model,
-            temperature: 0.7,
-            max_tokens: 4096,
-          }),
-          signal: pollinationsController.signal,
-        });
-        clearTimeout(pollinationsTimeout);
-
-        if (response.ok) {
-          const text = await response.text();
-          if (text && text.length > 50 && !text.includes('error') && !text.includes('rate limit')) {
-            return enhanceResponse(text, agentType);
-          }
-        }
-      } catch (err: any) {
-        console.warn(`Pollinations (${model}) error:`, err?.message || err);
-        continue;
-      }
-    }
-  } catch (err) {
-    console.warn('Pollinations all models failed:', err);
-  }
-
-  // 5. Try Supabase edge function (OpenAI-powered, needs API key)
+  // AI requests go through the authenticated server function; no provider keys in the browser.
   const formattedMessages = [
     { role: 'system' as const, content: systemPrompt },
     ...messages.map(m => ({ role: m.role, content: m.content })),

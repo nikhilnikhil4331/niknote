@@ -141,7 +141,7 @@ export const ReferralWidget: React.FC<ReferralWidgetProps> = ({ compact = false,
                 navigator.share({
                   title: "NikNote — AI Notes App",
                   text: `Use my code ${stats.referralCode} for ${REFERRAL_REWARD_DAYS} days FREE Premium on NikNote!`,
-                  url: `https://niknote.online?ref=${stats.referralCode}`,
+                  url: `https://www.niknote.online?ref=${stats.referralCode}`,
                 });
               }
             }}

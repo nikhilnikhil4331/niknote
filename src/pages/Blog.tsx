@@ -50,7 +50,7 @@ Live preview dekho, adjustments karo, aur PDF export karo — 300 DPI print-read
 - Word spacing thoda random rakho
 - Multiple pages ke liye auto-pagination use karo
 
-**Try free: https://niknote.online** 🚀`,
+**Try free: https://www.niknote.online** 🚀`,
   },
   {
     slug: 'ai-teacher-hindi-best-study-app',
@@ -82,7 +82,7 @@ Physics, Chemistry, Biology, Mathematics, History, Constitution, English Grammar
 2. Topic type karo (Hindi ya English mein)
 3. Instant explanation + quiz + flashcards!
 
-**Free try karo: https://niknote.online** 🎓`,
+**Free try karo: https://www.niknote.online** 🎓`,
   },
   {
     slug: 'cbse-notes-generator-free',
@@ -119,7 +119,7 @@ Bilkul! NikNote specifically Indian students ke liye design kiya gaya hai:
 ### Free hai kya?
 Haan! Basic features bilkul free hain. Unlimited pages ke liye Student Pro plan ₹99/month — ek chai se sasta!
 
-**Start free: https://niknote.online** ✨`,
+**Start free: https://www.niknote.online** ✨`,
   },
   {
     slug: 'handwriting-styles-for-assignments',
@@ -153,7 +153,7 @@ Har assignment ke liye alag style chahiye — school notes ka alag, college proj
 2. Paper: Ruled for notes, Graph for math/diagrams
 3. Font size: 12-14pt for normal, 16-18pt for headings
 
-**Try all styles free: https://niknote.online** 🎨`,
+**Try all styles free: https://www.niknote.online** 🎨`,
   },
   {
     slug: 'jee-neet-preparation-ai-tool',
@@ -187,7 +187,7 @@ Coaching fees ₹50,000+? NikNote free mein AI Teacher, Quiz Generator, aur Flas
 - Free: Basic quiz, 28+ AI subjects, limited pages
 - Student Pro (₹99/mo): Unlimited quiz, advanced AI, no watermark, mind maps
 
-**Start JEE/NEET prep free: https://niknote.online** 🚀`,
+**Start JEE/NEET prep free: https://www.niknote.online** 🚀`,
   },
   {
     slug: 'free-handwriting-app-indian-students',
@@ -230,7 +230,7 @@ Notes ko PDF mein download karo — print karke submit karo. Free tier mein basi
 | PDF export | Basic | Full HD |
 | AI Solver | 10/day | Unlimited |
 
-**Try NikNote free: https://niknote.online** ✍️`,
+**Try NikNote free: https://www.niknote.online** ✍️`,
   },
   {
     slug: 'notion-alternative-indian-students',
@@ -282,7 +282,7 @@ JEE, NEET, UPSC content pre-loaded. Notion mein yeh nahi hai.
 | Database | ✅ | Basic |
 | Collaboration | ✅ | Coming soon |
 
-**Try NikNote free: https://niknote.online** 🇮🇳`,
+**Try NikNote free: https://www.niknote.online** 🇮🇳`,
   },
   {
     slug: 'ai-flashcards-study-app-hindi',
@@ -326,7 +326,7 @@ NikNote mein **@** type karo, AI se kaho "JEE Physics ke liye flashcards banao" 
 - **UPSC**: Current affairs, GK facts, Constitution articles
 - **CBSE**: NCERT important points, definitions
 
-**Start free revision: https://niknote.online** 🎴`,
+**Start free revision: https://www.niknote.online** 🎴`,
   },
   {
     slug: 'offline-study-app-no-internet',
@@ -370,7 +370,7 @@ Notebooks create karo, pages add karo — sab offline.
 
 But basic note-taking + handwriting + PDF = **100% offline!**
 
-**Install NikNote: https://niknote.online** 📱`,
+**Install NikNote: https://www.niknote.online** 📱`,
   },
   {
     slug: 'school-management-software-india',
@@ -424,7 +424,7 @@ We believe every student deserves access to AI-powered learning. Government scho
 4. Students get premium access
 5. Done! Start learning
 
-**Get free trial: https://niknote.online/schools** 🏫`,
+**Get free trial: https://www.niknote.online/schools** 🏫`,
   },
   {
     slug: 'upsc-preparation-ai-notes',
@@ -469,7 +469,7 @@ Jee, NEET pack se alag — UPSC-specific content:
 - Previous year question analysis
 - Daily revision flashcards
 
-**Start UPSC prep free: https://niknote.online** 🎯`,
+**Start UPSC prep free: https://www.niknote.online** 🎯`,
   },
   {
     slug: 'ai-homework-helper-hindi',
@@ -489,7 +489,7 @@ CBSE students ke liye free AI homework helper — Hindi mein jawab deta hai!
 3. Step-by-step solution milega
 4. Handwriting mein notes bana lo
 
-**Try free: https://niknote.online** 📚`,
+**Try free: https://www.niknote.online** 📚`,
   },
   {
     slug: 'handwriting-notes-maker-online-free',
@@ -509,7 +509,7 @@ NikNote se text ko handwriting mein convert karo — bilkul free!
 - ✅ Works on mobile
 - ✅ 12 ink colors
 
-**Try free: https://niknote.online** ✍️`,
+**Try free: https://www.niknote.online** ✍️`,
   },
   {
     slug: 'best-note-taking-app-india-2026',
@@ -532,7 +532,7 @@ Indian students ke liye top 5 note-taking apps:
 
 **Winner: NikNote** — Best for Indian students!
 
-**Try free: https://niknote.online** 🇮🇳`,
+**Try free: https://www.niknote.online** 🇮🇳`,
   },
   {
     slug: 'ai-flashcard-generator-free-hindi',
@@ -574,7 +574,7 @@ Flashcards chhote cards hote hain — ek taraf question, dusri taraf answer. Spa
 - **Student Pro (₹49/week)**: Unlimited decks + AI generation
 - **Premium (₹99/month)**: Unlimited + spaced repetition analytics
 
-**Start free revision: https://niknote.online** 🎓`,
+**Start free revision: https://www.niknote.online** 🎓`,
   },
   {
     slug: 'online-handwriting-to-text-converter-india',
@@ -620,7 +620,7 @@ OCR (Optical Character Recognition) technology se tumhare handwritten notes ka p
 | Cost | Free | Your time |
 | Hindi Support | ✅ | Difficult |
 
-**Try free OCR: https://niknote.online** ✨`,
+**Try free OCR: https://www.niknote.online** ✨`,
   },
   {
     slug: 'ai-study-planner-exam-timetable-indian-students',
@@ -670,7 +670,7 @@ Exam preparation mein sabse important cheez hai — PROPER PLANNING! NikNote ka 
 - **Free**: Basic planner + limited quiz
 - **Premium (₹99/month)**: AI planner + unlimited quiz + flashcards + progress analytics
 
-**Start smart study: https://niknote.online** 🎯`,
+**Start smart study: https://www.niknote.online** 🎯`,
   },
 ];
 
@@ -679,7 +679,7 @@ const BlogPage: React.FC = () => {
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
 
   const handleShare = (post: BlogPost) => {
-    const msg = encodeURIComponent(`${post.title}\n\n${post.excerpt}\n\nRead more: https://niknote.online/blog/${post.slug}`);
+    const msg = encodeURIComponent(`${post.title}\n\n${post.excerpt}\n\nRead more: https://www.niknote.online/blog/${post.slug}`);
     window.open(`https://wa.me/?text=${msg}`, '_blank');
     trackShare('whatsapp');
   };

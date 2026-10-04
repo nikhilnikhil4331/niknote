@@ -5,6 +5,7 @@
 // ============================================================
 
 const ANALYTICS_KEY = 'niknote_analytics';
+const CONSENT_KEY = 'niknote_optional_analytics';
 
 interface AnalyticsEvent {
   event: string;
@@ -28,6 +29,7 @@ interface AnalyticsSummary {
 
 // Track an event
 export function trackEvent(event: string, data?: Record<string, string | number>): void {
+  if (localStorage.getItem(CONSENT_KEY) !== 'accepted') return;
   try {
     const events: AnalyticsEvent[] = JSON.parse(localStorage.getItem(ANALYTICS_KEY) || '[]');
     events.push({
