@@ -103,7 +103,7 @@ serve(async (req) => {
     const payment = await paymentResponse.json();
     const order = await orderResponse.json();
     const amount = planCode === "weekly" ? 4900 : planCode === "monthly" ? 9900 : 0;
-    if (!amount || payment.id !== razorpay_payment_id || payment.order_id !== razorpay_order_id || !["captured", "authorized"].includes(payment.status) || payment.amount !== amount || payment.currency !== "INR" || order.id !== razorpay_order_id || order.amount !== amount || order.currency !== "INR" || order.notes?.user_id !== userId || order.notes?.plan_code !== planCode) {
+    if (!amount || payment.id !== razorpay_payment_id || payment.order_id !== razorpay_order_id || payment.status !== "captured" || payment.amount !== amount || payment.currency !== "INR" || order.id !== razorpay_order_id || order.amount !== amount || order.currency !== "INR" || order.notes?.user_id !== userId || order.notes?.plan_code !== planCode) {
       return new Response(JSON.stringify({ error: "Purchase details do not match" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
