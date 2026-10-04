@@ -154,11 +154,11 @@ const App = () => {
                      <Route path="/refunds" element={<LegalPage policy="refunds" />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                   <CookieConsent />
                 </Suspense>
               </BrowserRouter>
               <InstallBanner />
               <ShareButtons variant="floating" />
-               <CookieConsent />
             </TooltipProvider>
           </HandwritingDNAProvider>
         </PremiumProvider>
