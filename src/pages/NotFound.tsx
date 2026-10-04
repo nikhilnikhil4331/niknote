@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import { Home, Pen } from "lucide-react";
+import { Home, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
@@ -50,7 +50,7 @@ const NotFound = () => {
             onClick={() => navigate("/feedback")}
             className="gap-2 rounded-xl"
           >
-            <Pen className="w-4 h-4" />
+            <Flag className="w-4 h-4" />
             Report broken link
           </Button>
         </div>

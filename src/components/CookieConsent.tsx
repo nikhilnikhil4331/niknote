@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
-export const CONSENT_KEY = 'niknote_optional_analytics';
+const CONSENT_KEY = 'niknote_optional_analytics';
 
 export function CookieConsent() {
   const [choice, setChoice] = useState<string | null>(() => localStorage.getItem(CONSENT_KEY));

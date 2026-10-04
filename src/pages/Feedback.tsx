@@ -66,6 +66,10 @@ const FeedbackPage = () => {
       toast.error('Please describe your feedback');
       return;
     }
+    if (title.trim().length < 3 || description.trim().length < 10) {
+      setFormError('Please enter a title of at least 3 characters and a description of at least 10 characters.');
+      return;
+    }
     if (rating === 0) {
       toast.error('Please give a rating');
       return;
@@ -119,7 +123,7 @@ const FeedbackPage = () => {
             </p>
           </div>
           <div className="space-y-3">
-            <Button onClick={() => navigate('/')} className="w-full rounded-xl">
+              <Button onClick={() => navigate('/')} className="w-full rounded-xl">
               Back to Editor
             </Button>
             <Button

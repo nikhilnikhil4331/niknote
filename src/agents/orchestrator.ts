@@ -1349,13 +1349,7 @@ RULES:
 };
 
 // ============================================================
-// AI BRAIN — Multi-provider FREE system (5 tiers!)
-// Tier 1: Local Knowledge Base (instant, offline)
-// Tier 2: Google Gemini Flash (FREE, 1500 req/day, BEST quality)
-// Tier 3: Groq Llama 3.3 70B (FREE, fastest, good quality)
-// Tier 4: Pollinations AI (FREE, no key, always works)
-// Tier 5: Supabase edge function (OpenAI/Gemini, needs key)
-// Tier 6: Dynamic response engine (always works, offline)
+// AI BRAIN — local knowledge, authenticated AI function, offline fallback.
 // ============================================================
 
 async function callAIBrain(
