@@ -43,6 +43,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (event, session) => {
         if (!mounted) return;
 
+        // After Google sign-in, send user back to where they wanted to go
+        if (event === 'SIGNED_IN' && session) {
+          const target = sessionStorage.getItem('niknote_post_auth_redirect');
+          if (target) {
+            sessionStorage.removeItem('niknote_post_auth_redirect');
+            if (window.location.pathname !== target) {
+              setTimeout(() => window.location.assign(target), 0);
+            }
+          }
+        }
+
         // Handle all auth events gracefully
         switch (event) {
           case 'TOKEN_REFRESHED':
