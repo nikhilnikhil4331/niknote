@@ -451,6 +451,8 @@ const PremiumLanding: React.FC = () => {
             <a href="#solver" className="hover:text-white/60 transition-colors">AI Solver</a>
             <a href="#power" className="hover:text-white/60 transition-colors">AI Power</a>
             <button onClick={goApp} className="hover:text-white/60 transition-colors">Open App</button>
+            <a href="/privacy" className="hover:text-white/60 transition-colors">Privacy</a>
+            <a href="/terms" className="hover:text-white/60 transition-colors">Terms</a>
           </div>
           <p className="text-xs text-white/20">© {new Date().getFullYear()} NikNote by Nikhil Jatav. Made with ❤️ in India</p>
         </div>

@@ -5,7 +5,7 @@ import { MessageCircle, Twitter, Github, Mail, Heart, Shield, Star } from 'lucid
 export const LandingFooter: React.FC = () => {
   const handleWhatsAppShare = () => {
     const msg = encodeURIComponent(
-      '🎓 NikNote — Free AI Study App! AI Teacher + Handwriting Notes + Quiz Generator\nTry free: https://niknote.online'
+      '🎓 NikNote — Free AI Study App! AI Teacher + Handwriting Notes + Quiz Generator\nTry free: https://www.niknote.online'
     );
     window.open(`https://wa.me/?text=${msg}`, '_blank');
   };
