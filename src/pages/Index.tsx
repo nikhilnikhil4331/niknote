@@ -1,6 +1,13 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { MobileEditorHeader, MobileEditorToolbar } from '@/components/mobile/MobileEditorChrome';
+import { useMobileAppearance } from '@/components/mobile/useMobileAppearance';
+import { HandwritingTextImporter } from '@/components/HandwritingTextImporter';
+import { useNotebooks } from '@/hooks/useNotebooks';
+import { supabase } from '@/integrations/supabase/client';
+import type { Block } from '@/types/block';
+import { type PageStyle } from '@/types/notes';
 import { NotionEditor } from '@/components/editor/NotionEditor';
 import { useBlockEditor } from '@/hooks/useBlockEditor';
 import { lazy } from 'react';
@@ -61,6 +68,26 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { search } = useLocation();
+  const mobileAppearance = useMobileAppearance();
+  const [noteTitle, setNoteTitle] = useState(() => localStorage.getItem('niknote-mobile-draft-title') || 'Untitled Note');
+  useEffect(() => { localStorage.setItem('niknote-mobile-draft-title', noteTitle); }, [noteTitle]);
+  const [editorTool, setEditorTool] = useState('pen');
+  const [showImportPanel, setShowImportPanel] = useState(false);
+  const [savingNote, setSavingNote] = useState(false);
+  const [cloudNotebookId, setCloudNotebookId] = useState<string | null>(new URLSearchParams(search).get('notebook') || localStorage.getItem('niknote-mobile-draft-notebook'));
+  const { createNotebook, updateNotebook } = useNotebooks();
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const textSelectionRef = useRef<{ index: number; start: number; end: number } | null>(null);
+  useEffect(() => {
+    const capture = () => {
+      const el = document.activeElement as HTMLTextAreaElement;
+      if (el?.tagName !== 'TEXTAREA' || !el.closest('.nn-editor-canvas')) return;
+      textSelectionRef.current = { index: Array.from(document.querySelectorAll('.nn-editor-canvas textarea')).indexOf(el), start: el.selectionStart, end: el.selectionEnd };
+    };
+    document.addEventListener('selectionchange', capture);
+    return () => document.removeEventListener('selectionchange', capture);
+  }, []);
   const { user } = useAuth();
   const dnaContext = useHandwritingDNA();
   const { theme: uiTheme, setTheme: setUITheme, classes: themeClasses } = useUITheme();
@@ -121,7 +148,7 @@ const Index = () => {
     setPaywallOpen(true);
   }, []);
   const quickDictation = useSpeechDictation({
-    onFinalTranscript: (text) => { handlePaste(text); }
+    onFinalTranscript: (text) => { if (isMobile) blockEditor.setBlocks([...blockEditor.blocks, createBlock('text', text)]); else handlePaste(text); }
   });
 
   const {
@@ -182,8 +209,16 @@ const Index = () => {
 
   useEffect(() => { setSelectedLines(new Set()); }, [currentPageIndex]);
 
-  // Reset block editor when page changes — so new page starts fresh
+  // Preserve mobile's local draft on the initial mount.
   useEffect(() => {
+    if (!isMobile) return;
+    const title = noteTitle;
+    const id = cloudNotebookId;
+    return () => { try { localStorage.setItem('niknote-mobile-draft-title', title); if (id) localStorage.setItem('niknote-mobile-draft-notebook', id); else localStorage.removeItem('niknote-mobile-draft-notebook'); } catch {} };
+  }, [noteTitle, cloudNotebookId, isMobile]);
+  const initialPageRef = useRef(true);
+  useEffect(() => {
+    if (initialPageRef.current) { initialPageRef.current = false; if (isMobile) return; }
     const currentPageContent = currentPage.lines;
     if (currentPageContent.length > 0 && currentPageContent.some(l => l.text.trim())) {
       // Page has content — convert lines to blocks
@@ -198,6 +233,90 @@ const Index = () => {
       blockEditor.setBlocks([createBlock('text', '')]);
     }
   }, [currentPageIndex]);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    setRealPenMode(mobileAppearance.appearance.realPen);
+    const pending = sessionStorage.getItem('niknote-mobile-open');
+    if (pending) {
+      sessionStorage.removeItem('niknote-mobile-open');
+      try {
+        const note = JSON.parse(pending) as { title: string; blocks: Block[]; notebookId?: string; style?: PageStyle };
+        setNoteTitle(note.title); blockEditor.setBlocks(note.blocks.length ? note.blocks : [createBlock()]);
+        setCloudNotebookId(note.notebookId || null);
+        if (note.style) updateSettings({ pageStyle: note.style });
+      } catch { toast.error('Could not open this note'); }
+    } else if (new URLSearchParams(search).has('new')) {
+      blockEditor.setBlocks([createBlock()]); setCloudNotebookId(null); setNoteTitle('Untitled Note');
+      navigate('/?editor=1', { replace: true });
+    }
+    const panel = new URLSearchParams(search).get('panel');
+    if (panel === 'scan') setShowScanPanel(true);
+    if (panel === 'import') setShowImportPanel(true);
+  }, []);
+
+  const saveMobileNote = async () => {
+    if (!user) { toast.info('Sign in to save to your notebooks'); navigate('/login'); return; }
+    if (savingNote) return;
+    setSavingNote(true);
+    try {
+      let id = cloudNotebookId;
+      if (!id) {
+        const notebook = await createNotebook({ title: noteTitle || 'Untitled Note', cover_color: '#9b85eb', tags: ['Notes'], page_style: settings.pageStyle, page_size: settings.pageSize });
+        if (!notebook) return;
+        id = notebook.id; setCloudNotebookId(id);
+      } else await updateNotebook(id, { title: noteTitle, page_style: settings.pageStyle });
+      const { data: existing, error: readError } = await supabase.from('pages').select('id').eq('notebook_id', id).order('page_number').limit(1);
+      if (readError) throw readError;
+      const result = existing?.[0]
+        ? await supabase.from('pages').update({ content: blockEditor.blocks as any, title: noteTitle }).eq('id', existing[0].id)
+        : await supabase.from('pages').insert({ notebook_id: id, user_id: user.id, page_number: 1, title: noteTitle, content: blockEditor.blocks as any });
+      if (result.error) throw result.error;
+      toast.success('Note saved to your notebooks');
+    } catch { toast.error('Could not save note. Your local draft is still available.'); }
+    finally { setSavingNote(false); }
+  };
+
+  const selectEditorTool = (tool: string) => {
+    setEditorTool(tool);
+    if (tool === 'pen') setShowPenPanel(true);
+    if (tool === 'image') imageInputRef.current?.click();
+    if (tool === 'text') document.querySelector<HTMLTextAreaElement>('.nn-editor-canvas textarea')?.focus();
+    if (tool === 'eraser') {
+      const selected = textSelectionRef.current;
+      if (selected && selected.index >= 0 && selected.end > selected.start) {
+        blockEditor.setBlocks(blockEditor.blocks.map((b, i) => i === selected.index ? { ...b, content: b.content.slice(0, selected.start) + b.content.slice(selected.end) } : b));
+        textSelectionRef.current = null;
+      } else toast.info('Select text in your note, then tap Eraser');
+    }
+    if (tool === 'highlighter') {
+      const index = textSelectionRef.current?.index ?? 0;
+      blockEditor.setBlocks(blockEditor.blocks.map((b, i) => i === index ? { ...b, type: b.type === 'callout' ? 'text' : 'callout' } : b));
+      toast.info('Block highlight toggled');
+    }
+    if (tool === 'voice') {
+      if (!premium.isPremium) { requirePremium('voice_to_notes'); return; }
+      if (!quickDictation.isSupported) { toast.info('Voice is unavailable in this browser'); return; }
+      if (quickDictation.isListening) quickDictation.stop(); else quickDictation.start();
+    }
+  };
+
+  useEffect(() => {
+    if (!isMobile || !user || !new URLSearchParams(search).has('notebook')) return;
+    const id = new URLSearchParams(search).get('notebook')!;
+    let cancelled = false;
+    (async () => {
+      const [{ data: notebook }, { data: savedPages, error }] = await Promise.all([
+        supabase.from('notebooks').select('title,page_style').eq('id', id).maybeSingle(),
+        supabase.from('pages').select('content').eq('notebook_id', id).order('page_number').limit(1),
+      ]);
+      if (cancelled) return;
+      if (error) { toast.error('Could not load saved note'); return; }
+      if (notebook) { setNoteTitle(notebook.title); updateSettings({ pageStyle: notebook.page_style as PageStyle }); }
+      if (Array.isArray(savedPages?.[0]?.content) && savedPages[0].content.length) blockEditor.setBlocks(savedPages[0].content as unknown as Block[]);
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // Mobile tab handler
   const handleMobileTabChange = useCallback((tab: MobileTab) => {
@@ -618,11 +737,12 @@ const Index = () => {
 
   // ===================== RENDER =====================
   return (
-    <div className={cn("flex flex-col transition-all duration-500 touch-manipulation", moodStyles.background, glassMode && "glass-mode", themeClasses.wrapper, isMobile ? "min-h-screen" : "h-[100dvh] overflow-hidden")}
-         style={isMobile ? { touchAction: 'manipulation' } : undefined}>
+    <div className={cn("flex flex-col transition-all duration-500 touch-manipulation", moodStyles.background, glassMode && "glass-mode", themeClasses.wrapper, isMobile ? "min-h-screen nn-mobile nn-editor-root" : "h-[100dvh] overflow-hidden")}
+         style={isMobile ? { touchAction: 'manipulation' } : undefined} {...(isMobile ? mobileAppearance.attributes : {})}>
 
+      {isMobile && <MobileEditorHeader title={noteTitle} onTitle={setNoteTitle} onSave={saveMobileNote} saving={savingNote} onExport={handleExportPDF} exporting={isExporting} onStyle={() => setShowMobileStyleSheet(true)} onScan={() => setShowScanPanel(true)} onShare={() => setShowShareMenu(true)} />}
       {/* ============ HEADER — Floating Glass Bar ============ */}
-      <header className={cn(
+      {!isMobile && <header className={cn(
         "sticky top-0 z-50 flex-shrink-0",
         isMobile 
           ? "bg-white border-b border-gray-100 h-12" 
@@ -775,7 +895,7 @@ const Index = () => {
             )}
           </div>
         </div>
-      </header>
+      </header>}
 
       {/* ============ MOBILE SIDEBAR DRAWER — Simple, no AnimatePresence ============ */}
       {isMobile && sidebarOpen && (
@@ -839,73 +959,19 @@ const Index = () => {
 
           {/* ---- MOBILE NOTION-STYLE INTEGRATED LAYOUT ---- */}
           {isMobile && (
-            <div className="pb-24">
-              {/* Mobile Floating Toolbar — above keyboard area */}
-              <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-3 py-1.5"
-                   style={{ touchAction: 'manipulation' }}>
-                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
-                  <button 
-                    onClick={() => navigate('/ai')}
-                    className="flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-semibold text-white bg-gradient-to-r from-violet-500 to-indigo-500 shadow-sm flex-shrink-0 active:scale-95 transition-transform"
-                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', cursor: 'pointer' }}
-                  >
-                    <Sparkles className="w-3 h-3" /> AI
-                  </button>
-                  <button 
-                    onClick={() => setShowScanPanel(true)}
-                    className="flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 flex-shrink-0 active:scale-95 transition-transform"
-                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', cursor: 'pointer' }}
-                  >
-                    <Scan className="w-3 h-3" /> DNA
-                  </button>
-                  <button 
-                    onClick={handleExportPDF}
-                    disabled={isExporting}
-                    className="flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-medium text-gray-600 bg-gray-50 border border-gray-200 flex-shrink-0 active:scale-95 transition-transform disabled:opacity-40"
-                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', cursor: 'pointer' }}
-                  >
-                    <FileDown className="w-3 h-3" /> PDF
-                  </button>
-                  <button 
-                    onClick={() => setShowShareMenu(v => !v)}
-                    className="flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-medium text-gray-600 bg-gray-50 border border-gray-200 flex-shrink-0 active:scale-95 transition-transform"
-                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', cursor: 'pointer' }}
-                  >
-                    <Share2 className="w-3 h-3" /> Share
-                  </button>
-                  <button 
-                    onClick={() => setShowAIWorkspace(true)}
-                    className="flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-medium text-orange-600 bg-orange-50 border border-orange-200 flex-shrink-0 active:scale-95 transition-transform"
-                    style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', cursor: 'pointer' }}
-                  >
-                    <Brain className="w-3 h-3" /> Workspace
-                  </button>
-                </div>
+            <div className="nn-editor-page">
+              <div className="nn-editor-actions">
+                <Button variant="ghost" onClick={blockEditor.undo} disabled={!blockEditor.canUndo} aria-label="Undo">↶</Button>
+                <Button variant="ghost" onClick={blockEditor.redo} disabled={!blockEditor.canRedo} aria-label="Redo">↷</Button>
+                <Button variant="ghost" onClick={saveMobileNote} disabled={savingNote}>Save note</Button>
+                <Button variant="ghost" onClick={() => setShowMobileStyleSheet(true)}>Paper & pen</Button>
+                <Button variant="ghost" onClick={handleExportPDF} disabled={isExporting}>Export PDF</Button>
+                <Button variant="ghost" onClick={() => setShowImportPanel(true)}>Import</Button>
+                <Button variant="ghost" onClick={() => setShowAIWorkspace(true)}>AI Workspace</Button>
               </div>
-
-              {/* Mobile Page Title — Notion style */}
-              <div className="px-4 pt-4 pb-0">
-                <textarea
-                  defaultValue="Untitled"
-                  className="w-full text-[22px] font-bold bg-transparent border-0 outline-none resize-none text-gray-900 placeholder:text-gray-300 leading-tight"
-                  rows={1}
-                  style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-                  onChange={(e) => {
-                    e.target.style.height = 'auto';
-                    e.target.style.height = e.target.scrollHeight + 'px';
-                  }}
-                />
-                <div className="flex items-center gap-1.5 text-[11px] text-gray-400 mt-0.5 pb-2">
-                  <span>{blockEditor.blocks.reduce((t, b) => t + b.content.trim().split(/\s+/).filter(Boolean).length, 0)} words</span>
-                  <span className="text-gray-300">·</span>
-                  <span>Page {currentPageIndex + 1} of {totalPages}</span>
-                  <span className="text-gray-300">·</span>
-                  <span>{blockEditor.blocks.length} blocks</span>
-                </div>
-              </div>
-
+              <div className="nn-editor-helper">{blockEditor.blocks.reduce((t, b) => t + b.content.trim().split(/\s+/).filter(Boolean).length, 0)} words · Page {currentPageIndex + 1} of {totalPages} · Draft saved on this device</div>
               {/* Mobile Notion Editor — Full width, clean */}
-              <div className="px-2 pb-4">
+              <div className="nn-editor-canvas" style={{ '--nn-handwriting': settings.font === 'roman-regular' ? 'Inter, sans-serif' : settings.font === 'roman-serif' ? 'Georgia, serif' : settings.font === 'roman-mono' ? '"JetBrains Mono", monospace' : `"${settings.font.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}", cursive` } as React.CSSProperties}>
                 <NotionEditor
                   blocks={blockEditor.blocks}
                   onBlocksChange={blockEditor.setBlocks}
@@ -923,7 +989,7 @@ const Index = () => {
 
               {/* Mobile Handwriting Preview — Premium styled card */}
               {hasContent && (
-                <div className="px-3 pb-4">
+                <div className="nn-editor-preview">
                   <div className="preview-card">
                     <div className="preview-card-header">
                       <span className="flex items-center gap-2 text-[12px] font-bold text-violet-700">✍️ Handwriting Preview</span>
@@ -1246,7 +1312,15 @@ const Index = () => {
       )}
 
       {/* Mobile Bottom Nav */}
-      {isMobile && <MobileBottomNav activeTab={mobileTab} onTabChange={handleMobileTabChange} />}
+      {isMobile && <MobileEditorToolbar active={editorTool} onTool={selectEditorTool} listening={quickDictation.isListening} />}
+      <input ref={imageInputRef} type="file" accept="image/*" hidden onChange={e => {
+        const file = e.target.files?.[0]; if (!file) return;
+        if (file.size > 10 * 1024 * 1024) { toast.error('Image must be under 10MB'); return; }
+        const reader = new FileReader(); reader.onload = () => { const b = createBlock('image'); b.url = String(reader.result); blockEditor.setBlocks([...blockEditor.blocks, b]); }; reader.readAsDataURL(file); e.target.value = '';
+      }} />
+      <SlidePanel isOpen={showImportPanel} onClose={() => setShowImportPanel(false)} title="Import a document" icon={<FileText className="w-4 h-4" />} side="right">
+        <HandwritingTextImporter onImportText={text => { blockEditor.setBlocks(text.map(t => createBlock('text', t))); setShowImportPanel(false); }} />
+      </SlidePanel>
 
       {/* Offscreen export DOM */}
       {exportMount && (
