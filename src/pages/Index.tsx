@@ -7,7 +7,7 @@ import { HandwritingTextImporter } from '@/components/HandwritingTextImporter';
 import { useNotebooks } from '@/hooks/useNotebooks';
 import { supabase } from '@/integrations/supabase/client';
 import type { Block } from '@/types/block';
-import { FONT_OPTIONS, type PageStyle } from '@/types/notes';
+import { type PageStyle } from '@/types/notes';
 import { NotionEditor } from '@/components/editor/NotionEditor';
 import { useBlockEditor } from '@/hooks/useBlockEditor';
 import { lazy } from 'react';
@@ -971,7 +971,7 @@ const Index = () => {
               </div>
               <div className="nn-editor-helper">{blockEditor.blocks.reduce((t, b) => t + b.content.trim().split(/\s+/).filter(Boolean).length, 0)} words · Page {currentPageIndex + 1} of {totalPages} · Draft saved on this device</div>
               {/* Mobile Notion Editor — Full width, clean */}
-              <div className="nn-editor-canvas" style={{ '--nn-handwriting': settings.font === 'roman-regular' ? 'Georgia, serif' : settings.font === 'roman-mono' ? 'monospace' : settings.font === 'kalam' ? 'Kalam, cursive' : settings.font === 'patrick-hand' ? '"Patrick Hand", cursive' : 'Caveat, cursive' } as React.CSSProperties}>
+              <div className="nn-editor-canvas" style={{ '--nn-handwriting': settings.font === 'roman-regular' ? 'Inter, sans-serif' : settings.font === 'roman-serif' ? 'Georgia, serif' : settings.font === 'roman-mono' ? '"JetBrains Mono", monospace' : `"${settings.font.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}", cursive` } as React.CSSProperties}>
                 <NotionEditor
                   blocks={blockEditor.blocks}
                   onBlocksChange={blockEditor.setBlocks}

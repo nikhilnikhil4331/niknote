@@ -9,7 +9,7 @@
 - [ ] Confirm a live Razorpay transaction end-to-end (requires an actual authorized purchase)
 - [ ] Confirm production deployment and cached social preview refresh (requires publishing and external crawler cache refresh)
 # Niknote expansion (SmartNote modules)
-- [ ] Match uploaded mobile reference: home, drawer, notes, editor, AI, appearance, templates and profile; verify 375/390/430px
+- [x] Reference-style mobile home, drawer, notes, editor, AI, appearance, templates and profile; verified 375/390/430px without overflow, saved-note reopen, draft persistence and PDF download
 - [x] Money Tracker (/money): transactions, categories, budget, goals + confetti, charts, split bill, PDF report, swipe delete, haptics
 - [x] Daily Routine (/routine): habit blocks + streaks, to-do priorities + drag reorder, Pomodoro, water/sleep/exercise/mood, weekly report
 - [x] Native app shell (Capacitor config + native haptics)
