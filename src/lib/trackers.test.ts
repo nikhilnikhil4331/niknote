@@ -1,3 +1,4 @@
+// @ts-nocheck — run with `bun test`
 import { expect, test } from "bun:test";
 import { computeStreak, splitBill } from "./trackers";
 test("streak counts consecutive days to today", () => {
