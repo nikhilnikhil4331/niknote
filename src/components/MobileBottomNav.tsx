@@ -1,12 +1,9 @@
-// ============================================================
-// NikNote 4.0 — Mobile Bottom Navigation
-// SIMPLIFIED: No Framer Motion layout animation (breaks touch)
-// Pure CSS transitions — 100% touch reliable
-// ============================================================
-
+// Niknote — Mobile bottom navigation (editor). Glass bar, CSS-only transitions for touch reliability.
 import React from 'react';
-import { PenLine, Palette, Sparkles, MoreHorizontal } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { PenLine, Palette, Sparkles, MoreHorizontal, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { haptic } from '@/hooks/useHaptics';
 
 export type MobileTab = 'write' | 'style' | 'preview' | 'ai';
 
@@ -20,53 +17,36 @@ interface MobileBottomNavProps {
   isExporting?: boolean;
 }
 
-export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ 
-  activeTab, onTabChange
-}) => {
-  const tabs: { id: MobileTab; label: string; icon: React.ReactNode; }[] = [
-    { id: 'write', label: 'Write', icon: <PenLine className="w-[18px] h-[18px]" /> },
-    { id: 'style', label: 'Style', icon: <Palette className="w-[18px] h-[18px]" /> },
-    { id: 'ai', label: 'AI', icon: <Sparkles className="w-[18px] h-[18px]" /> },
-    { id: 'preview', label: 'More', icon: <MoreHorizontal className="w-[18px] h-[18px]" /> },
+export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activeTab, onTabChange }) => {
+  const navigate = useNavigate();
+  const tabs: { id: MobileTab; label: string; icon: React.ElementType }[] = [
+    { id: 'write', label: 'Write', icon: PenLine },
+    { id: 'style', label: 'Style', icon: Palette },
+    { id: 'ai', label: 'AI', icon: Sparkles },
+    { id: 'preview', label: 'More', icon: MoreHorizontal },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
-         style={{ touchAction: 'manipulation' }}>
-      <div className="bg-white border-t border-gray-200"
-           style={{ boxShadow: '0 -2px 10px rgba(0,0,0,0.05)' }}>
-        <div className="flex items-center justify-around h-[52px] px-2">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
-                className={cn(
-                  "flex flex-col items-center gap-0.5 px-5 py-1.5 rounded-xl transition-colors duration-150 relative",
-                  isActive ? "text-indigo-600 bg-indigo-50" : "text-gray-400 active:bg-gray-100"
-                )}
-                style={{ 
-                  WebkitTapHighlightColor: 'transparent',
-                  touchAction: 'manipulation',
-                  cursor: 'pointer',
-                  minWidth: '48px',
-                  minHeight: '40px',
-                }}
-              >
-                <span>{tab.icon}</span>
-                <span className={cn(
-                  "text-[10px] font-semibold tracking-wide",
-                  isActive ? "text-indigo-600" : "text-gray-400"
-                )}>
-                  {tab.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        {/* Safe area for iPhone notch */}
-        <div className="h-[env(safe-area-inset-bottom,0px)]" />
+    <div className="fixed bottom-0 inset-x-0 z-50 lg:hidden px-3 pb-[max(env(safe-area-inset-bottom),8px)]" style={{ touchAction: 'manipulation' }}>
+      <div className="mx-auto max-w-md flex items-center justify-around h-16 rounded-[1.75rem] border border-border/70 bg-background/80 backdrop-blur-2xl shadow-[0_10px_40px_-12px_hsl(var(--primary)/0.35)] px-1.5">
+        {tabs.map(({ id, label, icon: Icon }) => {
+          const active = activeTab === id;
+          return (
+            <button key={id} onClick={() => { haptic('selection'); onTabChange(id); }}
+              className={cn('flex-1 flex flex-col items-center justify-center gap-0.5 h-12 rounded-2xl transition-all duration-200 active:scale-90',
+                active ? 'bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-md' : 'text-muted-foreground')}
+              style={{ WebkitTapHighlightColor: 'transparent' }} aria-current={active ? 'page' : undefined}>
+              <Icon className="w-[19px] h-[19px]" strokeWidth={active ? 2.4 : 2} />
+              <span className="text-[10px] font-semibold">{label}</span>
+            </button>
+          );
+        })}
+        <button onClick={() => { haptic('light'); navigate('/hub'); }}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 h-12 rounded-2xl text-muted-foreground active:scale-90 transition"
+          style={{ WebkitTapHighlightColor: 'transparent' }}>
+          <LayoutGrid className="w-[19px] h-[19px]" />
+          <span className="text-[10px] font-semibold">Apps</span>
+        </button>
       </div>
     </div>
   );

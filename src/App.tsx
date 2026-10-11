@@ -60,6 +60,7 @@ const HandbookPage = lazy(() => import("@/pages/Handbook"));
 const AgentConsolePage = lazy(() => import("@/pages/AgentConsole"));
 const AuditReportsPage = lazy(() => import("@/pages/AuditReports"));
 const FlashcardsPage = lazy(() => import("@/pages/Flashcards"));
+const HubPage = lazy(() => import("@/pages/Hub"));
 const MoneyTrackerPage = lazy(() => import("@/pages/MoneyTracker"));
 const RoutineTrackerPage = lazy(() => import("@/pages/RoutineTracker"));
 
@@ -158,6 +159,7 @@ const App = () => {
                     <Route path="/agents" element={<AgentConsolePage />} />
                     <Route path="/audit" element={<AuditReportsPage />} />
                     <Route path="/flashcards" element={<FlashcardsPage />} />
+                    <Route path="/hub" element={<HubPage />} />
                     <Route path="/money" element={<MoneyTrackerPage />} />
                     <Route path="/routine" element={<RoutineTrackerPage />} />
                      <Route path="/privacy" element={<LegalPage policy="privacy" />} />

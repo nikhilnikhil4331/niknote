@@ -12,7 +12,8 @@
 - [x] Money Tracker (/money): transactions, categories, budget, goals + confetti, charts, split bill, PDF report, swipe delete, haptics
 - [x] Daily Routine (/routine): habit blocks + streaks, to-do priorities + drag reorder, Pomodoro, water/sleep/exercise/mood, weekly report
 - [x] Native app shell (Capacitor config + native haptics)
-- [ ] Link Money/Routine from main app navigation
+- [x] Link Money/Routine from main app navigation (Apps tab + dock)
 - [ ] Handwriting + PDF upgrade: PDF upload → handwriting, paper styles (Cornell, graph, spiral, hole-punch), pen types, smudge/fold/coffee effects, 300 DPI, batch, DOCX
 - [ ] Receipt scanner, bill reminders/notifications
 - [ ] Premium extras: Hindi/Urdu UI, template library, signature generator, AI summary in handwriting, scan notes, biometric lock, student mode
+- [x] New mobile UI: floating glass tab bar, app dock, Apps hub

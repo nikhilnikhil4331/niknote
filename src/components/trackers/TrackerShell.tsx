@@ -3,6 +3,7 @@ import { Link, useLocation, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Wallet, CalendarCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { AppDock } from '@/components/AppDock';
 
 export function TrackerShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   const { user, loading } = useAuth() as any;
@@ -24,7 +25,7 @@ export function TrackerShell({ title, subtitle, children }: { title: string; sub
             <h1 className="font-bold text-foreground leading-tight truncate">{title}</h1>
             <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
           </div>
-          <nav className="flex gap-1 bg-muted/60 rounded-xl p-1">
+          <nav className="hidden md:flex gap-1 bg-muted/60 rounded-xl p-1">
             {tabs.map(t => (
               <Link key={t.to} to={t.to}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${pathname === t.to ? 'bg-background shadow text-foreground' : 'text-muted-foreground'}`}>
@@ -38,6 +39,7 @@ export function TrackerShell({ title, subtitle, children }: { title: string; sub
         className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {children}
       </motion.main>
+      <AppDock />
     </div>
   );
 }
