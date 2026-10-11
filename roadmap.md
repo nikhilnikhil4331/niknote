@@ -13,7 +13,8 @@
 - [x] Daily Routine (/routine): habit blocks + streaks, to-do priorities + drag reorder, Pomodoro, water/sleep/exercise/mood, weekly report
 - [x] Native app shell (Capacitor config + native haptics)
 - [x] Link Money/Routine from main app navigation (Apps tab + dock)
-- [ ] Handwriting + PDF upgrade: PDF upload → handwriting, paper styles (Cornell, graph, spiral, hole-punch), pen types, smudge/fold/coffee effects, 300 DPI, batch, DOCX
+- [x] Pen types (ballpoint, gel, fountain, pencil, marker), paper textures, smudge/fold/eraser/coffee/shadow/tilt effects; all 14 paper styles on mobile
+- [ ] PDF upload → rewrite in handwriting, 300 DPI, batch, DOCX export
 - [ ] Receipt scanner, bill reminders/notifications
 - [ ] Premium extras: Hindi/Urdu UI, template library, signature generator, AI summary in handwriting, scan notes, biometric lock, student mode
 - [x] New mobile UI: floating glass tab bar, app dock, Apps hub

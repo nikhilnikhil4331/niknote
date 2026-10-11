@@ -1,3 +1,4 @@
+import type { PaperEffects, PenType } from '@/components/paper/PaperEffects';
 export type HandwritingFont = 
   | 'caveat'
   | 'kalam'
@@ -108,6 +109,8 @@ export interface NoteSettings {
   table: TableConfig;
   customStyle?: CustomHandwritingStyle;
   showMarginLine: boolean;
+  paperEffects?: PaperEffects;
+  penType?: PenType;
 }
 
 export const DEFAULT_SETTINGS: NoteSettings = {

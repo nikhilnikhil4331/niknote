@@ -1,3 +1,4 @@
+import { PaperEffectsOverlay, pageTilt, penClass } from '@/components/paper/PaperEffects';
 import React, { useMemo, forwardRef, useImperativeHandle, useRef, useState, useEffect, memo } from 'react';
 import { NoteLine } from '@/types/noteLine';
 import { NoteSettings, FONT_OPTIONS, PAGE_SIZE_OPTIONS } from '@/types/notes';
@@ -81,7 +82,7 @@ const NotebookPage = memo<{
       style={{ 
         width: `${sizeConfig.width}px`,
         // CRITICAL: Never export scaled pages (causes tiny-corner output)
-        transform: !forExport && scale < 1 ? `scale(${scale})` : undefined,
+        transform: [!forExport && scale < 1 ? `scale(${scale})` : '', pageTilt(settings.paperEffects, pageIndex) ? `rotate(${pageTilt(settings.paperEffects, pageIndex)}deg)` : ''].join(' ').trim() || undefined,
         transformOrigin: 'top center',
         marginBottom: !forExport && scale < 1 ? `${-(sizeConfig.height * (1 - scale))}px` : undefined,
         animationDelay: forExport ? undefined : `${pageIndex * 50}ms`,
@@ -90,7 +91,7 @@ const NotebookPage = memo<{
       <div
         ref={pageRef}
         data-export-page="true"
-        className={`w-full paper-shadow relative overflow-hidden ${isBlueprint ? 'rounded-none' : ''}`}
+        className={`w-full paper-shadow relative overflow-hidden ${penClass(settings.penType)} ${isBlueprint ? 'rounded-none' : ''}`}
         style={{
           ...paperStyle,
           aspectRatio: `${sizeConfig.width}/${sizeConfig.height}`,
@@ -102,6 +103,8 @@ const NotebookPage = memo<{
           paddingLeft: showSpiral ? `${margins.left + 30}px` : `${margins.left}px`,
         }}
       >
+        <PaperEffectsOverlay fx={settings.paperEffects} pageIndex={pageIndex} />
+
         {/* Spiral binding */}
         {showSpiral && (
           <div className="absolute left-0 top-0 bottom-0 w-8 flex flex-col items-center justify-start pt-4 gap-3" style={{ background: 'linear-gradient(to right, #d1d5db, #e5e7eb)' }}>
