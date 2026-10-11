@@ -16,3 +16,4 @@
 - [ ] Handwriting + PDF upgrade: PDF upload → handwriting, paper styles (Cornell, graph, spiral, hole-punch), pen types, smudge/fold/coffee effects, 300 DPI, batch, DOCX
 - [ ] Receipt scanner, bill reminders/notifications
 - [ ] Premium extras: Hindi/Urdu UI, template library, signature generator, AI summary in handwriting, scan notes, biometric lock, student mode
+- [ ] New mobile UI: app-wide bottom tab bar + More hub reaching every feature
