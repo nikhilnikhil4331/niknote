@@ -1,4 +1,4 @@
-import { PaperEffectsOverlay, pageTilt, penClass } from '@/components/paper/PaperEffects';
+import { effectsBackground, pageTilt, penClass } from '@/components/paper/PaperEffects';
 import React, { useMemo, forwardRef, useImperativeHandle, useRef, useState, useEffect, memo } from 'react';
 import { NoteLine } from '@/types/noteLine';
 import { NoteSettings, FONT_OPTIONS, PAGE_SIZE_OPTIONS } from '@/types/notes';
@@ -82,7 +82,7 @@ const NotebookPage = memo<{
       style={{ 
         width: `${sizeConfig.width}px`,
         // CRITICAL: Never export scaled pages (causes tiny-corner output)
-        transform: [!forExport && scale < 1 ? `scale(${scale})` : '', pageTilt(settings.paperEffects, pageIndex) ? `rotate(${pageTilt(settings.paperEffects, pageIndex)}deg)` : ''].join(' ').trim() || undefined,
+        transform: [!forExport && scale < 1 ? `scale(${scale})` : '', !forExport && pageTilt(settings.paperEffects, pageIndex) ? `rotate(${pageTilt(settings.paperEffects, pageIndex)}deg)` : ''].join(' ').trim() || undefined,
         transformOrigin: 'top center',
         marginBottom: !forExport && scale < 1 ? `${-(sizeConfig.height * (1 - scale))}px` : undefined,
         animationDelay: forExport ? undefined : `${pageIndex * 50}ms`,
@@ -91,9 +91,11 @@ const NotebookPage = memo<{
       <div
         ref={pageRef}
         data-export-page="true"
+        data-tilt={pageTilt(settings.paperEffects, pageIndex) || undefined}
         className={`w-full paper-shadow relative overflow-hidden ${penClass(settings.penType)} ${isBlueprint ? 'rounded-none' : ''}`}
         style={{
           ...paperStyle,
+          ...effectsBackground(settings.paperEffects, pageIndex, paperStyle),
           aspectRatio: `${sizeConfig.width}/${sizeConfig.height}`,
           // CRITICAL: Lock exact A4 pixel height for export so html2canvas captures 1:1
           height: forExport ? `${sizeConfig.height}px` : undefined,
@@ -103,8 +105,6 @@ const NotebookPage = memo<{
           paddingLeft: showSpiral ? `${margins.left + 30}px` : `${margins.left}px`,
         }}
       >
-        <PaperEffectsOverlay fx={settings.paperEffects} pageIndex={pageIndex} />
-
         {/* Spiral binding */}
         {showSpiral && (
           <div className="absolute left-0 top-0 bottom-0 w-8 flex flex-col items-center justify-start pt-4 gap-3" style={{ background: 'linear-gradient(to right, #d1d5db, #e5e7eb)' }}>
@@ -314,17 +314,20 @@ export const NotebookPreview = forwardRef<NotebookPreviewHandle, NotebookPreview
         case 'ruled':
           return {
             backgroundColor: pureWhite,
-            backgroundImage: `repeating-linear-gradient(transparent, transparent 31px, ${lineColor} 31px, ${lineColor} 32px)`,
+            backgroundImage: `linear-gradient(transparent 31px, ${lineColor} 31px, ${lineColor} 32px)`,
+            backgroundSize: '100% 32px',
           };
         case 'single-line':
           return {
             backgroundColor: pureWhite,
-            backgroundImage: `repeating-linear-gradient(transparent, transparent 47px, ${lineColor} 47px, ${lineColor} 48px)`,
+            backgroundImage: `linear-gradient(transparent 47px, ${lineColor} 47px, ${lineColor} 48px)`,
+            backgroundSize: '100% 48px',
           };
         case 'graph':
           return {
             backgroundColor: pureWhite,
-            backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 19px, ${lineColor} 19px, ${lineColor} 20px), repeating-linear-gradient(90deg, transparent, transparent 19px, ${lineColor} 19px, ${lineColor} 20px)`,
+            backgroundImage: `linear-gradient(0deg, transparent 19px, ${lineColor} 19px, ${lineColor} 20px), linear-gradient(90deg, transparent 19px, ${lineColor} 19px, ${lineColor} 20px)`,
+            backgroundSize: '20px 20px',
           };
         case 'dotted':
           return {
@@ -335,43 +338,51 @@ export const NotebookPreview = forwardRef<NotebookPreviewHandle, NotebookPreview
         case 'college':
           return {
             backgroundColor: pureWhite,
-            backgroundImage: `repeating-linear-gradient(transparent, transparent 23px, ${lineColor} 23px, ${lineColor} 24px)`,
+            backgroundImage: `linear-gradient(transparent 23px, ${lineColor} 23px, ${lineColor} 24px)`,
+            backgroundSize: '100% 24px',
           };
         case 'legal':
           return {
             backgroundColor: '#FFFDE7',
-            backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, hsl(210, 40%, 70%) 31px, hsl(210, 40%, 70%) 32px)',
+            backgroundImage: 'linear-gradient(transparent 31px, hsl(210, 40%, 70%) 31px, hsl(210, 40%, 70%) 32px)',
+            backgroundSize: '100% 32px',
           };
         case 'spiral':
         case 'hole-punched':
           return {
             backgroundColor: pureWhite,
-            backgroundImage: `repeating-linear-gradient(transparent, transparent 31px, ${lineColor} 31px, ${lineColor} 32px)`,
+            backgroundImage: `linear-gradient(transparent 31px, ${lineColor} 31px, ${lineColor} 32px)`,
+            backgroundSize: '100% 32px',
           };
         case 'vintage':
           return {
             backgroundColor: '#F5E6D3',
-            backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, hsl(25, 30%, 70%) 31px, hsl(25, 30%, 70%) 32px)',
+            backgroundImage: 'linear-gradient(transparent 31px, hsl(25, 30%, 70%) 31px, hsl(25, 30%, 70%) 32px)',
+            backgroundSize: '100% 32px',
           };
         case 'kraft':
           return {
             backgroundColor: '#C4A77D',
-            backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, hsl(30, 25%, 45%) 31px, hsl(30, 25%, 45%) 32px)',
+            backgroundImage: 'linear-gradient(transparent 31px, hsl(30, 25%, 45%) 31px, hsl(30, 25%, 45%) 32px)',
+            backgroundSize: '100% 32px',
           };
         case 'blueprint':
           return {
             backgroundColor: '#1E3A5F',
-            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 19px, hsl(210, 50%, 45%) 19px, hsl(210, 50%, 45%) 20px), repeating-linear-gradient(90deg, transparent, transparent 19px, hsl(210, 50%, 45%) 19px, hsl(210, 50%, 45%) 20px)',
+            backgroundImage: 'linear-gradient(0deg, transparent 19px, hsl(210, 50%, 45%) 19px, hsl(210, 50%, 45%) 20px), linear-gradient(90deg, transparent 19px, hsl(210, 50%, 45%) 19px, hsl(210, 50%, 45%) 20px)',
+            backgroundSize: '20px 20px',
           };
         case 'music-sheet':
           return {
             backgroundColor: pureWhite,
-            backgroundImage: `repeating-linear-gradient(transparent 0px, transparent 7px, ${lineColor} 7px, ${lineColor} 8px, transparent 8px, transparent 15px, ${lineColor} 15px, ${lineColor} 16px, transparent 16px, transparent 23px, ${lineColor} 23px, ${lineColor} 24px, transparent 24px, transparent 31px, ${lineColor} 31px, ${lineColor} 32px, transparent 32px, transparent 39px, ${lineColor} 39px, ${lineColor} 40px, transparent 40px, transparent 60px)`,
+            backgroundSize: '100% 60px',
+            backgroundImage: `linear-gradient(transparent 0px, transparent 7px, ${lineColor} 7px, ${lineColor} 8px, transparent 8px, transparent 15px, ${lineColor} 15px, ${lineColor} 16px, transparent 16px, transparent 23px, ${lineColor} 23px, ${lineColor} 24px, transparent 24px, transparent 31px, ${lineColor} 31px, ${lineColor} 32px, transparent 32px, transparent 39px, ${lineColor} 39px, ${lineColor} 40px, transparent 40px, transparent 60px)`,
           };
         case 'cornell':
           return {
             backgroundColor: pureWhite,
-            backgroundImage: `repeating-linear-gradient(transparent, transparent 31px, ${lineColor} 31px, ${lineColor} 32px)`,
+            backgroundImage: `linear-gradient(transparent 31px, ${lineColor} 31px, ${lineColor} 32px)`,
+            backgroundSize: '100% 32px',
           };
         case 'plain':
         default:

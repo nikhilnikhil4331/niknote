@@ -17,7 +17,7 @@ export function TrackerShell({ title, subtitle, children }: { title: string; sub
     { to: '/routine', label: 'Routine', icon: CalendarCheck },
   ];
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 pb-24">
+    <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-background via-background to-primary/5 pb-24">
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/70 border-b border-border">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
           <Link to="/" className="p-2 rounded-xl hover:bg-muted" aria-label="Back to notes"><ArrowLeft className="w-5 h-5" /></Link>

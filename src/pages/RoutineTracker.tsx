@@ -170,11 +170,11 @@ export default function RoutineTracker() {
         <Panel title="Routine & habits">
           <div className="flex gap-2 mb-4">
             <input value={habitForm.emoji} onChange={e => setHabitForm(f => ({ ...f, emoji: e.target.value.slice(0, 2) }))} className="w-12 h-10 rounded-xl border border-border bg-background text-center" aria-label="Emoji" />
-            <input placeholder="New habit" value={habitForm.name} onChange={e => setHabitForm(f => ({ ...f, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addHabit()} className="flex-1 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
+            <input placeholder="New habit" value={habitForm.name} onChange={e => setHabitForm(f => ({ ...f, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addHabit()} className="flex-1 min-w-0 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
             <select value={habitForm.block} onChange={e => setHabitForm(f => ({ ...f, block: e.target.value }))} className="h-10 rounded-xl border border-border bg-background px-2 text-sm" aria-label="Time of day">
               {BLOCKS.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
             </select>
-            <button onClick={addHabit} className="h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center active:scale-90" aria-label="Add habit"><Plus className="w-4 h-4" /></button>
+            <button onClick={addHabit} className="h-10 w-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center active:scale-90" aria-label="Add habit"><Plus className="w-4 h-4" /></button>
           </div>
           <div className="space-y-4">
             {BLOCKS.map(b => {
@@ -213,11 +213,11 @@ export default function RoutineTracker() {
         {/* Todos */}
         <Panel title="To-do list">
           <div className="flex gap-2 mb-4">
-            <input placeholder="Add a task" value={todoForm.title} onChange={e => setTodoForm(f => ({ ...f, title: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addTodo()} className="flex-1 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
+            <input placeholder="Add a task" value={todoForm.title} onChange={e => setTodoForm(f => ({ ...f, title: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addTodo()} className="flex-1 min-w-0 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
             <select value={todoForm.priority} onChange={e => setTodoForm(f => ({ ...f, priority: e.target.value }))} className="h-10 rounded-xl border border-border bg-background px-2 text-sm" aria-label="Priority">
               <option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
             </select>
-            <button onClick={addTodo} className="h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center active:scale-90" aria-label="Add task"><Plus className="w-4 h-4" /></button>
+            <button onClick={addTodo} className="h-10 w-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center active:scale-90" aria-label="Add task"><Plus className="w-4 h-4" /></button>
           </div>
           <Reorder.Group axis="y" values={todos} onReorder={onReorder} className="space-y-2">
             {todos.map(t => (

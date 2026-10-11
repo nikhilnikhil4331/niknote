@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { readPdf } from '@/lib/pdfText';
 
 interface HandwritingTextImporterProps {
   onImportText: (lines: string[]) => void;
@@ -35,9 +36,15 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (file.type === 'application/pdf') {
+      if (file.size > 20 * 1024 * 1024) { toast.error('PDF must be less than 20MB'); return; }
+      await importPdf(file);
+      return;
+    }
+
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
+      toast.error('Please upload an image or PDF file');
       return;
     }
 
@@ -57,6 +64,32 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
       await extractText(base64, 0);
     };
     reader.readAsDataURL(file);
+  };
+
+  const importPdf = async (file: File) => {
+    if (!session?.access_token) { toast.error('Please login first'); navigate('/login'); return; }
+    setIsExtracting(true); setOcrResult(null);
+    try {
+      const { pages, firstPageImage } = await readPdf(file);
+      setPreviewImage(firstPageImage);
+      const all: string[] = [];
+      const warnings: string[] = [];
+      for (let i = 0; i < pages.length; i++) {
+        let lines = pages[i].lines;
+        if (pages[i].scanImage) {
+          const { data, error } = await supabase.functions.invoke('extract-handwriting-text', { body: { imageBase64: pages[i].scanImage, retryAttempt: 0 } });
+          if (error || !data?.success) { warnings.push(`Page ${i + 1}: could not read scanned text`); lines = []; }
+          else lines = data.lines;
+        }
+        if (i > 0 && all.length) all.push('');
+        all.push(...lines);
+      }
+      if (!all.some(l => l.trim())) throw new Error('No text found in this PDF');
+      setOcrResult({ extractedText: all.join('\n'), lines: all, confidence: 1, warnings, success: true });
+      toast.success(`Read ${pages.length} page${pages.length > 1 ? 's' : ''} from the PDF`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not read PDF');
+    } finally { setIsExtracting(false); }
   };
 
   const extractText = async (imageBase64: string, retryAttempt: number) => {
@@ -158,7 +191,7 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,application/pdf"
         onChange={handleFileSelect}
         className="hidden"
       />
@@ -173,14 +206,14 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
               <FileText className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="font-medium text-sm">Import Handwritten Text</p>
+              <p className="font-medium text-sm">Import a PDF or Photo</p>
               <p className="text-xs text-muted-foreground mt-1">
-                AI will extract text from your handwriting
+                Any PDF (typed or scanned) or handwriting photo → rewritten in your style
               </p>
             </div>
             <Button variant="outline" size="sm" className="mt-2 gap-2">
               <Camera className="w-4 h-4" />
-              Upload Image
+              Upload PDF / Image
             </Button>
           </div>
         </Card>

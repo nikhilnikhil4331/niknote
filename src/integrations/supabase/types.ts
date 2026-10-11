@@ -143,6 +143,36 @@ export type Database = {
         }
         Relationships: []
       }
+      bill_reminders: {
+        Row: {
+          amount: number
+          created_at: string
+          due_day: number
+          id: string
+          last_paid_month: string | null
+          name: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          due_day: number
+          id?: string
+          last_paid_month?: string | null
+          name: string
+          user_id?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_day?: number
+          id?: string
+          last_paid_month?: string | null
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       billing_plans: {
         Row: {
           code: string

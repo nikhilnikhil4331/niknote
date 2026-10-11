@@ -110,6 +110,7 @@ const Index = () => {
   const isPastingRef = useRef(false);
   const exportContainerRef = useRef<HTMLDivElement>(null);
   const [exportMount, setExportMount] = useState(false);
+  const [exportLinesOverride, setExportLinesOverride] = useState<NoteLine[] | null>(null);
   const { triggerHaptic } = useHaptics();
   const { playClick, playSuccess } = useSoundEffects();
   const premium = usePremium();
@@ -373,6 +374,34 @@ const Index = () => {
     
     const toastId = toast.loading('PDF bana raha hai...');
     
+    // METHOD 0: capture the styled handwriting pages (paper, pen, effects) at print resolution
+    try {
+      const styledLines: NoteLine[] = contentText.split('\n').map((t, i) => {
+        const h = /^(#{1,3})\s+/.exec(t);
+        return {
+          id: `exp-${i}`, text: t.replace(/^#{1,3}\s+/, '').replace(/^[-•]\s/, '• '), color: currentColor, timestamp: i,
+          ...(h ? { fontSize: Math.round((settings.fontSize || 24) * (h[1].length === 1 ? 1.5 : 1.25)), fontWeight: '700' } : {}),
+        };
+      });
+      setExportLinesOverride(styledLines);
+      setExportMount(true);
+      let els: HTMLElement[] = [];
+      for (let i = 0; i < 30 && !els.length; i++) {
+        await new Promise(r => setTimeout(r, 150));
+        els = Array.from(exportContainerRef.current?.querySelectorAll<HTMLElement>('[data-export-page="true"]') ?? []);
+      }
+      if (!els.length) throw new Error('Styled pages not ready');
+      await new Promise(r => setTimeout(r, 1200)); // handwriting fade-in + fonts
+      await exportToPDF(els, 'niknote-notes', settings.pageSize);
+      toast.success(`PDF download ho gaya! 📄 (${els.length} page)`, { id: toastId });
+      playSuccess(); triggerHaptic('success');
+      setIsExporting(false); setExportMount(false); setExportLinesOverride(null);
+      return;
+    } catch (styledErr) {
+      console.warn('Styled PDF export failed, falling back to text PDF:', styledErr);
+      setExportMount(false); setExportLinesOverride(null);
+    }
+
     try {
       // METHOD 1: Try using jsPDF directly with text content — works everywhere
       const { jsPDF } = await import('jspdf');
@@ -1221,9 +1250,11 @@ const Index = () => {
 
       {/* Offscreen export DOM */}
       {exportMount && (
-        <div ref={exportContainerRef} className="fixed left-[-10000px] top-0 pointer-events-none opacity-0" aria-hidden="true">
+        <div ref={exportContainerRef} className="fixed left-[-10000px] top-0 pointer-events-none" aria-hidden="true">
           <div className="flex flex-col gap-6">
-            {pages.map((page, idx) => (
+            {exportLinesOverride ? (
+              <NotebookPreview lines={exportLinesOverride} settings={settings} realPenMode={realPenMode} pageNumber={1} totalPages={1} forExport />
+            ) : pages.map((page, idx) => (
               <div key={page.id} style={{ width: 794, height: 1123 }}>
                 <NotebookPreview lines={page.lines} settings={settings} realPenMode={realPenMode} pageNumber={idx + 1} totalPages={pages.length} forExport />
               </div>
