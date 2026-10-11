@@ -32,6 +32,7 @@ import MyNotebooks from "./pages/MyNotebooks";
 import PremiumLanding from "./pages/PremiumLanding";
 import Onboarding from "./pages/Onboarding";
 import LegalPage from "./pages/LegalPage";
+import { AppDock } from "@/components/AppDock";
 import { CookieConsent } from "./components/CookieConsent";
 
 // Lazy load heavy/new pages — if they crash, main app stays alive
@@ -79,6 +80,13 @@ import { checkReferral } from "@/utils/referral";
 import { trackPageView } from "@/utils/analytics";
 
 const queryClient = new QueryClient();
+
+const DOCK_ROUTES = ["/notebooks","/flashcards","/history","/account","/achievements","/ai-solver","/ai","/documents","/handbook","/feedback","/upgrade"];
+function GlobalDock() {
+  const { pathname } = useLocation();
+  if (!DOCK_ROUTES.includes(pathname)) return null;
+  return <><div className="h-24 md:hidden" aria-hidden /><AppDock /></>;
+}
 
 function RouteAnalytics() {
   const { pathname } = useLocation();
@@ -167,6 +175,7 @@ const App = () => {
                      <Route path="/refunds" element={<LegalPage policy="refunds" />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                   <GlobalDock />
                    <CookieConsent />
                 </Suspense>
               </BrowserRouter>
