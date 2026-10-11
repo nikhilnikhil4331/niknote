@@ -34,6 +34,9 @@ import Onboarding from "./pages/Onboarding";
 import LegalPage from "./pages/LegalPage";
 import { AppDock } from "@/components/AppDock";
 import { CookieConsent } from "./components/CookieConsent";
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileExperience } from '@/components/mobile/MobileExperience';
+import '@/components/mobile/mobile.css';
 
 // Lazy load heavy/new pages — if they crash, main app stays alive
 const AISolverPage = lazy(() =>
@@ -84,8 +87,29 @@ const queryClient = new QueryClient();
 const DOCK_ROUTES = ["/notebooks","/flashcards","/history","/account","/achievements","/ai-solver","/ai","/documents","/handbook","/feedback","/upgrade"];
 function GlobalDock() {
   const { pathname } = useLocation();
+  const mobile = useIsMobile();
+  if (mobile && ['/', '/hub', '/notebooks', '/ai', '/account', '/appearance', '/templates'].includes(pathname)) return null;
   if (!DOCK_ROUTES.includes(pathname)) return null;
   return <><div className="h-24 md:hidden" aria-hidden /><AppDock /></>;
+}
+
+function ResponsivePage({ children }: { children: React.ReactNode }) {
+  const mobile = useIsMobile();
+  return mobile ? <MobileExperience /> : <>{children}</>;
+}
+function WorkspaceEntry() {
+  const mobile = useIsMobile();
+  const { search } = useLocation();
+  const params = new URLSearchParams(search);
+  return mobile && !params.has('editor') && !params.has('notebook') ? <MobileExperience /> : <Index />;
+}
+function LegacyEditorRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={`/${search || '?editor=1'}`} replace />;
+}
+function DesktopFloatingShare() {
+  const mobile = useIsMobile();
+  return mobile ? null : <ShareButtons variant="floating" />;
 }
 
 function RouteAnalytics() {
@@ -137,8 +161,12 @@ const App = () => {
                    <RouteAnalytics />
                   <Suspense fallback={<PageLoader />}>
                     <Routes>
-                      <Route path="/" element={<Index />} />
-                    <Route path="/app" element={<Navigate to="/" replace />} />
+                      <Route path="/" element={<WorkspaceEntry />} />
+                    <Route path="/app" element={<LegacyEditorRedirect />} />
+                    <Route path="/account-details" element={<Account />} />
+                    <Route path="/ai-workspace" element={<AI4Page />} />
+                    <Route path="/appearance" element={<MobileExperience />} />
+                    <Route path="/templates" element={<MobileExperience />} />
                     <Route path="/welcome" element={<Welcome />} />
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/login" element={<Login />} />
@@ -150,15 +178,15 @@ const App = () => {
                     <Route path="/admin-login" element={<AdminLogin />} />
                     <Route path="/admin-panel-nikhil" element={<AdminPanelNikhil />} />
                     <Route path="/ai-solver" element={<AISolverPage />} />
-                    <Route path="/ai" element={<AI4Page />} />
+                    <Route path="/ai" element={<ResponsivePage><AI4Page /></ResponsivePage>} />
                     <Route path="/documents" element={<DocumentIntelligence />} />
                     <Route path="/qa" element={<QAPage />} />
                     <Route path="/blog" element={<BlogPage />} />
                     <Route path="/blog/:slug" element={<BlogPage />} />
                     <Route path="/history" element={<History />} />
-                    <Route path="/account" element={<Account />} />
+                    <Route path="/account" element={<ResponsivePage><Account /></ResponsivePage>} />
                     <Route path="/achievements" element={<Achievements />} />
-                    <Route path="/notebooks" element={<MyNotebooks />} />
+                    <Route path="/notebooks" element={<ResponsivePage><MyNotebooks /></ResponsivePage>} />
                     <Route path="/landing" element={<PremiumLanding />} />
                     <Route path="/schools" element={<Suspense fallback={<PageLoader />}><B2BPage /></Suspense>} />
                     <Route path="/institutions" element={<Suspense fallback={<PageLoader />}><B2BPage /></Suspense>} />
@@ -167,7 +195,7 @@ const App = () => {
                     <Route path="/agents" element={<AgentConsolePage />} />
                     <Route path="/audit" element={<AuditReportsPage />} />
                     <Route path="/flashcards" element={<FlashcardsPage />} />
-                    <Route path="/hub" element={<HubPage />} />
+                    <Route path="/hub" element={<ResponsivePage><HubPage /></ResponsivePage>} />
                     <Route path="/money" element={<MoneyTrackerPage />} />
                     <Route path="/routine" element={<RoutineTrackerPage />} />
                      <Route path="/privacy" element={<LegalPage policy="privacy" />} />
@@ -180,7 +208,7 @@ const App = () => {
                 </Suspense>
               </BrowserRouter>
               <InstallBanner />
-              <ShareButtons variant="floating" />
+              <DesktopFloatingShare />
             </TooltipProvider>
           </HandwritingDNAProvider>
         </PremiumProvider>
