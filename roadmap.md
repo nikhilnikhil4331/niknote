@@ -17,3 +17,4 @@
 - [ ] Receipt scanner, bill reminders/notifications
 - [ ] Premium extras: Hindi/Urdu UI, template library, signature generator, AI summary in handwriting, scan notes, biometric lock, student mode
 - [x] New mobile UI: floating glass tab bar, app dock, Apps hub
+- [x] Bottom dock on notebooks, flashcards, history, account, achievements, AI pages, documents, handbook, feedback, upgrade
