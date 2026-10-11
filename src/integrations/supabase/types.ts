@@ -223,6 +223,36 @@ export type Database = {
           },
         ]
       }
+      daily_wellness: {
+        Row: {
+          day: string
+          exercise_minutes: number
+          mood: string
+          pomodoros: number
+          sleep_hours: number
+          user_id: string
+          water: number
+        }
+        Insert: {
+          day?: string
+          exercise_minutes?: number
+          mood?: string
+          pomodoros?: number
+          sleep_hours?: number
+          user_id?: string
+          water?: number
+        }
+        Update: {
+          day?: string
+          exercise_minutes?: number
+          mood?: string
+          pomodoros?: number
+          sleep_hours?: number
+          user_id?: string
+          water?: number
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           component: string | null
@@ -325,6 +355,59 @@ export type Database = {
         }
         Relationships: []
       }
+      habit_checks: {
+        Row: {
+          day: string
+          habit_id: string
+          user_id: string
+        }
+        Insert: {
+          day?: string
+          habit_id: string
+          user_id?: string
+        }
+        Update: {
+          day?: string
+          habit_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_checks_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          block: string
+          created_at: string
+          emoji: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          block?: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          name: string
+          user_id?: string
+        }
+        Update: {
+          block?: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       handwriting_models: {
         Row: {
           analysis_notes: string | null
@@ -388,6 +471,66 @@ export type Database = {
           updated_at?: string
           user_id?: string
           word_spacing?: number
+        }
+        Relationships: []
+      }
+      money_goals: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          saved: number
+          target: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          saved?: number
+          target: number
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          saved?: number
+          target?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      money_transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          id: string
+          kind: string
+          note: string
+          occurred_on: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string
+          occurred_on?: string
+          user_id?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          note?: string
+          occurred_on?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -572,6 +715,60 @@ export type Database = {
           referred_user_id?: string
           referrer_id?: string
           reward_granted?: boolean
+        }
+        Relationships: []
+      }
+      todos: {
+        Row: {
+          created_at: string
+          done: boolean
+          id: string
+          position: number
+          priority: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          position?: number
+          priority?: string
+          title: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          position?: number
+          priority?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tracker_settings: {
+        Row: {
+          currency: string
+          monthly_budget: number
+          updated_at: string
+          user_id: string
+          water_goal: number
+        }
+        Insert: {
+          currency?: string
+          monthly_budget?: number
+          updated_at?: string
+          user_id?: string
+          water_goal?: number
+        }
+        Update: {
+          currency?: string
+          monthly_budget?: number
+          updated_at?: string
+          user_id?: string
+          water_goal?: number
         }
         Relationships: []
       }
