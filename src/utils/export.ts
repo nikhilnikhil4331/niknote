@@ -73,7 +73,7 @@ const captureToCanvas = async (
       }
 
       const canvas = await html2canvas(element, {
-        scale: 2, // 2x for high DPI
+        scale: window.innerWidth < 768 ? 2 : 3.125, // ~300 DPI on desktop, lighter on phones
         useCORS: true,
         backgroundColor: '#FFFFFF',
         logging: false,
@@ -90,6 +90,8 @@ const captureToCanvas = async (
         windowWidth: width,
         windowHeight: height,
         ignoreElements: (el) => {
+          // Never drop stylesheets — they are display:none but carry every class style
+          if (/^(STYLE|LINK|HEAD|META|TITLE|SCRIPT|NOSCRIPT)$/.test(el.tagName)) return false;
           const style = window.getComputedStyle(el);
           return style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0';
         },
@@ -158,7 +160,21 @@ export async function exportToPDF(
     });
 
     try {
-      const canvas = await captureToCanvas(validElements[i]);
+      let canvas = await captureToCanvas(validElements[i]);
+      const tilt = Number(validElements[i].dataset.tilt || 0);
+      if (tilt) {
+        // Natural page tilt: rotate the captured page on a white sheet
+        const out = document.createElement('canvas');
+        out.width = canvas.width; out.height = canvas.height;
+        const ctx = out.getContext('2d')!;
+        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, out.width, out.height);
+        ctx.translate(out.width / 2, out.height / 2);
+        ctx.rotate((tilt * Math.PI) / 180);
+        ctx.scale(0.97, 0.97);
+        ctx.shadowColor = 'rgba(0,0,0,0.18)'; ctx.shadowBlur = 18;
+        ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+        canvas = out;
+      }
       const imgData = canvas.toDataURL('image/png', 1.0);
 
       if (i > 0) pdf.addPage();

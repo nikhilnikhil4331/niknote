@@ -52,33 +52,44 @@ export function pageTilt(fx: PaperEffects | undefined, pageIndex: number) {
 
 export const penClass = (pen?: PenType) => `pen-${pen ?? 'ballpoint'}`;
 
-export function PaperEffectsOverlay({ fx, pageIndex }: { fx?: PaperEffects; pageIndex: number }) {
-  const r = useMemo(() => seeded(pageIndex + 1), [pageIndex]);
-  const spots = useMemo(() => Array.from({ length: 6 }, () => ({ x: r() * 85 + 5, y: r() * 85 + 5, s: r() * 10 + 6, a: r() * 360 })), [r]);
-  if (!fx) return null;
+/** Builds all paper effects as one SVG image so they look identical on screen and in PDF/PNG exports. */
+export function buildEffectsSvg(fx: PaperEffects, pageIndex: number, w = 595, h = 842) {
+  const r = seeded(pageIndex + 1);
+  const p = Array.from({ length: 6 }, () => ({ x: r() * 0.85 + 0.05, y: r() * 0.85 + 0.05, s: r() * 10 + 6, a: r() * 360 }));
   const tint = TINTS.find(t => t.value === fx.tint)?.color;
-  return (
-    <div className="paper-fx absolute inset-0 pointer-events-none z-[1]" aria-hidden>
-      {tint && tint !== 'transparent' && <div className="absolute inset-0 mix-blend-multiply" style={{ background: tint }} />}
-      {fx.tint === 'recycled' && <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(hsl(30 10% 50% / .5) 0.6px, transparent 0.8px)', backgroundSize: '7px 9px' }} />}
-      {fx.folds && (
-        <>
-          <div className="absolute left-0 right-0" style={{ top: '50%', height: 6, background: 'linear-gradient(to bottom, transparent, hsl(0 0% 0% / .07), hsl(0 0% 100% / .5), transparent)' }} />
-          <div className="absolute top-0 bottom-0" style={{ left: '50%', width: 5, background: 'linear-gradient(to right, transparent, hsl(0 0% 0% / .05), hsl(0 0% 100% / .4), transparent)' }} />
-        </>
-      )}
-      {fx.smudges && spots.slice(0, 3).map((p, i) => (
-        <div key={i} className="absolute rounded-full" style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.s * 3, height: p.s * 1.6, transform: `rotate(${p.a}deg)`, background: 'radial-gradient(ellipse, hsl(220 70% 35% / .18), transparent 70%)', filter: 'blur(2px)' }} />
-      ))}
-      {fx.eraser && spots.slice(3, 5).map((p, i) => (
-        <div key={i} className="absolute rounded-[40%]" style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.s * 7, height: p.s * 2.4, transform: `rotate(${p.a / 8}deg)`, background: 'radial-gradient(ellipse, hsl(0 0% 60% / .12), transparent 70%)', filter: 'blur(3px)' }} />
-      ))}
-      {fx.coffee && (
-        <div className="absolute rounded-full" style={{ right: `${8 + spots[5].x / 10}%`, bottom: `${6 + spots[5].y / 12}%`, width: 130, height: 130, border: '7px solid hsl(28 55% 35% / .22)', boxShadow: 'inset 0 0 18px hsl(28 55% 35% / .18)', filter: 'blur(1px)', clipPath: 'polygon(0 0,100% 0,100% 78%,62% 100%,0 100%)' }} />
-      )}
-      {fx.shadow && <div className="absolute inset-0" style={{ background: 'linear-gradient(115deg, transparent 55%, hsl(0 0% 0% / .10))' }} />}
-    </div>
-  );
+  const parts: string[] = [
+    '<defs><filter id="b2"><feGaussianBlur stdDeviation="2.5"/></filter><filter id="b1"><feGaussianBlur stdDeviation="1"/></filter>',
+    '<radialGradient id="ink"><stop offset="0" stop-color="hsl(220,70%,35%)" stop-opacity=".22"/><stop offset="1" stop-color="hsl(220,70%,35%)" stop-opacity="0"/></radialGradient>',
+    '<radialGradient id="er"><stop offset="0" stop-color="#999" stop-opacity=".16"/><stop offset="1" stop-color="#999" stop-opacity="0"/></radialGradient>',
+    '<linearGradient id="sh" x1="0" y1="0" x2="1" y2="1"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient>',
+    '<linearGradient id="fh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".45" stop-color="#000" stop-opacity=".09"/><stop offset=".55" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>',
+    '<linearGradient id="fv" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".45" stop-color="#000" stop-opacity=".07"/><stop offset=".55" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>',
+  ];
+  if (tint && tint !== 'transparent') parts.push(`<rect width="${w}" height="${h}" fill="${tint.replace(/ \/ ([\d.]+)\)/, ')').replace(/hsl\((\d+) (\d+)% (\d+)%\)/, 'hsl($1,$2%,$3%)')}" opacity="${fx.tint === 'white' ? 0 : 0.45}"/>`);
+  if (fx.tint === 'recycled') for (let k = 0; k < 260; k++) parts.push(`<circle cx="${(r() * w).toFixed(1)}" cy="${(r() * h).toFixed(1)}" r="${(r() * 0.9 + 0.3).toFixed(2)}" fill="#7a6f60" opacity=".35"/>`);
+  if (fx.folds) parts.push(`<rect x="0" y="${h / 2 - 8}" width="${w}" height="16" fill="url(#fh)"/><rect x="${w / 2 - 8}" y="0" width="16" height="${h}" fill="url(#fv)"/>`);
+  if (fx.smudges) p.slice(0, 3).forEach(q => parts.push(`<ellipse cx="${q.x * w}" cy="${q.y * h}" rx="${q.s * 1.8}" ry="${q.s}" transform="rotate(${q.a} ${q.x * w} ${q.y * h})" fill="url(#ink)" filter="url(#b1)"/>`));
+  if (fx.eraser) p.slice(3, 5).forEach(q => parts.push(`<ellipse cx="${q.x * w}" cy="${q.y * h}" rx="${q.s * 4}" ry="${q.s * 1.3}" transform="rotate(${q.a / 8} ${q.x * w} ${q.y * h})" fill="url(#er)" filter="url(#b2)"/>`));
+  if (fx.coffee) {
+    const cx = w * (0.78 - p[5].x / 12), cy = h * (0.82 - p[5].y / 14);
+    parts.push(`<circle cx="${cx}" cy="${cy}" r="58" fill="hsl(28,55%,45%)" opacity=".06"/><path d="M ${cx + 58} ${cy} A 58 58 0 1 1 ${cx + 10} ${cy - 57}" fill="none" stroke="hsl(28,55%,35%)" stroke-width="6" opacity=".28" filter="url(#b1)"/>`);
+  }
+  if (fx.shadow) parts.push(`<rect width="${w}" height="${h}" fill="url(#sh)"/>`);
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${parts.join('')}</svg>`)}`;
+}
+
+/** Layer the effects SVG on top of the paper's own background (works in html2canvas exports). */
+export function effectsBackground(fx: PaperEffects | undefined, pageIndex: number, paper: React.CSSProperties): React.CSSProperties {
+  if (!fx) return {};
+  const any = fx.tint !== 'white' || fx.smudges || fx.folds || fx.eraser || fx.coffee || fx.shadow;
+  if (!any) return {};
+  const svg = `url("${buildEffectsSvg(fx, pageIndex)}")`;
+  const base = paper.backgroundImage as string | undefined;
+  return {
+    backgroundImage: base ? `${svg}, ${base}` : svg,
+    backgroundSize: base ? `100% 100%, ${paper.backgroundSize ?? 'auto'}` : '100% 100%',
+    backgroundRepeat: base ? 'no-repeat, repeat' : 'no-repeat',
+  };
 }
 
 export function PaperEffectsControls({ fx = DEFAULT_EFFECTS, pen = 'ballpoint', onChange }: {

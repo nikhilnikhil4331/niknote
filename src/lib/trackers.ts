@@ -50,3 +50,14 @@ export function splitBill(total: number, people: number) {
   const extra = cents - base * people;
   return Array.from({ length: people }, (_, i) => (base + (i < extra ? 1 : 0)) / 100);
 }
+
+/** Bill reminder state for this month: paid, overdue, soon (within 3 days) or later. */
+export function billStatus(b: { due_day: number; last_paid_month: string | null }, now = new Date()) {
+  if (b.last_paid_month === toDay(now).slice(0, 7)) return 'paid';
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const due = Math.min(b.due_day, lastDay);
+  const diff = due - now.getDate();
+  if (diff < 0) return 'overdue';
+  if (diff <= 3) return 'soon';
+  return 'later';
+}

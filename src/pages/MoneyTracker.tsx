@@ -2,18 +2,19 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line } from 'recharts';
-import { Plus, Trash2, Target, Users, Download, Coins } from 'lucide-react';
+import { Plus, Trash2, Target, Users, Download, Coins, Camera, Loader2, Bell, CheckCircle2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { haptic } from '@/hooks/useHaptics';
 import { toast } from 'sonner';
 import { TrackerShell, Panel } from '@/components/trackers/TrackerShell';
-import { EXPENSE_CATEGORIES, CURRENCIES, formatMoney, toDay, splitBill } from '@/lib/trackers';
+import { EXPENSE_CATEGORIES, CURRENCIES, formatMoney, toDay, splitBill, billStatus } from '@/lib/trackers';
 
 type Tx = { id: string; kind: string; amount: number; category: string; note: string; occurred_on: string };
 type Goal = { id: string; name: string; target: number; saved: number };
 type Range = 'week' | 'month' | 'year';
+type Bill = { id: string; name: string; amount: number; due_day: number; last_paid_month: string | null };
 
 const catOf = (n: string) => EXPENSE_CATEGORIES.find(c => c.name === n) ?? EXPENSE_CATEGORIES[7];
 const db = supabase as any;
@@ -28,18 +29,29 @@ export default function MoneyTracker() {
   const [form, setForm] = useState({ kind: 'expense', amount: '', category: 'Food', note: '', occurred_on: toDay(new Date()) });
   const [goalForm, setGoalForm] = useState({ name: '', target: '' });
   const [split, setSplit] = useState({ total: '', people: '2' });
+  const [scanning, setScanning] = useState(false);
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [billForm, setBillForm] = useState({ name: '', amount: '', due_day: '' });
 
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [t, g, s] = await Promise.all([
+      const [t, g, s, b] = await Promise.all([
         db.from('money_transactions').select('*').order('occurred_on', { ascending: false }).limit(1000),
         db.from('money_goals').select('*').order('created_at'),
         db.from('tracker_settings').select('*').maybeSingle(),
+        db.from('bill_reminders').select('*').order('due_day'),
       ]);
       setTxs((t.data ?? []).map((x: any) => ({ ...x, amount: Number(x.amount) })));
       setGoals((g.data ?? []).map((x: any) => ({ ...x, target: Number(x.target), saved: Number(x.saved) })));
       if (s.data) { setCurrency(s.data.currency); setBudget(Number(s.data.monthly_budget)); }
+      const billRows = (b.data ?? []).map((x: any) => ({ ...x, amount: Number(x.amount) }));
+      setBills(billRows);
+      const due = billRows.filter((x: Bill) => billStatus(x) !== 'paid' && billStatus(x) !== 'later');
+      if (due.length) {
+        toast.warning(`${due.length} bill${due.length > 1 ? 's' : ''} due soon: ${due.map((x: Bill) => x.name).join(', ')}`);
+        if ('Notification' in window && Notification.permission === 'granted') new Notification('Niknote bill reminder', { body: due.map((x: Bill) => `${x.name} — due on ${x.due_day}`).join('\n') });
+      }
     })();
   }, [user]);
 
@@ -62,6 +74,51 @@ export default function MoneyTracker() {
     setTxs(p => p.filter(t => t.id !== id));
     await db.from('money_transactions').delete().eq('id', id);
   };
+
+  const scanReceipt = async (file?: File) => {
+    if (!file) return;
+    if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) return toast.error('Use a PNG, JPG or WEBP photo');
+    if (file.size > 5 * 1024 * 1024) return toast.error('Photo must be under 5MB');
+    setScanning(true);
+    try {
+      const image = await new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(file); });
+      const { data, error } = await supabase.functions.invoke('scan-receipt', { body: { image } });
+      if (error || data?.error) {
+        let msg = data?.error;
+        try { msg = msg || (await (error as any)?.context?.json())?.error; } catch { /* noop */ }
+        throw new Error(msg || 'Could not read the receipt');
+      }
+      const { data: row, error: insErr } = await db.from('money_transactions').insert({ kind: 'expense', amount: data.amount, category: data.category, note: data.note || 'Receipt', occurred_on: data.date }).select().single();
+      if (insErr) throw insErr;
+      setTxs(p => [{ ...row, amount: Number(row.amount) }, ...p]);
+      haptic('success');
+      toast.success(`Added ${formatMoney(data.amount, currency)} · ${data.category}${data.note ? ' · ' + data.note : ''}`);
+    } catch (e: any) {
+      haptic('error'); toast.error(e.message);
+    } finally { setScanning(false); }
+  };
+
+  const addBill = async () => {
+    const due_day = Number(billForm.due_day);
+    if (!billForm.name.trim() || !(due_day >= 1 && due_day <= 31)) return toast.error('Add a bill name and due day (1-31)');
+    const { data, error } = await db.from('bill_reminders').insert({ name: billForm.name.trim(), amount: Number(billForm.amount) || 0, due_day }).select().single();
+    if (error) return toast.error(error.message);
+    haptic('light');
+    setBills(p => [...p, { ...data, amount: Number(data.amount) }].sort((a, b) => a.due_day - b.due_day));
+    setBillForm({ name: '', amount: '', due_day: '' });
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  };
+  const payBill = async (b: Bill) => {
+    const month = toDay(new Date()).slice(0, 7);
+    setBills(p => p.map(x => x.id === b.id ? { ...x, last_paid_month: month } : x));
+    await db.from('bill_reminders').update({ last_paid_month: month }).eq('id', b.id);
+    if (b.amount > 0) {
+      const { data } = await db.from('money_transactions').insert({ kind: 'expense', amount: b.amount, category: 'Bills', note: b.name }).select().single();
+      if (data) setTxs(p => [{ ...data, amount: Number(data.amount) }, ...p]);
+    }
+    haptic('success'); toast.success(`${b.name} marked paid`);
+  };
+  const delBill = async (id: string) => { haptic('heavy'); setBills(p => p.filter(b => b.id !== id)); await db.from('bill_reminders').delete().eq('id', id); };
 
   const addGoal = async () => {
     const target = Number(goalForm.target);
@@ -202,12 +259,16 @@ export default function MoneyTracker() {
           )}
           <motion.button whileTap={{ scale: 0.94 }} onClick={addTx}
             className="mt-4 w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2"><Plus className="w-4 h-4" />Add</motion.button>
+          <label className={`mt-2 w-full h-11 rounded-xl border-2 border-dashed border-primary/40 text-primary font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition ${scanning ? 'opacity-60 pointer-events-none' : ''}`}>
+            {scanning ? <><Loader2 className="w-4 h-4 animate-spin" />Reading receipt…</> : <><Camera className="w-4 h-4" />Scan receipt photo</>}
+            <input type="file" accept="image/png,image/jpeg,image/webp" capture="environment" className="hidden" onChange={e => { scanReceipt(e.target.files?.[0]); e.target.value = ''; }} />
+          </label>
         </Panel>
 
         <Panel title="Monthly budget">
           <div className="flex gap-2">
             <input inputMode="decimal" value={budget || ''} placeholder="Set budget" onChange={e => setBudget(Number(e.target.value) || 0)}
-              onBlur={() => saveSettings({ monthly_budget: budget })} className="flex-1 h-11 rounded-xl border border-border bg-background px-3 text-sm" />
+              onBlur={() => saveSettings({ monthly_budget: budget })} className="flex-1 min-w-0 h-11 rounded-xl border border-border bg-background px-3 text-sm" />
           </div>
           <div className="mt-4 h-4 rounded-full bg-muted overflow-hidden">
             <motion.div initial={{ width: 0 }} animate={{ width: `${budgetPct}%` }} transition={{ type: 'spring', stiffness: 60 }}
@@ -240,9 +301,9 @@ export default function MoneyTracker() {
       <div className="grid lg:grid-cols-2 gap-6">
         <Panel title="Savings goals" action={<Target className="w-4 h-4 text-muted-foreground" />}>
           <div className="flex gap-2 mb-4">
-            <input placeholder="Goal (e.g. New phone)" value={goalForm.name} onChange={e => setGoalForm(g => ({ ...g, name: e.target.value }))} className="flex-1 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
-            <input inputMode="decimal" placeholder="Target" value={goalForm.target} onChange={e => setGoalForm(g => ({ ...g, target: e.target.value }))} className="w-24 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
-            <button onClick={addGoal} className="h-10 w-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center active:scale-90" aria-label="Add goal"><Plus className="w-4 h-4" /></button>
+            <input placeholder="Goal (e.g. New phone)" value={goalForm.name} onChange={e => setGoalForm(g => ({ ...g, name: e.target.value }))} className="flex-1 min-w-0 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
+            <input inputMode="decimal" placeholder="Target" value={goalForm.target} onChange={e => setGoalForm(g => ({ ...g, target: e.target.value }))} className="w-20 shrink-0 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
+            <button onClick={addGoal} className="h-10 w-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center active:scale-90" aria-label="Add goal"><Plus className="w-4 h-4" /></button>
           </div>
           <div className="space-y-4">
             {goals.map(g => {
@@ -267,8 +328,8 @@ export default function MoneyTracker() {
 
         <Panel title="Split a bill" action={<Users className="w-4 h-4 text-muted-foreground" />}>
           <div className="flex gap-2">
-            <input inputMode="decimal" placeholder="Total" value={split.total} onChange={e => setSplit(s => ({ ...s, total: e.target.value }))} className="flex-1 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
-            <input inputMode="numeric" placeholder="People" value={split.people} onChange={e => setSplit(s => ({ ...s, people: e.target.value }))} className="w-24 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
+            <input inputMode="decimal" placeholder="Total" value={split.total} onChange={e => setSplit(s => ({ ...s, total: e.target.value }))} className="flex-1 min-w-0 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
+            <input inputMode="numeric" placeholder="People" value={split.people} onChange={e => setSplit(s => ({ ...s, people: e.target.value }))} className="w-20 shrink-0 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
           </div>
           {shares.length > 0 && Number(split.total) > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
@@ -277,6 +338,34 @@ export default function MoneyTracker() {
           )}
         </Panel>
       </div>
+
+      <Panel title="Bill reminders" action={<Bell className="w-4 h-4 text-muted-foreground" />}>
+        <div className="flex gap-2 mb-4">
+          <input placeholder="Bill (e.g. Electricity)" value={billForm.name} onChange={e => setBillForm(f => ({ ...f, name: e.target.value }))} className="flex-1 min-w-0 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
+          <input inputMode="decimal" placeholder="Amount" value={billForm.amount} onChange={e => setBillForm(f => ({ ...f, amount: e.target.value }))} className="w-20 h-10 rounded-xl border border-border bg-background px-2 text-sm" />
+          <input inputMode="numeric" placeholder="Day" value={billForm.due_day} onChange={e => setBillForm(f => ({ ...f, due_day: e.target.value }))} className="w-14 h-10 rounded-xl border border-border bg-background px-2 text-sm" aria-label="Due day of month" />
+          <button onClick={addBill} className="h-10 w-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center active:scale-90" aria-label="Add bill"><Plus className="w-4 h-4" /></button>
+        </div>
+        <div className="space-y-2">
+          {bills.map(b => {
+            const st = billStatus(b);
+            const tone = st === 'paid' ? 'text-emerald-600' : st === 'overdue' ? 'text-rose-600' : st === 'soon' ? 'text-amber-600' : 'text-muted-foreground';
+            const label = st === 'paid' ? 'Paid this month' : st === 'overdue' ? 'Overdue' : st === 'soon' ? 'Due soon' : `Due on ${b.due_day}`;
+            return (
+              <motion.div key={b.id} layout className="flex items-center gap-3 p-3 rounded-2xl bg-muted/40">
+                <span className="text-xl">🧾</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{b.name}{b.amount > 0 && ` · ${formatMoney(b.amount, currency)}`}</p>
+                  <p className={`text-xs font-medium ${tone}`}>{label}</p>
+                </div>
+                {st !== 'paid' && <button onClick={() => payBill(b)} className="px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-700 text-xs font-semibold flex items-center gap-1 active:scale-90"><CheckCircle2 className="w-3.5 h-3.5" />Paid</button>}
+                <button onClick={() => delBill(b.id)} className="p-1 text-muted-foreground" aria-label="Delete bill"><Trash2 className="w-4 h-4" /></button>
+              </motion.div>
+            );
+          })}
+          {!bills.length && <p className="text-sm text-muted-foreground">Add monthly bills — you’ll get a reminder 3 days before they’re due.</p>}
+        </div>
+      </Panel>
 
       <Panel title="Recent transactions">
         <p className="text-xs text-muted-foreground mb-3">Swipe left on a row to delete</p>
