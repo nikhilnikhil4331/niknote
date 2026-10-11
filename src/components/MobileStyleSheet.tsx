@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { PaperEffectsControls } from '@/components/paper/PaperEffects';
 
 interface MobileStyleSheetProps {
   isOpen: boolean;
@@ -134,7 +135,7 @@ export const MobileStyleSheet: React.FC<MobileStyleSheetProps> = ({
                     <FileText className="w-3 h-3" /> Paper Type
                   </Label>
                   <div className="grid grid-cols-3 gap-2">
-                    {PAGE_STYLE_OPTIONS.slice(0, 9).map((style) => (
+                    {PAGE_STYLE_OPTIONS.map((style) => (
                       <motion.button
                         key={style.value}
                         whileTap={{ scale: 0.95 }}
@@ -151,6 +152,11 @@ export const MobileStyleSheet: React.FC<MobileStyleSheetProps> = ({
                       </motion.button>
                     ))}
                   </div>
+                </section>
+
+                {/* PEN & EFFECTS */}
+                <section>
+                  <PaperEffectsControls fx={settings.paperEffects} pen={settings.penType} onChange={updateSettings} />
                 </section>
 
                 {/* SPACING & SIZE */}

@@ -1333,3 +1333,9 @@
     overscroll-behavior-y: contain;
   }
 }
+
+/* Pen types — applied to page text, never to paper effects */
+.pen-gel > :not(.paper-fx) { text-shadow: 0 0 0.6px currentColor, 0 0 0.6px currentColor; }
+.pen-fountain > :not(.paper-fx) { text-shadow: 0.4px 0.3px 0.8px currentColor; filter: saturate(1.25); }
+.pen-pencil > :not(.paper-fx) { filter: grayscale(1) contrast(0.85) opacity(0.72); text-shadow: 0.3px 0 0.4px hsl(0 0% 40% / .5); }
+.pen-marker > :not(.paper-fx) { text-shadow: 0 0 1px currentColor, 0.6px 0.6px 1.4px currentColor; font-weight: 700; }

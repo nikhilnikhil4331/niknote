@@ -11,6 +11,7 @@ import { TableConfigPanel } from './TableConfigPanel';
 import { DiagramImport } from './DiagramImport';
 import { HandwritingAnalyzer } from './HandwritingAnalyzer';
 import { HandwritingTextImporter } from './HandwritingTextImporter';
+import { PaperEffectsControls } from '@/components/paper/PaperEffects';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Accordion,
@@ -347,6 +348,9 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                       </div>
                     ))}
                   </div>
+                </div>
+                <div className="pt-2">
+                  <PaperEffectsControls fx={settings.paperEffects} pen={settings.penType} onChange={updateSettings} />
                 </div>
               </div>
             </AccordionContent>
