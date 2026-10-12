@@ -8,7 +8,7 @@ const corsHeaders = {
 
 // Rate limiting configuration - OCR is expensive, stricter limits
 const RATE_LIMIT_WINDOW = 3600; // 1 hour in seconds
-const MAX_REQUESTS_PER_WINDOW = 15; // 15 OCR requests per hour
+const MAX_REQUESTS_PER_WINDOW = 60; // per hour; PDFs send one request per scanned page
 
 async function checkRateLimit(
   supabase: any,

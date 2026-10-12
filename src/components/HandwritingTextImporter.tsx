@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { readPdf } from '@/lib/pdfText';
+import { openPdfPipeline, assemble, validatePdf, type PageResult, type PipelineHandle } from '@/lib/pdfPipeline';
 
 interface HandwritingTextImporterProps {
   onImportText: (lines: string[]) => void;
@@ -37,7 +37,6 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
     if (!file) return;
 
     if (file.type === 'application/pdf') {
-      if (file.size > 20 * 1024 * 1024) { toast.error('PDF must be less than 20MB'); return; }
       await importPdf(file);
       return;
     }
@@ -66,30 +65,54 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
     reader.readAsDataURL(file);
   };
 
+  const pipelineRef = useRef<PipelineHandle | null>(null);
+  const [pages, setPages] = useState<PageResult[]>([]);
+
+  const ocrCall = async (imageBase64: string) => {
+    const { data, error } = await supabase.functions.invoke('extract-handwriting-text', { body: { imageBase64, retryAttempt: 0 } });
+    if (error) {
+      const status = (error as any)?.context?.status ?? (error as any)?.status;
+      let msg = error.message;
+      try { msg = (await (error as any).context?.json())?.error || msg; } catch { /* keep */ }
+      throw Object.assign(new Error(msg), { status });
+    }
+    if (!data?.success) throw Object.assign(new Error(data?.error || 'Text unclear on this page'), { status: 422 });
+    return data.lines as string[];
+  };
+
+  const publish = (list: PageResult[]) => {
+    const lines = assemble(list);
+    const failed = list.filter(p => p?.status === 'failed').map(p => p.index + 1);
+    setOcrResult({
+      extractedText: lines.join('\n'), lines, confidence: 1, success: lines.some(l => l.trim()),
+      warnings: failed.length ? [`Page ${failed.join(', ')} needs retry`] : [],
+      error: lines.length ? undefined : 'No text found in this PDF',
+    });
+  };
+
   const importPdf = async (file: File) => {
     if (!session?.access_token) { toast.error('Please login first'); navigate('/login'); return; }
-    setIsExtracting(true); setOcrResult(null);
+    const invalid = validatePdf(file); if (invalid) { toast.error(invalid); return; }
+    setIsExtracting(true); setOcrResult(null); setPages([]);
     try {
-      const { pages, firstPageImage } = await readPdf(file);
-      setPreviewImage(firstPageImage);
-      const all: string[] = [];
-      const warnings: string[] = [];
-      for (let i = 0; i < pages.length; i++) {
-        let lines = pages[i].lines;
-        if (pages[i].scanImage) {
-          const { data, error } = await supabase.functions.invoke('extract-handwriting-text', { body: { imageBase64: pages[i].scanImage, retryAttempt: 0 } });
-          if (error || !data?.success) { warnings.push(`Page ${i + 1}: could not read scanned text`); lines = []; }
-          else lines = data.lines;
-        }
-        if (i > 0 && all.length) all.push('');
-        all.push(...lines);
-      }
-      if (!all.some(l => l.trim())) throw new Error('No text found in this PDF');
-      setOcrResult({ extractedText: all.join('\n'), lines: all, confidence: 1, warnings, success: true });
-      toast.success(`Read ${pages.length} page${pages.length > 1 ? 's' : ''} from the PDF`);
+      const handle = await openPdfPipeline(file, ocrCall);
+      pipelineRef.current = handle;
+      setPreviewImage(handle.firstPageImage);
+      const list = await handle.run(p => setPages(prev => { const n = [...prev]; n[p.index] = p; return n; }));
+      setPages([...list]); publish(list);
+      const failed = list.filter(p => p.status === 'failed').length;
+      if (failed) toast.warning(`${list.length - failed} of ${list.length} pages read. Retry the rest below.`);
+      else toast.success(`Read ${list.length} page${list.length > 1 ? 's' : ''} from the PDF`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Could not read PDF');
     } finally { setIsExtracting(false); }
+  };
+
+  const retryPdfPage = async (i: number) => {
+    const h = pipelineRef.current; if (!h) return;
+    const upd = (p: PageResult) => setPages(prev => { const n = [...prev]; n[p.index] = p; return n; });
+    const r = await h.retryPage(i, upd);
+    setPages(prev => { const n = [...prev]; n[i] = r; publish(n); return n; });
   };
 
   const extractText = async (imageBase64: string, retryAttempt: number) => {
@@ -246,6 +269,23 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
               </div>
             )}
           </div>
+
+          {pages.length > 0 && (
+            <div className="flex flex-wrap gap-1.5" aria-label="Page progress">
+              {pages.map((p, i) => p && (
+                <button key={i} type="button" disabled={p.status !== 'failed'} onClick={() => retryPdfPage(i)}
+                  title={p.status === 'failed' ? `${p.error} — tap to retry` : p.kind === 'digital' ? 'Text layer' : p.status}
+                  className={cn('text-[11px] px-2 py-1 rounded-md border',
+                    p.status === 'done' && 'bg-primary/10 border-primary/30',
+                    p.status === 'processing' && 'animate-pulse border-primary',
+                    p.status === 'queued' && 'text-muted-foreground',
+                    p.status === 'skipped' && 'opacity-50',
+                    p.status === 'failed' && 'bg-destructive/10 border-destructive text-destructive')}>
+                  {i + 1}{p.status === 'failed' ? ' ↻' : p.status === 'done' ? ' ✓' : p.status === 'skipped' ? ' –' : ''}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* OCR Results */}
           {ocrResult && (
