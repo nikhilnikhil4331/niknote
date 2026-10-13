@@ -1,5 +1,5 @@
 # Launch-readiness checklist
-- [ ] Verify and fix mobile draft notebook identity after reload; regression tests and real saved-note checks
+- [x] Mobile draft identity persists on change, not cleanup; regression tests passed and authenticated create/open/new/reload/save preserved older content with no duplicate on repeat save; temporary test notes removed
 - [x] Niknote-only email pages, Google/GitHub buttons/setup removed, animations and supported-device haptics; mobile/desktop and real invalid-login response checked, authenticated /money return checked
 - [ ] New account email-confirmation and successful password sign-in end-to-end (requires an accessible test mailbox/account password; hosted email auth confirmed enabled, no settings changed)
 - [x] Legal pages and working policy links
