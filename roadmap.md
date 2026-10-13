@@ -1,5 +1,6 @@
 # Launch-readiness checklist
-- [ ] Niknote-only email signup/sign-in: remove Google/GitHub buttons, shared branded pages, animations and haptics; verify flows
+- [x] Niknote-only email pages, Google/GitHub buttons/setup removed, animations and supported-device haptics; mobile/desktop and real invalid-login response checked, authenticated /money return checked
+- [ ] New account email-confirmation and successful password sign-in end-to-end (requires an accessible test mailbox/account password; hosted email auth confirmed enabled, no settings changed)
 - [x] Legal pages and working policy links
 - [x] Remove browser-exposed private AI credentials and secure feedback submission
 - [x] Cookie choice, privacy-aware analytics and metadata consistency
