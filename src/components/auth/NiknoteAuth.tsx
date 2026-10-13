@@ -66,7 +66,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
       <Link to="/" className="nik-auth-back text-muted-foreground" onClick={() => triggerHaptic('selection')}><ArrowLeft size={17} /> Home</Link>
       <motion.section key={mode} className="nik-auth-content" initial={reduced ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .45 }}>
         <header className="text-center mb-7">
-          <motion.img src="/niknote-logo-square.png" alt="Niknote" className="nik-auth-logo" initial={reduced ? false : { rotate: -8, scale: .88 }} animate={{ rotate: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 160, damping: 16 }} />
+          <motion.img src="/niknote-logo.png" alt="Niknote" className="nik-auth-logo" initial={reduced ? false : { rotate: -8, scale: .88 }} animate={{ rotate: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 160, damping: 16 }} />
           <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">{signup ? 'Sign up with Niknote' : 'Sign in to Niknote'}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{signup ? 'Your next chapter starts here.' : 'Welcome back. Your notes are waiting.'}</p>
         </header>
