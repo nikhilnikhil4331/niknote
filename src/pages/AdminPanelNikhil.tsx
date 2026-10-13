@@ -1198,7 +1198,6 @@ const AdminChatWidget: React.FC = () => {
         '✅ Noted! Main dekh raha hoon.',
         '📊 Abhi 0 active users hain — site fresh hai!',
         '🔄 System check complete — sab theek chal raha hai.',
-        '💡 Tip: Google OAuth ke liye Supabase Dashboard mein jaao → Authentication → Providers → Google enable karo.',
         '🚀 Deployment successful! niknote.online pe live hai.',
         '📝 Next: AI agents ko powerful banao — OpenAI API key add karo.',
       ];

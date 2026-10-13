@@ -1,3 +1,4 @@
+/// <reference types="bun" />
 import { describe, expect, test, mock } from 'bun:test';
 mock.module('pdfjs-dist', () => ({ GlobalWorkerOptions: {} }));
 mock.module('pdfjs-dist/build/pdf.worker.min.mjs?url', () => ({ default: '' }));
