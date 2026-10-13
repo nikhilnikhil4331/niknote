@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { IconButton, MobileHeader, MobileNavigation, ThemeSelector } from './MobilePrimitives';
 import { useMobileAppearance } from './useMobileAppearance';
 import { motion, useReducedMotion } from 'framer-motion';
-import { accountName } from '@/lib/accountName';
+import { useAccountName } from '@/hooks/useAccountName';
 
 const examples = [
   { id: 'sample-os', title: 'Operating System', pages: 6, time: '2 hours ago', tags: ['Study', 'OS'], icon: BookOpen, tone: 'blue', text: '# Operating System\nAn operating system manages hardware and software resources.\n## Core functions\n• Process management\n• Memory management\n• File systems and security' },
@@ -58,7 +58,7 @@ export function MobileExperience() {
   useEffect(() => { if (ai.status === 'done' && ai.output) { setMessages(prev => [...prev, { role: 'assistant', text: ai.output }]); ai.reset(); } if (ai.status === 'error') toast.error(ai.error || 'AI unavailable'); }, [ai.status]);
   useEffect(() => () => ai.cancel(), []);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { fullName, firstName } = accountName(user);
+  const { fullName, firstName } = useAccountName();
   const reducedMotion = useReducedMotion();
   const page = pathname === '/notebooks' ? 'notes' : pathname === '/ai' ? 'ai' : pathname === '/account' ? 'profile' : pathname === '/appearance' ? 'appearance' : pathname === '/templates' ? 'templates' : 'home';
   const pageOrder = ['home', 'notes', 'templates', 'ai', 'profile', 'appearance'];

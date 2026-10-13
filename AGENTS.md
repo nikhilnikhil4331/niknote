@@ -1,5 +1,5 @@
 # Project decisions
-- Derive mobile greetings and profile labels from the current authenticated user's metadata through one pure helper; never retain a previous account's name.
+- Derive mobile greetings and profile labels from the current user's saved profile, auth metadata or email username through a user-keyed query and pure helper; never retain a previous account's name.
 - Keep the mobile navigation indicator and route slides presentation-only, respecting reduced motion and the Appearance animations toggle.
 - Persist mobile draft notebook identity in the effect body on every identity change, never in cleanup, so reloads cannot target a previously opened note.
 - Share one email/password authentication presentation across /login, /signup and /auth so validation, confirmation states and transitions stay consistent.
