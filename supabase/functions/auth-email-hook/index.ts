@@ -15,7 +15,7 @@ const corsHeaders = {
 }
 
 // Configuration
-const SITE_NAME = "Ink Scribe"
+const SITE_NAME = "Niknote"
 const SENDER_DOMAIN = "notify.niknote.online"
 const ROOT_DOMAIN = "niknote.online"
 const FROM_DOMAIN = "notify.niknote.online"
