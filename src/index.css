@@ -3,6 +3,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile navigation roles inherit the selected appearance palette. */
+.nn-mobile {
+  --nav-glass: hsl(var(--background) / .88);
+  --nav-highlight: linear-gradient(135deg, hsl(var(--primary) / .18), hsl(var(--accent) / .08));
+  --nav-create: linear-gradient(145deg, hsl(var(--primary)), hsl(var(--accent)));
+  --nav-shadow: 0 8px 30px hsl(var(--foreground) / .1), inset 0 1px 0 hsl(var(--primary-foreground) / .4);
+  --nav-create-shadow: 0 6px 16px hsl(var(--primary) / .28);
+}
+.nn-mobile .nn-navigation.nn-navigation-swift {
+  left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom));
+  height: 70px; padding: 8px 5px; gap: 0; border: 1px solid var(--nn-border);
+  border-radius: 24px; background: var(--nav-glass); box-shadow: var(--nav-shadow);
+  backdrop-filter: blur(24px) saturate(150%);
+}
+.nn-nav-track { position: absolute; inset: 8px 5px; pointer-events: none; }
+.nn-nav-highlight { width: 20%; height: 100%; border-radius: 17px; background: var(--nav-highlight); }
+.nn-mobile .nn-navigation-swift .nn-nav-item {
+  position: relative; z-index: 1; background: transparent; gap: 4px; min-width: 0;
+  border-radius: 17px; letter-spacing: 0;
+  transition: color .18s, transform .18s;
+}
+.nn-mobile .nn-navigation-swift .nn-nav-item:hover { background: transparent; }
+.nn-nav-icon { display: grid; place-items: center; }
+.nn-mobile .nn-navigation-swift .nn-active { font-weight: 650; }
+.nn-mobile .nn-navigation-swift .nn-create {
+  transform: translateY(-10px); border: 3px solid hsl(var(--background));
+  background: var(--nav-create) !important; color: hsl(var(--primary-foreground)) !important;
+  border-radius: 19px !important; box-shadow: var(--nav-create-shadow);
+}
+.nn-mobile .nn-navigation-swift .nn-create:active { transform: translateY(-10px) scale(.92); }
+.nn-mobile .nn-chat-input { bottom: calc(92px + env(safe-area-inset-bottom)); }
+.nn-mobile .nn-ai-content { padding-bottom: 176px; }
+.nn-mobile .nn-welcome h2 { overflow-wrap: anywhere; padding-right: 14px; letter-spacing: 0; }
+.nn-mobile .nn-ai-greeting > div:first-child { min-width: 0; }
+.nn-mobile .nn-ai-greeting h2 { overflow-wrap: anywhere; letter-spacing: 0; }
+.nn-mobile .nn-profile h2, .nn-mobile .nn-drawer-profile strong { max-width: 100%; overflow-wrap: anywhere; }
+
 .nik-auth-page { --auth-pink: var(--ink-pink); --auth-violet: var(--accent); --auth-blue: var(--primary); min-height: 100dvh; position: relative; isolation: isolate; display: grid; place-items: center; padding: 68px 20px 32px; background: hsl(var(--background)); overflow: clip; }
 .nik-auth-backdrop { position: absolute; inset: -20%; z-index: -1; background: linear-gradient(125deg, hsl(var(--auth-pink) / .12), hsl(var(--auth-violet) / .09) 42%, hsl(var(--auth-blue) / .12), hsl(var(--background))); background-size: 200% 200%; animation: nik-auth-drift 14s ease-in-out infinite alternate; }
 .nik-auth-back { position: absolute; top: max(22px, env(safe-area-inset-top)); left: 22px; display: flex; align-items: center; gap: 7px; font-size: 13px; }

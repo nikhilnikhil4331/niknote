@@ -4,6 +4,7 @@ import { PenLine, Wallet, CalendarCheck, Layers, Sparkles, BookOpen, FileText, T
 import { AppDock } from '@/components/AppDock';
 import { haptic } from '@/hooks/useHaptics';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAccountName } from '@/hooks/useAccountName';
 
 const GROUPS = [
   { title: 'Write', items: [
@@ -32,7 +33,7 @@ const GROUPS = [
 
 export default function Hub() {
   const { user } = useAuth();
-  const name = (user?.user_metadata as any)?.full_name?.split(' ')[0];
+  const { firstName: name } = useAccountName();
   const hour = new Date().getHours();
   const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
