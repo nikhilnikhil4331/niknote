@@ -60,6 +60,7 @@ const HandwritingScanner = lazy(() => import('@/components/handwriting-dna/Handw
 const CommandPalette = lazy(() => import('@/components/command-palette/CommandPalette').then(m => ({ default: m.CommandPalette })));
 import { useUITheme, UI_THEMES, UITheme, getThemeClasses } from '@/utils/uiThemes';
 import { cn } from '@/lib/utils';
+import { persistMobileDraftNotebook } from '@/lib/mobileDraft';
 import { HeaderProfileButton } from '@/components/HeaderProfileButton';
 const DiagramToolbar = lazy(() => import('@/components/DiagramToolbar').then(m => ({ default: m.DiagramToolbar })));
 import { useInlineContent } from '@/hooks/useInlineContent';
@@ -209,13 +210,11 @@ const Index = () => {
 
   useEffect(() => { setSelectedLines(new Set()); }, [currentPageIndex]);
 
-  // Preserve mobile's local draft on the initial mount.
+  // Keep the current mobile identity durable even when a reload skips cleanup.
   useEffect(() => {
     if (!isMobile) return;
-    const title = noteTitle;
-    const id = cloudNotebookId;
-    return () => { try { localStorage.setItem('niknote-mobile-draft-title', title); if (id) localStorage.setItem('niknote-mobile-draft-notebook', id); else localStorage.removeItem('niknote-mobile-draft-notebook'); } catch {} };
-  }, [noteTitle, cloudNotebookId, isMobile]);
+    try { persistMobileDraftNotebook(localStorage, cloudNotebookId); } catch {}
+  }, [cloudNotebookId, isMobile]);
   const initialPageRef = useRef(true);
   useEffect(() => {
     if (initialPageRef.current) { initialPageRef.current = false; if (isMobile) return; }
