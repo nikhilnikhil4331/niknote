@@ -19,6 +19,7 @@ import Welcome from "./pages/Welcome";
 import NotFound from "./pages/NotFound";
 import { AuthPage } from "@/components/auth/AuthPage";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import Signup from "./pages/Signup";
 import Upgrade from "./pages/Upgrade";
 import Payment from "./pages/Payment";
@@ -171,6 +172,7 @@ const App = () => {
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/signup" element={<Signup />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/upgrade" element={<Upgrade />} />
                     <Route path="/payment" element={<Payment />} />
