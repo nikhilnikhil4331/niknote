@@ -9,9 +9,11 @@ import { Label } from '@/components/ui/label';
 type Stage = 'request' | 'sent' | 'checking' | 'update' | 'done' | 'expired';
 
 /** Reads a recovery link: `#access_token=...&type=recovery`, `#error=...`, or `?code=` (PKCE). */
+const firstHash = typeof window !== 'undefined' ? window.location.hash : '';
+const firstSearch = typeof window !== 'undefined' ? window.location.search : '';
 function linkState(): 'recovery' | 'error' | 'none' {
-  const h = new URLSearchParams(window.location.hash.slice(1));
-  const q = new URLSearchParams(window.location.search);
+  const h = new URLSearchParams((window.location.hash || (window.location.pathname === '/reset-password' ? firstHash : '')).slice(1));
+  const q = new URLSearchParams(window.location.search || firstSearch);
   if (h.get('error') || q.get('error')) return 'error';
   if (h.get('type') === 'recovery' || h.get('access_token') || q.get('code')) return 'recovery';
   return 'none';
