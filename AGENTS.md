@@ -1,4 +1,5 @@
 # Project decisions
+- Persist mobile draft notebook identity in the effect body on every identity change, never in cleanup, so reloads cannot target a previously opened note.
 - Share one email/password authentication presentation across /login, /signup and /auth so validation, confirmation states and transitions stay consistent.
 - Use a route-aware mobile presentation shell backed by existing notebook and editor hooks; keep desktop routes unchanged so the redesign does not fork product data.
 - Keep legal information in public React routes linked from the footer so visitors can read it without signing in.
