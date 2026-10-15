@@ -34,7 +34,14 @@ export default function OnboardingPage() {
     if (idx < steps.length - 1) setStep(steps[idx + 1]);
   };
 
-  const skip = () => next();
+  // Skip ends onboarding entirely so the welcome flow never returns.
+  const skip = () => {
+    localStorage.setItem('niknote_onboarding_done', 'true');
+    if (user) {
+      void supabase.from("profiles").update({ onboarding_completed: true } as any).eq("user_id", user.id);
+    }
+    navigate("/");
+  };
 
   const handleUseCaseSelect = async (uc: string) => {
     setUseCase(uc);
