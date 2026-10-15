@@ -39,4 +39,4 @@
 - [x] Phase 4: drawing board (pen/highlighter/eraser/shapes/lasso/zoom, pointer events)
 - [ ] Phase 5: finance/goals edit, celebrations + sound toggle, quiet/reduced motion
 - [ ] Phase 6: motion polish, settings, full QA + dependency audit
-- [ ] Guest trial pass: done guest auth/unlock; remaining brief items (editor formatting, drawing tools, money accounts/transfers, habit schedules) open
+- [x] Guest trial pass: guest auth, unlock, accounts/transfers, habit weekdays/archive, line format bar, guest→account linking, board fit/PNG

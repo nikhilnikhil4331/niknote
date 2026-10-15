@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { haptic } from '@/hooks/useHaptics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MobileEditorHeader, MobileEditorToolbar } from '@/components/mobile/MobileEditorChrome';
@@ -91,6 +92,7 @@ const Index = () => {
     return () => document.removeEventListener('selectionchange', capture);
   }, []);
   const { user, signInAsGuest } = useAuth();
+  const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
   const dnaContext = useHandwritingDNA();
   const { theme: uiTheme, setTheme: setUITheme, classes: themeClasses } = useUITheme();
   const isMobile = useIsMobile();
@@ -974,9 +976,17 @@ const Index = () => {
                 <Button variant="ghost" size="icon" onClick={blockEditor.redo} disabled={!blockEditor.canRedo} aria-label="Redo" title="Redo"><Redo2 className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" onClick={saveMobileNote} disabled={savingNote} aria-label="Save note" title="Save note"><Save className="h-4 w-4" /></Button>
               </div>
+              {mobileView === 'write' && <div className="nn-format-bar" role="toolbar" aria-label="Line format" onPointerDown={e => e.preventDefault()}>
+                {([['text','Text','Aa'],['heading1','Heading 1','H1'],['heading2','Heading 2','H2'],['bullet','Bullet list','•'],['numbered','Numbered list','1.'],['todo','Checklist','☐'],['quote','Quote','❝'],['code','Code','</>']] as const).map(([t,label,icon]) => {
+                  const cur = blockEditor.blocks.find(b => b.id === focusedBlockId);
+                  return <button key={t} type="button" aria-label={label} aria-pressed={cur?.type === t} disabled={!cur} onClick={() => { if (cur) { blockEditor.convertBlock(cur.id, t as any); haptic('selection'); } }}>{icon}</button>;
+                })}
+                <button type="button" aria-label="Move line up" disabled={!focusedBlockId} onClick={() => focusedBlockId && blockEditor.moveBlock(focusedBlockId, 'up')}>↑</button>
+                <button type="button" aria-label="Move line down" disabled={!focusedBlockId} onClick={() => focusedBlockId && blockEditor.moveBlock(focusedBlockId, 'down')}>↓</button>
+              </div>}
               <div className="nn-editor-helper"><span>{blockEditor.blocks.reduce((t, b) => t + b.content.trim().split(/\s+/).filter(Boolean).length, 0)} words</span><span>Local draft</span></div>
               {/* Mobile Notion Editor — Full width, clean */}
-              <div className="nn-editor-canvas" hidden={mobileView !== 'write'} data-paper={settings.pageStyle} style={{ '--nn-handwriting': settings.font === 'roman-regular' ? 'Inter, sans-serif' : settings.font === 'roman-serif' ? 'Georgia, serif' : settings.font === 'roman-mono' ? '"JetBrains Mono", monospace' : `"${settings.font.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}", cursive` } as React.CSSProperties}>
+              <div className="nn-editor-canvas" onFocusCapture={e => { const id = (e.target as HTMLElement).closest('[data-block-id]')?.getAttribute('data-block-id'); if (id) setFocusedBlockId(id); }} hidden={mobileView !== 'write'} data-paper={settings.pageStyle} style={{ '--nn-handwriting': settings.font === 'roman-regular' ? 'Inter, sans-serif' : settings.font === 'roman-serif' ? 'Georgia, serif' : settings.font === 'roman-mono' ? '"JetBrains Mono", monospace' : `"${settings.font.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}", cursive` } as React.CSSProperties}>
                 <NotionEditor
                   blocks={blockEditor.blocks}
                   onBlocksChange={blockEditor.setBlocks}

@@ -440,24 +440,30 @@ export type Database = {
       }
       habits: {
         Row: {
+          archived: boolean
           block: string
           created_at: string
+          days: number[]
           emoji: string
           id: string
           name: string
           user_id: string
         }
         Insert: {
+          archived?: boolean
           block?: string
           created_at?: string
+          days?: number[]
           emoji?: string
           id?: string
           name: string
           user_id?: string
         }
         Update: {
+          archived?: boolean
           block?: string
           created_at?: string
+          days?: number[]
           emoji?: string
           id?: string
           name?: string
@@ -560,6 +566,7 @@ export type Database = {
       }
       money_transactions: {
         Row: {
+          account: string
           amount: number
           category: string
           created_at: string
@@ -567,9 +574,11 @@ export type Database = {
           kind: string
           note: string
           occurred_on: string
+          to_account: string | null
           user_id: string
         }
         Insert: {
+          account?: string
           amount: number
           category?: string
           created_at?: string
@@ -577,9 +586,11 @@ export type Database = {
           kind?: string
           note?: string
           occurred_on?: string
+          to_account?: string | null
           user_id?: string
         }
         Update: {
+          account?: string
           amount?: number
           category?: string
           created_at?: string
@@ -587,6 +598,7 @@ export type Database = {
           kind?: string
           note?: string
           occurred_on?: string
+          to_account?: string | null
           user_id?: string
         }
         Relationships: []

@@ -662,7 +662,7 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
           }
 
           return (
-            <div key={block.id} data-block-type={block.type}>
+            <div key={block.id} data-block-id={block.id} data-block-type={block.type}>
               <div
                 className={cn("nn-block-row group relative flex items-start gap-0 rounded-lg transition-colors duration-150", isMobile ? "min-h-[48px] py-2 px-2" : "min-h-[28px] py-1 px-1", isFocused && "bg-indigo-50/30")}
                 style={{ paddingLeft: indentPx + (isMobile ? 8 : 4), touchAction: 'manipulation' }}
