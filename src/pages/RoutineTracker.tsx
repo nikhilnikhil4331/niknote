@@ -130,7 +130,7 @@ export default function RoutineTracker() {
   return (
     <TrackerShell title="Daily Routine" subtitle="Habits, tasks, focus & wellbeing">
       {/* Wellness row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 [&>*]:min-w-0">
         <div className="rounded-3xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm font-medium"><Droplet className="w-4 h-4 text-sky-500" />Water</div>
           <div className="flex flex-wrap gap-1 mt-3">
@@ -149,7 +149,7 @@ export default function RoutineTracker() {
         </div>
         <div className="rounded-3xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm font-medium"><Dumbbell className="w-4 h-4 text-orange-500" />Exercise</div>
-          <div className="flex gap-1 mt-3">
+          <div className="flex flex-wrap gap-1 mt-3">
             {[10, 20, 30].map(m => <button key={m} onClick={() => { haptic('light'); saveWellness({ exercise_minutes: w.exercise_minutes + m }); }} className="px-2 py-1 rounded-lg bg-muted text-xs font-medium active:scale-90">+{m}m</button>)}
           </div>
           <p className="text-xs text-muted-foreground mt-2">{w.exercise_minutes} min today</p>
@@ -165,12 +165,12 @@ export default function RoutineTracker() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*]:min-w-0">
         {/* Habits */}
         <Panel title="Routine & habits">
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-4">
             <input value={habitForm.emoji} onChange={e => setHabitForm(f => ({ ...f, emoji: e.target.value.slice(0, 2) }))} className="w-12 h-10 rounded-xl border border-border bg-background text-center" aria-label="Emoji" />
-            <input placeholder="New habit" value={habitForm.name} onChange={e => setHabitForm(f => ({ ...f, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addHabit()} className="flex-1 min-w-0 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
+            <input placeholder="New habit" value={habitForm.name} onChange={e => setHabitForm(f => ({ ...f, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addHabit()} className="flex-1 min-w-[9rem] h-10 rounded-xl border border-border bg-background px-3 text-sm" />
             <select value={habitForm.block} onChange={e => setHabitForm(f => ({ ...f, block: e.target.value }))} className="h-10 rounded-xl border border-border bg-background px-2 text-sm" aria-label="Time of day">
               {BLOCKS.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
             </select>
@@ -237,7 +237,7 @@ export default function RoutineTracker() {
         </Panel>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*]:min-w-0">
         <Panel title={mode === 'focus' ? 'Pomodoro — Focus' : 'Pomodoro — Break'}>
           <div className="flex flex-col items-center">
             <div className="relative w-44 h-44">

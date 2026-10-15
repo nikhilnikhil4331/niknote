@@ -230,7 +230,7 @@ export default function MoneyTracker() {
         <button onClick={exportPdf} className="h-9 px-3 rounded-xl bg-muted text-sm font-medium flex items-center gap-1.5 active:scale-95"><Download className="w-4 h-4" />PDF</button>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*]:min-w-0">
         <Panel title="Add transaction">
           <div className="flex gap-2 mb-3">
             {['expense', 'income'].map(k => (
@@ -290,7 +290,7 @@ export default function MoneyTracker() {
       </div>
 
       <Panel title="Trends">
-        <div className="grid md:grid-cols-2 gap-4 h-56">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 [&>*]:min-w-0 h-56">
           <ResponsiveContainer><BarChart data={trend}><XAxis dataKey="label" fontSize={11} /><YAxis fontSize={11} width={40} /><Tooltip />
             <Bar dataKey="income" fill="hsl(150 60% 45%)" radius={[6, 6, 0, 0]} /><Bar dataKey="expense" fill="hsl(350 75% 58%)" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer>
           <ResponsiveContainer><LineChart data={trend}><XAxis dataKey="label" fontSize={11} /><YAxis fontSize={11} width={40} /><Tooltip />
@@ -298,7 +298,7 @@ export default function MoneyTracker() {
         </div>
       </Panel>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*]:min-w-0">
         <Panel title="Savings goals" action={<Target className="w-4 h-4 text-muted-foreground" />}>
           <div className="flex gap-2 mb-4">
             <input placeholder="Goal (e.g. New phone)" value={goalForm.name} onChange={e => setGoalForm(g => ({ ...g, name: e.target.value }))} className="flex-1 min-w-0 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
