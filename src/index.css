@@ -60,6 +60,11 @@
 
 @layer base {
   :root {
+    --water: 199 89% 55%;
+    --water-deep: 215 85% 48%;
+    --coin: 40 96% 52%;
+    --heart: 340 82% 58%;
+    --success: 152 62% 40%;
     /* Background - Crisp, modern light gray */
     --background: 220 20% 98%;
     --foreground: 222 47% 11%;
@@ -142,6 +147,11 @@
   }
 
   .dark {
+    --water: 199 89% 60%;
+    --water-deep: 215 85% 52%;
+    --coin: 42 95% 58%;
+    --heart: 340 85% 64%;
+    --success: 152 60% 48%;
     --background: 224 71% 4%;
     --foreground: 213 31% 91%;
 
@@ -1418,4 +1428,90 @@
   --nn-paper-mint: 163 18% 22%;
   --nn-paper-rose: 333 19% 23%;
   --nn-paper-blue: 215 23% 24%;
+}
+
+/* ===== Niknote motion graphics: loader, water glass, thank-you, feature art ===== */
+.nn-loader { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:32px; position:relative; overflow:hidden; background:hsl(var(--background)); }
+.nn-loader-full { position:fixed; inset:0; z-index:90; }
+.nn-loader-glow { position:absolute; width:340px; height:340px; border-radius:50%; background:radial-gradient(circle, hsl(var(--heart) / .16), hsl(var(--primary) / .08) 45%, transparent 70%); animation:nn-glow 2.4s ease-in-out infinite; }
+.nn-loader-logo { position:relative; width:min(240px, 64vw); }
+.nn-loader-logo img { width:100%; height:auto; display:block; mix-blend-mode:multiply; user-select:none; }
+.dark .nn-loader-logo img { mix-blend-mode:normal; filter:drop-shadow(0 0 12px hsl(var(--heart) / .4)); }
+.nn-loader-spark { position:absolute; width:8px; height:8px; border-radius:50%; background:hsl(var(--coin)); box-shadow:0 0 12px hsl(var(--coin)); animation:nn-twinkle 1.6s ease-in-out infinite; }
+.nn-loader-spark-0 { left:6%; top:18%; }
+.nn-loader-spark-1 { left:92%; top:24%; animation-delay:.5s; background:hsl(var(--heart)); box-shadow:0 0 12px hsl(var(--heart)); }
+.nn-loader-spark-2 { left:52%; top:86%; animation-delay:1s; background:hsl(var(--primary)); box-shadow:0 0 12px hsl(var(--primary)); }
+.nn-loader-ink { width:120px; height:4px; border-radius:99px; background:hsl(var(--muted)); overflow:hidden; transform-origin:left; }
+.nn-loader-ink span { display:block; height:100%; width:40%; border-radius:99px; background:linear-gradient(90deg, hsl(var(--coin)), hsl(var(--heart)), hsl(var(--primary))); animation:nn-ink 1.2s ease-in-out infinite; }
+.nn-loader-label { font-size:13px; color:hsl(var(--muted-foreground)); position:relative; }
+.nn-loader-dots i { font-style:normal; animation:nn-dot 1.2s infinite; }
+.nn-loader-dots i:nth-child(2) { animation-delay:.2s; } .nn-loader-dots i:nth-child(3) { animation-delay:.4s; }
+@keyframes nn-glow { 50% { transform:scale(1.12); opacity:.75; } }
+@keyframes nn-twinkle { 0%,100% { transform:scale(.4); opacity:.3; } 50% { transform:scale(1.2); opacity:1; } }
+@keyframes nn-ink { 0% { transform:translateX(-100%); } 100% { transform:translateX(260%); } }
+@keyframes nn-dot { 0%,100% { opacity:.2; } 50% { opacity:1; } }
+
+/* Water glass */
+.nn-water { display:flex; align-items:center; gap:16px; position:relative; }
+.nn-water-stage { position:relative; width:96px; flex-shrink:0; }
+.nn-water-svg { width:100%; height:auto; display:block; overflow:visible; }
+.nn-water-glass-bg { fill:hsl(var(--water) / .07); }
+.nn-water-glass { fill:none; stroke:hsl(var(--water) / .55); stroke-width:3; stroke-linejoin:round; }
+.nn-water-shine { stroke:hsl(var(--background) / .7); stroke-width:3; stroke-linecap:round; }
+.nn-water-stop-top { stop-color:hsl(var(--water)); }
+.nn-water-stop-bottom { stop-color:hsl(var(--water-deep)); }
+.nn-water-back { fill:hsl(var(--water) / .4); }
+.nn-wave { animation:nn-wave 2.6s linear infinite; }
+.nn-wave-back { animation-duration:3.8s; animation-direction:reverse; transform:translateX(-14px); }
+@keyframes nn-wave { from { transform:translateX(0); } to { transform:translateX(-60px); } }
+.nn-bubble { fill:hsl(var(--background) / .65); animation:nn-bubble 2.8s ease-in infinite; }
+@keyframes nn-bubble { 0% { transform:translateY(0); opacity:0; } 15% { opacity:1; } 100% { transform:translateY(-120px); opacity:0; } }
+.nn-splash { fill:none; stroke:hsl(var(--background) / .8); stroke-width:2; }
+.nn-drop { position:absolute; left:50%; top:0; width:12px; height:16px; margin-left:-6px; border-radius:50% 50% 50% 50% / 60% 60% 40% 40%; background:hsl(var(--water)); }
+.nn-water-readout { position:absolute; inset:0; display:grid; place-items:center; padding-top:18px; pointer-events:none; }
+.nn-water-readout strong { font-size:18px; font-weight:800; color:hsl(var(--foreground)); text-shadow:0 1px 6px hsl(var(--background) / .9); }
+.nn-water-info { min-width:0; flex:1; }
+.nn-water-big { font-size:15px; color:hsl(var(--muted-foreground)); } .nn-water-big b { font-size:26px; color:hsl(var(--foreground)); }
+.nn-water-small { font-size:12px; color:hsl(var(--muted-foreground)); margin-top:2px; }
+.nn-water-btns { display:flex; gap:8px; margin-top:10px; }
+.nn-water-btns button { height:40px; min-width:40px; border-radius:14px; display:inline-flex; align-items:center; justify-content:center; gap:6px; background:hsl(var(--muted)); color:hsl(var(--foreground)); font-size:13px; font-weight:600; }
+.nn-water-btns button:disabled { opacity:.4; }
+.nn-water-btns .nn-water-add { padding:0 14px; background:linear-gradient(135deg, hsl(var(--water)), hsl(var(--water-deep))); color:hsl(var(--primary-foreground)); box-shadow:0 6px 16px hsl(var(--water) / .35); }
+.nn-water-cheer { position:absolute; left:0; right:0; bottom:-6px; transform:translateY(100%); text-align:center; font-size:12px; font-weight:600; color:hsl(var(--water-deep)); }
+
+/* Thank you */
+.nn-thanks { display:flex; flex-direction:column; align-items:center; text-align:center; }
+.nn-thanks-stage { position:relative; width:120px; height:120px; display:grid; place-items:center; margin-bottom:12px; }
+.nn-thanks-heart { width:96px; height:96px; border-radius:50%; display:grid; place-items:center; color:hsl(var(--primary-foreground)); background:linear-gradient(135deg, hsl(var(--heart)), hsl(var(--coin))); box-shadow:0 18px 40px hsl(var(--heart) / .35); }
+.nn-thanks-mini { position:absolute; left:50%; top:50%; margin:-7px; color:hsl(var(--heart)); }
+.nn-thanks-title { font-size:30px; font-weight:800; color:hsl(var(--foreground)); display:flex; }
+.nn-thanks-title span { display:inline-block; }
+.nn-thanks-sub { color:hsl(var(--muted-foreground)); margin-top:6px; font-size:14px; max-width:20rem; }
+
+/* Feature art */
+.nn-art { position:relative; width:84px; height:64px; flex-shrink:0; }
+.nn-art-coin { position:absolute; top:0; width:20px; height:20px; margin-left:-10px; border-radius:50%; display:grid; place-items:center; font-size:11px; font-weight:800; color:hsl(var(--foreground) / .75); background:radial-gradient(circle at 35% 30%, hsl(var(--coin) / .7), hsl(var(--coin))); box-shadow:inset 0 -2px 0 hsl(var(--foreground) / .15); }
+.nn-art-wallet { position:absolute; left:50%; bottom:0; margin-left:-24px; width:48px; height:40px; border-radius:14px; display:grid; place-items:center; color:hsl(var(--primary-foreground)); background:linear-gradient(135deg, hsl(var(--success)), hsl(var(--primary))); box-shadow:0 8px 18px hsl(var(--success) / .3); }
+.nn-art-arc { position:absolute; inset:0; width:100%; height:100%; fill:none; stroke:hsl(var(--coin) / .45); stroke-width:2; stroke-dasharray:4 4; }
+.nn-art-sun { position:absolute; left:50%; bottom:6px; width:2px; height:48px; margin-left:-1px; transform-origin:bottom center; }
+.nn-art-sun span { position:absolute; top:-12px; left:-13px; width:28px; height:28px; border-radius:50%; display:grid; place-items:center; color:hsl(var(--primary-foreground)); background:linear-gradient(135deg, hsl(var(--coin)), hsl(var(--heart))); box-shadow:0 0 16px hsl(var(--coin) / .6); }
+.nn-art-check { position:absolute; left:50%; bottom:-4px; transform:translateX(-50%); display:inline-flex; align-items:center; gap:2px; padding:2px 7px; border-radius:99px; font-size:11px; font-weight:700; color:hsl(var(--primary-foreground)); background:hsl(var(--success)); white-space:nowrap; }
+.nn-art-plan { width:96px; height:96px; display:grid; place-items:center; }
+.nn-art-orbit { position:absolute; inset:0; }
+.nn-art-orbit i { position:absolute; left:50%; top:0; margin-left:-8px; width:16px; height:16px; display:grid; place-items:center; font-style:normal; font-size:10px; font-weight:800; border-radius:50%; color:hsl(var(--foreground) / .8); background:hsl(var(--coin)); }
+.nn-art-crown { width:58px; height:58px; border-radius:20px; display:grid; place-items:center; color:hsl(var(--primary-foreground)); background:linear-gradient(135deg, hsl(var(--coin)), hsl(var(--heart)), hsl(var(--primary))); box-shadow:0 14px 30px hsl(var(--heart) / .35); }
+.nn-art-pay { width:110px; height:80px; display:grid; place-items:center; }
+.nn-art-terminal { position:absolute; right:14px; top:14px; width:40px; height:54px; border-radius:10px; background:hsl(var(--foreground) / .85); box-shadow:inset 0 6px 0 hsl(var(--primary) / .7); }
+.nn-art-card { position:absolute; left:20px; top:26px; color:hsl(var(--primary)); background:hsl(var(--card)); border-radius:6px; }
+.nn-art-ripple { position:absolute; right:14px; top:14px; width:40px; height:40px; border-radius:50%; border:2px solid hsl(var(--success)); }
+
+/* Shared chart card */
+.nn-chart-tabs { display:inline-flex; gap:4px; padding:4px; border-radius:14px; background:hsl(var(--muted) / .7); }
+.nn-chart-tabs button { height:32px; padding:0 12px; border-radius:10px; font-size:12px; font-weight:600; color:hsl(var(--muted-foreground)); }
+.nn-chart-tabs button[aria-pressed="true"] { background:hsl(var(--background)); color:hsl(var(--foreground)); box-shadow:0 1px 4px hsl(var(--foreground) / .1); }
+.nn-ring-track { stroke:hsl(var(--muted)); }
+.nn-ring-fill { stroke:url(#nn-ring-grad); }
+
+@media (prefers-reduced-motion: reduce) {
+  .nn-wave, .nn-bubble, .nn-loader-glow, .nn-loader-spark, .nn-loader-ink span, .nn-loader-dots i { animation:none !important; }
 }
