@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { haptic } from '@/hooks/useHaptics';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MobileEditorHeader, MobileEditorToolbar } from '@/components/mobile/MobileEditorChrome';
