@@ -168,9 +168,9 @@ export default function RoutineTracker() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*]:min-w-0">
         {/* Habits */}
         <Panel title="Routine & habits">
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-wrap gap-2 mb-4">
             <input value={habitForm.emoji} onChange={e => setHabitForm(f => ({ ...f, emoji: e.target.value.slice(0, 2) }))} className="w-12 h-10 rounded-xl border border-border bg-background text-center" aria-label="Emoji" />
-            <input placeholder="New habit" value={habitForm.name} onChange={e => setHabitForm(f => ({ ...f, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addHabit()} className="flex-1 min-w-0 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
+            <input placeholder="New habit" value={habitForm.name} onChange={e => setHabitForm(f => ({ ...f, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addHabit()} className="flex-1 min-w-[9rem] h-10 rounded-xl border border-border bg-background px-3 text-sm" />
             <select value={habitForm.block} onChange={e => setHabitForm(f => ({ ...f, block: e.target.value }))} className="h-10 rounded-xl border border-border bg-background px-2 text-sm" aria-label="Time of day">
               {BLOCKS.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
             </select>
