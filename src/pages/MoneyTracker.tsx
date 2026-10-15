@@ -9,9 +9,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { haptic } from '@/hooks/useHaptics';
 import { toast } from 'sonner';
 import { TrackerShell, Panel } from '@/components/trackers/TrackerShell';
-import { EXPENSE_CATEGORIES, CURRENCIES, formatMoney, toDay, splitBill, billStatus } from '@/lib/trackers';
+import { EXPENSE_CATEGORIES, CURRENCIES, formatMoney, accountBalances, cashflow, ACCOUNTS, toDay, splitBill, billStatus } from '@/lib/trackers';
 
-type Tx = { id: string; kind: string; amount: number; category: string; note: string; occurred_on: string };
+type Tx = { id: string; kind: string; amount: number; category: string; note: string; occurred_on: string; account: string; to_account: string | null };
 type Goal = { id: string; name: string; target: number; saved: number };
 type Range = 'week' | 'month' | 'year';
 type Bill = { id: string; name: string; amount: number; due_day: number; last_paid_month: string | null };
@@ -26,7 +26,9 @@ export default function MoneyTracker() {
   const [currency, setCurrency] = useState('INR');
   const [budget, setBudget] = useState(0);
   const [range, setRange] = useState<Range>('month');
-  const [form, setForm] = useState({ kind: 'expense', amount: '', category: 'Food', note: '', occurred_on: toDay(new Date()) });
+  const [form, setForm] = useState({ kind: 'expense', amount: '', category: 'Food', note: '', occurred_on: toDay(new Date()), account: 'Cash', to_account: 'Bank' });
+  const [loadError, setLoadError] = useState(false);
+  const [reload, setReload] = useState(0);
   const [goalForm, setGoalForm] = useState({ name: '', target: '' });
   const [split, setSplit] = useState({ total: '', people: '2' });
   const [scanning, setScanning] = useState(false);
@@ -42,6 +44,7 @@ export default function MoneyTracker() {
         db.from('tracker_settings').select('*').maybeSingle(),
         db.from('bill_reminders').select('*').order('due_day'),
       ]);
+      setLoadError(!!t.error);
       setTxs((t.data ?? []).map((x: any) => ({ ...x, amount: Number(x.amount) })));
       setGoals((g.data ?? []).map((x: any) => ({ ...x, target: Number(x.target), saved: Number(x.saved) })));
       if (s.data) { setCurrency(s.data.currency); setBudget(Number(s.data.monthly_budget)); }
@@ -53,7 +56,7 @@ export default function MoneyTracker() {
         if ('Notification' in window && Notification.permission === 'granted') new Notification('Niknote bill reminder', { body: due.map((x: Bill) => `${x.name} — due on ${x.due_day}`).join('\n') });
       }
     })();
-  }, [user]);
+  }, [user, reload]);
 
   const saveSettings = async (patch: { currency?: string; monthly_budget?: number }) => {
     await db.from('tracker_settings').upsert({ user_id: user!.id, currency, monthly_budget: budget, ...patch, updated_at: new Date().toISOString() });
@@ -62,7 +65,11 @@ export default function MoneyTracker() {
   const addTx = async () => {
     const amount = Number(form.amount);
     if (!amount || amount <= 0) { haptic('error'); return toast.error('Enter a valid amount'); }
-    const { data, error } = await db.from('money_transactions').insert({ ...form, amount, category: form.kind === 'income' ? 'Income' : form.category }).select().single();
+    if (Math.round(amount * 100) !== amount * 100) { haptic('error'); return toast.error('Use at most 2 decimals'); }
+    if (form.kind === 'transfer' && form.account === form.to_account) { haptic('error'); return toast.error('Pick two different accounts'); }
+    const row = { kind: form.kind, amount, note: form.note, occurred_on: form.occurred_on, account: form.account, to_account: form.kind === 'transfer' ? form.to_account : null,
+      category: form.kind === 'income' ? 'Income' : form.kind === 'transfer' ? 'Transfer' : form.category };
+    const { data, error } = await db.from('money_transactions').insert(row).select().single();
     if (error) { haptic('error'); return toast.error(error.message); }
     haptic('medium');
     setTxs(p => [{ ...data, amount: Number(data.amount) }, ...p]);
@@ -70,9 +77,21 @@ export default function MoneyTracker() {
   };
 
   const delTx = async (id: string) => {
+    if (!window.confirm('Delete this entry?')) return;
     haptic('heavy');
+    const prev = txs;
     setTxs(p => p.filter(t => t.id !== id));
-    await db.from('money_transactions').delete().eq('id', id);
+    const { error } = await db.from('money_transactions').delete().eq('id', id);
+    if (error) { setTxs(prev); toast.error('Could not delete. Try again.'); }
+  };
+
+  const editTx = async (t: Tx) => {
+    const a = window.prompt('Amount', String(t.amount)); if (a === null) return;
+    const amount = Number(a); if (!amount || amount <= 0) return toast.error('Enter a valid amount');
+    const note = window.prompt('Note', t.note) ?? t.note;
+    const { error } = await db.from('money_transactions').update({ amount, note }).eq('id', t.id);
+    if (error) return toast.error('Could not save the change');
+    setTxs(p => p.map(x => x.id === t.id ? { ...x, amount, note } : x)); haptic('success');
   };
 
   const scanReceipt = async (file?: File) => {
@@ -157,8 +176,8 @@ export default function MoneyTracker() {
   }, [range]);
 
   const inRange = txs.filter(t => t.occurred_on >= fromDay);
-  const income = inRange.filter(t => t.kind === 'income').reduce((s, t) => s + t.amount, 0);
-  const expense = inRange.filter(t => t.kind === 'expense').reduce((s, t) => s + t.amount, 0);
+  const { income, expense } = cashflow(inRange);
+  const balances = accountBalances(txs);
   const monthStart = toDay(new Date(now.getFullYear(), now.getMonth(), 1));
   const monthSpend = txs.filter(t => t.kind === 'expense' && t.occurred_on >= monthStart).reduce((s, t) => s + t.amount, 0);
   const budgetPct = budget > 0 ? Math.min(100, (monthSpend / budget) * 100) : 0;
@@ -170,7 +189,7 @@ export default function MoneyTracker() {
 
   const trend = useMemo(() => {
     const map = new Map<string, { label: string; income: number; expense: number }>();
-    inRange.slice().reverse().forEach(t => {
+    inRange.filter(t => t.kind !== 'transfer').slice().reverse().forEach(t => {
       const key = range === 'year' ? t.occurred_on.slice(0, 7) : t.occurred_on;
       const row = map.get(key) ?? { label: range === 'year' ? key.slice(5) : key.slice(8), income: 0, expense: 0 };
       row[t.kind === 'income' ? 'income' : 'expense'] += t.amount;
@@ -199,6 +218,8 @@ export default function MoneyTracker() {
 
   return (
     <TrackerShell title="Money Tracker" subtitle="Income, budgets & savings goals">
+      {loadError && <div role="alert" className="rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm flex items-center gap-3">Could not load your entries — totals below may be incomplete.<button className="ml-auto underline font-medium" onClick={() => setReload(n => n + 1)}>Retry</button></div>}
+      <p className="text-xs text-muted-foreground">Niknote is a tracker, not a bank — your money stays in your real accounts. Transfers move money between your accounts and are not counted as income or spending.</p>
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
@@ -233,7 +254,7 @@ export default function MoneyTracker() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*]:min-w-0">
         <Panel title="Add transaction">
           <div className="flex gap-2 mb-3">
-            {['expense', 'income'].map(k => (
+            {['expense', 'income', 'transfer'].map(k => (
               <button key={k} onClick={() => setForm(f => ({ ...f, kind: k }))}
                 className={`flex-1 py-2 rounded-xl text-sm font-semibold capitalize active:scale-95 transition ${form.kind === k ? (k === 'income' ? 'bg-emerald-500/15 text-emerald-700' : 'bg-rose-500/15 text-rose-700') : 'bg-muted text-muted-foreground'}`}>{k}</button>
             ))}
@@ -245,6 +266,12 @@ export default function MoneyTracker() {
               className="h-11 rounded-xl border border-border bg-background px-3 text-sm" />
             <input placeholder="Note (optional)" value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
               className="col-span-2 h-11 rounded-xl border border-border bg-background px-3 text-sm" />
+            <select aria-label={form.kind === 'transfer' ? 'From account' : 'Account'} value={form.account} onChange={e => setForm(f => ({ ...f, account: e.target.value }))} className={`h-11 rounded-xl border border-border bg-background px-3 text-sm ${form.kind === 'transfer' ? '' : 'col-span-2'}`}>
+              {ACCOUNTS.map(a => <option key={a} value={a}>{form.kind === 'transfer' ? `From ${a}` : a}</option>)}
+            </select>
+            {form.kind === 'transfer' && <select aria-label="To account" value={form.to_account} onChange={e => setForm(f => ({ ...f, to_account: e.target.value }))} className="h-11 rounded-xl border border-border bg-background px-3 text-sm">
+              {ACCOUNTS.map(a => <option key={a} value={a}>To {a}</option>)}
+            </select>}
           </div>
           {form.kind === 'expense' && (
             <div className="grid grid-cols-4 gap-2 mt-3">
@@ -263,6 +290,13 @@ export default function MoneyTracker() {
             {scanning ? <><Loader2 className="w-4 h-4 animate-spin" />Reading receipt…</> : <><Camera className="w-4 h-4" />Scan receipt photo</>}
             <input type="file" accept="image/png,image/jpeg,image/webp" capture="environment" className="hidden" onChange={e => { scanReceipt(e.target.files?.[0]); e.target.value = ''; }} />
           </label>
+        </Panel>
+
+        <Panel title="Account balances">
+          <p className="text-xs text-muted-foreground mb-3">From all your saved entries (income − spending ± transfers).</p>
+          <div className="grid grid-cols-2 gap-2">
+            {ACCOUNTS.map(a => <div key={a} className="rounded-xl bg-muted/50 p-3"><p className="text-xs text-muted-foreground">{a}</p><p className={`font-semibold ${(balances[a] ?? 0) < 0 ? 'text-destructive' : ''}`}>{formatMoney(balances[a] ?? 0, currency)}</p></div>)}
+          </div>
         </Panel>
 
         <Panel title="Monthly budget">
@@ -381,10 +415,10 @@ export default function MoneyTracker() {
                   <span className="text-xl">{t.kind === 'income' ? '💰' : c.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{t.note || t.category}</p>
-                    <p className="text-xs text-muted-foreground">{t.category} · {t.occurred_on}</p>
+                    <p className="text-xs text-muted-foreground">{t.kind === 'transfer' ? `${t.account} → ${t.to_account}` : `${t.category} · ${t.account || 'Cash'}`} · {t.occurred_on}</p>
                   </div>
-                  <span className={`font-semibold text-sm ${t.kind === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>{t.kind === 'income' ? '+' : '−'}{formatMoney(t.amount, currency)}</span>
-                  <button onClick={() => delTx(t.id)} className="hidden md:block p-1 text-muted-foreground" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
+                  <span className={`font-semibold text-sm ${t.kind === 'income' ? 'text-emerald-600' : t.kind === 'transfer' ? 'text-muted-foreground' : 'text-rose-600'}`}>{t.kind === 'income' ? '+' : t.kind === 'transfer' ? '⇄ ' : '−'}{formatMoney(t.amount, currency)}</span>
+                  <button onClick={() => editTx(t)} className="h-9 px-2 text-xs font-medium text-primary" aria-label="Edit entry">Edit</button><button onClick={() => delTx(t.id)} className="h-9 w-9 grid place-items-center text-muted-foreground" aria-label="Delete entry"><Trash2 className="w-4 h-4" /></button>
                 </motion.div>
               );
             })}
