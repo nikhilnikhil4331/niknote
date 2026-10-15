@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { brokeredPreviewStorage } from './previewAuthStorage';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://atuxocibsmflgwlwuvmv.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0dXhvY2lic21mbGd3bHd1dm12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MzEzOTUsImV4cCI6MjA5ODMwNzM5NX0.-z83TYdQ34a1-59Ij07ZuqFV-5XFUjyFT-9P5FUtlBY';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ievggapvfidhygkhtkug.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlldmdnYXB2ZmlkaHlna2h0a3VnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NDc2NTEsImV4cCI6MjA4MzAyMzY1MX0.-S-uNUbNobLxwmwHFuomAn3tn1OPE9zi9DOUmtFD_wM';
 
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   console.error('🔴 CRITICAL: Supabase env vars missing! App will not work properly.');
