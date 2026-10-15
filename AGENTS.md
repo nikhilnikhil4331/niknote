@@ -1,6 +1,8 @@
 # Project decisions
 - Derive mobile greetings and profile labels from the current user's saved profile, auth metadata or email username through a user-keyed query and pure helper; never retain a previous account's name.
 - Keep the mobile navigation indicator and route slides presentation-only, respecting reduced motion and the Appearance animations toggle.
+- Keep mobile template definitions and text-to-block conversion in one typed catalog so previews, paper choices and interactive task blocks stay consistent.
+- Present mobile writing and handwriting preview as separate views of the same editor state; persist mobile block edits immediately so an immediate reload cannot restore an earlier template.
 - Persist mobile draft notebook identity in the effect body on every identity change, never in cleanup, so reloads cannot target a previously opened note.
 - Share one email/password authentication presentation across /login, /signup and /auth so validation, confirmation states and transitions stay consistent.
 - Use a route-aware mobile presentation shell backed by existing notebook and editor hooks; keep desktop routes unchanged so the redesign does not fork product data.

@@ -11,3 +11,71 @@
 .nn-wave{font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;font-size:17px;display:inline-block;margin-left:2px}.nn-mobile .nn-drawer-link{height:43px!important}.nn-mobile .nn-layout svg{width:32px!important;height:32px!important}
 .nn-mobile .nn-editor-canvas textarea{font-family:var(--nn-handwriting,'Caveat',cursive)!important;color:inherit!important}.nn-mobile[data-theme=dark] .nn-editor-canvas textarea{color:var(--nn-text)!important}.nn-mobile .nn-editor-canvas textarea:placeholder-shown{font-family:'Caveat',cursive!important}.nn-mobile .nn-editor-canvas .notion-editor>div:nth-child(2)>div>div>div:first-child{opacity:.15}.nn-mobile .nn-note-icon{background-image:linear-gradient(135deg,#ffffff50,transparent);box-shadow:inset 0 0 0 1px #ffffff50}.nn-mobile .nn-drawer .nn-drawer-menu{flex:1;min-height:0;overflow-y:auto}.nn-mobile.nn-drawer{overflow:hidden!important;gap:0!important}.nn-mobile .nn-drawer-profile{flex-shrink:0;margin-bottom:14px}.nn-mobile .nn-drawer>.nn-premium{margin-top:13px;margin-bottom:4px;min-height:70px;padding:14px 12px}.nn-mobile .nn-drawer-link{justify-content:flex-start!important}.nn-mobile .nn-book-visual{bottom:7px}.nn-mobile .nn-welcome{height:153px}.nn-mobile .nn-themes{margin-bottom:19px}.nn-mobile .nn-note{min-height:79px}.nn-mobile .nn-quick-actions{margin-bottom:19px}.nn-mobile .nn-drawer-active{background:var(--nn-soft)!important}.nn-mobile .nn-drawer-link:hover,.nn-mobile .nn-note-open:hover{background:var(--nn-soft)!important;color:var(--nn-text)!important}.nn-mobile .nn-quick:hover,.nn-mobile .nn-ai-action:hover{box-shadow:0 7px 22px #7252b518;background:var(--nn-surface)!important;color:var(--nn-text)!important;transform:translateY(-1px)}
 .nn-mobile .nn-editor-canvas textarea:placeholder-shown{font-family:var(--nn-handwriting,'Caveat',cursive)!important}.nn-mobile .nn-editor-actions button[aria-label=Undo],.nn-mobile .nn-editor-actions button[aria-label=Redo]{font-size:19px;padding-inline:11px}.nn-mobile .nn-swatch{border-radius:50%}.nn-mobile .nn-swatch-selected:after{border-radius:50%}.nn-mobile .nn-ai-content .nn-section-heading{margin-top:0}
+
+/* One quiet writing surface: controls outside, content on the paper. */
+.nn-mobile .nn-welcome h2{display:flex;align-items:center;flex-wrap:wrap;gap:4px;letter-spacing:0;padding-right:12px}
+.nn-mobile .nn-welcome-logo{width:130px;height:40px;object-fit:cover;object-position:center;margin:-7px -8px}
+.nn-mobile .nn-template-heading{margin:8px 0 22px}
+.nn-template-eyebrow{font-size:10px;color:var(--nn-muted);font-weight:600}
+.nn-template-heading h2{font-size:28px;font-weight:600;letter-spacing:0;margin-top:6px}
+.nn-mobile .nn-template-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 16px}
+.nn-mobile .nn-template{min-width:0;background:none;border:0;box-shadow:none;border-radius:0;padding:0!important;gap:7px;align-items:stretch;justify-content:flex-start}
+.nn-mobile .nn-template-preview{height:auto;aspect-ratio:3/4;transform:none;border-radius:7px;border:1px solid hsl(var(--nn-paper-rule));background:hsl(var(--nn-paper));color:hsl(var(--nn-paper-ink));padding:16px 12px;margin:0 0 4px;overflow:hidden;box-shadow:var(--nn-board-shadow);text-align:left;width:100%}
+.nn-template-paper-label{display:block;font-size:8px;color:hsl(var(--nn-paper-muted));margin-bottom:10px}
+.nn-mobile .nn-template-preview>strong{display:block;font-size:14px;line-height:1.4;text-align:left;overflow-wrap:anywhere}
+.nn-template-paper-body{margin-top:13px;display:flex;flex-direction:column;gap:10px;position:relative}
+.nn-template-paper-body>span{font-size:8px;line-height:1.4;text-align:left}
+.nn-template-paper-body .nn-template-paper-section{font-weight:600;border-bottom:1px solid hsl(var(--nn-paper-rule));padding-bottom:6px}
+.nn-mobile .nn-template-preview i{background:hsl(var(--nn-paper-rule));margin:0;height:1px;flex-shrink:0}
+.nn-template-paper-body>svg{margin:22px auto;color:hsl(var(--nn-paper-muted));width:25px;height:25px}
+.nn-mobile .nn-template-caption{display:flex;align-items:center;justify-content:space-between;gap:4px;text-align:left}
+.nn-mobile .nn-template-caption strong{font-size:13px;overflow-wrap:anywhere}
+.nn-template-caption svg{color:var(--nn-accent);flex-shrink:0}
+.nn-mobile .nn-template small{font-size:10px;text-align:left;min-height:30px}
+.nn-mobile .nn-template-cornell .nn-template-paper-body{border-left:1px solid hsl(var(--nn-paper-margin));padding-left:26px}
+.nn-mobile .nn-template-planner,.nn-mobile .nn-template-checklist{background:hsl(var(--nn-paper-mint))}
+.nn-mobile .nn-template-journal{background:hsl(var(--nn-paper-rose))}
+.nn-mobile .nn-template-revision{background-color:hsl(var(--nn-paper-blue));background-image:linear-gradient(hsl(var(--nn-paper-rule)) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--nn-paper-rule)) 1px,transparent 1px);background-size:14px 14px}
+.nn-mobile .nn-template-ideas{background-image:radial-gradient(hsl(var(--nn-paper-rule)) 1px,transparent 1px);background-size:12px 12px}
+.nn-mobile .nn-template-lecture{background-image:repeating-linear-gradient(transparent 0,transparent 23px,hsl(var(--nn-paper-rule)) 23px,hsl(var(--nn-paper-rule)) 24px)}
+.nn-mobile .nn-editor-page{padding:0 14px 115px;min-width:0;width:100%}
+.nn-mobile .nn-board-controls{display:flex;align-items:center;gap:2px;padding:12px 0 4px}
+.nn-board-controls>button{flex-shrink:0;width:36px;height:40px;padding:8px;color:var(--nn-muted)}
+.nn-board-tabs{display:flex;margin-right:auto;background:var(--nn-surface);border:1px solid var(--nn-border);border-radius:12px;padding:3px;min-width:0}
+.nn-board-tabs button{height:34px;padding:0 10px;gap:6px;border-radius:9px;font-size:11px;color:var(--nn-muted)}
+.nn-board-tabs button[aria-selected=true]{background:var(--nn-soft);color:var(--nn-accent)}
+.nn-mobile .nn-editor-helper{display:flex;justify-content:space-between;padding:10px 4px 14px;font-size:10px;letter-spacing:0}
+.nn-mobile .nn-editor-helper span:last-child{display:flex;align-items:center;gap:5px}
+.nn-editor-helper span:last-child:before{content:'';width:5px;height:5px;border-radius:50%;background:var(--nn-accent)}
+.nn-mobile .nn-editor-canvas{position:relative;padding:22px 10px 30px 18px;min-height:calc(100dvh - 295px);border:1px solid hsl(var(--nn-paper-rule));border-radius:7px;background:hsl(var(--nn-paper));color:hsl(var(--nn-paper-ink));box-shadow:var(--nn-board-shadow);overflow:visible}
+.nn-mobile .nn-editor-canvas[hidden]{display:none}
+.nn-mobile .nn-editor-canvas[data-paper=ruled],.nn-mobile .nn-editor-canvas[data-paper=single-line],.nn-mobile .nn-editor-canvas[data-paper=college],.nn-mobile .nn-editor-canvas[data-paper=cornell]{background-image:repeating-linear-gradient(transparent 0,transparent 31px,hsl(var(--nn-paper-rule)/.65) 31px,hsl(var(--nn-paper-rule)/.65) 32px);background-position:0 24px}
+.nn-mobile .nn-editor-canvas[data-paper=cornell]{border-left:3px solid hsl(var(--nn-paper-margin))}
+.nn-mobile .nn-editor-canvas[data-paper=graph]{background-image:linear-gradient(hsl(var(--nn-paper-rule)/.65) 1px,transparent 1px),linear-gradient(90deg,hsl(var(--nn-paper-rule)/.65) 1px,transparent 1px);background-size:20px 20px}
+.nn-mobile .nn-editor-canvas[data-paper=dotted]{background-image:radial-gradient(hsl(var(--nn-paper-rule)) 1px,transparent 1px);background-size:16px 16px}
+.nn-mobile .nn-editor-canvas .notion-editor>div:last-child{opacity:1}
+.nn-mobile .nn-editor-canvas .nn-block-row{min-height:32px;padding-top:2px;padding-bottom:2px;padding-left:0!important;border-radius:4px;background:transparent}
+.nn-mobile .nn-editor-canvas .nn-block-color{display:none}
+.nn-mobile .nn-editor-canvas .nn-block-prefix{width:22px;margin-top:7px}
+.nn-mobile .nn-editor-canvas [data-block-type=text] .nn-block-prefix,.nn-mobile .nn-editor-canvas [data-block-type^=heading] .nn-block-prefix{display:none}
+.nn-mobile .nn-editor-canvas textarea{font-size:21px!important;line-height:32px!important;min-height:32px!important;padding:0 3px!important;letter-spacing:0}
+.nn-mobile .nn-editor-canvas textarea::placeholder{color:hsl(var(--nn-paper-muted)/.6)!important;font-size:18px}
+.nn-mobile .nn-editor-canvas [data-block-type=heading1] textarea{font-family:inherit!important;font-size:24px!important;line-height:34px!important;font-weight:650;margin-bottom:12px}
+.nn-mobile .nn-editor-canvas [data-block-type=heading2] textarea{font-family:inherit!important;font-size:16px!important;line-height:28px!important;font-weight:600;margin-top:10px}
+.nn-mobile .nn-editor-canvas [data-block-type=heading3] textarea{font-family:inherit!important;font-size:14px!important;font-weight:600}
+.nn-mobile .nn-editor-canvas .nn-block-delete{opacity:0!important;width:24px;flex-shrink:0}
+.nn-mobile .nn-editor-canvas .nn-block-row:focus-within .nn-block-delete{opacity:.55!important}
+.nn-mobile .nn-editor-canvas .nn-block-prefix button{height:24px;width:24px;padding:2px}
+.nn-mobile .nn-editor-canvas .nn-add-block{margin-top:14px;font-size:12px;height:40px;opacity:.7}
+.nn-mobile .nn-board-footer{display:flex;align-items:center;gap:3px;margin-top:10px}
+.nn-board-footer button{height:40px;font-size:11px;padding:0 10px;gap:6px}
+.nn-board-footer button:first-child{margin-right:auto;padding-left:2px}
+.nn-board-footer button:last-child{background:var(--nn-accent);color:hsl(var(--primary-foreground));border-radius:10px}
+.nn-board-preview{min-width:0;overflow:hidden;border-radius:7px;border:1px solid hsl(var(--nn-paper-rule));background:hsl(var(--nn-paper));box-shadow:var(--nn-board-shadow)}
+.nn-mobile .nn-editor-header{position:sticky;top:0;z-index:35;border-bottom:1px solid var(--nn-border)}
+@media(max-width:374px){.nn-mobile .nn-editor-page{padding-inline:10px}.nn-board-tabs button{padding:0 7px;gap:4px}.nn-board-controls>button{width:32px}.nn-mobile .nn-template-grid{gap:20px 12px}}
+
+.nn-mobile .nn-template:hover,.nn-mobile .nn-template:active{background:transparent!important;color:var(--nn-text)!important}
+.nn-mobile .nn-template-checklist{background:hsl(var(--nn-paper-mint))}
+.nn-mobile .nn-editor-canvas .nn-block-prefix button[aria-pressed=true]{background:transparent!important}
+.nn-mobile .nn-editor-canvas .nn-block-prefix button>div{border-color:var(--nn-accent);border-radius:5px}

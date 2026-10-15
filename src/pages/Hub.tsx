@@ -42,7 +42,7 @@ export default function Hub() {
       <header className="px-5 pt-[max(env(safe-area-inset-top),20px)] pb-4 max-w-3xl mx-auto">
         <motion.p initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="text-sm text-muted-foreground">{greet}{name ? `, ${name}` : ''} 👋</motion.p>
         <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className="text-3xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">Niknote</motion.h1>
+          className="mt-2"><img src="/niknote-logo.png" alt="Niknote" className="h-14 w-44 object-contain object-left" /></motion.h1>
       </header>
       <main className="px-5 max-w-3xl mx-auto space-y-7">
         {GROUPS.map((g, gi) => (

@@ -19,6 +19,7 @@ import { Block, BlockType, createBlock, detectBlockPrefix, SLASH_COMMANDS, gener
 import { LineInkColor, LINE_INK_COLORS } from '@/types/noteLine';
 import { toast } from 'sonner';
 import { BlockContextMenu } from './BlockContextMenu';
+import { Button } from '@/components/ui/button';
 
 interface NotionEditorProps {
   blocks: Block[];
@@ -661,18 +662,19 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
           }
 
           return (
-            <div key={block.id}>
+            <div key={block.id} data-block-type={block.type}>
               <div
-                className={cn("group relative flex items-start gap-0 rounded-lg transition-colors duration-150", isMobile ? "min-h-[48px] py-2 px-2" : "min-h-[28px] py-1 px-1", isFocused && "bg-indigo-50/30")}
+                className={cn("nn-block-row group relative flex items-start gap-0 rounded-lg transition-colors duration-150", isMobile ? "min-h-[48px] py-2 px-2" : "min-h-[28px] py-1 px-1", isFocused && "bg-indigo-50/30")}
                 style={{ paddingLeft: indentPx + (isMobile ? 8 : 4), touchAction: 'manipulation' }}
                 onClick={() => setFocusedBlockId(block.id)}
                 onContextMenu={(e) => handleContextMenu(e, block.id)}
               >
                 {/* Color dot */}
-                <div className={cn("flex items-center gap-0 flex-shrink-0 mt-1", isMobile ? "opacity-30" : "opacity-0 group-hover:opacity-100")}>
+                <div className={cn("nn-block-color flex items-center gap-0 flex-shrink-0 mt-1", isMobile ? "opacity-30" : "opacity-0 group-hover:opacity-100")}>
                   <button
                     onMouseDown={preventFocusSteal}
                     onClick={(e) => { e.stopPropagation(); setShowInlineColor(showInlineColor === block.id ? null : block.id); }}
+                    aria-label="Change block ink" title="Change block ink"
                     className="p-1 rounded-md active:bg-gray-100 transition-colors"
                     style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
                   >
@@ -681,11 +683,11 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                 </div>
 
                 {/* Block prefix */}
-                <div className="flex items-center justify-center w-6 flex-shrink-0 mt-1">
+                <div className="nn-block-prefix flex items-center justify-center w-6 flex-shrink-0 mt-1">
                   {block.type === 'todo' ? (
-                    <button onMouseDown={preventFocusSteal} onClick={() => updateBlock(block.id, { checked: !block.checked })} className="flex items-center justify-center active:scale-90 transition-transform" style={{ touchAction: 'manipulation', cursor: 'pointer' }} tabIndex={-1}>
+                    <Button variant="ghost" size="icon" aria-label={`Complete ${block.content || 'task'}`} aria-pressed={Boolean(block.checked)} onMouseDown={preventFocusSteal} onClick={() => updateBlock(block.id, { checked: !block.checked })} className="flex items-center justify-center active:scale-90 transition-transform" style={{ touchAction: 'manipulation', cursor: 'pointer' }} tabIndex={-1}>
                       <div className={cn("w-[18px] h-[18px] rounded-md border-2 transition-colors flex items-center justify-center", block.checked ? "bg-indigo-500 border-indigo-500 text-white" : "border-gray-300")}>{block.checked && <Check className="w-3 h-3" />}</div>
-                    </button>
+                    </Button>
                   ) : block.type === 'toggle' ? (
                     <button onMouseDown={preventFocusSteal} onClick={() => updateBlock(block.id, { collapsed: !block.collapsed })} className="hover:bg-gray-100 rounded p-0.5 active:scale-90 transition-transform" style={{ touchAction: 'manipulation', cursor: 'pointer' }} tabIndex={-1}>
                       <div style={{ transform: block.collapsed ? 'rotate(0deg)' : 'rotate(90deg)', transition: 'transform 0.15s' }}><ChevronRight className="w-3.5 h-3.5 text-gray-400" /></div>
@@ -710,7 +712,7 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                     onPaste={(e) => handlePaste(block.id, e)}
                     onFocus={() => setFocusedBlockId(block.id)}
                     onClick={(e) => { e.stopPropagation(); setFocusedBlockId(block.id); }}
-                    placeholder={config.placeholder}
+                    placeholder={isMobile && block.type === 'text' ? 'Write here…' : config.placeholder}
                     rows={1}
                     className={cn("flex-1 bg-transparent border-0 outline-none resize-none py-1 px-1 leading-relaxed w-full overflow-hidden", isMobile ? "min-h-[48px] text-[16px] py-3 px-2 leading-7 text-gray-900" : "text-sm text-gray-900", block.checked && "line-through text-gray-400", config.textClass)}
                     style={{ color: inkData?.hex || '#111827', caretColor: '#6366f1', WebkitUserSelect: 'text', userSelect: 'text', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
@@ -783,8 +785,8 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                 </div>
 
                 {/* Delete */}
-                <div className={cn("flex items-center flex-shrink-0 mt-1", isMobile ? "opacity-40" : "opacity-0 group-hover:opacity-100")}>
-                  <button onMouseDown={preventFocusSteal} onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }} className="p-1.5 rounded-lg active:bg-red-50 transition-colors" style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}><Trash2 className="w-3.5 h-3.5 text-gray-400" /></button>
+                <div className={cn("nn-block-delete flex items-center flex-shrink-0 mt-1", isMobile ? "opacity-40" : "opacity-0 group-hover:opacity-100")}>
+                  <button onMouseDown={preventFocusSteal} onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }} aria-label="Delete block" title="Delete block" className="p-1.5 rounded-lg active:bg-red-50 transition-colors" style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}><Trash2 className="w-3.5 h-3.5 text-gray-400" /></button>
                 </div>
 
                 {/* Inline color picker */}
@@ -830,13 +832,9 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
       </div>
 
       {/* Add block */}
-      <button onClick={() => { const last = blocks[blocks.length - 1]; if (last) addBlockAfter(last.id); }} className={cn("w-full text-left flex items-center gap-2 text-gray-300 hover:text-gray-500 transition-colors", isMobile ? "py-3 px-4 text-[14px]" : "py-2 px-2 text-xs")} style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
-        <Plus className="w-4 h-4" /><span>Add a block</span>
-        <span className="text-gray-300 text-[11px]">or type</span>
-        <kbd className="px-1 py-0.5 bg-gray-100 rounded text-[10px] font-mono">/</kbd>
-        <kbd className="px-1 py-0.5 bg-indigo-50 rounded text-[10px] font-mono text-indigo-500">@</kbd>
-        <kbd className="px-1 py-0.5 bg-violet-50 rounded text-[10px] font-mono text-violet-500">#</kbd>
-      </button>
+      <Button variant="ghost" onClick={() => { const last = blocks[blocks.length - 1]; if (last) addBlockAfter(last.id); }} className={cn("nn-add-block", isMobile ? "w-full justify-start text-muted-foreground" : "w-full justify-start text-muted-foreground text-xs")}>
+        <Plus className="w-4 h-4" /><span>{isMobile ? 'Add a line' : 'Add a block'}</span>
+      </Button>
 
       {/* ===== SLASH COMMAND MENU ===== */}
       {slashMenu && groupedSlash.length > 0 && (
