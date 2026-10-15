@@ -79,7 +79,7 @@ export function paginateText(text: string, cols: number, linesPerPage: number): 
 }
 
 export function textCapacity(page: BoardPage, fontSize: number, lineHeight: number) {
-  const cols = Math.floor((page.width - MARGIN * 2) / (fontSize * 0.52));
+  const cols = Math.floor((page.width - MARGIN * 2) / (fontSize * 0.62));
   const rows = Math.floor((page.height - MARGIN * 2) / (fontSize * lineHeight));
   return { cols, rows };
 }
