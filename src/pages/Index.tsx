@@ -166,6 +166,10 @@ const Index = () => {
   const lines = currentPage.lines;
 
   const blockEditor = useBlockEditor();
+  useEffect(() => {
+    if (!isMobile) return;
+    try { localStorage.setItem('niknote_autosave', JSON.stringify(blockEditor.blocks)); } catch {}
+  }, [isMobile, blockEditor.blocks]);
   const previewLines = blockEditor.blocks.some(b => b.content.trim()) ? blockEditor.lines : lines;
   const hasContent = blockEditor.blocks.some(b => b.content.trim()) || lines.some(l => l.text.trim());
 
