@@ -244,7 +244,7 @@ export default function MoneyTracker() {
         <MoneyArt />
       </section>
       {/* Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {[
           { label: 'Income', value: income, tone: 'text-emerald-600' },
           { label: 'Spent', value: expense, tone: 'text-rose-600' },
@@ -252,12 +252,12 @@ export default function MoneyTracker() {
         ].map((c, i) => (
           <motion.div key={c.label} initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: i * 0.08 }}
             whileHover={{ rotateX: 4, rotateY: -4, scale: 1.02 }} style={{ transformPerspective: 600 }}
-            className="rounded-3xl border border-border bg-card p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            className="rounded-3xl border border-border bg-card p-3 sm:p-5 shadow-sm min-w-0">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <motion.span animate={{ rotateY: 360 }} transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}><Coins className="w-4 h-4 text-amber-500" /></motion.span>
               {c.label}
             </div>
-            <p className={`text-2xl font-bold mt-1 ${c.tone}`}>{formatMoney(c.value, currency)}</p>
+            <p className={`text-base sm:text-2xl font-bold mt-1 truncate ${c.tone}`}>{formatMoney(c.value, currency)}</p>
           </motion.div>
         ))}
       </div>
