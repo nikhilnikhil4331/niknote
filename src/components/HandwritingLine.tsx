@@ -1,3 +1,4 @@
+import { styledWords } from '@/lib/inlineMarks';
 import React, { useMemo, useEffect, useState, useRef, memo, forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { NoteLine, LINE_INK_COLORS, generateRealPenVariation } from '@/types/noteLine';
@@ -245,7 +246,8 @@ export const HandwritingLine = memo(forwardRef<HTMLDivElement, HandwritingLinePr
   return (
     <div ref={ref} className={fontClass} style={wrapperStyle}>
       {visualLines.map((textLine, vIndex) => {
-        const words = textLine.split(' ');
+        const styled = styledWords(textLine);
+        const words = styled.map(w => w.text);
         const baseDelay = vIndex * 0.02;
 
         return (
@@ -255,6 +257,7 @@ export const HandwritingLine = memo(forwardRef<HTMLDivElement, HandwritingLinePr
             ) : (
               words.map((word, wordIndex) => (
                 <React.Fragment key={`${vIndex}-${wordIndex}-${word}`}>
+                  <span style={{ fontWeight: styled[wordIndex].bold ? 700 : undefined, fontStyle: styled[wordIndex].italic ? 'italic' : undefined }}>
                   <AnimatedWord
                     word={word}
                     wordIndex={wordIndex}
@@ -265,6 +268,8 @@ export const HandwritingLine = memo(forwardRef<HTMLDivElement, HandwritingLinePr
                     letterSpacingVariation={letterSpacingVariation}
                     wordCSS={dna ? generateWordVariation(dna, lineIndex, wordIndex) : undefined}
                   />
+                  </span>
+
                   {wordIndex < words.length - 1 && (
                     <span style={{ marginRight: `${dna ? dna.wordSpacing : settings.wordSpacing}px` }}> </span>
                   )}

@@ -67,6 +67,7 @@ const DiagramToolbar = lazy(() => import('@/components/DiagramToolbar').then(m =
 import { useInlineContent } from '@/hooks/useInlineContent';
 import { Toolbar } from '@/components/Toolbar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { toggleMark } from '@/lib/inlineMarks';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -977,6 +978,20 @@ const Index = () => {
                 <Button variant="ghost" size="icon" onClick={saveMobileNote} disabled={savingNote} aria-label="Save note" title="Save note"><Save className="h-4 w-4" /></Button>
               </div>
               {mobileView === 'write' && <div className="nn-format-bar" role="toolbar" aria-label="Line format" onPointerDown={e => e.preventDefault()}>
+                {([['bold','Bold','B'],['italic','Italic','I']] as const).map(([m,label,icon]) => <button key={m} type="button" aria-label={label} disabled={!focusedBlockId} style={{ fontWeight: m === 'bold' ? 800 : 500, fontStyle: m === 'italic' ? 'italic' : undefined }} onClick={() => {
+                  const id = focusedBlockId; const cur = blockEditor.blocks.find(b => b.id === id);
+                  const ta = document.querySelector<HTMLTextAreaElement>(`[data-block-id="${id}"] textarea`);
+                  if (!cur || !ta) return;
+                  let s0 = ta.selectionStart ?? 0, e0 = ta.selectionEnd ?? 0;
+                  if (s0 === e0) { // no selection: use the word under the caret
+                    const v = cur.content; while (s0 > 0 && !/\s/.test(v[s0 - 1])) s0--; while (e0 < v.length && !/\s/.test(v[e0])) e0++;
+                  }
+                  if (s0 === e0) { toast.info('Select some words first'); return; }
+                  const r = toggleMark(cur.content, s0, e0, m);
+                  blockEditor.updateBlock(cur.id, { content: r.text });
+                  haptic('selection');
+                  requestAnimationFrame(() => { ta.focus(); ta.setSelectionRange(r.start, r.end); });
+                }}>{icon}</button>)}
                 {([['text','Text','Aa'],['heading1','Heading 1','H1'],['heading2','Heading 2','H2'],['bullet','Bullet list','•'],['numbered','Numbered list','1.'],['todo','Checklist','☐'],['quote','Quote','❝'],['code','Code','</>']] as const).map(([t,label,icon]) => {
                   const cur = blockEditor.blocks.find(b => b.id === focusedBlockId);
                   return <button key={t} type="button" aria-label={label} aria-pressed={cur?.type === t} disabled={!cur} onClick={() => { if (cur) { blockEditor.convertBlock(cur.id, t as any); haptic('selection'); } }}>{icon}</button>;

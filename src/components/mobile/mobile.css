@@ -116,3 +116,5 @@
 .nn-format-bar button[aria-pressed="true"] { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: transparent; }
 .nn-format-bar button:disabled { opacity: .4; }
 .nn-format-bar button:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+/* Keep note actions above the fixed drawing toolbar instead of under it */
+.nn-mobile .nn-board-footer{position:sticky;bottom:calc(75px + env(safe-area-inset-bottom));z-index:47;background:var(--nn-surface);border:1px solid var(--nn-border);border-radius:16px;padding:4px;margin:10px 10px 0;box-shadow:0 6px 18px hsl(var(--foreground)/.08)}
