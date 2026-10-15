@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { haptic } from '@/hooks/useHaptics';
 import { toast } from 'sonner';
 import { TrackerShell, Panel } from '@/components/trackers/TrackerShell';
-import { EXPENSE_CATEGORIES, CURRENCIES, formatMoney, accountBalances, cashflow, ACCOUNTS, toDay, splitBill, billStatus } from '@/lib/trackers';
+import { EXPENSE_CATEGORIES, CURRENCIES, formatMoney, accountBalances, cashflow, ACCOUNTS, toDay, splitBill, billStatus, topCategories } from '@/lib/trackers';
 
 type Tx = { id: string; kind: string; amount: number; category: string; note: string; occurred_on: string; account: string; to_account: string | null };
 type Goal = { id: string; name: string; target: number; saved: number };
@@ -238,6 +238,47 @@ export default function MoneyTracker() {
           </motion.div>
         ))}
       </div>
+
+      {/* Dashboard: net cashflow, budget left, top categories, goals */}
+      {(() => {
+        const net = income - expense;
+        const top = topCategories(inRange);
+        const goalSaved = goals.reduce((s, g) => s + g.saved, 0), goalTarget = goals.reduce((s, g) => s + g.target, 0);
+        const left = budget - monthSpend;
+        return (
+          <section aria-label="Money dashboard" className="rounded-3xl border border-border bg-card p-4 shadow-sm space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-muted/50 p-3">
+                <p className="text-xs text-muted-foreground">Net cashflow ({range})</p>
+                <p className={`text-xl font-bold ${net < 0 ? 'text-destructive' : 'text-emerald-600'}`}>{net >= 0 ? '+' : '−'}{formatMoney(Math.abs(net), currency)}</p>
+                <p className="text-[11px] text-muted-foreground">{net >= 0 ? 'You saved this much' : 'You spent more than you earned'}</p>
+              </div>
+              <div className="rounded-2xl bg-muted/50 p-3">
+                <p className="text-xs text-muted-foreground">Budget left this month</p>
+                <p className={`text-xl font-bold ${budget > 0 && left < 0 ? 'text-destructive' : ''}`}>{budget > 0 ? formatMoney(left, currency) : '—'}</p>
+                <p className="text-[11px] text-muted-foreground">{budget > 0 ? `${Math.round(budgetPct)}% of budget used` : 'Set a monthly budget below'}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-semibold mb-2">Top spending categories</p>
+              {top.length === 0 ? <p className="text-xs text-muted-foreground">No spending in this period yet.</p> : (
+                <ul className="space-y-2">
+                  {top.map(c => {
+                    const meta = EXPENSE_CATEGORIES.find(e => e.name === c.category);
+                    return (
+                      <li key={c.category}>
+                        <div className="flex items-center justify-between text-sm"><span>{meta?.emoji} {c.category}</span><span className="font-medium">{formatMoney(c.amount, currency)} · {c.pct}%</span></div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden mt-1"><motion.div initial={{ width: 0 }} animate={{ width: `${c.pct}%` }} className="h-full rounded-full" style={{ background: meta?.color ?? 'hsl(var(--primary))' }} /></div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+            {goals.length > 0 && <p className="text-xs text-muted-foreground">Savings goals: {formatMoney(goalSaved, currency)} of {formatMoney(goalTarget, currency)} saved across {goals.length} goal{goals.length > 1 ? 's' : ''}.</p>}
+          </section>
+        );
+      })()}
 
       <div className="flex flex-wrap items-center gap-2">
         {(['week', 'month', 'year'] as Range[]).map(r => (
