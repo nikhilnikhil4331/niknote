@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHaptics } from '@/hooks/useHaptics';
+import { SIGNUP_ENABLED } from '@/config/features';
 
 export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
-  const signup = mode === 'signup';
-  const { signIn, signUp, user, loading: authLoading } = useAuth();
+  const signup = mode === 'signup' && SIGNUP_ENABLED;
+  const { signIn, signUp, signInAsGuest, user, loading: authLoading } = useAuth();
   const { triggerHaptic } = useHaptics();
   const reduced = useReducedMotion();
   const navigate = useNavigate();
@@ -59,6 +60,15 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
     }
   }
 
+  async function guest() {
+    if (busy) return;
+    triggerHaptic('light'); setError(''); submitting.current = true; setBusy(true);
+    const r = await signInAsGuest();
+    submitting.current = false; setBusy(false);
+    if (r.error) { setError('Guest mode is unavailable right now. Please try again.'); triggerHaptic('error'); }
+    else triggerHaptic('success');
+  }
+
   const otherPath = `${signup ? '/login' : '/signup'}${location.search}`;
   return (
     <main className="nik-auth-page">
@@ -67,7 +77,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
       <motion.section key={mode} className="nik-auth-content" initial={reduced ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .45 }}>
         <header className="text-center mb-7">
           <motion.img src="/niknote-logo.png" alt="Niknote" className="nik-auth-logo" initial={reduced ? false : { rotate: -8, scale: .88 }} animate={{ rotate: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 160, damping: 16 }} />
-          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">{signup ? 'Sign up with Niknote' : 'Sign in to Niknote'}</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">{signup ? 'Sign up with Niknote' : SIGNUP_ENABLED ? 'Sign in to Niknote' : 'Use Niknote free'}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{signup ? 'Your next chapter starts here.' : 'Welcome back. Your notes are waiting.'}</p>
         </header>
         <div className="nik-auth-form-surface">
@@ -92,7 +102,8 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
                 {error && <motion.p key={error} role="alert" className="text-sm text-destructive" animate={reduced ? {} : { x: [0, -5, 5, -3, 3, 0] }} transition={{ duration: .35 }}>{error}</motion.p>}
                 <motion.div whileTap={reduced ? {} : { scale: .97 }}><Button type="submit" disabled={busy || authLoading} className="nik-auth-submit w-full h-12 gap-2">{busy ? <><Loader2 size={18} className="animate-spin motion-reduce:animate-none" /> {signup ? 'Creating account…' : 'Signing in…'}</> : <>{signup ? 'Sign up with Niknote' : 'Sign in'}<ArrowRight size={18} /></>}</Button></motion.div>
                 {signup && <p className="text-xs text-muted-foreground text-center leading-relaxed">By signing up, you agree to our <Link to="/terms" className="underline">Terms</Link> and <Link to="/privacy" className="underline">Privacy Policy</Link>.</p>}
-                <p className="text-sm text-muted-foreground text-center pt-2">{signup ? 'Already part of Niknote? ' : 'New user of Niknote? '}<Link to={otherPath} className="text-primary font-semibold underline-offset-4 hover:underline" onClick={() => triggerHaptic('selection')}>{signup ? 'Sign in' : 'Sign up'}</Link></p>
+                {!SIGNUP_ENABLED && <div className="pt-1 space-y-2"><Button type="button" variant="outline" onClick={guest} disabled={busy || authLoading} className="w-full h-12">Try Niknote free — continue as guest</Button><p className="text-xs text-muted-foreground text-center leading-relaxed">New accounts are paused. Guest notes are saved privately to this browser's session; clearing site data can lose access.</p></div>}
+                {SIGNUP_ENABLED && <p className="text-sm text-muted-foreground text-center pt-2">{signup ? 'Already part of Niknote? ' : 'New user of Niknote? '}<Link to={otherPath} className="text-primary font-semibold underline-offset-4 hover:underline" onClick={() => triggerHaptic('selection')}>{signup ? 'Sign in' : 'Sign up'}</Link></p>}
               </motion.form>
             )}
           </AnimatePresence>
