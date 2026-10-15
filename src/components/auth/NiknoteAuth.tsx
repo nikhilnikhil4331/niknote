@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHaptics } from '@/hooks/useHaptics';
 import { SIGNUP_ENABLED } from '@/config/features';
+import { NiknoteLoader } from '@/components/motion/NiknoteLoader';
 
 export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
   const signup = mode === 'signup' && SIGNUP_ENABLED;
@@ -25,6 +26,15 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const submitting = useRef(false);
+  const [entering, setEntering] = useState(false);
+
+  // Warm up the tracker screens in the background so guest entry opens them instantly.
+  useEffect(() => {
+    const warm = () => { import('@/pages/MoneyTracker'); import('@/pages/RoutineTracker'); };
+    const w = window as any;
+    const id = w.requestIdleCallback ? w.requestIdleCallback(warm, { timeout: 2500 }) : window.setTimeout(warm, 1200);
+    return () => { w.cancelIdleCallback ? w.cancelIdleCallback(id) : window.clearTimeout(id); };
+  }, []);
 
   useEffect(() => {
     if (authLoading || !user || submitting.current) return;
@@ -64,16 +74,17 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
 
   async function guest() {
     if (busy) return;
-    triggerHaptic('light'); setError(''); submitting.current = true; setBusy(true);
+    triggerHaptic('light'); setError(''); submitting.current = true; setBusy(true); setEntering(true);
     const r = await signInAsGuest();
     submitting.current = false; setBusy(false);
-    if (r.error) { setError('Guest mode is unavailable right now. Please try again.'); triggerHaptic('error'); }
+    if (r.error) { setEntering(false); setError('Guest mode is unavailable right now. Please check your internet and try again.'); triggerHaptic('error'); }
     else triggerHaptic('success');
   }
 
   const otherPath = `${signup ? '/login' : '/signup'}${location.search}`;
   return (
     <main className="nik-auth-page">
+      {entering && <NiknoteLoader label="Opening guest mode" />}
       <div className="nik-auth-backdrop" aria-hidden="true" />
       <Link to="/" className="nik-auth-back text-muted-foreground" onClick={() => triggerHaptic('selection')}><ArrowLeft size={17} /> Home</Link>
       <motion.section key={mode} className="nik-auth-content" initial={reduced ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .45 }}>
