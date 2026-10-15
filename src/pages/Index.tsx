@@ -90,7 +90,7 @@ const Index = () => {
     document.addEventListener('selectionchange', capture);
     return () => document.removeEventListener('selectionchange', capture);
   }, []);
-  const { user } = useAuth();
+  const { user, signInAsGuest } = useAuth();
   const dnaContext = useHandwritingDNA();
   const { theme: uiTheme, setTheme: setUITheme, classes: themeClasses } = useUITheme();
   const isMobile = useIsMobile();

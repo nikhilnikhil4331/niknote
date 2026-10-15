@@ -33,7 +33,7 @@ const examples = [
 export function MobileExperience() {
   const navigate = useNavigate();
   const { pathname, search } = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, signInAsGuest } = useAuth();
   const premium = usePremium();
   const { notebooks, loading, deleteNotebook, updateNotebook } = useNotebooks();
   const { appearance, update, attributes } = useMobileAppearance();
