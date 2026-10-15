@@ -108,3 +108,11 @@
 .nn-quick span{white-space:normal;text-align:left;line-height:1.2}
 .nn-content{padding-bottom:calc(120px + env(safe-area-inset-bottom))}
 .nn-fab{bottom:calc(104px + env(safe-area-inset-bottom))}
+
+/* Mobile line-format toolbar: converts the focused line without losing text */
+.nn-format-bar { display: flex; gap: 4px; overflow-x: auto; padding: 4px 2px 6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.nn-format-bar::-webkit-scrollbar { display: none; }
+.nn-format-bar button { flex: 0 0 auto; min-width: 40px; height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid hsl(var(--border)); background: hsl(var(--background) / .8); color: hsl(var(--foreground)); font-size: 13px; font-weight: 600; }
+.nn-format-bar button[aria-pressed="true"] { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: transparent; }
+.nn-format-bar button:disabled { opacity: .4; }
+.nn-format-bar button:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
