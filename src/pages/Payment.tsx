@@ -12,6 +12,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { usePremium } from "@/hooks/usePremium";
 import { UrgencyTimer } from "@/components/urgency/UrgencyTimer";
+import { ThankYouBurst } from "@/components/motion/ThankYouBurst";
+import { PaymentArt } from "@/components/motion/FeatureArt";
+import { AnimatePresence } from "framer-motion";
 
 type PlanCode = "weekly" | "monthly";
 type PaymentStep = "select" | "processing" | "success" | "error";
@@ -239,20 +242,7 @@ export default function PaymentPage() {
           transition={{ type: "spring", duration: 0.6 }}
           className="text-center space-y-6 max-w-sm"
         >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-2xl shadow-green-500/30"
-          >
-            <CheckCircle className="w-12 h-12 text-white" />
-          </motion.div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">Premium Activated! 🎉</h1>
-            <p className="text-muted-foreground">
-              All premium features unlocked. Go create magic! ✨
-            </p>
-          </div>
+          <ThankYouBurst title="Thank you!" subtitle="Premium activated — all features unlocked. Go create magic! ✨" />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

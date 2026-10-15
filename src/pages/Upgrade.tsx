@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { usePremium } from '@/hooks/usePremium';
 import { UrgencyTimer } from '@/components/urgency/UrgencyTimer';
+import { PlanArt } from '@/components/motion/FeatureArt';
 
 const plans = [
   {
@@ -69,6 +70,7 @@ const Upgrade = () => {
         <UrgencyTimer variant="card" />
 
         <div className="text-center space-y-3">
+          <div className="flex justify-center"><PlanArt /></div>
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-primary/10 via-orange-500/10 to-pink-500/10 text-xs sm:text-sm font-medium border border-primary/10">
             <Flame className="h-4 w-4 text-orange-500" />
             2,500+ students already premium

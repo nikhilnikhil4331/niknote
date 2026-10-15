@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { ThankYouBurst } from '@/components/motion/ThankYouBurst';
 
 type FeedbackType = 'suggestion' | 'bug' | 'praise' | 'feature';
 type FeedbackCategory = 'editor' | 'ai' | 'handwriting' | 'pdf' | 'mobile' | 'pricing' | 'other';
@@ -112,20 +113,7 @@ const FeedbackPage = () => {
           transition={{ type: "spring", duration: 0.6 }}
           className="text-center space-y-6 max-w-sm"
         >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-2xl shadow-green-500/30"
-          >
-            <CheckCircle2 className="w-12 h-12 text-white" />
-          </motion.div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">Thank You! 🎉</h1>
-            <p className="text-muted-foreground">
-              Your feedback means a lot! We'll use it to make NikNote even better for you.
-            </p>
-          </div>
+          <ThankYouBurst title="Thank you!" subtitle="Your feedback means a lot! We'll use it to make Niknote even better for you." />
           <div className="space-y-3">
               <Button onClick={() => navigate('/')} className="w-full rounded-xl">
               Back to Editor
