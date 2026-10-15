@@ -1,3 +1,4 @@
+import { styledWords } from '@/lib/inlineMarks';
 import React, { useMemo, useEffect, useState, useRef, memo, forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { NoteLine, LINE_INK_COLORS, generateRealPenVariation } from '@/types/noteLine';
