@@ -61,3 +61,15 @@ export function billStatus(b: { due_day: number; last_paid_month: string | null 
   if (diff <= 3) return 'soon';
   return 'later';
 }
+
+/** Month-to-date totals from saved transactions (dates are YYYY-MM-DD local days). */
+export function monthSummary(rows: { kind: string; amount: number | string; occurred_on: string }[], today: Date = new Date()) {
+  const prefix = toDay(today).slice(0, 7);
+  let spent = 0, income = 0;
+  for (const r of rows) {
+    if (!r.occurred_on?.startsWith(prefix)) continue;
+    const a = Number(r.amount) || 0;
+    if (r.kind === 'income') income += a; else spent += a;
+  }
+  return { spent, income, balance: income - spent };
+}
