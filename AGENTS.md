@@ -13,3 +13,4 @@
 - PDF import runs page-by-page in the browser (src/lib/pdfPipeline.ts): text-layer pages skip AI, only scanned pages hit OCR with bounded parallelism, so one bad page never fails the document.
 - Free-form boards (src/pages/Board.tsx, /board) store page JSON in public.boards and media in the private board-media bucket under {userId}/{boardId}/; pure rules live in src/lib/board.ts with bun tests so pagination/eraser/undo stay checkable.
 - Gate account creation and paywalls only through src/config/features.ts (SIGNUP_ENABLED, FREE_TRIAL); guests use Supabase anonymous sign-in so owner-scoped RLS keeps their data private.
+- Feature motion graphics (loader, water glass, thank-you, feature art) live in src/components/motion and must respect reduced motion; chart/water math stays in src/lib/trackers.ts with bun tests. Why: one place for animations, rules stay testable.
