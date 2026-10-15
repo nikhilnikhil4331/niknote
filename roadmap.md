@@ -1,4 +1,5 @@
 # Launch-readiness checklist
+- [ ] Use the original welcome logo, audit and polish mobile templates, and unify mobile writing into a clean notebook board; verify template-to-editor flow
 - [x] Polish mobile bottom navigation with swift sliding selection, page transitions and haptics; verified signed-in profile greeting, guest greeting, Home/Notes/AI/Profile navigation, no overflow or page errors
 - [x] Mobile draft identity persists on change, not cleanup; regression tests passed and authenticated create/open/new/reload/save preserved older content with no duplicate on repeat save; temporary test notes removed
 - [x] Niknote-only email pages, Google/GitHub buttons/setup removed, animations and supported-device haptics; mobile/desktop and real invalid-login response checked, authenticated /money return checked
