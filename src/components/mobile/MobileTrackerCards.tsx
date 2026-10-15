@@ -49,7 +49,7 @@ export function MobileTrackerCards() {
     {
       to: '/money', label: 'Money Tracker', icon: Wallet, tone: 'money',
       main: value(d && (d.money.spent || d.money.income) ? formatMoney(d.money.spent, d.currency) : '', 'No spends yet'),
-      sub: d && (d.money.spent || d.money.income) ? `spent this month · ${formatMoney(d.money.balance, d.currency)} left` : 'Track income & expenses',
+      sub: d && (d.money.spent || d.money.income) ? (d.money.income ? `spent this month · ${formatMoney(d.money.balance, d.currency)} left` : 'spent this month') : 'Track income & expenses',
     },
     {
       to: '/routine', label: 'Daily Tracker', icon: CalendarCheck, tone: 'daily',
