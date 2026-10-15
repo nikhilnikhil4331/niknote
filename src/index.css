@@ -1396,3 +1396,26 @@
 .pen-marker > :not(.paper-fx) { text-shadow: 0 0 1px currentColor, 0.6px 0.6px 1.4px currentColor; font-weight: 700; }
 .pen-pencil > :not(.paper-fx) * { color: hsl(0 0% 38%) !important; }
 .pen-marker > :not(.paper-fx) * { font-weight: 700 !important; }
+
+/* Notebook-board roles, shared by template previews and mobile writing. */
+.nn-mobile {
+  --nn-paper: 0 0% 100%;
+  --nn-paper-ink: 230 27% 17%;
+  --nn-paper-muted: 232 12% 52%;
+  --nn-paper-rule: 224 32% 89%;
+  --nn-paper-margin: 340 57% 82%;
+  --nn-paper-mint: 156 44% 94%;
+  --nn-paper-rose: 339 62% 96%;
+  --nn-paper-blue: 212 73% 96%;
+  --nn-board-shadow: 0 5px 24px hsl(245 22% 35% / .08);
+}
+.nn-mobile[data-theme=dark] {
+  --nn-paper: 252 20% 19%;
+  --nn-paper-ink: 258 70% 96%;
+  --nn-paper-muted: 258 16% 69%;
+  --nn-paper-rule: 253 19% 29%;
+  --nn-paper-margin: 338 27% 39%;
+  --nn-paper-mint: 163 18% 22%;
+  --nn-paper-rose: 333 19% 23%;
+  --nn-paper-blue: 215 23% 24%;
+}
