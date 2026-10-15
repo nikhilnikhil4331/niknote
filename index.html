@@ -213,7 +213,16 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="nn-boot" role="status" aria-label="Loading Niknote"><img src="/niknote-logo.png" alt="Niknote" width="240" height="120" /><span></span></div></div>
+    <style>
+      .nn-boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#fafbfc}
+      .nn-boot img{width:min(240px,64vw);height:auto;mix-blend-mode:multiply;animation:nnBootPop .7s cubic-bezier(.34,1.56,.64,1) both,nnBootWrite 1s .15s cubic-bezier(.65,0,.35,1) both}
+      .nn-boot span{width:120px;height:4px;border-radius:99px;background:linear-gradient(90deg,#f59e0b,#ec4899,#7c3aed);background-size:200% 100%;animation:nnBootInk 1.2s linear infinite}
+      @keyframes nnBootPop{from{transform:scale(.55) translateY(14px);opacity:0}to{transform:none;opacity:1}}
+      @keyframes nnBootWrite{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+      @keyframes nnBootInk{to{background-position:-200% 0}}
+      @media (prefers-reduced-motion:reduce){.nn-boot img,.nn-boot span{animation:none}}
+    </style>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
