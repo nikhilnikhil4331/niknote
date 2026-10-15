@@ -86,6 +86,7 @@ export default function PaymentPage() {
   const initialPlan = (searchParams.get("plan") as PlanCode) || "monthly";
   const [selectedPlan, setSelectedPlan] = useState<PlanCode>(initialPlan);
   const [paymentStep, setPaymentStep] = useState<PaymentStep>("select");
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);
 
   const plan = plans.find((p) => p.code === selectedPlan) ?? plans[1];
@@ -124,6 +125,7 @@ export default function PaymentPage() {
     }
 
     setVerificationPending(false);
+    setCheckoutOpen(false);
     setPaymentStep("processing");
 
     try {
@@ -173,6 +175,7 @@ export default function PaymentPage() {
           }
         },
         handler: async (response: any) => {
+          setCheckoutOpen(false);
           try {
             if (!response.razorpay_payment_id) {
               throw new Error("No payment ID received");
@@ -204,6 +207,7 @@ export default function PaymentPage() {
         },
         modal: {
           ondismiss: () => {
+            setCheckoutOpen(false);
             setPaymentStep("select");
             toast.info("Payment cancel ho gaya. Koi baat nahi!");
           },
@@ -217,6 +221,7 @@ export default function PaymentPage() {
         const failMsg = response.error?.description || "Payment fail ho gaya";
         toast.error(failMsg + ". Dobara try karo!");
       });
+      setCheckoutOpen(true);
       rzp.open();
     } catch (err) {
       console.error("Payment error:", err);
@@ -307,7 +312,7 @@ export default function PaymentPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <AnimatePresence>
-        {paymentStep === "processing" && (
+        {paymentStep === "processing" && !checkoutOpen && (
           <motion.div role="status" aria-live="polite" className="fixed inset-0 z-[80] grid place-items-center bg-background/80 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="text-center space-y-3"><div className="flex justify-center"><PaymentArt /></div><p className="font-semibold text-foreground">Securely processing your payment…</p><p className="text-xs text-muted-foreground">Don't close this page.</p></div>
           </motion.div>
