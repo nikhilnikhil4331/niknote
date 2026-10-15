@@ -47,7 +47,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // After Google sign-in, send user back to where they wanted to go
         if (event === 'SIGNED_IN' && session) {
           const target = sessionStorage.getItem('niknote_post_auth_redirect');
-          if (target) {
+          // Auth pages navigate in-app themselves; a full reload here showed a long "Loading..." screen for guests.
+          const onAuthPage = /^\/(login|signup|auth)(\/|$)/.test(window.location.pathname);
+          if (target && !onAuthPage) {
             sessionStorage.removeItem('niknote_post_auth_redirect');
             if (window.location.pathname !== target) {
               setTimeout(() => window.location.assign(target), 0);
