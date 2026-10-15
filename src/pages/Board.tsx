@@ -408,6 +408,14 @@ export default function BoardScreen() {
           <Button variant="ghost" size="icon" aria-label="Zoom out" onClick={() => setZoom(z => Math.max(0.25, +(z - 0.1).toFixed(2)))}><ZoomOut size={16} /></Button>
           <button className="w-12 text-xs tabular-nums" onClick={() => setZoom(1)} aria-label="Reset zoom">{Math.round(zoom * 100)}%</button>
           <Button variant="ghost" size="icon" aria-label="Zoom in" onClick={() => setZoom(z => Math.min(3, +(z + 0.1).toFixed(2)))}><ZoomIn size={16} /></Button>
+          <Button variant="ghost" size="sm" aria-label="Fit page to screen" onClick={() => { const el = scroller.current; if (!el) return; setZoom(Math.max(0.25, Math.min(3, +(Math.min((el.clientWidth - 48) / page.width, (el.clientHeight - 48) / page.height)).toFixed(2)))); }}>Fit</Button>
+          <Button variant="ghost" size="sm" aria-label="Export page as PNG" onClick={async () => {
+            const el = document.querySelector('[data-testid="board-page"]') as HTMLElement | null; if (!el) return;
+            const { default: html2canvas } = await import('html2canvas');
+            const prev = el.style.transform; el.style.transform = 'none';
+            try { const c = await html2canvas(el, { backgroundColor: page.bg, scale: 2, useCORS: true }); const a = document.createElement('a'); a.download = `niknote-board-page-${pageIdx + 1}.png`; a.href = c.toDataURL('image/png'); a.click(); }
+            catch { alert('Could not export this page.'); } finally { el.style.transform = prev; }
+          }}>PNG</Button>
         </div>
       </div>
 
