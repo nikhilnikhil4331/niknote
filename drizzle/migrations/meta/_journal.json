@@ -43,6 +43,13 @@
       "when": 1792082884032,
       "tag": "0005_money_accounts_habit_schedule",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792083384105,
+      "tag": "0006_money_allow_transfer",
+      "breakpoints": true
     }
   ]
 }
