@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, LineChart, Line } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area, CartesianGrid } from 'recharts';
+import { MoneyArt } from '@/components/motion/FeatureArt';
 import { Plus, Trash2, Target, Users, Download, Coins, Camera, Loader2, Bell, CheckCircle2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { haptic } from '@/hooks/useHaptics';
 import { toast } from 'sonner';
 import { TrackerShell, Panel } from '@/components/trackers/TrackerShell';
-import { EXPENSE_CATEGORIES, CURRENCIES, formatMoney, accountBalances, cashflow, ACCOUNTS, toDay, splitBill, billStatus, topCategories } from '@/lib/trackers';
+import { EXPENSE_CATEGORIES, CURRENCIES, formatMoney, accountBalances, cashflow, ACCOUNTS, toDay, splitBill, billStatus, topCategories, dailyCashSeries } from '@/lib/trackers';
 
 type Tx = { id: string; kind: string; amount: number; category: string; note: string; occurred_on: string; account: string; to_account: string | null };
 type Goal = { id: string; name: string; target: number; saved: number };
@@ -198,6 +199,13 @@ export default function MoneyTracker() {
     return [...map.values()];
   }, [inRange, range]);
 
+  const [chart, setChart] = useState<'flow' | 'balance' | 'compare'>('flow');
+  const series = useMemo(() => {
+    if (range === 'year') { let run = 0; return trend.map(r => ({ ...r, net: (run += r.income - r.expense) })); }
+    return dailyCashSeries(inRange, fromDay, toDay(new Date()));
+  }, [range, trend, inRange, fromDay]);
+  const short = (v: number) => (Math.abs(v) >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v)));
+
   const exportPdf = () => {
     const doc = new jsPDF();
     doc.setFontSize(18); doc.text(`Niknote Money Report (${range})`, 14, 18);
@@ -220,6 +228,21 @@ export default function MoneyTracker() {
     <TrackerShell title="Money Tracker" subtitle="Income, budgets & savings goals">
       {loadError && <div role="alert" className="rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm flex items-center gap-3">Could not load your entries — totals below may be incomplete.<button className="ml-auto underline font-medium" onClick={() => setReload(n => n + 1)}>Retry</button></div>}
       <p className="text-xs text-muted-foreground">Niknote is a tracker, not a bank — your money stays in your real accounts. Transfers move money between your accounts and are not counted as income or spending.</p>
+      <section className="rounded-3xl border border-border bg-card p-4 flex items-center gap-4 shadow-sm overflow-hidden">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground">This month</p>
+          <p className="text-xl font-bold leading-tight">{formatMoney(monthSpend, currency)} spent</p>
+          <p className="text-xs text-muted-foreground mt-1">{budget > 0 ? (budget - monthSpend >= 0 ? `${formatMoney(budget - monthSpend, currency)} left in your budget` : `${formatMoney(monthSpend - budget, currency)} over budget`) : 'Set a monthly budget to see what’s left'}</p>
+        </div>
+        {budget > 0 && (
+          <svg viewBox="0 0 44 44" className="w-14 h-14 -rotate-90 shrink-0" role="img" aria-label={`${Math.round(budgetPct)}% of budget used`}>
+            <defs><linearGradient id="nn-ring-grad"><stop offset="0%" stopColor="hsl(var(--success))" /><stop offset="100%" stopColor={budgetPct >= 90 ? 'hsl(var(--destructive))' : 'hsl(var(--primary))'} /></linearGradient></defs>
+            <circle cx="22" cy="22" r="18" fill="none" strokeWidth="5" className="nn-ring-track" />
+            <motion.circle cx="22" cy="22" r="18" fill="none" strokeWidth="5" strokeLinecap="round" className="nn-ring-fill" strokeDasharray={113.1} initial={{ strokeDashoffset: 113.1 }} animate={{ strokeDashoffset: 113.1 * (1 - budgetPct / 100) }} transition={{ duration: 1.1, ease: 'easeOut' }} />
+          </svg>
+        )}
+        <MoneyArt />
+      </section>
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
@@ -364,13 +387,45 @@ export default function MoneyTracker() {
         </Panel>
       </div>
 
-      <Panel title="Trends">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 [&>*]:min-w-0 h-56">
-          <ResponsiveContainer><BarChart data={trend}><XAxis dataKey="label" fontSize={11} /><YAxis fontSize={11} width={40} /><Tooltip />
-            <Bar dataKey="income" fill="hsl(150 60% 45%)" radius={[6, 6, 0, 0]} /><Bar dataKey="expense" fill="hsl(350 75% 58%)" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer>
-          <ResponsiveContainer><LineChart data={trend}><XAxis dataKey="label" fontSize={11} /><YAxis fontSize={11} width={40} /><Tooltip />
-            <Line dataKey="expense" stroke="hsl(350 75% 58%)" strokeWidth={2} dot={false} /><Line dataKey="income" stroke="hsl(150 60% 45%)" strokeWidth={2} dot={false} /></LineChart></ResponsiveContainer>
-        </div>
+      <Panel title="Graphs" action={<div className="nn-chart-tabs" role="group" aria-label="Choose graph">{([['flow', 'Flow'], ['balance', 'Balance'], ['compare', 'Compare']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={chart === k} onClick={() => { haptic('selection'); setChart(k); }}>{l}</button>)}</div>}>
+        {series.every(r => !r.income && !r.expense) ? <p className="text-sm text-muted-foreground py-10 text-center">Add a transaction to see your graph grow ✨</p> : (
+        <motion.div key={chart + range} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="h-60">
+          <ResponsiveContainer>
+            {chart === 'compare' ? (
+              <BarChart data={series} margin={{ top: 8, right: 4, left: -12, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="nn-inc-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--success))" /><stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.45} /></linearGradient>
+                  <linearGradient id="nn-exp-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--heart))" /><stop offset="100%" stopColor="hsl(var(--heart))" stopOpacity={0.45} /></linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} /><YAxis fontSize={11} tickFormatter={short} tickLine={false} axisLine={false} />
+                <Tooltip cursor={{ fill: 'hsl(var(--muted) / .5)' }} formatter={(v: number, n: string) => [formatMoney(v, currency), n === 'income' ? 'Income' : 'Spent']} />
+                <Bar dataKey="income" fill="url(#nn-inc-bar)" radius={[8, 8, 2, 2]} animationDuration={900} /><Bar dataKey="expense" fill="url(#nn-exp-bar)" radius={[8, 8, 2, 2]} animationDuration={900} />
+              </BarChart>
+            ) : chart === 'balance' ? (
+              <AreaChart data={series} margin={{ top: 8, right: 4, left: -12, bottom: 0 }}>
+                <defs><linearGradient id="nn-net-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.5} /><stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.03} /></linearGradient></defs>
+                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} /><YAxis fontSize={11} tickFormatter={short} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(v: number) => [formatMoney(v, currency), 'Running balance']} />
+                <Area type="monotone" dataKey="net" stroke="hsl(var(--primary))" strokeWidth={3} fill="url(#nn-net-area)" animationDuration={1100} />
+              </AreaChart>
+            ) : (
+              <AreaChart data={series} margin={{ top: 8, right: 4, left: -12, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="nn-inc-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.45} /><stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.02} /></linearGradient>
+                  <linearGradient id="nn-exp-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--heart))" stopOpacity={0.45} /><stop offset="100%" stopColor="hsl(var(--heart))" stopOpacity={0.02} /></linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} /><YAxis fontSize={11} tickFormatter={short} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(v: number, n: string) => [formatMoney(v, currency), n === 'income' ? 'Income' : 'Spent']} />
+                <Area type="monotone" dataKey="income" stroke="hsl(var(--success))" strokeWidth={2.5} fill="url(#nn-inc-area)" animationDuration={1000} />
+                <Area type="monotone" dataKey="expense" stroke="hsl(var(--heart))" strokeWidth={2.5} fill="url(#nn-exp-area)" animationDuration={1200} />
+              </AreaChart>
+            )}
+          </ResponsiveContainer>
+        </motion.div>)}
+        <div className="flex gap-4 text-xs text-muted-foreground mt-2"><span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(var(--success))' }} />Income</span><span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(var(--heart))' }} />Spent</span><span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-primary" />Balance</span></div>
       </Panel>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*]:min-w-0">
