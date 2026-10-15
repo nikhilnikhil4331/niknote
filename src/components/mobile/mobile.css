@@ -14,7 +14,7 @@
 
 /* One quiet writing surface: controls outside, content on the paper. */
 .nn-mobile .nn-welcome h2{display:flex;align-items:center;flex-wrap:wrap;gap:4px;letter-spacing:0;padding-right:12px}
-.nn-mobile .nn-welcome-logo{width:112px;height:38px;object-fit:contain;margin:-7px 0}
+.nn-mobile .nn-welcome-logo{width:130px;height:40px;object-fit:cover;object-position:center;margin:-7px -8px}
 .nn-mobile .nn-template-heading{margin:8px 0 22px}
 .nn-template-eyebrow{font-size:10px;color:var(--nn-muted);font-weight:600}
 .nn-template-heading h2{font-size:28px;font-weight:600;letter-spacing:0;margin-top:6px}
@@ -74,3 +74,8 @@
 .nn-board-preview{min-width:0;overflow:hidden;border-radius:7px;border:1px solid hsl(var(--nn-paper-rule));background:hsl(var(--nn-paper));box-shadow:var(--nn-board-shadow)}
 .nn-mobile .nn-editor-header{position:sticky;top:0;z-index:35;border-bottom:1px solid var(--nn-border)}
 @media(max-width:374px){.nn-mobile .nn-editor-page{padding-inline:10px}.nn-board-tabs button{padding:0 7px;gap:4px}.nn-board-controls>button{width:32px}.nn-mobile .nn-template-grid{gap:20px 12px}}
+
+.nn-mobile .nn-template:hover,.nn-mobile .nn-template:active{background:transparent!important;color:var(--nn-text)!important}
+.nn-mobile .nn-template-checklist{background:hsl(var(--nn-paper-mint))}
+.nn-mobile .nn-editor-canvas .nn-block-prefix button[aria-pressed=true]{background:transparent!important}
+.nn-mobile .nn-editor-canvas .nn-block-prefix button>div{border-color:var(--nn-accent);border-radius:5px}

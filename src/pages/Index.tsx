@@ -1278,18 +1278,6 @@ const Index = () => {
         />
       </React.Suspense>
 
-      {/* Quick Styles Bar (mobile) */}
-      {isMobile && mobileTab === 'write' && (
-        <QuickStylesBar
-          isVisible={editorFocused}
-          currentColor={currentColor}
-          currentFont={settings.font}
-          onColorChange={handleColorChange}
-          onFontChange={(font) => updateSettings({ font })}
-          onOpenStyleSheet={() => setShowMobileStyleSheet(true)}
-        />
-      )}
-
       {/* Mobile Bottom Nav */}
       {isMobile && <MobileEditorToolbar active={editorTool} onTool={selectEditorTool} listening={quickDictation.isListening} />}
       <input ref={imageInputRef} type="file" accept="image/*" hidden onChange={e => {
