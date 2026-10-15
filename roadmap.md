@@ -40,7 +40,7 @@
 - [ ] Phase 5: finance/goals edit, celebrations + sound toggle, quiet/reduced motion
 - [ ] Phase 6: motion polish, settings, full QA + dependency audit
 - [x] Guest trial pass: guest auth, unlock, accounts/transfers, habit weekdays/archive, line format bar, guest→account linking, board fit/PNG
-- [ ] Inline bold/italic inside a line (mobile editor)
-- [ ] Bottom drawing toolbar overlapping footer buttons on note screen
-- [ ] Welcome steps Skip returns to welcome
-- [ ] Tablet/desktop/dark mode QA
+- [x] Inline bold/italic inside a line (mobile editor)
+- [x] Bottom drawing toolbar overlapping footer buttons on note screen
+- [x] Welcome steps Skip returns to welcome
+- [x] Tablet/desktop/dark mode QA

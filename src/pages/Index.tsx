@@ -978,10 +978,6 @@ const Index = () => {
                 <Button variant="ghost" size="icon" onClick={saveMobileNote} disabled={savingNote} aria-label="Save note" title="Save note"><Save className="h-4 w-4" /></Button>
               </div>
               {mobileView === 'write' && <div className="nn-format-bar" role="toolbar" aria-label="Line format" onPointerDown={e => e.preventDefault()}>
-                {([['text','Text','Aa'],['heading1','Heading 1','H1'],['heading2','Heading 2','H2'],['bullet','Bullet list','•'],['numbered','Numbered list','1.'],['todo','Checklist','☐'],['quote','Quote','❝'],['code','Code','</>']] as const).map(([t,label,icon]) => {
-                  const cur = blockEditor.blocks.find(b => b.id === focusedBlockId);
-                  return <button key={t} type="button" aria-label={label} aria-pressed={cur?.type === t} disabled={!cur} onClick={() => { if (cur) { blockEditor.convertBlock(cur.id, t as any); haptic('selection'); } }}>{icon}</button>;
-                })}
                 {([['bold','Bold','B'],['italic','Italic','I']] as const).map(([m,label,icon]) => <button key={m} type="button" aria-label={label} disabled={!focusedBlockId} style={{ fontWeight: m === 'bold' ? 800 : 500, fontStyle: m === 'italic' ? 'italic' : undefined }} onClick={() => {
                   const id = focusedBlockId; const cur = blockEditor.blocks.find(b => b.id === id);
                   const ta = document.querySelector<HTMLTextAreaElement>(`[data-block-id="${id}"] textarea`);
@@ -996,6 +992,10 @@ const Index = () => {
                   haptic('selection');
                   requestAnimationFrame(() => { ta.focus(); ta.setSelectionRange(r.start, r.end); });
                 }}>{icon}</button>)}
+                {([['text','Text','Aa'],['heading1','Heading 1','H1'],['heading2','Heading 2','H2'],['bullet','Bullet list','•'],['numbered','Numbered list','1.'],['todo','Checklist','☐'],['quote','Quote','❝'],['code','Code','</>']] as const).map(([t,label,icon]) => {
+                  const cur = blockEditor.blocks.find(b => b.id === focusedBlockId);
+                  return <button key={t} type="button" aria-label={label} aria-pressed={cur?.type === t} disabled={!cur} onClick={() => { if (cur) { blockEditor.convertBlock(cur.id, t as any); haptic('selection'); } }}>{icon}</button>;
+                })}
                 <button type="button" aria-label="Move line up" disabled={!focusedBlockId} onClick={() => focusedBlockId && blockEditor.moveBlock(focusedBlockId, 'up')}>↑</button>
                 <button type="button" aria-label="Move line down" disabled={!focusedBlockId} onClick={() => focusedBlockId && blockEditor.moveBlock(focusedBlockId, 'down')}>↓</button>
               </div>}
