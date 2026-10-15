@@ -113,3 +113,12 @@ export function scheduledStreak(doneDays: string[], days: number[] = [0,1,2,3,4,
 }
 
 export const isScheduled = (days: number[] | null | undefined, d: Date = new Date()) => !days?.length || days.includes(d.getDay());
+
+/** Expense totals per category, biggest first, with share of total spending (0-100). Transfers/income ignored. */
+export function topCategories(txs: { kind: string; amount: number; category: string }[], limit = 3) {
+  const map = new Map<string, number>();
+  for (const t of txs) if (t.kind === 'expense') map.set(t.category, (map.get(t.category) ?? 0) + t.amount);
+  const total = [...map.values()].reduce((s, v) => s + v, 0);
+  return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit)
+    .map(([category, amount]) => ({ category, amount, pct: total ? Math.round((amount / total) * 100) : 0 }));
+}

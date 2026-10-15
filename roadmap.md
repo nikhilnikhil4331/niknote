@@ -44,3 +44,5 @@
 - [x] Bottom drawing toolbar overlapping footer buttons on note screen
 - [x] Welcome steps Skip returns to welcome
 - [x] Tablet/desktop/dark mode QA
+- [x] Money: monthly budget, savings goals, net cashflow + top categories dashboard
+- [x] Guest mode stuck on loading

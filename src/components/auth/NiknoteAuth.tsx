@@ -28,9 +28,11 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
 
   useEffect(() => {
     if (authLoading || !user || submitting.current) return;
-    const requested = new URLSearchParams(location.search).get('redirect');
+    let stored: string | null = null;
+    try { stored = sessionStorage.getItem('niknote_post_auth_redirect'); } catch { /* noop */ }
+    const requested = new URLSearchParams(location.search).get('redirect') ?? stored;
     const target = requested && /^\/(?!\/)/.test(requested) && !requested.includes('\\') && !/^\/(login|signup|auth)(?:[/?#]|$)/.test(requested) ? requested : '/';
-    const timer = window.setTimeout(() => navigate(target, { replace: true }), success && !reduced ? 1400 : 0);
+    const timer = window.setTimeout(() => { try { sessionStorage.removeItem('niknote_post_auth_redirect'); } catch { /* noop */ } navigate(target, { replace: true }); }, success && !reduced ? 1400 : 0);
     return () => window.clearTimeout(timer);
   }, [authLoading, user, success, reduced, navigate, location.search, busy]);
 
