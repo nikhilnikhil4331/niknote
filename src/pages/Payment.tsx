@@ -177,7 +177,6 @@ export default function PaymentPage() {
         handler: async (response: any) => {
           setCheckoutOpen(false);
           try {
-            setCheckoutOpen(false);
             if (!response.razorpay_payment_id) {
               throw new Error("No payment ID received");
             }
@@ -209,7 +208,6 @@ export default function PaymentPage() {
         modal: {
           ondismiss: () => {
             setCheckoutOpen(false);
-            setCheckoutOpen(false);
             setPaymentStep("select");
             toast.info("Payment cancel ho gaya. Koi baat nahi!");
           },
@@ -223,7 +221,6 @@ export default function PaymentPage() {
         const failMsg = response.error?.description || "Payment fail ho gaya";
         toast.error(failMsg + ". Dobara try karo!");
       });
-      setCheckoutOpen(true);
       setCheckoutOpen(true);
       rzp.open();
     } catch (err) {
