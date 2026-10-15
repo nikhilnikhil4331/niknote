@@ -8,6 +8,9 @@ import { haptic } from '@/hooks/useHaptics';
 import { toast } from 'sonner';
 import { TrackerShell, Panel } from '@/components/trackers/TrackerShell';
 import { scheduledStreak, isScheduled, toDay } from '@/lib/trackers';
+import { WaterGlass } from '@/components/motion/WaterGlass';
+import { RoutineArt } from '@/components/motion/FeatureArt';
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
 
 const db = supabase as any;
 const BLOCKS = [
@@ -132,20 +135,36 @@ export default function RoutineTracker() {
   const habitRate = scheduledSlots ? Math.round((checks.filter(c => last7.includes(c.day) && activeHabits.some(h => h.id === c.habit_id && isScheduled(h.days, new Date(c.day + 'T12:00')))).length / scheduledSlots) * 100) : 0;
   const avgSleep = (last7.reduce((s, d) => s + (week[d]?.sleep_hours ?? 0), 0) / 7).toFixed(1);
   const totalExercise = last7.reduce((s, d) => s + (week[d]?.exercise_minutes ?? 0), 0);
+  const todayList = activeHabits.filter(h => isScheduled(h.days));
+  const todayScheduled = todayList.length;
+  const todayDone = todayList.filter(h => checks.some(c => c.habit_id === h.id && c.day === today)).length;
+  const todayPct = todayScheduled ? (todayDone / todayScheduled) * 100 : 0;
+  const [chart, setChart] = useState<'habits' | 'water' | 'sleep'>('habits');
+  const weekSeries = last7.map(d => {
+    const date = new Date(d + 'T12:00');
+    const sched = activeHabits.filter(h => isScheduled(h.days, date));
+    const done = sched.filter(h => checks.some(c => c.habit_id === h.id && c.day === d)).length;
+    return { label: date.toLocaleDateString(undefined, { weekday: 'short' }), habits: sched.length ? Math.round((done / sched.length) * 100) : 0, water: week[d]?.water ?? 0, sleep: week[d]?.sleep_hours ?? 0 };
+  });
 
   return (
     <TrackerShell title="Daily Routine" subtitle="Habits, tasks, focus & wellbeing">
+      {/* Today hero */}
+      <section className="rounded-3xl border border-border bg-card p-4 flex items-center gap-4 shadow-sm overflow-hidden">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground">Today</p>
+          <p className="text-xl font-bold leading-tight">{todayDone}/{todayScheduled} habits done</p>
+          <p className="text-xs text-muted-foreground mt-1">{todayScheduled === 0 ? 'Add a habit to start your streak' : todayDone >= todayScheduled ? 'All done — great day! 🌟' : `${todayScheduled - todayDone} left for today`}</p>
+          <div className="h-2 rounded-full bg-muted overflow-hidden mt-2"><motion.div className="h-full rounded-full bg-primary" initial={{ width: 0 }} animate={{ width: `${todayPct}%` }} transition={{ type: 'spring', stiffness: 80, damping: 16 }} /></div>
+        </div>
+        <RoutineArt progress={todayPct} />
+      </section>
+
       {/* Wellness row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 [&>*]:min-w-0">
-        <div className="rounded-3xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2 text-sm font-medium"><Droplet className="w-4 h-4 text-sky-500" />Water</div>
-          <div className="flex flex-wrap gap-1 mt-3">
-            {Array.from({ length: waterGoal }, (_, i) => (
-              <motion.button key={i} whileTap={{ scale: 0.8 }} onClick={() => { haptic('light'); saveWellness({ water: i + 1 === w.water ? i : i + 1 }); }}
-                className={`w-6 h-8 rounded-b-lg rounded-t-sm border-2 transition ${i < w.water ? 'bg-sky-400 border-sky-400' : 'border-sky-200'}`} aria-label={`Glass ${i + 1}`} />
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">{w.water}/{waterGoal} glasses</p>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 [&>*]:min-w-0">
+        <div className="col-span-2 rounded-3xl border border-border bg-card p-4 pb-7">
+          <div className="flex items-center gap-2 text-sm font-medium mb-2"><Droplet className="w-4 h-4 text-sky-500" />Water</div>
+          <WaterGlass glasses={w.water} goal={waterGoal} onChange={n => { haptic(n > w.water ? 'light' : 'selection'); if (n >= waterGoal && w.water < waterGoal) { haptic('success'); confetti({ particleCount: 60, spread: 60, colors: ['#38bdf8', '#0ea5e9', '#ffffff'] }); } saveWellness({ water: n }); }} />
         </div>
         <div className="rounded-3xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-sm font-medium"><Moon className="w-4 h-4 text-indigo-500" />Sleep</div>
@@ -291,6 +310,37 @@ export default function RoutineTracker() {
           </div>
         </Panel>
       </div>
+
+      <Panel title="Weekly graphs" action={<div className="nn-chart-tabs" role="group" aria-label="Choose graph">{(['habits', 'water', 'sleep'] as const).map(k => <button key={k} type="button" aria-pressed={chart === k} onClick={() => { haptic('selection'); setChart(k); }} className="capitalize">{k}</button>)}</div>}>
+        <motion.div key={chart} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="h-56">
+          <ResponsiveContainer>
+            {chart === 'habits' ? (
+              <BarChart data={weekSeries} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
+                <defs><linearGradient id="nn-habit-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--success))" /><stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.7} /></linearGradient></defs>
+                <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} /><YAxis fontSize={11} domain={[0, 100]} tickLine={false} axisLine={false} unit="%" />
+                <Tooltip cursor={{ fill: 'hsl(var(--muted) / .5)' }} formatter={(v: number) => [`${v}%`, 'Habits done']} />
+                <Bar dataKey="habits" fill="url(#nn-habit-grad)" radius={[10, 10, 4, 4]} animationDuration={900} />
+              </BarChart>
+            ) : chart === 'water' ? (
+              <AreaChart data={weekSeries} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
+                <defs><linearGradient id="nn-water-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--water))" stopOpacity={0.6} /><stop offset="100%" stopColor="hsl(var(--water))" stopOpacity={0.05} /></linearGradient></defs>
+                <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} /><YAxis fontSize={11} allowDecimals={false} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(v: number) => [`${v} glasses`, 'Water']} />
+                <ReferenceLine y={waterGoal} stroke="hsl(var(--water-deep))" strokeDasharray="4 4" label={{ value: 'Goal', fontSize: 10, position: 'insideTopRight' }} />
+                <Area type="monotone" dataKey="water" stroke="hsl(var(--water-deep))" strokeWidth={3} fill="url(#nn-water-area)" animationDuration={1000} dot={{ r: 3 }} />
+              </AreaChart>
+            ) : (
+              <AreaChart data={weekSeries} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
+                <defs><linearGradient id="nn-sleep-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.55} /><stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.05} /></linearGradient></defs>
+                <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} /><YAxis fontSize={11} domain={[0, 12]} tickLine={false} axisLine={false} unit="h" />
+                <Tooltip formatter={(v: number) => [`${v} h`, 'Sleep']} />
+                <ReferenceLine y={8} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" />
+                <Area type="monotone" dataKey="sleep" stroke="hsl(var(--primary))" strokeWidth={3} fill="url(#nn-sleep-area)" animationDuration={1000} dot={{ r: 3 }} />
+              </AreaChart>
+            )}
+          </ResponsiveContainer>
+        </motion.div>
+      </Panel>
     </TrackerShell>
   );
 }
