@@ -73,13 +73,17 @@ export function MobileExperience() {
   };
   const allNotes = notebooks.length ? notebooks.map((n, i) => ({ ...examples[i % examples.length], id: n.id, title: n.title, time: new Date(n.updated_at).toLocaleDateString(), tags: n.tags?.length ? n.tags : ['Notes'], pages: null, notebook: n })) : examples.filter(n => !hiddenSamples.includes(n.id)).map(n => ({ ...n, notebook: undefined }));
   const visibleNotes = allNotes.filter(n => n.title.toLowerCase().includes(query.toLowerCase()) && (category === 'All' || n.tags.includes(category))).sort((a, b) => sort ? a.title.localeCompare(b.title) : 0);
+  const pendingGuestAsk = useRef<string | null>(null);
+  const askRef = useRef<(t?: string) => void>();
+  useEffect(() => { if (user && pendingGuestAsk.current) { const t = pendingGuestAsk.current; pendingGuestAsk.current = null; window.setTimeout(() => askRef.current?.(t), 0); } }, [user]);
   const askAI = async (text = question) => {
     if (!text.trim() || busy) return;
-    if (!user) { const r = await signInAsGuest(); if (r.error) { toast.error('Guest mode unavailable. Please sign in.'); navigate('/login'); } else toast.success('Guest session started — ask again'); return; }
+    if (!user) { const r = await signInAsGuest(); if (r.error) { toast.error('Guest mode unavailable. Please sign in.'); navigate('/login'); } else { pendingGuestAsk.current = text; toast.success('Guest mode on — asking now…'); } return; }
     if (!premium.checkFeatureAccess('ai_text_tools').allowed) { navigate('/upgrade'); return; }
     setMessages(prev => [...prev, { role: 'user', text }]); setQuestion('');
     await ai.run({ action: 'custom', text, instruction: 'You are NikNote AI Teacher. Help the student clearly and accurately.', context: messages.slice(-6).map(m => m.text).join('\n') });
   };
+  askRef.current = askAI;
   const noteCard = (note: typeof allNotes[number], compact = false) => <article className="nn-note" key={note.id}><Button variant="ghost" className="nn-note-open" onClick={() => note.notebook ? openNotebook(note.notebook) : prepareNote(note.title, note.text)}><span className={cn('nn-note-icon', `nn-tone-${note.tone}`)}><note.icon className="h-7 w-7" /></span><span className="nn-note-copy"><strong>{compact && note.id === 'sample-ideas' ? 'Ideas' : note.title}</strong><small>{note.pages ? `${note.pages} pages · ` : ''}{note.time}</small>{!compact && <span className="nn-tags">{note.tags.map(tag => <span key={tag}>{tag}</span>)}</span>}{compact && <span className="nn-note-dots">•••</span>}</span></Button><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="nn-icon" aria-label={`Options for ${note.title}`}><MoreHorizontal /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => note.notebook ? openNotebook(note.notebook) : prepareNote(note.title, note.text)}>Open note</DropdownMenuItem>{note.notebook && <DropdownMenuItem onClick={async () => { const title = window.prompt('Note title', note.title); if (title?.trim()) await updateNotebook(note.id, { title }); }}>Rename</DropdownMenuItem>}<DropdownMenuItem onClick={() => { if (note.notebook) { if (window.confirm(`Delete ${note.title}?`)) deleteNotebook(note.id); } else { const next = [...hiddenSamples, note.id]; setHiddenSamples(next); localStorage.setItem('niknote-hidden-samples', JSON.stringify(next)); } }}>Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></article>;
 
   return <div className="nn-mobile" {...attributes}>
