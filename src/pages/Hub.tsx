@@ -20,6 +20,7 @@ const GROUPS = [
     { to: '/handbook', label: 'Study Handbook', desc: 'Exam prep guides', icon: GraduationCap, hue: 160 },
   ]},
   { title: 'Life', items: [
+    { to: '/board', label: 'Boards', desc: 'Draw, images, voice', icon: PenLine, hue: 265 },
     { to: '/money', label: 'Money Tracker', desc: 'Budget & savings', icon: Wallet, hue: 145 },
     { to: '/routine', label: 'Daily Routine', desc: 'Habits & focus', icon: CalendarCheck, hue: 35 },
     { to: '/achievements', label: 'Achievements', desc: 'Streaks & badges', icon: Trophy, hue: 45 },

@@ -32,9 +32,10 @@
 ## Premium upgrade (requested Oct 15)
 - [x] Fix signup "Failed to fetch" (app pointed at wrong backend address)
 - [ ] Phone number OTP signup — blocked: needs SMS provider account (e.g. Twilio)
-- [ ] Phase 1: page engine — page list/reorder/duplicate, sizes A4/A5/A3/Letter/custom, orientation, page colors, free text boxes, autosave status, undo/redo
-- [ ] Phase 2: image upload/insert/transform + storage, PDF/OCR cancel/progress
-- [ ] Phase 3: voice record/pause/playback + real transcription
-- [ ] Phase 4: drawing board (pen/highlighter/eraser/shapes/lasso/zoom, pointer events)
+- [x] Phase 1 (new /board): page engine — page list/reorder/duplicate, sizes A4/A5/A3/Letter/custom, orientation, page colors, free text boxes, autosave status, undo/redo
+- [x] Phase 2a: image upload/insert/move/resize/rotate/crop + storage
+- [ ] Phase 2b: PDF/OCR cancel + progress polish
+- [x] Phase 3: voice record/pause/playback + real transcription
+- [x] Phase 4: drawing board (pen/highlighter/eraser/shapes/lasso/zoom, pointer events)
 - [ ] Phase 5: finance/goals edit, celebrations + sound toggle, quiet/reduced motion
 - [ ] Phase 6: motion polish, settings, full QA + dependency audit
