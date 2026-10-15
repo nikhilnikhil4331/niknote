@@ -69,7 +69,47 @@ export function monthSummary(rows: { kind: string; amount: number | string; occu
   for (const r of rows) {
     if (!r.occurred_on?.startsWith(prefix)) continue;
     const a = Number(r.amount) || 0;
-    if (r.kind === 'income') income += a; else spent += a;
+    if (r.kind === "income") income += a; else if (r.kind === "expense") spent += a;
   }
   return { spent, income, balance: income - spent };
 }
+
+export const ACCOUNTS = ['Cash', 'UPI', 'Bank', 'Card'] as const;
+type MoneyRow = { kind: string; amount: number | string; account?: string | null; to_account?: string | null; occurred_on?: string };
+
+/** Account balances: income adds, expense subtracts, transfer moves between accounts (net zero overall). */
+export function accountBalances(rows: MoneyRow[]) {
+  const bal: Record<string, number> = {};
+  const add = (k: string, v: number) => { bal[k] = Math.round(((bal[k] ?? 0) + v) * 100) / 100; };
+  for (const r of rows) {
+    const a = Number(r.amount) || 0; const acc = r.account || 'Cash';
+    if (r.kind === 'income') add(acc, a);
+    else if (r.kind === 'expense') add(acc, -a);
+    else if (r.kind === 'transfer' && r.to_account && r.to_account !== acc) { add(acc, -a); add(r.to_account, a); }
+  }
+  return bal;
+}
+
+/** Income/expense totals that never count transfers. */
+export function cashflow(rows: MoneyRow[]) {
+  let income = 0, expense = 0;
+  for (const r of rows) { const a = Number(r.amount) || 0; if (r.kind === 'income') income += a; else if (r.kind === 'expense') expense += a; }
+  return { income, expense, net: income - expense };
+}
+
+/** Streak over scheduled weekdays only (0=Sun). Unscheduled days never break it; today counts only if done. */
+export function scheduledStreak(doneDays: string[], days: number[] = [0,1,2,3,4,5,6], today: Date = new Date(), limit = 400) {
+  const set = new Set(doneDays); const sched = new Set(days.length ? days : [0,1,2,3,4,5,6]);
+  const c = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let streak = 0;
+  for (let i = 0; i < limit; i++, c.setDate(c.getDate() - 1)) {
+    if (!sched.has(c.getDay())) continue;
+    const d = toDay(c);
+    if (set.has(d)) streak++;
+    else if (i === 0) continue; // today not done yet
+    else break;
+  }
+  return streak;
+}
+
+export const isScheduled = (days: number[] | null | undefined, d: Date = new Date()) => !days?.length || days.includes(d.getDay());
