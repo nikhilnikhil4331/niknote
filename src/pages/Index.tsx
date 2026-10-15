@@ -39,7 +39,7 @@ const WorkspaceSidebar = lazy(() => import('@/components/workspace/WorkspaceSide
 import {
   Settings2, Edit3, FileDown, Palette, Crown, LogIn,
   Gem, MoreVertical, Moon, Sun, RotateCcw, Share2, Image, FileText, Sparkles,
-  LayoutGrid, Scan, Brain, PanelLeft, ChevronDown, MessageSquare, Zap
+  LayoutGrid, Scan, Brain, PanelLeft, ChevronDown, MessageSquare, Zap, Undo2, Redo2, Save, Eye, PenLine, Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -74,6 +74,7 @@ const Index = () => {
   const [noteTitle, setNoteTitle] = useState(() => localStorage.getItem('niknote-mobile-draft-title') || 'Untitled Note');
   useEffect(() => { localStorage.setItem('niknote-mobile-draft-title', noteTitle); }, [noteTitle]);
   const [editorTool, setEditorTool] = useState('pen');
+  const [mobileView, setMobileView] = useState<'write' | 'preview'>('write');
   const [showImportPanel, setShowImportPanel] = useState(false);
   const [savingNote, setSavingNote] = useState(false);
   const [cloudNotebookId, setCloudNotebookId] = useState<string | null>(new URLSearchParams(search).get('notebook') || localStorage.getItem('niknote-mobile-draft-notebook'));
@@ -302,7 +303,8 @@ const Index = () => {
 
   useEffect(() => {
     if (!isMobile || !user || !new URLSearchParams(search).has('notebook')) return;
-    const id = new URLSearchParams(search).get('notebook')!;
+    const id = new URLSearchParams(search).get('notebook');
+    if (!id) return;
     let cancelled = false;
     (async () => {
       const [{ data: notebook }, { data: savedPages, error }] = await Promise.all([
@@ -937,7 +939,7 @@ const Index = () => {
         )}>
 
           {/* Page Bar */}
-          <div className={cn(
+          {!isMobile && <div className={cn(
             "flex-shrink-0 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/25 shadow-sm px-3 py-1.5",
             isMobile && "rounded-none border-0 border-b border-gray-100 bg-white/95 py-1"
           )}>
@@ -954,23 +956,23 @@ const Index = () => {
                 onGoToPage={handleGoToPage}
               />
             </div>
-          </div>
+          </div>}
 
-          {/* ---- MOBILE NOTION-STYLE INTEGRATED LAYOUT ---- */}
+          {/* ---- MOBILE NOTEBOOK BOARD ---- */}
           {isMobile && (
             <div className="nn-editor-page">
-              <div className="nn-editor-actions">
-                <Button variant="ghost" onClick={blockEditor.undo} disabled={!blockEditor.canUndo} aria-label="Undo">↶</Button>
-                <Button variant="ghost" onClick={blockEditor.redo} disabled={!blockEditor.canRedo} aria-label="Redo">↷</Button>
-                <Button variant="ghost" onClick={saveMobileNote} disabled={savingNote}>Save note</Button>
-                <Button variant="ghost" onClick={() => setShowMobileStyleSheet(true)}>Paper & pen</Button>
-                <Button variant="ghost" onClick={handleExportPDF} disabled={isExporting}>Export PDF</Button>
-                <Button variant="ghost" onClick={() => setShowImportPanel(true)}>Import</Button>
-                <Button variant="ghost" onClick={() => setShowAIWorkspace(true)}>AI Workspace</Button>
+              <div className="nn-board-controls">
+                <div className="nn-board-tabs" role="tablist" aria-label="Note view">
+                  <Button variant="ghost" role="tab" aria-selected={mobileView === 'write'} onClick={() => setMobileView('write')}><PenLine className="h-4 w-4" />Write</Button>
+                  <Button variant="ghost" role="tab" aria-selected={mobileView === 'preview'} onClick={() => setMobileView('preview')}><Eye className="h-4 w-4" />Preview</Button>
+                </div>
+                <Button variant="ghost" size="icon" onClick={blockEditor.undo} disabled={!blockEditor.canUndo} aria-label="Undo" title="Undo"><Undo2 className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={blockEditor.redo} disabled={!blockEditor.canRedo} aria-label="Redo" title="Redo"><Redo2 className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" onClick={saveMobileNote} disabled={savingNote} aria-label="Save note" title="Save note"><Save className="h-4 w-4" /></Button>
               </div>
-              <div className="nn-editor-helper">{blockEditor.blocks.reduce((t, b) => t + b.content.trim().split(/\s+/).filter(Boolean).length, 0)} words · Page {currentPageIndex + 1} of {totalPages} · Draft saved on this device</div>
+              <div className="nn-editor-helper"><span>{blockEditor.blocks.reduce((t, b) => t + b.content.trim().split(/\s+/).filter(Boolean).length, 0)} words</span><span>Local draft</span></div>
               {/* Mobile Notion Editor — Full width, clean */}
-              <div className="nn-editor-canvas" style={{ '--nn-handwriting': settings.font === 'roman-regular' ? 'Inter, sans-serif' : settings.font === 'roman-serif' ? 'Georgia, serif' : settings.font === 'roman-mono' ? '"JetBrains Mono", monospace' : `"${settings.font.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}", cursive` } as React.CSSProperties}>
+              <div className="nn-editor-canvas" hidden={mobileView !== 'write'} data-paper={settings.pageStyle} style={{ '--nn-handwriting': settings.font === 'roman-regular' ? 'Inter, sans-serif' : settings.font === 'roman-serif' ? 'Georgia, serif' : settings.font === 'roman-mono' ? '"JetBrains Mono", monospace' : `"${settings.font.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}", cursive` } as React.CSSProperties}>
                 <NotionEditor
                   blocks={blockEditor.blocks}
                   onBlocksChange={blockEditor.setBlocks}
@@ -986,50 +988,28 @@ const Index = () => {
                 />
               </div>
 
-              {/* Mobile Handwriting Preview — Premium styled card */}
-              {hasContent && (
-                <div className="nn-editor-preview">
-                  <div className="preview-card">
-                    <div className="preview-card-header">
-                      <span className="flex items-center gap-2 text-[12px] font-bold text-violet-700">✍️ Handwriting Preview</span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={handleExportPDF}
-                          disabled={isExporting}
-                          className="flex items-center gap-1 h-6 px-2 rounded-lg text-[10px] font-medium text-violet-600 bg-violet-50 border border-violet-200 active:scale-95 transition-transform disabled:opacity-40"
-                          style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
-                        >
-                          <FileDown className="w-3 h-3" /> PDF
-                        </button>
-                        <button
-                          onClick={() => {
-                            const el = document.getElementById('mobile-preview-section');
-                            if (el) el.classList.toggle('hidden');
-                          }}
-                          className="flex items-center justify-center w-6 h-6 rounded-lg text-gray-400 hover:bg-gray-100 active:scale-95 transition-transform"
-                          style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
-                        >
-                          <ChevronDown className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <div id="mobile-preview-section" className="max-h-[400px] overflow-y-auto">
-                      <NotebookPreview
-                        ref={previewRef}
-                        lines={previewLines}
-                        settings={settings}
-                        realPenMode={realPenMode}
-                        pageNumber={currentPageIndex + 1}
-                        totalPages={totalPages}
-                        inlineContent={inlineContent}
-                        onUpdateContent={updateContent}
-                        onDeleteContent={removeContent}
-                        dna={dnaContext.dna}
-                      />
-                    </div>
-                  </div>
+              {mobileView === 'preview' && (
+                <div className="nn-board-preview">
+                  <NotebookPreview
+                    ref={previewRef}
+                    lines={previewLines}
+                    settings={settings}
+                    realPenMode={realPenMode}
+                    pageNumber={currentPageIndex + 1}
+                    totalPages={totalPages}
+                    inlineContent={inlineContent}
+                    onUpdateContent={updateContent}
+                    onDeleteContent={removeContent}
+                    dna={dnaContext.dna}
+                  />
                 </div>
               )}
+              <div className="nn-board-footer">
+                <Button variant="ghost" onClick={() => setShowMobileStyleSheet(true)}><Settings2 className="h-4 w-4" />Paper & pen</Button>
+                <Button variant="ghost" onClick={() => setShowImportPanel(true)} aria-label="Import document" title="Import document"><Upload className="h-4 w-4" /></Button>
+                <Button variant="ghost" onClick={() => setShowAIWorkspace(true)} aria-label="AI Workspace" title="AI Workspace"><Sparkles className="h-4 w-4" /></Button>
+                <Button onClick={handleExportPDF} disabled={isExporting}><FileDown className="h-4 w-4" />PDF</Button>
+              </div>
 
               {/* Mobile Share Menu — Simple, no AnimatePresence (touch fix) */}
               {showShareMenu && (

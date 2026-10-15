@@ -78,7 +78,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
                   <motion.div initial={reduced ? false : { scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', damping: 12 }}>{signup && !user ? <Mail size={34} /> : <Check size={38} />}</motion.div>
                   {!reduced && Array.from({ length: 8 }, (_, i) => <span key={i} className={`nik-auth-spark nik-auth-spark-${i}`} />)}
                 </div>
-                <h2 className="text-xl font-semibold text-foreground">{signup && !user ? 'Check your email' : signup ? 'Welcome to Niknote!' : 'You’re back!'}</h2>
+                <h2 className="text-xl font-semibold text-foreground">{signup && !user ? 'Check your email' : signup ? <>Welcome to <img src="/niknote-logo.png" alt="Niknote" className="inline-block h-10 w-28 object-contain align-middle" /></> : 'You’re back!'}</h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">{signup && !user ? <>Open the confirmation link sent to <strong className="text-foreground break-all">{email}</strong> to finish signing up.</> : 'Opening your workspace…'}</p>
                 {signup && !user && <><p className="text-xs text-muted-foreground">Can’t find it? Check your spam folder.</p><Button asChild variant="outline" className="w-full"><Link to={otherPath}>Back to sign in <ArrowRight size={16} /></Link></Button></>}
               </motion.div>
