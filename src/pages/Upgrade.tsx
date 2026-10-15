@@ -93,11 +93,10 @@ const Upgrade = () => {
           <>
             {/* Segmented plan selector — mobile-first */}
             <div className="relative grid grid-cols-2 p-1 bg-muted/50 rounded-2xl border border-border/40">
-              <motion.div
-                layoutId="planPill"
-                className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-xl bg-background shadow-md border border-border/40"
-                animate={{ x: selected === 'weekly' ? 4 : 'calc(100% + 4px)' }}
-                transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+              <div
+                aria-hidden="true"
+                className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-xl bg-background shadow-md border border-border/40 transition-[left] duration-300 ease-out motion-reduce:transition-none"
+                style={{ left: selected === 'weekly' ? 4 : 'calc(50%)' }}
               />
               {plans.map((plan) => {
                 const isSel = selected === plan.code;
