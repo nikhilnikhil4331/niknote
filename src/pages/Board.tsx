@@ -85,7 +85,7 @@ function MediaAudio({ item }: { item: BoardItem }) {
   return <audio controls src={url} className="w-full" aria-label="Voice note" />;
 }
 
-export default function BoardPage() {
+export default function BoardScreen() {
   const { user, loading } = useAuth();
   const reduced = useReducedMotion();
   const [params, setParams] = useSearchParams();
