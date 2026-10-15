@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { haptic } from '@/hooks/useHaptics';
 import { toast } from 'sonner';
 import { TrackerShell, Panel } from '@/components/trackers/TrackerShell';
-import { computeStreak, toDay } from '@/lib/trackers';
+import { scheduledStreak, isScheduled, toDay } from '@/lib/trackers';
 
 const db = supabase as any;
 const BLOCKS = [
@@ -19,7 +19,8 @@ const BLOCKS = [
 const MOODS = ['😄', '🙂', '😐', '😢', '😡'];
 const PRIORITY: Record<string, string> = { high: 'bg-rose-500', medium: 'bg-amber-500', low: 'bg-emerald-500' };
 
-type Habit = { id: string; name: string; emoji: string; block: string };
+type Habit = { id: string; name: string; emoji: string; block: string; days: number[]; archived: boolean };
+const WEEK = ['S','M','T','W','T','F','S'];
 type Todo = { id: string; title: string; priority: string; done: boolean; position: number };
 type Wellness = { water: number; sleep_hours: number; exercise_minutes: number; mood: string; pomodoros: number };
 
@@ -31,7 +32,8 @@ export default function RoutineTracker() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [week, setWeek] = useState<Record<string, Wellness>>({});
   const [waterGoal, setWaterGoal] = useState(8);
-  const [habitForm, setHabitForm] = useState({ name: '', emoji: '✅', block: 'morning' });
+  const [habitForm, setHabitForm] = useState({ name: '', emoji: '✅', block: 'morning', days: [0,1,2,3,4,5,6] as number[] });
+  const [showArchived, setShowArchived] = useState(false);
   const [todoForm, setTodoForm] = useState({ title: '', priority: 'medium' });
 
   const w: Wellness = week[today] ?? { water: 0, sleep_hours: 0, exercise_minutes: 0, mood: '', pomodoros: 0 };
@@ -62,6 +64,7 @@ export default function RoutineTracker() {
   // Habits
   const addHabit = async () => {
     if (!habitForm.name.trim()) return;
+    if (!habitForm.days.length) return toast.error('Pick at least one day');
     const { data, error } = await db.from('habits').insert({ ...habitForm, name: habitForm.name.trim() }).select().single();
     if (error) return toast.error(error.message);
     haptic('light'); setHabits(p => [...p, data]); setHabitForm(f => ({ ...f, name: '' }));
@@ -76,11 +79,12 @@ export default function RoutineTracker() {
       setChecks(p => [...p, { habit_id: h.id, day: today }]);
       haptic('medium');
       await db.from('habit_checks').insert({ habit_id: h.id, day: today });
-      const streak = computeStreak([...checks.filter(c => c.habit_id === h.id).map(c => c.day), today]);
+      const streak = scheduledStreak([...checks.filter(c => c.habit_id === h.id).map(c => c.day), today], h.days);
       if (streak > 0 && streak % 7 === 0) { haptic('success'); confetti({ particleCount: 120, spread: 80 }); toast.success(`${streak}-day streak on ${h.name}! 🔥`); }
     }
   };
-  const delHabit = async (id: string) => { haptic('heavy'); setHabits(p => p.filter(h => h.id !== id)); await db.from('habits').delete().eq('id', id); };
+  const archiveHabit = async (h: Habit) => { haptic('light'); setHabits(p => p.map(x => x.id === h.id ? { ...x, archived: !h.archived } : x)); await db.from('habits').update({ archived: !h.archived }).eq('id', h.id); toast.success(h.archived ? 'Habit restored' : 'Habit archived — history kept'); };
+  const delHabit = async (id: string) => { if (!window.confirm('Delete this habit and all its history? Archive keeps history instead.')) return; haptic('heavy'); setHabits(p => p.filter(h => h.id !== id)); await db.from('habits').delete().eq('id', id); };
 
   // Todos
   const addTodo = async () => {
@@ -123,7 +127,9 @@ export default function RoutineTracker() {
 
   // Weekly report
   const last7 = useMemo(() => Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (6 - i)); return toDay(d); }), []);
-  const habitRate = habits.length ? Math.round((checks.filter(c => last7.includes(c.day)).length / (habits.length * 7)) * 100) : 0;
+  const activeHabits = habits.filter(h => !h.archived);
+  const scheduledSlots = activeHabits.reduce((n, h) => n + last7.filter(d => isScheduled(h.days, new Date(d + 'T12:00'))).length, 0);
+  const habitRate = scheduledSlots ? Math.round((checks.filter(c => last7.includes(c.day) && activeHabits.some(h => h.id === c.habit_id && isScheduled(h.days, new Date(c.day + 'T12:00')))).length / scheduledSlots) * 100) : 0;
   const avgSleep = (last7.reduce((s, d) => s + (week[d]?.sleep_hours ?? 0), 0) / 7).toFixed(1);
   const totalExercise = last7.reduce((s, d) => s + (week[d]?.exercise_minutes ?? 0), 0);
 
@@ -174,11 +180,14 @@ export default function RoutineTracker() {
             <select value={habitForm.block} onChange={e => setHabitForm(f => ({ ...f, block: e.target.value }))} className="h-10 rounded-xl border border-border bg-background px-2 text-sm" aria-label="Time of day">
               {BLOCKS.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
             </select>
+            <div className="w-full flex items-center gap-1" role="group" aria-label="Repeat on days">
+              {WEEK.map((l, i) => { const on = habitForm.days.includes(i); return <button key={i} type="button" aria-pressed={on} aria-label={['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][i]} onClick={() => setHabitForm(f => ({ ...f, days: on ? f.days.filter(x => x !== i) : [...f.days, i].sort() }))} className={`h-9 flex-1 rounded-lg text-xs font-semibold ${on ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{l}</button>; })}
+            </div>
             <button onClick={addHabit} className="h-10 w-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center active:scale-90" aria-label="Add habit"><Plus className="w-4 h-4" /></button>
           </div>
           <div className="space-y-4">
             {BLOCKS.map(b => {
-              const list = habits.filter(h => h.block === b.id);
+              const list = habits.filter(h => h.block === b.id && h.archived === showArchived);
               if (!list.length) return null;
               return (
                 <div key={b.id}>
@@ -186,7 +195,8 @@ export default function RoutineTracker() {
                   <div className="space-y-2">
                     {list.map(h => {
                       const done = checks.some(c => c.habit_id === h.id && c.day === today);
-                      const streak = computeStreak(checks.filter(c => c.habit_id === h.id).map(c => c.day));
+                      const streak = scheduledStreak(checks.filter(c => c.habit_id === h.id).map(c => c.day), h.days);
+                      const restDay = !isScheduled(h.days);
                       return (
                         <motion.div key={h.id} layout className="flex items-center gap-3 p-2.5 rounded-2xl bg-muted/40">
                           <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleHabit(h)} aria-label={`Mark ${h.name}`}
@@ -194,11 +204,11 @@ export default function RoutineTracker() {
                             <AnimatePresence>{done && <motion.span initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0 }}><Check className="w-4 h-4 text-white" strokeWidth={3} /></motion.span>}</AnimatePresence>
                           </motion.button>
                           <span className="text-lg">{h.emoji}</span>
-                          <span className={`flex-1 text-sm ${done ? 'line-through text-muted-foreground' : ''}`}>{h.name}</span>
+                          <span className={`flex-1 min-w-0 text-sm ${done ? 'line-through text-muted-foreground' : ''}`}><span className="block truncate">{h.name}</span><span className="block text-[11px] text-muted-foreground">{h.days?.length === 7 || !h.days?.length ? 'Every day' : h.days.map(d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(' · ')}{restDay && !done ? ' — rest day today' : ''}</span></span>
                           {streak > 0 && (
                             <motion.span animate={{ scale: [1, 1.15, 1] }} transition={{ repeat: Infinity, duration: 1.4 }} className="text-xs font-bold text-orange-600">🔥 {streak}</motion.span>
                           )}
-                          <button onClick={() => delHabit(h.id)} className="p-1 text-muted-foreground" aria-label="Delete habit"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => archiveHabit(h)} className="h-9 px-2 text-xs font-medium text-primary" aria-label={h.archived ? 'Restore habit' : 'Archive habit'}>{h.archived ? 'Restore' : 'Archive'}</button><button onClick={() => delHabit(h.id)} className="h-9 w-9 grid place-items-center text-muted-foreground" aria-label="Delete habit"><Trash2 className="w-4 h-4" /></button>
                         </motion.div>
                       );
                     })}
@@ -206,6 +216,7 @@ export default function RoutineTracker() {
                 </div>
               );
             })}
+            {habits.some(h => h.archived) && <button onClick={() => setShowArchived(v => !v)} className="text-xs font-medium text-primary underline">{showArchived ? 'Show active habits' : `Show archived (${habits.filter(h => h.archived).length})`}</button>}
             {!habits.length && <p className="text-sm text-muted-foreground">Add your first habit, like “Drink water” or “Read 10 pages”.</p>}
           </div>
         </Panel>
