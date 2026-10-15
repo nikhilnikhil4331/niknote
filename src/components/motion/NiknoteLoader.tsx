@@ -18,7 +18,7 @@ export function NiknoteLoader({ label = 'Loading your notes', fullScreen = true 
           draggable={false}
           initial={reduced ? false : { clipPath: 'inset(0 100% 0 0)' }}
           animate={{ clipPath: 'inset(0 0% 0 0)' }}
-          transition={{ duration: 0.9, delay: 0.15, ease: [0.65, 0, 0.35, 1] }}
+          transition={{ duration: 0.6, ease: [0.65, 0, 0.35, 1] }}
         />
         {!reduced && [0, 1, 2].map(i => <span key={i} className={`nn-loader-spark nn-loader-spark-${i}`} aria-hidden="true" />)}
       </motion.div>

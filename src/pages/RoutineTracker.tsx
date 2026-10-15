@@ -324,7 +324,7 @@ export default function RoutineTracker() {
             ) : chart === 'water' ? (
               <AreaChart data={weekSeries} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
                 <defs><linearGradient id="nn-water-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--water))" stopOpacity={0.6} /><stop offset="100%" stopColor="hsl(var(--water))" stopOpacity={0.05} /></linearGradient></defs>
-                <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} /><YAxis fontSize={11} allowDecimals={false} tickLine={false} axisLine={false} />
+                <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} /><YAxis fontSize={11} allowDecimals={false} domain={[0, (max: number) => Math.max(waterGoal, max)]} tickLine={false} axisLine={false} />
                 <Tooltip formatter={(v: number) => [`${v} glasses`, 'Water']} />
                 <ReferenceLine y={waterGoal} stroke="hsl(var(--water-deep))" strokeDasharray="4 4" label={{ value: 'Goal', fontSize: 10, position: 'insideTopRight' }} />
                 <Area type="monotone" dataKey="water" stroke="hsl(var(--water-deep))" strokeWidth={3} fill="url(#nn-water-area)" animationDuration={1000} dot={{ r: 3 }} />
