@@ -38,6 +38,7 @@ import { CookieConsent } from "./components/CookieConsent";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileExperience } from '@/components/mobile/MobileExperience';
 import '@/components/mobile/mobile.css';
+import { NiknoteLoader } from '@/components/motion/NiknoteLoader';
 
 // Lazy load heavy/new pages — if they crash, main app stays alive
 const AISolverPage = lazy(() =>
@@ -71,14 +72,7 @@ const BoardPageRoute = lazy(() => import("@/pages/Board"));
 const RoutineTrackerPage = lazy(() => import("@/pages/RoutineTracker"));
 
 // Simple page loader
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen bg-white">
-    <div className="text-center">
-      <div className="text-2xl mb-3">✍️</div>
-      <div className="text-sm text-gray-400">Loading...</div>
-    </div>
-  </div>
-);
+const PageLoader = () => <NiknoteLoader />;
 
 import { registerServiceWorker } from "@/hooks/useServiceWorkerRegistration";
 import { checkReferral } from "@/utils/referral";

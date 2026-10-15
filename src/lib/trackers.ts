@@ -122,3 +122,34 @@ export function topCategories(txs: { kind: string; amount: number; category: str
   return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit)
     .map(([category, amount]) => ({ category, amount, pct: total ? Math.round((amount / total) * 100) : 0 }));
 }
+
+/** Water glass fill: clamps drunk glasses to 0..goal*2 and returns fill ratio 0..1 plus ml. */
+export const GLASS_ML = 250;
+export function waterProgress(glasses: number, goal: number) {
+  const g = Math.max(1, Math.round(goal) || 1);
+  const drunk = Math.max(0, Math.round(glasses) || 0);
+  const left = Math.max(0, g - drunk);
+  return { drunk, goal: g, left, ratio: Math.min(1, drunk / g), drunkMl: drunk * GLASS_ML, goalMl: g * GLASS_ML, done: drunk >= g };
+}
+
+/** One row per calendar day from `from` to `to` (inclusive), gaps filled with 0; transfers are ignored. */
+export function dailyCashSeries(txs: { kind: string; amount: number; occurred_on: string }[], from: string, to: string) {
+  const out: { day: string; label: string; income: number; expense: number; net: number }[] = [];
+  const idx = new Map<string, number>();
+  const d = new Date(from + 'T12:00');
+  const end = new Date(to + 'T12:00');
+  for (let i = 0; d <= end && i < 400; i++, d.setDate(d.getDate() + 1)) {
+    const day = toDay(d);
+    idx.set(day, out.length);
+    out.push({ day, label: String(d.getDate()), income: 0, expense: 0, net: 0 });
+  }
+  for (const t of txs) {
+    const i = idx.get(t.occurred_on);
+    if (i === undefined || (t.kind !== 'income' && t.kind !== 'expense')) continue;
+    const amt = Number(t.amount) || 0;
+    if (t.kind === 'income') out[i].income += amt; else out[i].expense += amt;
+  }
+  let running = 0;
+  for (const r of out) { running += r.income - r.expense; r.net = running; }
+  return out;
+}

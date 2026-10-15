@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { usePremium } from '@/hooks/usePremium';
 import { UrgencyTimer } from '@/components/urgency/UrgencyTimer';
+import { PlanArt } from '@/components/motion/FeatureArt';
 
 const plans = [
   {
@@ -69,6 +70,7 @@ const Upgrade = () => {
         <UrgencyTimer variant="card" />
 
         <div className="text-center space-y-3">
+          <div className="flex justify-center"><PlanArt /></div>
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-primary/10 via-orange-500/10 to-pink-500/10 text-xs sm:text-sm font-medium border border-primary/10">
             <Flame className="h-4 w-4 text-orange-500" />
             2,500+ students already premium
@@ -91,11 +93,10 @@ const Upgrade = () => {
           <>
             {/* Segmented plan selector — mobile-first */}
             <div className="relative grid grid-cols-2 p-1 bg-muted/50 rounded-2xl border border-border/40">
-              <motion.div
-                layoutId="planPill"
-                className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-xl bg-background shadow-md border border-border/40"
-                animate={{ x: selected === 'weekly' ? 4 : 'calc(100% + 4px)' }}
-                transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+              <div
+                aria-hidden="true"
+                className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-xl bg-background shadow-md border border-border/40 transition-[left] duration-300 ease-out motion-reduce:transition-none"
+                style={{ left: selected === 'weekly' ? 4 : 'calc(50%)' }}
               />
               {plans.map((plan) => {
                 const isSel = selected === plan.code;

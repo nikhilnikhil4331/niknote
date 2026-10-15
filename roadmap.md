@@ -46,3 +46,8 @@
 - [x] Tablet/desktop/dark mode QA
 - [x] Money: monthly budget, savings goals, net cashflow + top categories dashboard
 - [x] Guest mode stuck on loading
+- [x] Guest entry: instant logo overlay, tracker screens pre-warmed, Save/Ask AI continue automatically after guest starts
+- [x] Niknote logo loading animation (start screen + page loads)
+- [x] Daily Tracker: animated water glass with waves, today progress, weekly habits/water/sleep graphs
+- [x] Money Tracker: Flow/Balance/Compare graphs, budget ring, coin-wallet animation
+- [x] Thank-you heart animation (feedback + payment success), plans crown animation, card payment animation

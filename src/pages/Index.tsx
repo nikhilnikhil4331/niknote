@@ -262,8 +262,11 @@ const Index = () => {
     if (panel === 'import') setShowImportPanel(true);
   }, []);
 
+  const pendingGuestSave = useRef(false);
+  const saveRef = useRef<() => void>();
+  useEffect(() => { if (user && pendingGuestSave.current) { pendingGuestSave.current = false; window.setTimeout(() => saveRef.current?.(), 0); } }, [user]);
   const saveMobileNote = async () => {
-    if (!user) { const r = await signInAsGuest(); if (r.error) { toast.error('Guest mode unavailable. Please sign in.'); navigate('/login'); } else toast.success('Guest session started — tap Save again'); return; }
+    if (!user) { const r = await signInAsGuest(); if (r.error) { toast.error('Guest mode unavailable. Please sign in.'); navigate('/login'); } else { pendingGuestSave.current = true; toast.success('Guest mode on — saving your note…'); } return; }
     if (savingNote) return;
     setSavingNote(true);
     try {
@@ -283,6 +286,7 @@ const Index = () => {
     } catch { toast.error('Could not save note. Your local draft is still available.'); }
     finally { setSavingNote(false); }
   };
+  saveRef.current = saveMobileNote;
 
   const selectEditorTool = (tool: string) => {
     setEditorTool(tool);

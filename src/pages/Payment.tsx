@@ -12,6 +12,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { usePremium } from "@/hooks/usePremium";
 import { UrgencyTimer } from "@/components/urgency/UrgencyTimer";
+import { ThankYouBurst } from "@/components/motion/ThankYouBurst";
+import { PaymentArt } from "@/components/motion/FeatureArt";
+import { AnimatePresence } from "framer-motion";
 
 type PlanCode = "weekly" | "monthly";
 type PaymentStep = "select" | "processing" | "success" | "error";
@@ -83,6 +86,7 @@ export default function PaymentPage() {
   const initialPlan = (searchParams.get("plan") as PlanCode) || "monthly";
   const [selectedPlan, setSelectedPlan] = useState<PlanCode>(initialPlan);
   const [paymentStep, setPaymentStep] = useState<PaymentStep>("select");
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [verificationPending, setVerificationPending] = useState(false);
 
   const plan = plans.find((p) => p.code === selectedPlan) ?? plans[1];
@@ -121,6 +125,7 @@ export default function PaymentPage() {
     }
 
     setVerificationPending(false);
+    setCheckoutOpen(false);
     setPaymentStep("processing");
 
     try {
@@ -170,6 +175,7 @@ export default function PaymentPage() {
           }
         },
         handler: async (response: any) => {
+          setCheckoutOpen(false);
           try {
             if (!response.razorpay_payment_id) {
               throw new Error("No payment ID received");
@@ -201,6 +207,7 @@ export default function PaymentPage() {
         },
         modal: {
           ondismiss: () => {
+            setCheckoutOpen(false);
             setPaymentStep("select");
             toast.info("Payment cancel ho gaya. Koi baat nahi!");
           },
@@ -214,6 +221,7 @@ export default function PaymentPage() {
         const failMsg = response.error?.description || "Payment fail ho gaya";
         toast.error(failMsg + ". Dobara try karo!");
       });
+      setCheckoutOpen(true);
       rzp.open();
     } catch (err) {
       console.error("Payment error:", err);
@@ -239,20 +247,7 @@ export default function PaymentPage() {
           transition={{ type: "spring", duration: 0.6 }}
           className="text-center space-y-6 max-w-sm"
         >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-2xl shadow-green-500/30"
-          >
-            <CheckCircle className="w-12 h-12 text-white" />
-          </motion.div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">Premium Activated! 🎉</h1>
-            <p className="text-muted-foreground">
-              All premium features unlocked. Go create magic! ✨
-            </p>
-          </div>
+          <ThankYouBurst title="Thank you!" subtitle="Premium activated — all features unlocked. Go create magic! ✨" />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -316,6 +311,13 @@ export default function PaymentPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <AnimatePresence>
+        {paymentStep === "processing" && !checkoutOpen && (
+          <motion.div role="status" aria-live="polite" className="fixed inset-0 z-[80] grid place-items-center bg-background/80 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="text-center space-y-3"><div className="flex justify-center"><PaymentArt /></div><p className="font-semibold text-foreground">Securely processing your payment…</p><p className="text-xs text-muted-foreground">Don't close this page.</p></div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40 h-14 sm:h-16">
         <div className="max-w-lg mx-auto px-4 h-full flex items-center gap-3">
