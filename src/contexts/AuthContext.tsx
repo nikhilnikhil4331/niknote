@@ -17,6 +17,8 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signInWithGitHub: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  isGuest: boolean;
+  signInAsGuest: () => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -198,6 +200,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  // One in-flight guest request at a time, so rerenders never create extra anonymous users.
+  const guestRef = React.useRef<Promise<{ error: Error | null }> | null>(null);
+  const signInAsGuest = useCallback(() => {
+    if (guestRef.current) return guestRef.current;
+    guestRef.current = (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session) return { error: null };
+        const { error } = await supabase.auth.signInAnonymously();
+        return { error: (error as Error) ?? null };
+      } catch (err) {
+        return { error: err instanceof Error ? err : new Error('Guest sign-in failed') };
+      } finally { guestRef.current = null; }
+    })();
+    return guestRef.current;
+  }, []);
+  const isGuest = !!(user as any)?.is_anonymous;
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -209,7 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithGoogle, signInWithGitHub, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithGoogle, signInWithGitHub, signOut, isGuest, signInAsGuest }}>
       {children}
     </AuthContext.Provider>
   );

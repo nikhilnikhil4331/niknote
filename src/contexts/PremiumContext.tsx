@@ -1,3 +1,4 @@
+import { FREE_TRIAL } from "@/config/features";
 import React, { createContext, useContext, useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -140,7 +141,7 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const checkFeatureAccess = useCallback(
     (feature: PremiumFeature) => {
-      if (isPremium) return { allowed: true, used: 0, limit: Infinity };
+      if (FREE_TRIAL || isPremium) return { allowed: true, used: 0, limit: Infinity };
 
       const config = FREE_LIMITS[feature];
       const key = config.period === "month"
@@ -155,7 +156,7 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const incrementUsage = useCallback(
     async (feature: PremiumFeature): Promise<boolean> => {
-      if (isPremium) return true;
+      if (FREE_TRIAL || isPremium) return true;
       if (!user) return false;
 
       const access = checkFeatureAccess(feature);
@@ -198,7 +199,7 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
   return (
     <PremiumContext.Provider
       value={{
-        isPremium,
+        isPremium: FREE_TRIAL || isPremium,
         loading,
         status,
         currentPeriodEnd,

@@ -90,7 +90,7 @@ const Index = () => {
     document.addEventListener('selectionchange', capture);
     return () => document.removeEventListener('selectionchange', capture);
   }, []);
-  const { user } = useAuth();
+  const { user, signInAsGuest } = useAuth();
   const dnaContext = useHandwritingDNA();
   const { theme: uiTheme, setTheme: setUITheme, classes: themeClasses } = useUITheme();
   const isMobile = useIsMobile();
@@ -260,7 +260,7 @@ const Index = () => {
   }, []);
 
   const saveMobileNote = async () => {
-    if (!user) { toast.info('Sign in to save to your notebooks'); navigate('/login'); return; }
+    if (!user) { const r = await signInAsGuest(); if (r.error) { toast.error('Guest mode unavailable. Please sign in.'); navigate('/login'); } else toast.success('Guest session started — tap Save again'); return; }
     if (savingNote) return;
     setSavingNote(true);
     try {
