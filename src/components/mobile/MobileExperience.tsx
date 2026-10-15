@@ -74,7 +74,7 @@ export function MobileExperience() {
   const visibleNotes = allNotes.filter(n => n.title.toLowerCase().includes(query.toLowerCase()) && (category === 'All' || n.tags.includes(category))).sort((a, b) => sort ? a.title.localeCompare(b.title) : 0);
   const askAI = async (text = question) => {
     if (!text.trim() || busy) return;
-    if (!user) { toast.info('Sign in to use your AI Assistant'); navigate('/login'); return; }
+    if (!user) { const r = await signInAsGuest(); if (r.error) { toast.error('Guest mode unavailable. Please sign in.'); navigate('/login'); } else toast.success('Guest session started — ask again'); return; }
     if (!premium.checkFeatureAccess('ai_text_tools').allowed) { navigate('/upgrade'); return; }
     setMessages(prev => [...prev, { role: 'user', text }]); setQuestion('');
     await ai.run({ action: 'custom', text, instruction: 'You are NikNote AI Teacher. Help the student clearly and accurately.', context: messages.slice(-6).map(m => m.text).join('\n') });
