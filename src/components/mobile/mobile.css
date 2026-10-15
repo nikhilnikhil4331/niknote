@@ -79,3 +79,32 @@
 .nn-mobile .nn-template-checklist{background:hsl(var(--nn-paper-mint))}
 .nn-mobile .nn-editor-canvas .nn-block-prefix button[aria-pressed=true]{background:transparent!important}
 .nn-mobile .nn-editor-canvas .nn-block-prefix button>div{border-color:var(--nn-accent);border-radius:5px}
+
+/* Tracker tiles — first-class on mobile home */
+.nn-trackers{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 4px}
+.nn-tracker{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:148px;padding:14px;border-radius:22px;border:1px solid var(--nn-border);text-align:left;overflow:hidden;color:var(--nn-text);box-shadow:0 10px 24px -14px hsl(var(--primary) / .35);transition:box-shadow .2s, transform .2s;-webkit-tap-highlight-color:transparent}
+.nn-tracker:focus-visible{outline:2px solid hsl(var(--ring));outline-offset:2px}
+.nn-tracker:active{box-shadow:0 4px 12px -8px hsl(var(--primary) / .4)}
+.nn-tracker-money{background:linear-gradient(150deg,hsl(152 70% 94%),hsl(170 60% 88%))}
+.nn-tracker-daily{background:linear-gradient(150deg,hsl(32 100% 94%),hsl(350 85% 92%))}
+.nn-tracker-top{display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:6px}
+.nn-tracker-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:14px;background:hsl(0 0% 100% / .75);box-shadow:0 4px 10px -6px hsl(var(--foreground) / .3)}
+.nn-tracker-money .nn-tracker-icon{color:hsl(158 64% 32%)}
+.nn-tracker-daily .nn-tracker-icon{color:hsl(14 80% 45%)}
+.nn-tracker-arrow{opacity:.55}
+.nn-tracker-label{font-size:13px;font-weight:650;letter-spacing:-.2px}
+.nn-tracker-value{font-size:19px;font-weight:700;letter-spacing:-.5px;line-height:1.15;overflow-wrap:anywhere}
+.nn-tracker-sub{font-size:10.5px;color:hsl(var(--foreground) / .62);line-height:1.35}
+.nn-tracker-skel{display:block;width:70%;height:20px;border-radius:7px;background:hsl(0 0% 100% / .6);animation:nn-pulse 1.4s infinite}
+.nn-tracker-bar{display:block;width:100%;height:5px;border-radius:9px;background:hsl(0 0% 100% / .6);margin-top:auto;overflow:hidden}
+.nn-tracker-bar i{display:block;height:100%;border-radius:inherit;background:hsl(14 80% 52%);transition:width .5s}
+.dark .nn-tracker-money,.nn-mobile.dark .nn-tracker-money{background:linear-gradient(150deg,hsl(160 35% 18%),hsl(175 30% 14%))}
+.dark .nn-tracker-daily,.nn-mobile.dark .nn-tracker-daily{background:linear-gradient(150deg,hsl(25 35% 18%),hsl(345 30% 16%))}
+.dark .nn-tracker-icon{background:hsl(0 0% 100% / .1)}
+@media (prefers-reduced-motion:reduce){.nn-tracker,.nn-tracker-bar i{transition:none}.nn-tracker-skel{animation:none}}
+/* Mobile safety: tap targets, overflow, safe areas */
+.nn-mobile{overflow-x:hidden}
+.nn-quick{min-height:56px;height:auto!important;padding:10px 14px!important}
+.nn-quick span{white-space:normal;text-align:left;line-height:1.2}
+.nn-content{padding-bottom:calc(120px + env(safe-area-inset-bottom))}
+.nn-fab{bottom:calc(104px + env(safe-area-inset-bottom))}
