@@ -306,6 +306,13 @@ export default function PaymentPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <AnimatePresence>
+        {paymentStep === "processing" && (
+          <motion.div role="status" aria-live="polite" className="fixed inset-0 z-[80] grid place-items-center bg-background/80 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="text-center space-y-3"><div className="flex justify-center"><PaymentArt /></div><p className="font-semibold text-foreground">Securely processing your payment…</p><p className="text-xs text-muted-foreground">Don't close this page.</p></div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40 h-14 sm:h-16">
         <div className="max-w-lg mx-auto px-4 h-full flex items-center gap-3">
