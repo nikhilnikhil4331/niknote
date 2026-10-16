@@ -104,7 +104,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
         <header className="text-center mb-7">
           <motion.img src="/niknote-logo.png" alt="Niknote" className="nik-auth-logo" initial={reduced ? false : { rotate: -8, scale: .88 }} animate={{ rotate: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 160, damping: 16 }} />
           <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">{signup ? 'Sign up with Niknote' : guestFirst && !showSignIn ? 'Welcome to Niknote' : 'Sign in to Niknote'}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{signup ? 'Your next chapter starts here.' : 'Welcome back. Your notes are waiting.'}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{signup ? 'Your next chapter starts here.' : guestFirst && !showSignIn ? 'Your own private space — just tell us your name.' : 'Welcome back. Your notes are waiting.'}</p>
         </header>
         <div className="nik-auth-form-surface">
           <AnimatePresence mode="wait">
