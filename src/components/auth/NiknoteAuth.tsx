@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useHaptics } from '@/hooks/useHaptics';
 import { SIGNUP_ENABLED } from '@/config/features';
 import { NiknoteLoader } from '@/components/motion/NiknoteLoader';
+import { supabase } from '@/integrations/supabase/client';
 
 export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
   const signup = mode === 'signup' && SIGNUP_ENABLED;
@@ -27,6 +28,9 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
   const [success, setSuccess] = useState(false);
   const submitting = useRef(false);
   const [entering, setEntering] = useState(false);
+  const guestFirst = !signup && !SIGNUP_ENABLED;
+  const [showSignIn, setShowSignIn] = useState(false);
+  const [guestName, setGuestName] = useState('');
 
   // Warm up the tracker screens in the background so guest entry opens them instantly.
   useEffect(() => {
@@ -76,6 +80,15 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
     if (busy) return;
     triggerHaptic('light'); setError(''); submitting.current = true; setBusy(true); setEntering(true);
     const r = await signInAsGuest();
+    const label = guestName.trim().replace(/\s+/g, ' ').slice(0, 40);
+    if (!r.error && label) {
+      // Name is only a display label on this guest's own profile — never an identity key.
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        await supabase.auth.updateUser({ data: { full_name: label } });
+        await supabase.from('profiles').update({ display_name: label }).eq('user_id', data.user.id);
+      }
+    }
     submitting.current = false; setBusy(false);
     if (r.error) { setEntering(false); setError('Guest mode is unavailable right now. Please check your internet and try again.'); triggerHaptic('error'); }
     else triggerHaptic('success');
@@ -90,7 +103,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
       <motion.section key={mode} className="nik-auth-content" initial={reduced ? false : { opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .45 }}>
         <header className="text-center mb-7">
           <motion.img src="/niknote-logo.png" alt="Niknote" className="nik-auth-logo" initial={reduced ? false : { rotate: -8, scale: .88 }} animate={{ rotate: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 160, damping: 16 }} />
-          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">{signup ? 'Sign up with Niknote' : SIGNUP_ENABLED ? 'Sign in to Niknote' : 'Use Niknote free'}</h1>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground">{signup ? 'Sign up with Niknote' : guestFirst && !showSignIn ? 'Welcome to Niknote' : 'Sign in to Niknote'}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{signup ? 'Your next chapter starts here.' : 'Welcome back. Your notes are waiting.'}</p>
         </header>
         <div className="nik-auth-form-surface">
@@ -105,6 +118,14 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
                 <p className="text-sm text-muted-foreground leading-relaxed">{signup && !user ? <>Open the confirmation link sent to <strong className="text-foreground break-all">{email}</strong> to finish signing up.</> : 'Opening your workspace…'}</p>
                 {signup && !user && <><p className="text-xs text-muted-foreground">Can’t find it? Check your spam folder.</p><Button asChild variant="outline" className="w-full"><Link to={otherPath}>Back to sign in <ArrowRight size={16} /></Link></Button></>}
               </motion.div>
+            ) : guestFirst && !showSignIn ? (
+              <motion.form key="guest" className="space-y-4" onSubmit={e => { e.preventDefault(); guest(); }} initial={reduced ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={reduced ? {} : { opacity: 0, y: -8 }}>
+                <div><Label htmlFor="guest-name">What should we call you?</Label><div className="relative mt-2"><UserRound className="nik-auth-field-icon" size={18} /><Input id="guest-name" placeholder="Your name (optional)" autoComplete="nickname" maxLength={40} value={guestName} onChange={e => setGuestName(e.target.value)} disabled={busy} className="h-12 pl-11 bg-background/70" /></div></div>
+                {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+                <motion.div whileTap={reduced ? {} : { scale: .97 }}><Button type="submit" disabled={busy || authLoading} className="nik-auth-submit w-full h-12 gap-2">{busy ? <><Loader2 size={18} className="animate-spin motion-reduce:animate-none" /> Opening your space…</> : <>Continue<ArrowRight size={18} /></>}</Button></motion.div>
+                <p className="text-xs text-muted-foreground text-center leading-relaxed">No email or password needed. You get your own private, empty workspace in this browser. Clearing site data can lose access.</p>
+                <button type="button" onClick={() => { setShowSignIn(true); triggerHaptic('selection'); }} className="block mx-auto min-h-[44px] text-sm text-primary font-medium hover:underline">Already have an account? Sign in</button>
+              </motion.form>
             ) : (
               <motion.form key="form" onSubmit={submit} className="space-y-4" initial={false} exit={reduced ? {} : { opacity: 0, y: -8 }}>
                 <div className="sr-only" aria-hidden="true"><label htmlFor="auth-website">Website</label><input id="auth-website" tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)} /></div>
@@ -115,7 +136,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
                 {error && <motion.p key={error} role="alert" className="text-sm text-destructive" animate={reduced ? {} : { x: [0, -5, 5, -3, 3, 0] }} transition={{ duration: .35 }}>{error}</motion.p>}
                 <motion.div whileTap={reduced ? {} : { scale: .97 }}><Button type="submit" disabled={busy || authLoading} className="nik-auth-submit w-full h-12 gap-2">{busy ? <><Loader2 size={18} className="animate-spin motion-reduce:animate-none" /> {signup ? 'Creating account…' : 'Signing in…'}</> : <>{signup ? 'Sign up with Niknote' : 'Sign in'}<ArrowRight size={18} /></>}</Button></motion.div>
                 {signup && <p className="text-xs text-muted-foreground text-center leading-relaxed">By signing up, you agree to our <Link to="/terms" className="underline">Terms</Link> and <Link to="/privacy" className="underline">Privacy Policy</Link>.</p>}
-                {!SIGNUP_ENABLED && <div className="pt-1 space-y-2"><Button type="button" variant="outline" onClick={guest} disabled={busy || authLoading} className="w-full h-12">Try Niknote free — continue as guest</Button><p className="text-xs text-muted-foreground text-center leading-relaxed">New accounts are paused. Guest notes are saved privately to this browser's session; clearing site data can lose access.</p></div>}
+                {guestFirst && <button type="button" onClick={() => setShowSignIn(false)} className="block mx-auto min-h-[44px] text-sm text-primary font-medium hover:underline">Continue as guest instead</button>}
                 {SIGNUP_ENABLED && <p className="text-sm text-muted-foreground text-center pt-2">{signup ? 'Already part of Niknote? ' : 'New user of Niknote? '}<Link to={otherPath} className="text-primary font-semibold underline-offset-4 hover:underline" onClick={() => triggerHaptic('selection')}>{signup ? 'Sign in' : 'Sign up'}</Link></p>}
               </motion.form>
             )}
