@@ -112,7 +112,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         if (!session && AUTO_GUEST && !/^\/(login|auth|reset-password)/.test(window.location.pathname)) {
           // One private anonymous identity per browser; listener sets user when ready.
-          supabase.auth.signInAnonymously().catch(() => undefined).finally(() => { if (mounted) setLoading(false); });
+          (async () => {
+            // Retry slow/flaky mobile networks a few times before giving up.
+            for (let i = 0; i < 3 && mounted; i++) {
+              try { const { error } = await supabase.auth.signInAnonymously(); if (!error) break; } catch { /* retry */ }
+              await new Promise(r => setTimeout(r, 800 * (i + 1)));
+            }
+            if (mounted) setLoading(false);
+          })();
           return;
         }
         setLoading(false);
