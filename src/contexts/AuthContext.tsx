@@ -7,6 +7,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { AUTO_GUEST } from '@/config/features';
 
 interface AuthContextType {
   user: User | null;
@@ -108,6 +109,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           setSession(session);
           setUser(session?.user ?? null);
+        }
+        if (!session && AUTO_GUEST && !/^\/(login|auth|reset-password)/.test(window.location.pathname)) {
+          // One private anonymous identity per browser; listener sets user when ready.
+          supabase.auth.signInAnonymously().catch(() => undefined).finally(() => { if (mounted) setLoading(false); });
+          return;
         }
         setLoading(false);
       }).catch(() => {

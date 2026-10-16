@@ -22,6 +22,7 @@ import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import Signup from "./pages/Signup";
 import Upgrade from "./pages/Upgrade";
+import Donate from "./pages/Donate";
 import Payment from "./pages/Payment";
 import Admin from "./pages/Admin";
 import AdminPanelNikhil from "./pages/AdminPanelNikhil";
@@ -170,6 +171,7 @@ const App = () => {
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/upgrade" element={<Upgrade />} />
+                    <Route path="/donate" element={<Donate />} />
                     <Route path="/payment" element={<Payment />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/admin-login" element={<AdminLogin />} />

@@ -855,7 +855,7 @@ const Index = () => {
                       ) : null;
                     })()}
                     {user ? <DropdownMenuItem onClick={() => navigate('/account')}>👤 Account</DropdownMenuItem>
-                      : <DropdownMenuItem onClick={() => navigate('/login')}><LogIn className="w-4 h-4 mr-2" /> Sign In</DropdownMenuItem>}
+                      : null}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
@@ -895,12 +895,7 @@ const Index = () => {
                   </button>
                 </motion.div>
 
-                {user ? <HeaderProfileButton /> : (
-                  <Button variant="ghost" size="sm" onClick={() => navigate('/login')} className="gap-1.5 rounded-full h-9 px-3 hover:bg-white/20">
-                    <LogIn className="w-4 h-4" />
-                    <span className="text-xs font-medium">Sign In</span>
-                  </Button>
-                )}
+                {user ? <HeaderProfileButton /> : null}
 
                 <Toolbar onExportPDF={handleExportPDF} onReset={handleReset} isDark={isDark} onToggleDark={toggleDark} isExporting={isExporting} />
               </>
