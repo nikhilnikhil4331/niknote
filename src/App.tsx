@@ -170,6 +170,7 @@ const App = () => {
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/upgrade" element={<Upgrade />} />
+                    <Route path="/donate" element={<Donate />} />
                     <Route path="/payment" element={<Payment />} />
                     <Route path="/admin" element={<Admin />} />
                     <Route path="/admin-login" element={<AdminLogin />} />

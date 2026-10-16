@@ -855,7 +855,7 @@ const Index = () => {
                       ) : null;
                     })()}
                     {user ? <DropdownMenuItem onClick={() => navigate('/account')}>👤 Account</DropdownMenuItem>
-                      : <DropdownMenuItem onClick={() => navigate('/login')}><LogIn className="w-4 h-4 mr-2" /> Sign In</DropdownMenuItem>}
+                      : null}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
