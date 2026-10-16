@@ -51,3 +51,5 @@
 - [x] Daily Tracker: animated water glass with waves, today progress, weekly habits/water/sleep graphs
 - [x] Money Tracker: Flow/Balance/Compare graphs, budget ring, coin-wallet animation
 - [x] Thank-you heart animation (feedback + payment success), plans crown animation, card payment animation
+- [x] Name-only guest welcome, new-guest workspace option, interactive loader lens with stall/offline retry, gliding editor tab, shared motion tokens
+- [ ] Remaining motion directive items: in-button loading→check, morphing money form, sleep timeline, chart sweep polish, full viewport sweep 360/375/430

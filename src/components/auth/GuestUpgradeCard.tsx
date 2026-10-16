@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input';
  * Step 1: add an email (confirmation link). Step 2 (after confirming): set a password.
  */
 export function GuestUpgradeCard() {
-  const { user, isGuest } = useAuth();
+  const { user, isGuest, signOut } = useAuth();
+  const [confirmNew, setConfirmNew] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -54,6 +55,10 @@ export function GuestUpgradeCard() {
         <p className="text-sm text-muted-foreground">Your work lives only in this browser's session. Clearing site data or signing out loses access. Add an email to keep everything.</p>
         <Input type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} />
         <Button className="w-full" disabled={busy} onClick={linkEmail}>Keep my work</Button>
+        {confirmNew ? <div role="alertdialog" aria-label="Start a new guest workspace" className="rounded-xl border border-destructive/40 p-3 space-y-2">
+          <p className="text-sm text-foreground">The new workspace starts empty. This guest's notes and trackers will not move over and may be lost unless you added an email above.</p>
+          <div className="flex gap-2"><Button variant="outline" className="flex-1" onClick={() => setConfirmNew(false)}>Cancel</Button><Button variant="destructive" className="flex-1" onClick={async () => { await signOut(); window.location.assign('/login'); }}>Start new</Button></div>
+        </div> : <Button variant="ghost" className="w-full" onClick={() => setConfirmNew(true)}>Sign out / start a new guest workspace</Button>}
       </>}
     </section>
   );

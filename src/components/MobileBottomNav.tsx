@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { PenLine, Palette, Sparkles, MoreHorizontal, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { haptic } from '@/hooks/useHaptics';
+import { motion, useReducedMotion } from 'framer-motion';
+import { spring } from '@/lib/motion';
 
 export type MobileTab = 'write' | 'style' | 'preview' | 'ai';
 
@@ -19,6 +21,7 @@ interface MobileBottomNavProps {
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activeTab, onTabChange }) => {
   const navigate = useNavigate();
+  const reduced = useReducedMotion();
   const tabs: { id: MobileTab; label: string; icon: React.ElementType }[] = [
     { id: 'write', label: 'Write', icon: PenLine },
     { id: 'style', label: 'Style', icon: Palette },
@@ -33,11 +36,12 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activeTab, onT
           const active = activeTab === id;
           return (
             <button key={id} onClick={() => { haptic('selection'); onTabChange(id); }}
-              className={cn('flex-1 flex flex-col items-center justify-center gap-0.5 h-12 rounded-2xl transition-all duration-200 active:scale-90',
-                active ? 'bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-md' : 'text-muted-foreground')}
+              className={cn('relative flex-1 flex flex-col items-center justify-center gap-0.5 h-12 rounded-2xl transition-colors duration-200 active:scale-95',
+                active ? 'text-primary-foreground' : 'text-muted-foreground')}
               style={{ WebkitTapHighlightColor: 'transparent' }} aria-current={active ? 'page' : undefined}>
-              <Icon className="w-[19px] h-[19px]" strokeWidth={active ? 2.4 : 2} />
-              <span className="text-[10px] font-semibold">{label}</span>
+              {active && <motion.span layoutId="nn-editor-tab" transition={reduced ? { duration: 0 } : spring.snappy} className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-md" aria-hidden="true" />}
+              <Icon className="relative w-[19px] h-[19px]" strokeWidth={2.2} />
+              <span className="relative text-[10px] font-semibold">{label}</span>
             </button>
           );
         })}
