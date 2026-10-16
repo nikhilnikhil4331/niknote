@@ -1515,3 +1515,12 @@
 @media (prefers-reduced-motion: reduce) {
   .nn-wave, .nn-bubble, .nn-loader-glow, .nn-loader-spark, .nn-loader-ink span, .nn-loader-dots i { animation:none !important; }
 }
+
+/* Interactive loader lens + paper texture */
+.nn-loader-paper { position:absolute; inset:0; pointer-events:none; background-image:radial-gradient(hsl(var(--foreground) / .045) 1px, transparent 1px); background-size:14px 14px; }
+.nn-lens-stage { position:relative; touch-action:none; cursor:crosshair; user-select:none; -webkit-user-select:none; }
+@media (hover:none) { .nn-lens-stage { cursor:default; } }
+.nn-lens { position:absolute; width:90px; height:90px; margin:-45px 0 0 -45px; border-radius:50%; pointer-events:none; background-color:hsl(var(--background)); background-repeat:no-repeat; border:1.5px solid hsl(var(--foreground) / .18); box-shadow:0 8px 24px -10px hsl(var(--foreground) / .35), inset 0 0 0 4px hsl(var(--background) / .6); }
+.nn-loader-retry { min-height:44px; padding:0 20px; border-radius:999px; border:1px solid hsl(var(--border)); background:hsl(var(--card)); color:hsl(var(--foreground)); font-weight:600; font-size:14px; }
+.nn-loader-retry:focus-visible { outline:2px solid hsl(var(--ring)); outline-offset:2px; }
+@media (prefers-reduced-motion: reduce) { .nn-lens { display:none; } }
