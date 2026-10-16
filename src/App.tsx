@@ -22,6 +22,7 @@ import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import Signup from "./pages/Signup";
 import Upgrade from "./pages/Upgrade";
+import Donate from "./pages/Donate";
 import Payment from "./pages/Payment";
 import Admin from "./pages/Admin";
 import AdminPanelNikhil from "./pages/AdminPanelNikhil";
