@@ -3,7 +3,7 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area, CartesianGrid } from 'recharts';
 import { MoneyArt } from '@/components/motion/FeatureArt';
-import { Plus, Trash2, Target, Users, Download, Coins, Camera, Loader2, Bell, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Target, Users, Download, Coins, Camera, Loader2, Bell, CheckCircle2, Sparkles } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -388,7 +388,7 @@ export default function MoneyTracker() {
       </div>
 
       <Panel title="Graphs" action={<div className="nn-chart-tabs" role="group" aria-label="Choose graph">{([['flow', 'Flow'], ['balance', 'Balance'], ['compare', 'Compare']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={chart === k} onClick={() => { haptic('selection'); setChart(k); }}>{l}</button>)}</div>}>
-        {series.every(r => !r.income && !r.expense) ? <p className="text-sm text-muted-foreground py-10 text-center">Add a transaction to see your graph grow ✨</p> : (
+        {series.every(r => !r.income && !r.expense) ? <p className="text-sm text-muted-foreground py-10 text-center flex items-center justify-center gap-1.5">Add a transaction to see your graph grow <Sparkles className="w-4 h-4 text-primary shrink-0" aria-hidden="true" /></p> : (
         <motion.div key={chart + range} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="h-60">
           <ResponsiveContainer>
             {chart === 'compare' ? (
