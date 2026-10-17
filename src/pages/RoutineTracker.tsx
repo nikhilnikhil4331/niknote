@@ -330,11 +330,11 @@ export default function RoutineTracker() {
                 <Area type="monotone" dataKey="water" stroke="hsl(var(--water-deep))" strokeWidth={3} fill="url(#nn-water-area)" animationDuration={1000} dot={{ r: 3 }} />
               </AreaChart>
             ) : (
-              <AreaChart data={weekSeries} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
+              <AreaChart data={weekSeries} margin={{ top: 8, right: 14, left: -18, bottom: 0 }}>
                 <defs><linearGradient id="nn-sleep-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.55} /><stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.05} /></linearGradient></defs>
                 <XAxis dataKey="label" fontSize={11} tickLine={false} axisLine={false} /><YAxis fontSize={11} domain={[0, 12]} tickLine={false} axisLine={false} unit="h" />
                 <Tooltip formatter={(v: number) => [`${v} h`, 'Sleep']} />
-                <ReferenceLine y={8} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" />
+                <ReferenceLine y={8} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" label={{ value: '8h goal', fontSize: 10, position: 'insideTopRight' }} />
                 <Area type="monotone" dataKey="sleep" stroke="hsl(var(--primary))" strokeWidth={3} fill="url(#nn-sleep-area)" animationDuration={1000} dot={{ r: 3 }} />
               </AreaChart>
             )}

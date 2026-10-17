@@ -199,7 +199,7 @@ export default function MoneyTracker() {
     return [...map.values()];
   }, [inRange, range]);
 
-  const [chart, setChart] = useState<'flow' | 'balance' | 'compare'>('compare');
+  const [chart, setChart] = useState<'flow' | 'balance' | 'compare'>('balance');
   const series = useMemo(() => {
     if (range === 'year') { let run = 0; return trend.map(r => ({ ...r, net: (run += r.income - r.expense) })); }
     return dailyCashSeries(inRange, fromDay, toDay(new Date()));
@@ -425,7 +425,7 @@ export default function MoneyTracker() {
             )}
           </ResponsiveContainer>
         </motion.div>)}
-        <div className="flex gap-4 text-xs text-muted-foreground mt-2"><span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(var(--success))' }} />Income</span><span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(var(--heart))' }} />Spent</span><span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-primary" />Balance</span></div>
+        <div className="flex gap-4 text-xs text-muted-foreground mt-2">{chart === 'balance' ? <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-primary" />Balance</span> : <><span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(var(--success))' }} />Income</span><span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(var(--heart))' }} />Spent</span></>}</div>
       </Panel>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*]:min-w-0">
