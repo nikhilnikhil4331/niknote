@@ -3,7 +3,7 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area, CartesianGrid } from 'recharts';
 import { MoneyArt } from '@/components/motion/FeatureArt';
-import { Plus, Trash2, Target, Users, Download, Coins, Camera, Loader2, Bell, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Target, Users, Download, Coins, Camera, Loader2, Bell, CheckCircle2, Sparkles } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -199,7 +199,7 @@ export default function MoneyTracker() {
     return [...map.values()];
   }, [inRange, range]);
 
-  const [chart, setChart] = useState<'flow' | 'balance' | 'compare'>('flow');
+  const [chart, setChart] = useState<'flow' | 'balance' | 'compare'>('balance');
   const series = useMemo(() => {
     if (range === 'year') { let run = 0; return trend.map(r => ({ ...r, net: (run += r.income - r.expense) })); }
     return dailyCashSeries(inRange, fromDay, toDay(new Date()));
@@ -388,7 +388,7 @@ export default function MoneyTracker() {
       </div>
 
       <Panel title="Graphs" action={<div className="nn-chart-tabs" role="group" aria-label="Choose graph">{([['flow', 'Flow'], ['balance', 'Balance'], ['compare', 'Compare']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={chart === k} onClick={() => { haptic('selection'); setChart(k); }}>{l}</button>)}</div>}>
-        {series.every(r => !r.income && !r.expense) ? <p className="text-sm text-muted-foreground py-10 text-center">Add a transaction to see your graph grow ✨</p> : (
+        {series.every(r => !r.income && !r.expense) ? <p className="text-sm text-muted-foreground py-10 text-center flex items-center justify-center gap-1.5">Add a transaction to see your graph grow <Sparkles className="w-4 h-4 text-primary shrink-0" aria-hidden="true" /></p> : (
         <motion.div key={chart + range} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="h-60">
           <ResponsiveContainer>
             {chart === 'compare' ? (
@@ -425,7 +425,7 @@ export default function MoneyTracker() {
             )}
           </ResponsiveContainer>
         </motion.div>)}
-        <div className="flex gap-4 text-xs text-muted-foreground mt-2"><span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(var(--success))' }} />Income</span><span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(var(--heart))' }} />Spent</span><span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-primary" />Balance</span></div>
+        <div className="flex gap-4 text-xs text-muted-foreground mt-2">{chart === 'balance' ? <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-primary" />Balance</span> : <><span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(var(--success))' }} />Income</span><span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(var(--heart))' }} />Spent</span></>}</div>
       </Panel>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*]:min-w-0">
