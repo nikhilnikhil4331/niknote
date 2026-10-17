@@ -199,7 +199,7 @@ export default function MoneyTracker() {
     return [...map.values()];
   }, [inRange, range]);
 
-  const [chart, setChart] = useState<'flow' | 'balance' | 'compare'>('flow');
+  const [chart, setChart] = useState<'flow' | 'balance' | 'compare'>('compare');
   const series = useMemo(() => {
     if (range === 'year') { let run = 0; return trend.map(r => ({ ...r, net: (run += r.income - r.expense) })); }
     return dailyCashSeries(inRange, fromDay, toDay(new Date()));
