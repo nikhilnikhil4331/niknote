@@ -158,6 +158,7 @@ export function AddHabitScreen({ go }: { go: (s: { name: string; id?: string }) 
                 );
               })}
             </div>
+            {!days.length && shake > 0 && <p className="text-[11px] font-semibold text-rose-500 mt-2">Pick at least one day ✨</p>}
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">

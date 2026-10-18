@@ -16,15 +16,16 @@ export default function RoutineAppPage() {
     return <Navigate to="/auth" replace />;
   }
 
+  const showBanner = !loading && !user && AUTO_GUEST;
   return (
     <div className="relative">
-      {!loading && !user && AUTO_GUEST && (
-        <div role="status" className="absolute inset-x-0 top-0 z-50 flex items-center justify-between gap-3 px-4 py-2 bg-amber-50 text-amber-950 text-xs">
+      {showBanner && (
+        <div role="status" className="sticky top-0 z-50 flex items-center justify-between gap-3 px-4 py-2 bg-amber-50 text-amber-950 text-xs border-b border-amber-200">
           <span>{failed ? 'Still offline. Your habits stay saved on this device.' : 'Cloud connection unavailable. Habits work on this device.'}</span>
           <button
             type="button"
             disabled={retrying}
-            className="shrink-0 min-h-[44px] px-3 font-semibold underline disabled:opacity-60"
+            className="shrink-0 min-h-[44px] min-w-[88px] px-3 font-semibold underline disabled:opacity-60"
             onClick={async () => {
               setRetrying(true);
               try {
@@ -41,7 +42,9 @@ export default function RoutineAppPage() {
           </button>
         </div>
       )}
-      <RoutineApp />
+      <div className={showBanner ? 'pt-1' : ''}>
+        <RoutineApp />
+      </div>
     </div>
   );
 }

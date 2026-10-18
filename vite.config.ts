@@ -5,9 +5,21 @@ import path from "path";
 // https://vitejs.org/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
+    host: "0.0.0.0",
     port: 8080,
     allowedHosts: true,
+    headers: {
+      "X-Frame-Options": "ALLOWALL",
+    },
+    cors: true,
+  },
+  preview: {
+    host: "0.0.0.0",
+    port: 4173,
+    allowedHosts: true as any,
+    headers: {
+      "X-Frame-Options": "ALLOWALL",
+    },
   },
   plugins: [
     react(),
@@ -16,6 +28,14 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
+    exclude: ['src/lib/*.test.ts', 'node_modules/**'],
+    css: false,
   },
   build: {
     rollupOptions: {

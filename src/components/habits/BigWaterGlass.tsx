@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 const GLASS = 'M18 12 L142 12 L130 196 Q129 206 118 206 L42 206 Q31 206 30 196 Z';
@@ -9,6 +9,7 @@ export function BigWaterGlass({ glasses, goal, onAdd, onRemove }: {
   glasses: number; goal: number; onAdd: () => void; onRemove: () => void;
 }) {
   const reduced = useReducedMotion();
+  const uid = useId().replace(/:/g, '');
   const p = Math.max(0, Math.min(1, glasses / goal));
   const TOP = 22, BOTTOM = 196;
   const level = TOP + (1 - p) * (BOTTOM - TOP) - 10;
@@ -28,17 +29,17 @@ export function BigWaterGlass({ glasses, goal, onAdd, onRemove }: {
     <div className="relative mx-auto" style={{ width: 210 }}>
       <svg viewBox="0 0 160 220" className="w-full drop-shadow-xl" role="img" aria-label={`${glasses} of ${goal} glasses`}>
         <defs>
-          <clipPath id="nnh-glass-clip"><path d={GLASS} /></clipPath>
-          <linearGradient id="nnh-water-grad" x1="0" y1="0" x2="0" y2="1">
+          <clipPath id={`nnh-glass-clip-${uid}`}><path d={GLASS} /></clipPath>
+          <linearGradient id={`nnh-water-grad-${uid}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.85" />
             <stop offset="100%" stopColor="#2563eb" />
           </linearGradient>
         </defs>
         <path d={GLASS} fill="#7dd3fc" opacity="0.14" />
-        <g clipPath="url(#nnh-glass-clip)">
+        <g clipPath={`url(#nnh-glass-clip-${uid})`}>
           <motion.g initial={false} animate={{ y: level }} transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 55, damping: 12 }}>
             <g className={reduced ? '' : 'nnh-anim-wave-back'}><path d={WAVE} fill="#7dd3fc" opacity="0.45" /></g>
-            <g className={reduced ? '' : 'nnh-anim-wave'}><path d={WAVE} fill="url(#nnh-water-grad)" /></g>
+            <g className={reduced ? '' : 'nnh-anim-wave'}><path d={WAVE} fill="url(#nnh-water-grad-${uid})" /></g>
             <path d={WAVE} fill="none" stroke="#ffffff" strokeOpacity="0.55" strokeWidth="2" className={reduced ? '' : 'nnh-anim-wave'} />
           </motion.g>
           {!reduced && glasses > 0 && [42, 66, 92, 114].map((x, i) => (
