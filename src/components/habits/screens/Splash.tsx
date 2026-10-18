@@ -1,11 +1,8 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Sparkles } from 'lucide-react';
-import { staggerDelay } from '@/lib/motion';
 import { haptic } from '@/hooks/useHaptics';
 
-const WORD = 'Niknote';
-
-/** Onboarding splash: pastel mountain lake scene + animated wordmark. */
+/** Onboarding splash: pastel mountain lake scene + the real Niknote logo. */
 export function Splash({ onEnter, isBack }: { onEnter: () => void; isBack: boolean }) {
   const reduced = useReducedMotion();
   const t = reduced ? { duration: 0 } : { duration: 0.7, ease: [0.22, 1, 0.36, 1] as const };
@@ -58,20 +55,14 @@ export function Splash({ onEnter, isBack }: { onEnter: () => void; isBack: boole
         <span className="absolute left-1/2 top-[26%] translate-x-[92%] text-base nnh-anim-twinkle" style={{ animationDelay: '-1s' }} aria-hidden="true">✦</span>
         <span className="absolute left-1/2 top-[9%] translate-x-[130%] text-lg nnh-anim-twinkle" style={{ animationDelay: '-1.8s' }} aria-hidden="true">🌟</span>
 
-        <motion.div initial={reduced ? false : { opacity: 0, scale: 0.9, y: 14 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ ...t, delay: 0.15 }}>
-          <div className="flex items-end gap-1" style={{ fontFamily: "'Dancing Script', cursive" }}>
-            {WORD.split('').map((ch, i) => (
-              <motion.span key={i}
-                initial={reduced ? false : { opacity: 0, y: 26, rotate: -8 }}
-                animate={{ opacity: 1, y: 0, rotate: 0 }}
-                transition={{ ...t, delay: 0.25 + staggerDelay(i) * 1.4 }}
-                className="nnh-gradient-text"
-                style={{ fontSize: 58, lineHeight: 1 }}>
-                {ch}
-              </motion.span>
-            ))}
-            <motion.span initial={reduced ? false : { opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 1.0, type: 'spring' }} className="mb-3 text-2xl">✨</motion.span>
-          </div>
+        <motion.div initial={reduced ? false : { opacity: 0, scale: 0.88, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ ...t, delay: 0.15 }} className="drop-shadow-[0_12px_32px_rgba(124,58,237,0.28)]">
+          {/* real Niknote wordmark — same asset as auth, landing & loader */}
+          <img
+            src="/niknote-logo.png"
+            alt="Niknote"
+            draggable={false}
+            className="w-[248px] max-w-[72vw] h-auto object-contain select-none"
+          />
         </motion.div>
 
         <motion.p initial={reduced ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ ...t, delay: 0.9 }}
