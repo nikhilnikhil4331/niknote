@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { PenLine, Wallet, CalendarCheck, Layers, Sparkles, BookOpen, FileText, Trophy, User, Crown, History, Bot, MessageSquare, GraduationCap } from 'lucide-react';
+import { PenLine, Wallet, CalendarCheck, Sprout, Layers, Sparkles, BookOpen, FileText, Trophy, User, Crown, History, Bot, MessageSquare, GraduationCap } from 'lucide-react';
 import { AppDock } from '@/components/AppDock';
 import { haptic } from '@/hooks/useHaptics';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,7 @@ const GROUPS = [
   ]},
   { title: 'Life', items: [
     { to: '/board', label: 'Boards', desc: 'Draw, images, voice', icon: PenLine, hue: 265 },
+    { to: '/habit', label: 'Niknote Habit', desc: 'Your daily habit app', icon: Sprout, hue: 290 },
     { to: '/money', label: 'Money Tracker', desc: 'Budget & savings', icon: Wallet, hue: 145 },
     { to: '/routine', label: 'Daily Routine', desc: 'Habits & focus', icon: CalendarCheck, hue: 35 },
     { to: '/achievements', label: 'Achievements', desc: 'Streaks & badges', icon: Trophy, hue: 45 },

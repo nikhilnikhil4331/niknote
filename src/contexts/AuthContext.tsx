@@ -115,7 +115,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           (async () => {
             // Retry slow/flaky mobile networks a few times before giving up.
             for (let i = 0; i < 3 && mounted; i++) {
-              try { const { error } = await supabase.auth.signInAnonymously(); if (!error) break; } catch { /* retry */ }
+              try {
+                const { error } = await timed(supabase.auth.signInAnonymously(), 9000, 'Auto guest sign-in timed out');
+                if (!error) break;
+              } catch { /* network timeout — retry with backoff */ }
               await new Promise(r => setTimeout(r, 800 * (i + 1)));
             }
             if (mounted) setLoading(false);
@@ -216,14 +219,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // One in-flight guest request at a time, so rerenders never create extra anonymous users.
+  // Every Supabase call is race-limited — on flaky mobile networks a hung fetch used to
+  // pin the "Opening guest mode" loader / first-load spinner for minutes.
+  // (non-generic: the supabase client is typed `any` in this project, and TS
+  // infers `T = {}` from `any` arguments, which breaks call-site destructuring)
+  const timed = (p: Promise<any>, ms: number, label: string): Promise<any> =>
+    Promise.race([p, new Promise<any>((_, reject) => setTimeout(() => reject(new Error(label)), ms))]);
   const guestRef = React.useRef<Promise<{ error: Error | null }> | null>(null);
   const signInAsGuest = useCallback(() => {
     if (guestRef.current) return guestRef.current;
     guestRef.current = (async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await timed(supabase.auth.getSession(), 4000, 'Guest sign-in is taking too long — check your internet');
         if (data?.session) return { error: null };
-        const { error } = await supabase.auth.signInAnonymously();
+        const { error } = await timed(supabase.auth.signInAnonymously(), 12000, 'Guest sign-in is taking too long — check your internet');
         return { error: (error as Error) ?? null };
       } catch (err) {
         return { error: err instanceof Error ? err : new Error('Guest sign-in failed') };

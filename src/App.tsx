@@ -11,6 +11,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { InstallBanner } from "@/components/InstallBanner";
 import { ShareButtons } from "@/components/promotion/ShareButtons";
 import { HandwritingDNAProvider } from "@/contexts/HandwritingDNAContext";
@@ -71,6 +72,7 @@ const HubPage = lazy(() => import("@/pages/Hub"));
 const MoneyTrackerPage = lazy(() => import("@/pages/MoneyTracker"));
 const BoardPageRoute = lazy(() => import("@/pages/Board"));
 const RoutineTrackerPage = lazy(() => import("@/pages/RoutineTracker"));
+const NikHabitPage = lazy(() => import("@/pages/RoutineApp"));
 
 // Simple page loader
 const PageLoader = () => <NiknoteLoader />;
@@ -157,6 +159,7 @@ const App = () => {
                 <BrowserRouter>
                    <RouteAnalytics />
                   <Suspense fallback={<PageLoader />}>
+                    <RouteErrorBoundary>
                     <Routes>
                       <Route path="/" element={<WorkspaceEntry />} />
                     <Route path="/app" element={<LegacyEditorRedirect />} />
@@ -198,11 +201,13 @@ const App = () => {
                     <Route path="/board" element={<Suspense fallback={<PageLoader />}><BoardPageRoute /></Suspense>} />
                     <Route path="/money" element={<MoneyTrackerPage />} />
                     <Route path="/routine" element={<RoutineTrackerPage />} />
+                    <Route path="/habit" element={<NikHabitPage />} />
                      <Route path="/privacy" element={<LegalPage policy="privacy" />} />
                      <Route path="/terms" element={<LegalPage policy="terms" />} />
                      <Route path="/refunds" element={<LegalPage policy="refunds" />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                    </RouteErrorBoundary>
                    <GlobalDock />
                    <CookieConsent />
                 </Suspense>
