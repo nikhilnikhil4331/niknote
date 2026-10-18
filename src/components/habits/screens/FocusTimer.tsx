@@ -56,17 +56,21 @@ export function FocusTimerScreen({ go }: { go: (s: { name: string; id?: string }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [secs]);
 
-  // mode change resets the clock
+  // mode / custom duration change resets the clock when not running
   const modeRef = useRef(mode);
+  const customRef = useRef({ f: state.customFocus, b: state.customBreak });
   useEffect(() => {
-    if (modeRef.current !== mode) {
+    const changedMode = modeRef.current !== mode;
+    const changedCustom = customRef.current.f !== state.customFocus || customRef.current.b !== state.customBreak;
+    if (changedMode || changedCustom) {
       modeRef.current = mode;
+      customRef.current = { f: state.customFocus, b: state.customBreak };
       setRunning(false);
       setPhase('focus');
       setSecs(focusDurations(mode, state.customFocus, state.customBreak).focus);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, [mode, state.customFocus, state.customBreak]);
 
   const mm = String(Math.floor(secs / 60)).padStart(2, '0');
   const ss = String(secs % 60).padStart(2, '0');
@@ -150,10 +154,10 @@ export function FocusTimerScreen({ go }: { go: (s: { name: string; id?: string }
               <div key={key} className="nnh-chip px-3 py-2 flex items-center justify-between">
                 <span className="text-[11px] font-bold" style={{ color: 'var(--nnh-sub)' }}>{label} (min)</span>
                 <span className="flex items-center gap-1.5">
-                  <button type="button" aria-label={`Decrease ${label.toLowerCase()} minutes`} onClick={() => { haptic('light'); setCustom(key === 'customFocus' ? Math.max(lo, val - 5) : val, key === 'customBreak' ? Math.max(lo, val - 5) : val); }}
+                  <button type="button" aria-label={`Decrease ${label.toLowerCase()} minutes`} onClick={() => { haptic('light'); if (key === 'customFocus') setCustom(Math.max(lo, val - 5), state.customBreak); else setCustom(state.customFocus, Math.max(lo, val - 5)); }}
                     className="w-6 h-6 rounded-full grid place-items-center text-[13px] font-bold" style={{ background: 'var(--nnh-card-soft)' }}>−</button>
                   <span className="text-[14px] font-extrabold w-6 text-center tabular-nums">{val}</span>
-                  <button type="button" aria-label={`Increase ${label.toLowerCase()} minutes`} onClick={() => { haptic('light'); setCustom(key === 'customFocus' ? Math.min(hi, val + 5) : val, key === 'customBreak' ? Math.min(hi, val + 5) : val); }}
+                  <button type="button" aria-label={`Increase ${label.toLowerCase()} minutes`} onClick={() => { haptic('light'); if (key === 'customFocus') setCustom(Math.min(hi, val + 5), state.customBreak); else setCustom(state.customFocus, Math.min(hi, val + 5)); }}
                     className="w-6 h-6 rounded-full grid place-items-center text-[13px] font-bold text-white nnh-gradient-btn">+</button>
                 </span>
               </div>

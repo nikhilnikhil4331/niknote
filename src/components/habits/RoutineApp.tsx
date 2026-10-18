@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { haptic } from '@/hooks/useHaptics';
 import { RoutineProvider, useRoutine } from '@/components/habits/RoutineProvider';
@@ -57,6 +57,14 @@ function Shell() {
     setDir(-1);
     setPushed(null);
   }, []);
+
+  // Hardware back / Escape should pop pushed views
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && pushed) { e.preventDefault(); back(); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [pushed, back]);
 
   const screen = useMemo(() => {
     switch (view.name) {

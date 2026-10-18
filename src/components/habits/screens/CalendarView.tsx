@@ -43,7 +43,7 @@ export function CalendarScreen({ go }: { go: (s: { name: string; id?: string }) 
 
   return (
     <div className="pb-10">
-      <TopBar title="Calendar" sub="Your habit history"
+      <TopBar title="Calendar" sub="Your habit history" onBack={() => go({ name: 'tab', id: 'home' })}
         right={
           <motion.button whileTap={{ scale: 0.9 }} type="button" onClick={() => go({ name: 'add' })} aria-label="Add habit"
             className="w-10 h-10 rounded-full nnh-gradient-btn grid place-items-center text-white">

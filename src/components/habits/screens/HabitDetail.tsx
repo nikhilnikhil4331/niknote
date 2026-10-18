@@ -80,7 +80,7 @@ export function HabitDetailScreen({ id, go }: { id: string; go: (s: { name: stri
                     <Archive size={15} /> {h.archived ? 'Restore habit' : 'Archive habit'}
                   </button>
                   {confirmDel ? (
-                    <button type="button" onClick={() => deleteHabit(h.id)}
+                    <button type="button" onClick={() => { deleteHabit(h.id); go({ name: 'tab', id: 'habits' }); }}
                       className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] font-bold text-white" style={{ background: '#ef4444' }}>
                       <Trash2 size={15} /> Tap to confirm delete
                     </button>

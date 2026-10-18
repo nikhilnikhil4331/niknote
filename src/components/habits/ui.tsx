@@ -190,9 +190,9 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
 export function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)}
-      className={cn('w-11 h-6.5 rounded-full p-0.5 transition-colors relative', on ? 'nnh-gradient-btn' : '')}
-      style={{ height: 26, background: on ? undefined : 'var(--nnh-line)' }}>
-      <motion.span layout className="block w-5.5 h-5.5 rounded-full bg-white shadow" style={{ width: 22, height: 22 }} transition={spring.snappy} />
+      className={cn('w-11 rounded-full p-0.5 transition-colors flex items-center', on ? 'nnh-gradient-btn justify-end' : 'justify-start')}
+      style={{ height: 26, background: on ? undefined : 'var(--nnh-line)', width: 46 }}>
+      <motion.span layout className="block rounded-full bg-white shadow" style={{ width: 22, height: 22 }} transition={spring.snappy} />
     </button>
   );
 }

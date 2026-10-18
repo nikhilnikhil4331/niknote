@@ -106,6 +106,24 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
   // the user already made while the (slow) fetch was in flight.
   const dirtyRef = useRef(0);
 
+  // Migrate anon data to authenticated user on first sign-in
+  const prevUserIdRef = useRef(userId);
+  useEffect(() => {
+    const prev = prevUserIdRef.current;
+    if (prev === 'anon' && userId !== 'anon' && !hasSavedState(userId)) {
+      try {
+        const anonRaw = localStorage.getItem(`niknote.habits.v1.anon`);
+        if (anonRaw) {
+          const parsed = JSON.parse(anonRaw) as RoutineState;
+          if (parsed && parsed.version === 1 && Array.isArray(parsed.habits) && parsed.habits.length) {
+            localStorage.setItem(`niknote.habits.v1.${userId}`, anonRaw);
+          }
+        }
+      } catch {}
+    }
+    prevUserIdRef.current = userId;
+  }, [userId]);
+
   // Load on account change. On a true first visit (no local data yet), offer to restore
   // legacy /routine cloud history in place of the sample seed.
   useEffect(() => {
@@ -146,7 +164,14 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
     }
   }, [unlockedIds, reduced]);
 
-  const today = toDay(new Date());
+  const [today, setToday] = useState(() => toDay(new Date()));
+  useEffect(() => {
+    const id = window.setInterval(() => setToday(toDay(new Date())), 60_000);
+    const onFocus = () => setToday(toDay(new Date()));
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => { clearInterval(id); window.removeEventListener('focus', onFocus); document.removeEventListener('visibilitychange', onFocus); };
+  }, []);
   const activeHabits = useMemo(() => state.habits.filter(h => !h.archived), [state.habits]);
 
   const mutate = useCallback((fn: (s: RoutineState) => RoutineState) => { dirtyRef.current++; setState(fn); }, []);
@@ -246,22 +271,36 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
     setSyncMsg(null);
     try {
       const s = stateRef.current;
-      const [habitsRes, checksRes, todosRes, wellnessRes, settingsRes, delRes] = await Promise.all([
-        supabase.from('habits').upsert(s.habits.map(h => ({ id: h.id, name: h.name, emoji: h.icon, block: 'morning', days: h.days, archived: h.archived })), { onConflict: 'id' }),
-        supabase.from('habit_checks').upsert(
-          Object.entries(s.entries).filter(([, e]) => e.v > 0).map(([k]) => { const [habit_id, day] = k.split('|'); return { habit_id, day }; }).slice(0, 400),
-          { onConflict: 'habit_id,day' },
-        ),
-        supabase.from('todos').upsert(s.todos.map(t => ({ id: t.id, title: t.title, done: t.done, priority: t.priority, position: t.position })), { onConflict: 'id' }),
-        supabase.from('daily_wellness').upsert(
-          Object.keys({ ...s.focus, ...s.entries }).length ? wellnessRows(s) : [],
-          { onConflict: 'user_id,day' },
-        ),
-        supabase.from('tracker_settings').upsert({ water_goal: s.habits.find(h => h.type === 'water' && !h.archived)?.target ?? 8 }),
-        supabase.from('habits').delete().not('id', 'in', `(${s.habits.map(h => h.id).join(',')})`).limit(100),
-      ]);
-      const bad = [habitsRes, checksRes, todosRes, wellnessRes, settingsRes, delRes].find(r => r.error);
-      if (bad?.error) throw new Error(bad.error.message);
+      const uid = (user as any)?.id;
+      if (!uid) throw new Error('Not signed in — data stays on this device');
+      const habitsRes = await supabase.from('habits').upsert(
+        s.habits.map(h => ({ id: h.id, user_id: uid, name: h.name, emoji: h.icon, block: 'morning', days: h.days, archived: h.archived } as any)),
+        { onConflict: 'id' },
+      );
+      if (habitsRes.error) throw new Error(habitsRes.error.message);
+      const checksRows = Object.entries(s.entries).filter(([, e]) => e.v > 0).map(([k]) => { const [habit_id, day] = k.split('|'); return { habit_id, user_id: uid, day } as any; }).slice(0, 400);
+      const checksRes = checksRows.length
+        ? await supabase.from('habit_checks').upsert(checksRows, { onConflict: 'habit_id,day' } as any)
+        : { error: null } as any;
+      if (checksRes.error) throw new Error(checksRes.error.message);
+      const todosRows = s.todos.map(t => ({ id: t.id, user_id: uid, title: t.title, done: t.done, priority: t.priority, position: t.position } as any));
+      const todosRes = todosRows.length
+        ? await supabase.from('todos').upsert(todosRows, { onConflict: 'id' })
+        : { error: null } as any;
+      if (todosRes.error) throw new Error(todosRes.error.message);
+      const wellness = Object.keys({ ...s.focus, ...s.entries }).length ? wellnessRows(s).map(r => ({ ...r, user_id: uid } as any)) : [];
+      const wellnessRes = wellness.length
+        ? await supabase.from('daily_wellness').upsert(wellness, { onConflict: 'user_id,day' })
+        : { error: null } as any;
+      if (wellnessRes.error) throw new Error(wellnessRes.error.message);
+      const settingsRes = await supabase.from('tracker_settings').upsert({ user_id: uid, water_goal: s.habits.find(h => h.type === 'water' && !h.archived)?.target ?? 8 } as any, { onConflict: 'user_id' } as any);
+      if (settingsRes.error) throw new Error(settingsRes.error.message);
+      let delRes: any = { error: null };
+      if (s.habits.length) {
+        const ids = s.habits.map(h => h.id);
+        delRes = await supabase.from('habits').delete().eq('user_id', uid).not('id', 'in', `(${ids.join(',')})` as any);
+      }
+      if (delRes?.error) throw new Error(delRes.error.message);
       haptic('success');
       setSyncMsg('synced');
       toast.success('Backed up to the cloud ☁️');
@@ -271,7 +310,7 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
     } finally {
       setSyncBusy(false);
     }
-  }, []);
+  }, [user]);
 
   const value: Routine = {
     state, today, activeHabits, syncBusy, syncMsg,
