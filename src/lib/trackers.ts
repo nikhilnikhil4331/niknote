@@ -123,6 +123,169 @@ export function topCategories(txs: { kind: string; amount: number; category: str
     .map(([category, amount]) => ({ category, amount, pct: total ? Math.round((amount / total) * 100) : 0 }));
 }
 
+// ── Niknote Habit routine (pure helpers, used by the /habit mobile experience) ──
+export type HabitType = 'water' | 'sleep' | 'minutes' | 'times';
+export type HabitCategory = 'health' | 'study' | 'productivity' | 'mind' | 'social' | 'other';
+
+export const HABIT_CATEGORIES: { id: HabitCategory; label: string; icon: string }[] = [
+  { id: 'health', label: 'Health', icon: '💜' },
+  { id: 'study', label: 'Study', icon: '📖' },
+  { id: 'productivity', label: 'Productivity', icon: '⚙️' },
+  { id: 'mind', label: 'Mind', icon: '🧠' },
+  { id: 'social', label: 'Social', icon: '👥' },
+  { id: 'other', label: 'Other', icon: '✨' },
+];
+
+export const HABIT_ICONS = [
+  '💧', '🌙', '🏃', '📖', '🧘', '💪', '🥗', '🎯',
+  '📝', '🧠', '💤', '🎨', '🎸', '🚶', '🏊', '🧹',
+  '☀️', '🍎', '💊', '🙏', '📵', '💻', '🗣️', '🌱',
+  '❤️', '🎵', '🧺', '📞', '🚴', '🧊', '🍵', '✍️',
+];
+
+export const HABIT_COLORS = ['#8b5cf6', '#ec4899', '#f97316', '#f59e0b', '#22c55e', '#14b8a6', '#0ea5e9', '#6366f1'];
+
+export function greetingFor(hour: number) {
+  if (hour < 5) return 'Good Night';
+  if (hour < 12) return 'Good Morning';
+  if (hour < 17) return 'Good Afternoon';
+  return 'Good Evening';
+}
+
+export function habitUnit(type: HabitType) {
+  if (type === 'water') return 'glasses';
+  if (type === 'sleep') return 'hours';
+  if (type === 'minutes') return 'minutes';
+  return 'times';
+}
+
+/** Per-tap step for a habit type. */
+export function stepFor(type: HabitType) {
+  if (type === 'sleep') return 0.5;
+  if (type === 'minutes') return 5;
+  return 1;
+}
+
+export function fmtHabitValue(v: number, type: HabitType) {
+  if (type === 'sleep') return `${Math.round(v * 10) / 10} h`;
+  if (type === 'minutes') return `${Math.round(v)} min`;
+  if (type === 'water') return v % 1 ? v.toFixed(1) : String(Math.round(v));
+  return String(Math.round(v));
+}
+
+/** Entries are stored as `${habitId}|${day}` -> { v, at? }. */
+export const entryKey = (habitId: string, day: string) => `${habitId}|${day}`;
+export const entryValue = (entries: Record<string, { v: number; at?: string }>, habitId: string, day: string) =>
+  entries[entryKey(habitId, day)]?.v ?? 0;
+
+/** Days where the habit hit its target, going back `limit` days from `today`. */
+export function habitDoneDays(entries: Record<string, { v: number; at?: string }>, habitId: string, target: number, today: Date = new Date(), limit = 400) {
+  const days: string[] = [];
+  for (let i = 0; i < limit; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    d.setDate(d.getDate() - i);
+    const day = toDay(d);
+    if ((entries[entryKey(habitId, day)]?.v ?? 0) >= target) days.push(day);
+    if (i > 365) break;
+  }
+  return days;
+}
+
+/** Streak for one habit, counting only its scheduled weekdays. */
+export function habitStreak(entries: Record<string, { v: number; at?: string }>, habit: { id: string; target: number; days?: number[] }, today: Date = new Date()) {
+  return scheduledStreak(habitDoneDays(entries, habit.id, habit.target, today), habit.days, today);
+}
+
+export function bestStreakAcross(entries: Record<string, { v: number; at?: string }>, habits: { id: string; target: number; days?: number[] }[], today: Date = new Date()) {
+  return habits.reduce((best, h) => Math.max(best, habitStreak(entries, h, today)), 0);
+}
+
+/** Completion across the last 7 days: scheduled slots vs done slots, with per-day percentages. */
+export function weekCompletion(
+  entries: Record<string, { v: number; at?: string }>,
+  habits: { id: string; target: number; days?: number[] }[],
+  today: Date = new Date(),
+) {
+  const perDay: { day: string; label: string; pct: number; total: number; done: number }[] = [];
+  let slots = 0, done = 0;
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    d.setDate(d.getDate() - i);
+    const day = toDay(d);
+    const sched = habits.filter(h => isScheduled(h.days, d));
+    const dDone = sched.filter(h => (entries[entryKey(h.id, day)]?.v ?? 0) >= h.target).length;
+    slots += sched.length; done += dDone;
+    perDay.push({
+      day,
+      label: d.toLocaleDateString(undefined, { weekday: 'short' }),
+      pct: sched.length ? Math.round((dDone / sched.length) * 100) : 0,
+      total: sched.length,
+      done: dDone,
+    });
+  }
+  return { pct: slots ? Math.round((done / slots) * 100) : 0, slots, done, perDay };
+}
+
+/** Sleep minutes between "HH:MM" bed and "HH:MM" wake, wrapping past midnight. Null when unparseable. */
+export function sleepMinutes(bed: string, wake: string) {
+  const parse = (t: string) => { const [h, m] = t.split(':').map(Number); return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null; };
+  const b = parse(bed), w = parse(wake);
+  if (b == null || w == null) return null;
+  const mins = w - b;
+  return mins < 0 ? mins + 24 * 60 : mins;
+}
+
+export const KCAL_PER_MIN = 4;
+export const KM_PER_MIN = 0.077;
+export function exerciseStats(mins: number) {
+  const m = Math.max(0, mins);
+  return { kcal: Math.round(m * KCAL_PER_MIN), km: Math.round(m * KM_PER_MIN * 10) / 10 };
+}
+
+export type FocusModeId = 'pomodoro' | 'deep' | 'custom';
+const clampInt = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, Math.round(n) || lo));
+export function focusDurations(mode: FocusModeId, customFocus = 25, customBreak = 5) {
+  switch (mode) {
+    case 'pomodoro': return { focus: 25 * 60, break: 5 * 60 };
+    case 'deep': return { focus: 50 * 60, break: 10 * 60 };
+    case 'custom': return { focus: clampInt(customFocus, 1, 180) * 60, break: clampInt(customBreak, 1, 60) * 60 };
+  }
+}
+
+export const FOCUS_QUOTES = [
+  'Small steps every day lead to big results.',
+  'You do not rise to the level of your goals, you fall to the level of your systems.',
+  'Focus is a superpower. Use it wisely.',
+  'One hour of deep work beats three hours of busy work.',
+  'The secret of getting ahead is getting started.',
+];
+
+export type AchievementCtx = {
+  habits: { id: string; name: string; type: string; target: number; days: number[] }[];
+  entries: Record<string, { v: number; at?: string }>;
+  focus: Record<string, number>;
+  today: string;
+};
+export type AchievementDef = { id: string; name: string; desc: string; icon: string; color: string; test: (c: AchievementCtx) => boolean };
+
+const anyEntryDone = (c: AchievementCtx) => Object.values(c.entries).some(e => e.v > 0);
+const streakOf = (c: AchievementCtx) => bestStreakAcross(c.entries, c.habits, new Date(c.today + 'T12:00'));
+
+export const ACHIEVEMENTS: AchievementDef[] = [
+  { id: 'first-step', name: 'First Step', desc: 'Complete your first habit', icon: '⭐', color: '#f59e0b', test: anyEntryDone },
+  { id: 'streak-3', name: '3 Day Streak', desc: 'Keep going!', icon: '🔥', color: '#f97316', test: c => streakOf(c) >= 3 },
+  { id: 'hydration-hero', name: 'Hydration Hero', desc: 'Drink 8 glasses in a day', icon: '💧', color: '#0ea5e9', test: c => c.habits.some(h => h.type === 'water') && Object.values(c.entries).some(e => e.v >= 8) },
+  { id: 'early-bird', name: 'Early Bird', desc: 'Complete a habit before 8 AM', icon: '🐦', color: '#8b5cf6', test: c => Object.values(c.entries).some(e => e.v > 0 && !!e.at && e.at.slice(11, 16) < '08:00') },
+  { id: 'streak-7', name: 'Week Warrior', desc: 'Hit a 7 day streak', icon: '🚀', color: '#ec4899', test: c => streakOf(c) >= 7 },
+  { id: 'perfect-week', name: 'Perfect Week', desc: '100% habits for 7 straight days', icon: '🏆', color: '#f59e0b', test: c => { const w = weekCompletion(c.entries, c.habits, new Date(c.today + 'T12:00')); return w.slots > 0 && w.perDay.every(p => p.pct === 100); } },
+  { id: 'focus-4', name: 'Deep Diver', desc: 'Finish 4 focus sessions in a day', icon: '⏱️', color: '#3b82f6', test: c => Object.values(c.focus).some(n => n >= 4) },
+  { id: 'night-owl', name: 'Night Owl', desc: 'Log a workout after 7 PM', icon: '🦉', color: '#6366f1', test: c => c.habits.some(h => h.type === 'minutes') && Object.values(c.entries).some(e => e.v > 0 && !!e.at && e.at.slice(11, 16) >= '19:00') },
+];
+
+export function unlockedAchievements(c: AchievementCtx) {
+  return ACHIEVEMENTS.filter(a => { try { return a.test(c); } catch { return false; } });
+}
+
 /** Water glass fill: clamps drunk glasses to 0..goal*2 and returns fill ratio 0..1 plus ml. */
 export const GLASS_ML = 250;
 export function waterProgress(glasses: number, goal: number) {

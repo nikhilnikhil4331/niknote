@@ -71,6 +71,7 @@ const HubPage = lazy(() => import("@/pages/Hub"));
 const MoneyTrackerPage = lazy(() => import("@/pages/MoneyTracker"));
 const BoardPageRoute = lazy(() => import("@/pages/Board"));
 const RoutineTrackerPage = lazy(() => import("@/pages/RoutineTracker"));
+const NikHabitPage = lazy(() => import("@/pages/RoutineApp"));
 
 // Simple page loader
 const PageLoader = () => <NiknoteLoader />;
@@ -198,6 +199,7 @@ const App = () => {
                     <Route path="/board" element={<Suspense fallback={<PageLoader />}><BoardPageRoute /></Suspense>} />
                     <Route path="/money" element={<MoneyTrackerPage />} />
                     <Route path="/routine" element={<RoutineTrackerPage />} />
+                    <Route path="/habit" element={<NikHabitPage />} />
                      <Route path="/privacy" element={<LegalPage policy="privacy" />} />
                      <Route path="/terms" element={<LegalPage policy="terms" />} />
                      <Route path="/refunds" element={<LegalPage policy="refunds" />} />
