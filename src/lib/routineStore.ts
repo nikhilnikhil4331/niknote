@@ -57,23 +57,18 @@ export function seedState(now = new Date()): RoutineState {
     { id: uid(), name: 'Water Intake', category: 'health', icon: '💧', color: '#0ea5e9', type: 'water', target: 8, days: [0, 1, 2, 3, 4, 5, 6], reminderOn: true, reminders: ['08:00', '12:00', '16:00'], createdAt: day(-20, now), archived: false },
     { id: uid(), name: 'Sleep', category: 'health', icon: '🌙', color: '#8b5cf6', type: 'sleep', target: 8, days: [0, 1, 2, 3, 4, 5, 6], reminderOn: false, reminders: ['22:30'], createdAt: day(-20, now), archived: false },
     { id: uid(), name: 'Exercise', category: 'health', icon: '🏃', color: '#22c55e', type: 'minutes', target: 30, days: [0, 1, 2, 3, 4, 5, 6], reminderOn: true, reminders: ['07:00'], createdAt: day(-20, now), archived: false },
-    { id: uid(), name: 'Read Book', category: 'study', icon: '📖', color: '#f59e0b', type: 'minutes', target: 30, days: [0, 1, 2, 3, 4, 5, 6], reminderOn: false, reminders: ['21:00'], createdAt: day(-15, now), archived: false },
-    { id: uid(), name: 'Meditate', category: 'mind', icon: '🧘', color: '#14b8a6', type: 'minutes', target: 10, days: [0, 1, 2, 3, 4, 5, 6], reminderOn: false, reminders: ['09:00'], createdAt: day(-15, now), archived: false },
   ];
-  const [w, s, x, r, m] = habits.map(h => h.id);
+  const [w, s, x] = habits.map(h => h.id);
   // Past six days: mostly completed, a few misses so charts have shape.
   for (const off of [-6, -5, -4, -3, -2, -1]) {
     put(w, off, 8, '08:15');
     put(s, off, off === -3 ? 7 : 8, '06:40');
     put(x, off, off === -4 ? 20 : 35, off === -2 ? '19:30' : '07:05');
-    put(r, off, off === -5 ? 0 : 30, '21:10');
-    put(m, off, 10, off === -5 ? '07:30' : '09:00');
   }
-  // Today: a realistic half-day — water 5/8, sleep logged, exercise + meditation done.
+  // Today: a realistic half-day — water 5/8 still pouring, sleep + exercise done → 2/3 (67%).
   put(w, 0, 5, '08:20');
-  put(s, 0, 7.5, '06:00');
+  put(s, 0, 8, '06:00');
   put(x, 0, 30, '07:10');
-  put(m, 0, 10, '07:45');
 
   const y = day(-1, now);
   const focus = { [day(-2, now)]: 4, [y]: 3 };
