@@ -11,6 +11,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { InstallBanner } from "@/components/InstallBanner";
 import { ShareButtons } from "@/components/promotion/ShareButtons";
 import { HandwritingDNAProvider } from "@/contexts/HandwritingDNAContext";
@@ -158,6 +159,7 @@ const App = () => {
                 <BrowserRouter>
                    <RouteAnalytics />
                   <Suspense fallback={<PageLoader />}>
+                    <RouteErrorBoundary>
                     <Routes>
                       <Route path="/" element={<WorkspaceEntry />} />
                     <Route path="/app" element={<LegacyEditorRedirect />} />
@@ -205,6 +207,7 @@ const App = () => {
                      <Route path="/refunds" element={<LegalPage policy="refunds" />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                    </RouteErrorBoundary>
                    <GlobalDock />
                    <CookieConsent />
                 </Suspense>

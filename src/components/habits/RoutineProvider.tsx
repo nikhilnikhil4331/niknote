@@ -46,10 +46,18 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 async function restoreFromSupabase(userId: string, now = new Date()): Promise<RoutineState | null> {
   try {
     const from = new Date(); from.setDate(from.getDate() - 60);
-    const [h, c] = await Promise.all([
-      supabase.from('habits').select('id,name,emoji,days,archived,created_at').order('created_at'),
-      supabase.from('habit_checks').select('habit_id,day').gte('day', toDay(from)),
+    // Timeout guard: on dead/flaky networks this fetch used to hang forever,
+    // which left first-time users staring at the sample seed with no restore.
+    const timeout = new Promise<null>(res => setTimeout(() => res(null), 12000));
+    const fetched = await Promise.race([
+      Promise.all([
+        supabase.from('habits').select('id,name,emoji,days,archived,created_at').order('created_at'),
+        supabase.from('habit_checks').select('habit_id,day').gte('day', toDay(from)),
+      ]),
+      timeout,
     ]);
+    if (!fetched) return null; // timed out — local state stays in charge
+    const [h, c] = fetched;
     if (h.error || !h.data?.length) return null;
     const typeOf = (name: string): Habit['type'] => /water|hydrat/i.test(name) ? 'water' : /sleep/i.test(name) ? 'sleep' : /exerc|gym|run|walk|yoga|workout/i.test(name) ? 'minutes' : 'times';
     const habits: Habit[] = h.data.map((r: any, i: number) => {
@@ -94,16 +102,20 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
+  // Bumped by every user action — the cloud restore must never clobber changes
+  // the user already made while the (slow) fetch was in flight.
+  const dirtyRef = useRef(0);
 
   // Load on account change. On a true first visit (no local data yet), offer to restore
   // legacy /routine cloud history in place of the sample seed.
   useEffect(() => {
     const hadSaved = hasSavedState(userId);
+    dirtyRef.current = 0;
     setState(loadState(userId));
     setRestored(false);
     if (user && !hadSaved) {
       restoreFromSupabase(userId).then(s => {
-        if (s && s.habits.length) { setState(s); toast.success('Restored your habits from the cloud ☁️'); }
+        if (s && s.habits.length && dirtyRef.current === 0) { setState(s); toast.success('Restored your habits from the cloud ☁️'); }
         setRestored(true);
       });
     } else {
@@ -137,7 +149,7 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
   const today = toDay(new Date());
   const activeHabits = useMemo(() => state.habits.filter(h => !h.archived), [state.habits]);
 
-  const mutate = useCallback((fn: (s: RoutineState) => RoutineState) => setState(fn), []);
+  const mutate = useCallback((fn: (s: RoutineState) => RoutineState) => { dirtyRef.current++; setState(fn); }, []);
 
   const setOnboarded = useCallback((v: boolean) => mutate(s => ({ ...s, onboarded: v })), [mutate]);
   const setTheme = useCallback((t: 'light' | 'dark') => { haptic('selection'); mutate(s => ({ ...s, theme: t })); }, [mutate]);

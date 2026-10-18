@@ -129,11 +129,9 @@ export class ErrorBoundary extends Component<Props, State> {
             await reg.unregister();
           }
         }
-        // 3. Clear localStorage for NikNote (optional, but helps reset state)
-        // Don't clear all localStorage - just NikNote-specific keys
-        const niknoteKeys = Object.keys(localStorage).filter(k => k.startsWith('niknote'));
-        niknoteKeys.forEach(k => localStorage.removeItem(k));
-        
+        // 3. Keep user data (habits, settings, notes cache) in localStorage —
+        // wiping it on error screens used to silently delete saved data.
+        // Cache + SW purge above is enough to fix stale-JS crashes.
         console.log('[ErrorBoundary] Caches cleared, SW unregistered. Reloading...');
       } catch (e) {
         console.warn('[ErrorBoundary] Cache clear failed:', e);

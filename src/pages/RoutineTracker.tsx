@@ -38,12 +38,16 @@ export default function RoutineTracker() {
   const [habitForm, setHabitForm] = useState({ name: '', emoji: '✅', block: 'morning', days: [0,1,2,3,4,5,6] as number[] });
   const [showArchived, setShowArchived] = useState(false);
   const [todoForm, setTodoForm] = useState({ title: '', priority: 'medium' });
+  const [loadError, setLoadError] = useState(false);
+  const [reload, setReload] = useState(0);
 
   const w: Wellness = week[today] ?? { water: 0, sleep_hours: 0, exercise_minutes: 0, mood: '', pomodoros: 0 };
 
   useEffect(() => {
     if (!user) return;
     const from = new Date(); from.setDate(from.getDate() - 60);
+    // Flaky-network guard: hung fetch → visible retry banner instead of a frozen empty page.
+    const loadTimer = window.setTimeout(() => setLoadError(true), 12000);
     (async () => {
       const [h, c, t, d, s] = await Promise.all([
         db.from('habits').select('*').order('created_at'),
@@ -52,11 +56,14 @@ export default function RoutineTracker() {
         db.from('daily_wellness').select('*').gte('day', toDay(new Date(Date.now() - 6 * 864e5))),
         db.from('tracker_settings').select('water_goal').maybeSingle(),
       ]);
+      window.clearTimeout(loadTimer);
+      setLoadError(!!h.error);
       setHabits(h.data ?? []); setChecks(c.data ?? []); setTodos(t.data ?? []);
       setWeek(Object.fromEntries((d.data ?? []).map((r: any) => [r.day, { ...r, sleep_hours: Number(r.sleep_hours) }])));
       if (s.data) setWaterGoal(s.data.water_goal);
     })();
-  }, [user]);
+    return () => window.clearTimeout(loadTimer);
+  }, [user, reload]);
 
   const saveWellness = async (patch: Partial<Wellness>) => {
     const next = { ...w, ...patch };
@@ -149,6 +156,7 @@ export default function RoutineTracker() {
 
   return (
     <TrackerShell title="Daily Routine" subtitle="Habits, tasks, focus & wellbeing">
+      {loadError && <div role="alert" className="rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm flex items-center gap-3">Data load nahi ho paaya — internet check karke retry karo.<button className="ml-auto underline font-medium" onClick={() => { setLoadError(false); setReload(n => n + 1); }}>Retry</button></div>}
       {/* Today hero */}
       <section className="rounded-3xl border border-border bg-card p-4 flex items-center gap-4 shadow-sm overflow-hidden">
         <div className="flex-1 min-w-0">

@@ -80,18 +80,40 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
     if (busy) return;
     triggerHaptic('light'); setError(''); submitting.current = true; setBusy(true); setEntering(true);
     const r = await signInAsGuest();
-    const label = guestName.trim().replace(/\s+/g, ' ').slice(0, 40);
-    if (!r.error && label) {
-      // Name is only a display label on this guest's own profile — never an identity key.
-      const { data } = await supabase.auth.getUser();
-      if (data.user) {
-        await supabase.auth.updateUser({ data: { full_name: label } });
-        await supabase.from('profiles').update({ display_name: label }).eq('user_id', data.user.id);
-      }
-    }
     submitting.current = false; setBusy(false);
-    if (r.error) { setEntering(false); setError('Guest mode is unavailable right now. Please check your internet and try again.'); triggerHaptic('error'); }
-    else triggerHaptic('success');
+    if (r.error) {
+      setEntering(false);
+      setError('Guest mode is unavailable right now. Please check your internet and try again.');
+      triggerHaptic('error');
+      return;
+    }
+    // Session is live — the redirect effect navigates immediately. Clear the loader now
+    // and set the display name in the background: a flaky network here must never
+    // freeze the app behind "Opening guest mode".
+    triggerHaptic('success');
+    setEntering(false);
+    const label = guestName.trim().replace(/\s+/g, ' ').slice(0, 40);
+    if (label) {
+      void (async () => {
+        try {
+          const res = await Promise.race([
+            supabase.auth.getUser(),
+            new Promise<{ data: { user: null } }>(resolve => setTimeout(() => resolve({ data: { user: null } }), 5000)),
+          ]) as { data: { user?: { id: string } | null } | null };
+          const uid = res?.data?.user?.id;
+          if (!uid) return;
+          await Promise.race([
+            (async () => {
+              await supabase.auth.updateUser({ data: { full_name: label } });
+              await supabase.from('profiles').update({ display_name: label }).eq('user_id', uid);
+            })(),
+            new Promise(res => setTimeout(res, 6000)),
+          ]);
+        } catch {
+          // Name is a display nicety — never block or report here.
+        }
+      })();
+    }
   }
 
   const otherPath = `${signup ? '/login' : '/signup'}${location.search}`;

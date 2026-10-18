@@ -38,6 +38,9 @@ export default function MoneyTracker() {
 
   useEffect(() => {
     if (!user) return;
+    // Flaky-network guard: if the fetch hangs, surface the retry banner
+    // instead of leaving the page frozen in an empty state.
+    const loadTimer = window.setTimeout(() => setLoadError(true), 12000);
     (async () => {
       const [t, g, s, b] = await Promise.all([
         db.from('money_transactions').select('*').order('occurred_on', { ascending: false }).limit(1000),
@@ -45,6 +48,7 @@ export default function MoneyTracker() {
         db.from('tracker_settings').select('*').maybeSingle(),
         db.from('bill_reminders').select('*').order('due_day'),
       ]);
+      window.clearTimeout(loadTimer);
       setLoadError(!!t.error);
       setTxs((t.data ?? []).map((x: any) => ({ ...x, amount: Number(x.amount) })));
       setGoals((g.data ?? []).map((x: any) => ({ ...x, target: Number(x.target), saved: Number(x.saved) })));
