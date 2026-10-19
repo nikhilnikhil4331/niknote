@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { haptic } from '@/hooks/useHaptics';
 import { RoutineProvider, useRoutine } from '@/components/habits/RoutineProvider';
@@ -30,6 +31,7 @@ type View =
 const TAB_VIEWS: TabId[] = ['home', 'habits', 'insights', 'profile'];
 
 function Shell() {
+  const navigate = useNavigate();
   const { state, setOnboarded } = useRoutine();
   const reduced = useReducedMotion();
   const [splash, setSplash] = useState(true);
@@ -118,6 +120,7 @@ function Shell() {
               active={pushed ? '' : tab}
               onTab={t => go({ name: 'tab', id: t })}
               onAdd={() => go({ name: 'add' })}
+              onNiknote={() => navigate('/')}
             />
           </motion.div>
         )}

@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useRef, useState, useId } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, Bell, Home, LayoutGrid, Plus, Sparkles, User } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Bell, Home, LayoutGrid, Plus, Sparkles, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { spring } from '@/lib/motion';
 
@@ -101,7 +101,7 @@ export function TopBar({ title, icon, onBack, right, sub }: { title: string; ico
 
 /* ── Bottom navigation ── */
 export type TabId = 'home' | 'habits' | 'insights' | 'profile';
-export function BottomNav({ active, onTab, onAdd }: { active: TabId | ''; onTab: (t: TabId) => void; onAdd: () => void }) {
+export function BottomNav({ active, onTab, onAdd, onNiknote }: { active: TabId | ''; onTab: (t: TabId) => void; onAdd: () => void; onNiknote: () => void }) {
   const item = (id: TabId, label: string, icon: ReactNode) => {
     const on = active === id;
     return (
@@ -124,6 +124,10 @@ export function BottomNav({ active, onTab, onAdd }: { active: TabId | ''; onTab:
       </div>
       {item('insights', 'Insights', <LayoutGrid size={20} strokeWidth={2.2} />)}
       {item('profile', 'Profile', <User size={20} strokeWidth={2.2} />)}
+      <button type="button" onClick={onNiknote} aria-label="Back to Niknote" className="relative flex-1 h-12 grid place-items-center text-[var(--nnh-sub)]">
+        <ArrowUpRight size={19} strokeWidth={2.2} />
+        <span className="absolute bottom-1 text-[9px] font-semibold">Niknote</span>
+      </button>
     </nav>
   );
 }

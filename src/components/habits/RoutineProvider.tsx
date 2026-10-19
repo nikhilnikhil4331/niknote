@@ -30,7 +30,7 @@ type Routine = {
   setFocusMode: (m: FocusModeId) => void;
   setCustom: (focus: number, brk: number) => void;
   exportData: () => void;
-  syncNow: () => Promise<void>;
+  syncNow: (silent?: boolean) => Promise<void>;
 };
 
 const Ctx = createContext<Routine | null>(null);
@@ -266,7 +266,7 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ── Cloud backup (mirrors to the same Supabase tables as /routine) ──
-  const syncNow = useCallback(async () => {
+  const syncNow = useCallback(async (silent = false) => {
     setSyncBusy(true);
     setSyncMsg(null);
     try {
@@ -295,22 +295,23 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
       if (wellnessRes.error) throw new Error(wellnessRes.error.message);
       const settingsRes = await supabase.from('tracker_settings').upsert({ user_id: uid, water_goal: s.habits.find(h => h.type === 'water' && !h.archived)?.target ?? 8 } as any, { onConflict: 'user_id' } as any);
       if (settingsRes.error) throw new Error(settingsRes.error.message);
-      let delRes: any = { error: null };
-      if (s.habits.length) {
-        const ids = s.habits.map(h => h.id);
-        delRes = await supabase.from('habits').delete().eq('user_id', uid).not('id', 'in', `(${ids.join(',')})` as any);
-      }
-      if (delRes?.error) throw new Error(delRes.error.message);
-      haptic('success');
       setSyncMsg('synced');
-      toast.success('Backed up to the cloud ☁️');
+      if (!silent) { haptic('success'); toast.success('Synced with your Niknote account ☁️'); }
     } catch (e) {
       setSyncMsg('failed');
-      toast.error(`Sync failed — ${e instanceof Error ? e.message : 'offline'}`);
+      if (!silent) toast.error(`Sync failed — ${e instanceof Error ? e.message : 'offline'}`);
     } finally {
       setSyncBusy(false);
     }
   }, [user]);
+
+  // Keep the routine in the same Niknote account automatically after user actions.
+  // A short debounce batches rapid taps; untouched sample/local state is never pushed.
+  useEffect(() => {
+    if (!user || dirtyRef.current === 0) return;
+    const timer = window.setTimeout(() => { void syncNow(true); }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [state, user, syncNow]);
 
   const value: Routine = {
     state, today, activeHabits, syncBusy, syncMsg,
