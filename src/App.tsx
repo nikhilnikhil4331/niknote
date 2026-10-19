@@ -71,7 +71,6 @@ const FlashcardsPage = lazy(() => import("@/pages/Flashcards"));
 const HubPage = lazy(() => import("@/pages/Hub"));
 const MoneyTrackerPage = lazy(() => import("@/pages/MoneyTracker"));
 const BoardPageRoute = lazy(() => import("@/pages/Board"));
-const RoutineTrackerPage = lazy(() => import("@/pages/RoutineTracker"));
 const NikHabitPage = lazy(() => import("@/pages/RoutineApp"));
 
 // Simple page loader
@@ -200,7 +199,8 @@ const App = () => {
                     <Route path="/hub" element={<ResponsivePage><HubPage /></ResponsivePage>} />
                     <Route path="/board" element={<Suspense fallback={<PageLoader />}><BoardPageRoute /></Suspense>} />
                     <Route path="/money" element={<MoneyTrackerPage />} />
-                    <Route path="/routine" element={<RoutineTrackerPage />} />
+                    {/* Keep the historic /routine URL, but route it to the current tracker UI. */}
+                    <Route path="/routine" element={<NikHabitPage />} />
                     <Route path="/habit" element={<NikHabitPage />} />
                      <Route path="/privacy" element={<LegalPage policy="privacy" />} />
                      <Route path="/terms" element={<LegalPage policy="terms" />} />
