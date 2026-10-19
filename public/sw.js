@@ -5,9 +5,9 @@
 // Only static assets (JS, CSS, images) use cache-first
 // ============================================================
 
-const CACHE_NAME = 'niknote-v5.0.3';
-const STATIC_CACHE = 'niknote-static-v5.0.3';
-const DYNAMIC_CACHE = 'niknote-dynamic-v5.0.3';
+const CACHE_NAME = 'niknote-v5.0.4';
+const STATIC_CACHE = 'niknote-static-v5.0.4';
+const DYNAMIC_CACHE = 'niknote-dynamic-v5.0.4';
 
 // Static assets to cache on install — ONLY truly static files, NOT HTML
 const STATIC_ASSETS = [
@@ -19,7 +19,7 @@ const STATIC_ASSETS = [
 
 // Install event — cache static assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing NikNote 5.0.3 — HTML always fresh');
+  console.log('[SW] Installing NikNote 5.0.4 — HTML always fresh');
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       console.log('[SW] Caching static assets only (no HTML)');
@@ -32,7 +32,7 @@ self.addEventListener('install', (event) => {
 
 // Activate event — clean old caches (v4.0 and earlier)
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating NikNote 5.0.3 — Clearing ALL old caches');
+  console.log('[SW] Activating NikNote 5.0.4 — Clearing ALL old caches');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(

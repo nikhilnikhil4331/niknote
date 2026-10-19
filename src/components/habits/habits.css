@@ -1,59 +1,257 @@
-/* Niknote Habit experience — scoped pastel theme + motion keyframes */
+/* ─────────────────────────────────────────────────────────────
+   Niknote Habit — visual system
+   One scoped design system for the /habit experience. Screens use
+   these tokens instead of hard-coded colours so light/dark stay in
+   sync and the brand reads consistently across every surface.
+   ───────────────────────────────────────────────────────────── */
 .nn-habits {
-  --nnh-bg1: #fde7f3;
-  --nnh-bg2: #ece2fd;
-  --nnh-bg3: #dbe8ff;
-  --nnh-card: #ffffff;
-  --nnh-card-soft: #f6f3fc;
-  --nnh-ink: #372d52;
-  --nnh-sub: #9a8fb0;
-  --nnh-line: #ece7f6;
-  --nnh-purple: #8b5cf6;
+  /* brand */
+  --nnh-violet: #6d28d9;
+  --nnh-violet-deep: #4c1d95;
+  --nnh-electric: #9333ea;
   --nnh-pink: #ec4899;
-  --nnh-orange: #f97316;
-  --nnh-green: #22c55e;
+  --nnh-coral: #ff7a8a;
+  --nnh-lavender: #ede9fe;
+  --nnh-pale-pink: #fff0f6;
+  --nnh-sky: #60a5fa;
+  --nnh-mint: #34d399;
+
+  /* legacy aliases kept so existing screens keep resolving */
+  --nnh-purple: #7c3aed;
   --nnh-blue: #0ea5e9;
+  --nnh-green: #22c55e;
+  --nnh-orange: #f97316;
   --nnh-indigo: #6366f1;
   --nnh-amber: #f59e0b;
-  --nnh-shadow: 0 10px 30px -12px rgba(97, 72, 158, 0.22);
-  --nnh-nav: rgba(255, 255, 255, 0.88);
+
+  /* surfaces */
+  --nnh-bg1: #ffe9f3;
+  --nnh-bg2: #efe6fd;
+  --nnh-bg3: #e3ebff;
+  --nnh-bg-warm: #fffcff;
+  --nnh-card: #fffcff;
+  --nnh-card-soft: #f6f2fc;
+  --nnh-card-raised: #ffffff;
+  --nnh-ink: #17152b;
+  --nnh-sub: #77738c;
+  --nnh-line: #ece6f5;
+  --nnh-line-strong: #ded4ef;
+  --nnh-nav: rgba(255, 252, 255, 0.82);
+  --nnh-nav-border: rgba(255, 255, 255, 0.9);
+  --nnh-scrim: rgba(23, 21, 43, 0.34);
+
+  /* elevation */
+  --nnh-shadow-xs: 0 1px 2px rgba(23, 21, 43, 0.04);
+  --nnh-shadow-sm: 0 4px 14px -8px rgba(76, 29, 149, 0.24);
+  --nnh-shadow: 0 14px 34px -18px rgba(76, 29, 149, 0.28), 0 2px 6px -3px rgba(23, 21, 43, 0.06);
+  --nnh-shadow-lg: 0 26px 60px -28px rgba(76, 29, 149, 0.38), 0 4px 14px -8px rgba(23, 21, 43, 0.08);
+  --nnh-fab-shadow: 0 16px 30px -10px rgba(147, 51, 234, 0.55), 0 6px 12px -6px rgba(236, 72, 153, 0.4);
+  --nnh-ring: 0 0 0 2px var(--nnh-card), 0 0 0 4px rgba(124, 58, 237, 0.55);
+
+  /* radius + rhythm */
+  --nnh-r-xs: 10px;
+  --nnh-r-sm: 14px;
+  --nnh-r-md: 18px;
+  --nnh-r-lg: 24px;
+  --nnh-r-xl: 30px;
+  --nnh-r-pill: 999px;
+  --nnh-gap: 16px;
+  --nnh-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --nnh-nav-space: calc(112px + var(--nnh-safe-bottom));
+
   color: var(--nnh-ink);
   background:
-    radial-gradient(120% 60% at 0% 0%, var(--nnh-bg1) 0%, transparent 60%),
-    radial-gradient(120% 70% at 100% 10%, var(--nnh-bg2) 0%, transparent 55%),
-    linear-gradient(160deg, var(--nnh-bg3) 0%, var(--nnh-bg2) 45%, var(--nnh-bg1) 100%);
+    radial-gradient(120% 55% at 0% 0%, var(--nnh-bg1) 0%, transparent 62%),
+    radial-gradient(120% 65% at 100% 8%, var(--nnh-bg2) 0%, transparent 58%),
+    linear-gradient(165deg, var(--nnh-bg3) 0%, var(--nnh-bg2) 42%, var(--nnh-bg1) 100%);
+  transition: background-color 0.3s ease;
 }
+
 .nn-habits.nnh-dark {
-  --nnh-bg1: #241b3d;
-  --nnh-bg2: #1d1836;
-  --nnh-bg3: #171331;
-  --nnh-card: #251e40;
-  --nnh-card-soft: #2c2450;
-  --nnh-ink: #efeafe;
+  --nnh-violet: #a78bfa;
+  --nnh-violet-deep: #c4b5fd;
+  --nnh-electric: #c084fc;
+  --nnh-pink: #f472b6;
+  --nnh-coral: #fb7185;
+  --nnh-lavender: #2f2554;
+  --nnh-pale-pink: #34203a;
+  --nnh-sky: #7dd3fc;
+  --nnh-mint: #6ee7b7;
+
+  --nnh-purple: #a78bfa;
+  --nnh-blue: #38bdf8;
+  --nnh-green: #4ade80;
+  --nnh-orange: #fb923c;
+  --nnh-indigo: #818cf8;
+
+  --nnh-bg1: #2a1e46;
+  --nnh-bg2: #1f1a38;
+  --nnh-bg3: #151129;
+  --nnh-bg-warm: #1a1530;
+  --nnh-card: #241d3d;
+  --nnh-card-soft: #2b2350;
+  --nnh-card-raised: #2c2448;
+  --nnh-ink: #f1ecff;
   --nnh-sub: #a79cc9;
-  --nnh-line: #372e5e;
-  --nnh-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.55);
-  --nnh-nav: rgba(30, 24, 55, 0.88);
+  --nnh-line: #382e5c;
+  --nnh-line-strong: #4a3d76;
+  --nnh-nav: rgba(30, 24, 55, 0.86);
+  --nnh-nav-border: rgba(167, 139, 250, 0.16);
+  --nnh-scrim: rgba(6, 4, 16, 0.6);
+
+  --nnh-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --nnh-shadow-sm: 0 6px 18px -10px rgba(0, 0, 0, 0.6);
+  --nnh-shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.7), 0 2px 6px -3px rgba(0, 0, 0, 0.4);
+  --nnh-shadow-lg: 0 30px 70px -30px rgba(0, 0, 0, 0.8);
+  --nnh-fab-shadow: 0 16px 34px -12px rgba(124, 58, 237, 0.75);
+  --nnh-ring: 0 0 0 2px var(--nnh-card), 0 0 0 4px rgba(196, 181, 253, 0.6);
   background:
-    radial-gradient(120% 60% at 0% 0%, #33235c 0%, transparent 60%),
-    radial-gradient(120% 70% at 100% 10%, #2b1f52 0%, transparent 55%),
-    linear-gradient(160deg, var(--nnh-bg3) 0%, var(--nnh-bg2) 55%, var(--nnh-bg1) 100%);
+    radial-gradient(120% 55% at 0% 0%, #33245c 0%, transparent 62%),
+    radial-gradient(120% 65% at 100% 8%, #2a1f52 0%, transparent 58%),
+    linear-gradient(165deg, var(--nnh-bg3) 0%, var(--nnh-bg2) 52%, var(--nnh-bg1) 100%);
 }
 
 .nn-habits * { -webkit-tap-highlight-color: transparent; }
+.nn-habits :focus-visible {
+  outline: 2px solid var(--nnh-electric);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
 
+/* ── surfaces ── */
 .nnh-card {
   background: var(--nnh-card);
-  border-radius: 1.5rem;
+  border: 1px solid color-mix(in srgb, var(--nnh-line) 72%, transparent);
+  border-radius: var(--nnh-r-lg);
   box-shadow: var(--nnh-shadow);
+  transition: background-color 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease;
+}
+.nnh-card-flat {
+  background: var(--nnh-card-soft);
+  border-radius: var(--nnh-r-md);
+  border: 1px solid color-mix(in srgb, var(--nnh-line) 60%, transparent);
+}
+.nnh-card-tint {
+  background: var(--nnh-card);
+  border-radius: var(--nnh-r-lg);
+  box-shadow: var(--nnh-shadow-sm);
+  border: 1px solid color-mix(in srgb, var(--nnh-line) 70%, transparent);
 }
 .nnh-chip {
   background: var(--nnh-card);
   border: 1.5px solid var(--nnh-line);
+  border-radius: var(--nnh-r-pill);
+}
+.nnh-hairline { border-top: 1px solid var(--nnh-line); }
+.nnh-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nnh-sub);
+}
+.nnh-display {
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+.nnh-sub { color: var(--nnh-sub); }
+.nnh-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; overscroll-behavior-y: contain; }
+.nnh-scroll::-webkit-scrollbar { width: 0; height: 0; }
+.nnh-no-scrollbar { scrollbar-width: none; }
+.nnh-no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* bottom padding every tab screen needs for the floating nav */
+.nnh-screen { padding-bottom: var(--nnh-nav-space); }
+
+/* ── gradients ── */
+.nnh-gradient-text {
+  background: linear-gradient(96deg, var(--nnh-pink) 0%, var(--nnh-violet) 55%, var(--nnh-electric) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.nnh-gradient-btn {
+  background: linear-gradient(96deg, var(--nnh-electric) 0%, var(--nnh-pink) 100%);
+  box-shadow: var(--nnh-fab-shadow);
+  color: #fff;
+}
+.nnh-gradient-btn:active { transform: scale(0.97); }
+.nnh-soft-violet {
+  background: color-mix(in srgb, var(--nnh-violet) 12%, var(--nnh-card));
+  color: var(--nnh-violet);
+}
+
+/* ── floating navigation ── */
+.nnh-nav {
+  background: var(--nnh-nav);
+  border: 1px solid var(--nnh-nav-border);
+  border-radius: var(--nnh-r-pill);
+  box-shadow: 0 18px 44px -20px rgba(76, 29, 149, 0.5), 0 2px 8px -3px rgba(23, 21, 43, 0.1);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+}
+.nnh-fab {
+  background: linear-gradient(140deg, var(--nnh-electric) 0%, var(--nnh-pink) 100%);
+  box-shadow: var(--nnh-fab-shadow);
+  color: #fff;
+}
+.nnh-nav {
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform;
+}
+.nnh-nav-item { min-width: 44px; min-height: 48px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.nnh-nav-item:active { transform: scale(0.94); }
+
+/* quick actions ---------------------------------------------------------- */
+.nnh-quick-item {
+  background: var(--nnh-card);
+  border: 1px solid var(--nnh-line);
+  box-shadow: var(--nnh-shadow-sm);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.nnh-quick-item:hover { background: var(--nnh-card-soft); }
+.nnh-quick-item:focus-visible {
+  outline: 2px solid var(--nnh-violet);
+  outline-offset: 2px;
+}
+.nnh-quick-label {
+  background: var(--nnh-card);
+  color: var(--nnh-ink);
+  border: 1px solid var(--nnh-line);
+  box-shadow: var(--nnh-shadow-sm);
+}
+
+/* FAB: crisp, stable press feedback; the fan anchors to this exact centre */
+.nnh-fab {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;
+  transform-origin: center;
+}
+.nnh-fab[data-open] {
+  box-shadow: 0 18px 34px -8px rgba(147, 51, 234, 0.6), 0 8px 16px -8px rgba(236, 72, 153, 0.5),
+    0 0 0 6px rgba(147, 51, 234, 0.08);
+}
+
+/* capsule responds softly while the fan is open */
+.nnh-nav[data-menu-open] {
+  box-shadow: 0 22px 50px -18px rgba(76, 29, 149, 0.55), 0 0 0 4px rgba(147, 51, 234, 0.07);
+  border-color: rgba(147, 51, 234, 0.18);
+}
+
+@media (max-width: 359px) {
+  .nnh-quick-label { width: 54px; font-size: 9px; }
+  .nnh-nav { height: 64px; }
+}
+
+/* ── progress ── */
+.nnh-track { background: var(--nnh-line); overflow: hidden; }
+.nnh-bar-fill {
+  background: linear-gradient(90deg, var(--nnh-electric), var(--nnh-pink));
   border-radius: 999px;
 }
-.nnh-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
-.nnh-scroll::-webkit-scrollbar { width: 0; height: 0; }
 
 /* ── keyframes ── */
 @keyframes nnh-wave { from { transform: translateX(0); } to { transform: translateX(-40px); } }
@@ -74,6 +272,11 @@
 @keyframes nnh-shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
 @keyframes nnh-birds { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(26px, -8px); } }
 @keyframes nnh-twinkle { 0%, 100% { opacity: 0.25; transform: scale(0.8) rotate(0deg); } 50% { opacity: 1; transform: scale(1.15) rotate(20deg); } }
+@keyframes nnh-aurora {
+  0% { transform: translate3d(-4%, -2%, 0) scale(1); opacity: 0.7; }
+  50% { transform: translate3d(4%, 3%, 0) scale(1.08); opacity: 1; }
+  100% { transform: translate3d(-4%, -2%, 0) scale(1); opacity: 0.7; }
+}
 
 .nnh-anim-wave { animation: nnh-wave 1.6s linear infinite; }
 .nnh-anim-wave-back { animation: nnh-wave-slow 2.6s linear infinite reverse; }
@@ -84,28 +287,19 @@
 .nnh-anim-birds { animation: nnh-birds 9s ease-in-out infinite; }
 .nnh-anim-twinkle { animation: nnh-twinkle 2.4s ease-in-out infinite; }
 .nnh-anim-pulse { animation: nnh-pulse-soft 1.6s ease-in-out infinite; }
+.nnh-anim-aurora { animation: nnh-aurora 22s ease-in-out infinite; will-change: transform; }
 
 .nnh-bubble { animation: nnh-bubble 3.4s ease-in infinite; }
 
 .nnh-shimmer {
-  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.65) 50%, transparent 70%);
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
   background-size: 200% 100%;
   animation: nnh-shimmer 2.8s linear infinite;
 }
 
-.nnh-gradient-text {
-  background: linear-gradient(92deg, var(--nnh-pink) 0%, var(--nnh-purple) 55%, var(--nnh-indigo) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.nnh-gradient-btn {
-  background: linear-gradient(92deg, var(--nnh-purple) 0%, var(--nnh-pink) 100%);
-  box-shadow: 0 12px 24px -10px rgba(168, 85, 247, 0.55);
-}
-.nnh-gradient-btn:active { transform: scale(0.97); }
-
+/* honour reduced motion for every CSS-driven decorative animation */
 @media (prefers-reduced-motion: reduce) {
+  .nn-habits .nnh-card { transition: none; }
   .nn-habits .nnh-anim-wave,
   .nn-habits .nnh-anim-wave-back,
   .nn-habits .nnh-anim-float,
@@ -115,6 +309,8 @@
   .nn-habits .nnh-anim-birds,
   .nn-habits .nnh-anim-twinkle,
   .nn-habits .nnh-anim-pulse,
+  .nn-habits .nnh-anim-aurora,
   .nn-habits .nnh-bubble,
-  .nn-habits .nnh-shimmer { animation: none; }
+  .nn-habits .nnh-shimmer { animation: none !important; }
+  .nn-habits * { scroll-behavior: auto !important; }
 }

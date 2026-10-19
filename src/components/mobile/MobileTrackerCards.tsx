@@ -4,7 +4,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, CalendarCheck, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { formatMoney, monthSummary, toDay } from '@/lib/trackers';
+import { formatMoney, isScheduled, monthSummary, toDay } from '@/lib/trackers';
+import { readState } from '@/lib/routineStore';
 import { useHaptics } from '@/hooks/useHaptics';
 
 function useTrackerSummary(userId?: string) {
@@ -15,22 +16,31 @@ function useTrackerSummary(userId?: string) {
     queryFn: async () => {
       const now = new Date();
       const monthStart = toDay(new Date(now.getFullYear(), now.getMonth(), 1));
-      const today = toDay(now);
-      const [tx, settings, habits, checks] = await Promise.all([
+      const [tx, settings] = await Promise.all([
         supabase.from('money_transactions').select('kind,amount,occurred_on').gte('occurred_on', monthStart).limit(2000),
         supabase.from('tracker_settings').select('currency').maybeSingle(),
-        supabase.from('habits').select('id'),
-        supabase.from('habit_checks').select('habit_id').eq('day', today),
       ]);
-      if (tx.error || habits.error || checks.error) throw new Error('load');
+      if (tx.error) throw new Error('load');
       return {
         money: monthSummary(tx.data ?? [], now),
         currency: settings.data?.currency ?? 'INR',
-        habitsTotal: habits.data?.length ?? 0,
-        habitsDone: new Set((checks.data ?? []).map((c: any) => c.habit_id)).size,
       };
     },
   });
+}
+
+/**
+ * The Daily Tracker card opens the Niknote Habit app (`/habit`), which is
+ * local-first. Read that same store so the card's numbers always match the
+ * screen it opens — never a different (server) dataset.
+ */
+export function localHabitSummary(userId: string, now = new Date()) {
+  const state = readState(userId);
+  if (!state) return { habitsTotal: 0, habitsDone: 0 };
+  const day = toDay(now);
+  const scheduled = state.habits.filter(h => !h.archived && isScheduled(h.days, now));
+  const done = scheduled.filter(h => (state.entries[`${h.id}|${day}`]?.v ?? 0) >= h.target).length;
+  return { habitsTotal: scheduled.length, habitsDone: done };
 }
 
 export function MobileTrackerCards() {
@@ -40,7 +50,8 @@ export function MobileTrackerCards() {
   const { triggerHaptic } = useHaptics();
   const q = useTrackerSummary(user?.id);
   const d = q.data;
-  const pct = d && d.habitsTotal ? Math.round((d.habitsDone / d.habitsTotal) * 100) : 0;
+  const habits = localHabitSummary(user?.id || 'anon');
+  const pct = habits.habitsTotal ? Math.round((habits.habitsDone / habits.habitsTotal) * 100) : 0;
 
   const value = (ready: string, empty: string) =>
     !user ? 'Sign in to start' : q.isLoading ? null : q.isError ? 'Tap to open' : d ? ready || empty : empty;
@@ -52,9 +63,10 @@ export function MobileTrackerCards() {
       sub: d && (d.money.spent || d.money.income) ? (d.money.income ? `spent this month · ${formatMoney(d.money.balance, d.currency)} left` : 'spent this month') : 'Track income & expenses',
     },
     {
-      to: '/routine', label: 'Daily Tracker', icon: CalendarCheck, tone: 'daily',
-      main: value(d && d.habitsTotal ? `${d.habitsDone}/${d.habitsTotal} done` : '', 'Add a habit'),
-      sub: d && d.habitsTotal ? `${pct}% of today's habits` : 'Habits, tasks & wellness',
+      to: '/habit', label: 'Daily Tracker', icon: CalendarCheck, tone: 'daily',
+      // habit stats are local, so they never depend on the money query's state
+      main: !user ? 'Sign in to start' : habits.habitsTotal ? `${habits.habitsDone}/${habits.habitsTotal} done` : 'Add a habit',
+      sub: habits.habitsTotal ? `${pct}% of today's habits` : 'Habits, tasks & wellness',
     },
   ];
 
@@ -68,7 +80,7 @@ export function MobileTrackerCards() {
           <strong className="nn-tracker-label">{label}</strong>
           {main === null ? <span className="nn-tracker-skel" aria-label="Loading" /> : <span className="nn-tracker-value">{main}</span>}
           <small className="nn-tracker-sub">{sub}</small>
-          {tone === 'daily' && d && d.habitsTotal > 0 && <span className="nn-tracker-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>}
+          {tone === 'daily' && habits.habitsTotal > 0 && <span className="nn-tracker-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>}
         </motion.button>
       ))}
     </section>
