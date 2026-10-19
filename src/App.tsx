@@ -210,9 +210,14 @@ const App = () => {
                     </RouteErrorBoundary>
                    <GlobalDock />
                    <CookieConsent />
+                   {/* InstallBanner calls useLocation(), so it MUST stay inside
+                       the router. Mounting it outside threw "useLocation() may
+                       be used only in the context of a <Router> component" on
+                       every route and sent the whole app to the global error
+                       screen. See src/lib/appShell.test.tsx. */}
+                   <InstallBanner />
                 </Suspense>
               </BrowserRouter>
-              <InstallBanner />
               <DesktopFloatingShare />
             </TooltipProvider>
           </HandwritingDNAProvider>
