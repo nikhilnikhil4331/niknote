@@ -22,14 +22,14 @@ export default function RoutineAppPage() {
       {showBanner && (
         <div role="status" className="sticky top-0 z-50 px-4 py-2 bg-amber-50 text-amber-950 text-xs border-b border-amber-200">
           <div className="flex items-center justify-between gap-2">
-            <span className="min-w-0">Niknote account connected nahi hai. Habits abhi is device par save hain.</span>
+            <span className="min-w-0">Cloud connection unavailable — Niknote account connect nahi hai. Habits abhi is device par safe hain.</span>
             <div className="flex shrink-0 items-center gap-2">
-              <button type="button" disabled={retrying} className="min-h-[40px] px-2 font-semibold underline disabled:opacity-60" onClick={async () => {
+              <button type="button" disabled={retrying} className="min-h-[44px] px-2 font-semibold underline disabled:opacity-60" onClick={async () => {
                 setRetrying(true);
                 try { const result = await signInAsGuest(); setConnectionError(result.error?.message ?? ''); }
                 catch (err) { setConnectionError(err instanceof Error ? err.message : 'Connection failed'); }
                 finally { setRetrying(false); }
-              }}>{retrying ? 'Connecting…' : 'Retry'}</button>
+              }}>{retrying ? 'Connecting…' : 'Retry sync'}</button>
               <button type="button" className="min-h-[40px] rounded-full bg-violet-700 px-3 font-semibold text-white" onClick={() => {
                 try { sessionStorage.setItem('niknote_post_auth_redirect', pathname); } catch { /* noop */ }
                 void signInWithGoogle().then(result => setConnectionError(result.error?.message ?? ''));

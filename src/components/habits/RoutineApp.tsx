@@ -106,7 +106,7 @@ function Shell() {
       {/* screen stack */}
       <div className="relative flex-1 overflow-hidden">
         <AnimatePresence mode="sync" custom={dir} initial={false}>
-          <motion.div key={viewKey} {...anim} className="absolute inset-0 overflow-y-auto nnh-scroll">
+          <motion.div key={viewKey} {...anim} className="absolute inset-0 overflow-y-auto nnh-scroll pb-32">
             {screen}
           </motion.div>
         </AnimatePresence>
@@ -115,7 +115,7 @@ function Shell() {
       {/* bottom nav */}
       <AnimatePresence>
         {!splash && (
-          <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }} transition={{ type: 'spring', stiffness: 260, damping: 26 }}>
+          <motion.div initial={{ y: 80, opacity: 0, scale: 0.96 }} animate={{ y: 0, opacity: 1, scale: 1 }} exit={{ y: 80, opacity: 0, scale: 0.96 }} transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 340, damping: 28 }} className="absolute inset-x-0 z-50 px-3" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}>
             <BottomNav
               active={pushed ? '' : tab}
               onTab={t => go({ name: 'tab', id: t })}

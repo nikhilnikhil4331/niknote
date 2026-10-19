@@ -102,18 +102,19 @@ export function TopBar({ title, icon, onBack, right, sub }: { title: string; ico
 /* ── Bottom navigation ── */
 export type TabId = 'home' | 'habits' | 'insights' | 'profile';
 export function BottomNav({ active, onTab, onAdd, onNiknote }: { active: TabId | ''; onTab: (t: TabId) => void; onAdd: () => void; onNiknote: () => void }) {
+  const reduced = useReducedMotion();
   const item = (id: TabId, label: string, icon: ReactNode) => {
     const on = active === id;
     return (
-      <button key={id} type="button" onClick={() => onTab(id)} aria-label={label} className="relative flex-1 h-12 grid place-items-center">
-        {on && <motion.span layoutId="nnh-nav-glow" className="absolute w-11 h-11 rounded-full nnh-gradient-btn" transition={spring.gentle} initial={false} />}
-        <span className={cn('relative transition-colors', on ? 'text-white' : 'text-[var(--nnh-sub)]')}>{icon}</span>
-        <span className={cn('absolute bottom-1 text-[9px] font-semibold', on ? 'text-[var(--nnh-purple)]' : 'text-transparent')}>{label}</span>
-      </button>
+      <motion.button key={id} type="button" onClick={() => onTab(id)} aria-label={label} whileTap={reduced ? undefined : { scale: 0.9 }} className="relative flex-1 min-w-0 h-12 min-h-[54px] grid place-items-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+        {on && <motion.span layoutId="nnh-nav-glow" className="absolute w-10 h-10 rounded-full nnh-gradient-btn shadow-lg" transition={spring.gentle} initial={false} />}
+        <motion.span className={cn('relative', on ? 'text-white' : 'text-[var(--nnh-sub)]')} animate={reduced ? {} : { y: on ? -3 : -2, scale: on ? 1.08 : 1 }} transition={reduced ? { duration: 0 } : spring.snappy}>{icon}</motion.span>
+        <span className={cn('absolute bottom-1 text-[9px] font-bold transition-colors', on ? 'text-[var(--nnh-purple)]' : 'text-[var(--nnh-sub)]')}>{label}</span>
+      </motion.button>
     );
   };
   return (
-    <nav className="absolute bottom-3 inset-x-3 z-30 nnh-card rounded-3xl flex items-center px-2 py-1" style={{ background: 'var(--nnh-nav)', backdropFilter: 'blur(18px)' }}>
+    <nav className="relative z-50 w-full nnh-card rounded-[1.65rem] flex items-center px-1.5 py-1.5 border border-white/70 shadow-[0_12px_38px_-12px_rgba(76,29,149,0.42)]" style={{ background: 'var(--nnh-nav)', backdropFilter: 'blur(18px)' }}>
       {item('home', 'Home', <Home size={20} strokeWidth={2.2} />)}
       {item('habits', 'Habits', <Sparkles size={20} strokeWidth={2.2} />)}
       <div className="flex-1 grid place-items-center">
@@ -124,10 +125,10 @@ export function BottomNav({ active, onTab, onAdd, onNiknote }: { active: TabId |
       </div>
       {item('insights', 'Insights', <LayoutGrid size={20} strokeWidth={2.2} />)}
       {item('profile', 'Profile', <User size={20} strokeWidth={2.2} />)}
-      <button type="button" onClick={onNiknote} aria-label="Back to Niknote" className="relative flex-1 h-12 grid place-items-center text-[var(--nnh-sub)]">
-        <ArrowUpRight size={19} strokeWidth={2.2} />
-        <span className="absolute bottom-1 text-[9px] font-semibold">Niknote</span>
-      </button>
+      <motion.button type="button" onClick={onNiknote} aria-label="Back to Niknote" whileTap={reduced ? undefined : { scale: 0.9 }} whileHover={reduced ? undefined : { y: -2 }} className="relative flex-1 min-w-0 h-12 min-h-[54px] grid place-items-center rounded-2xl text-[var(--nnh-purple)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500">
+        <motion.span animate={reduced ? {} : { x: [0, 2, 0] }} transition={reduced ? { duration: 0 } : { duration: 1.8, repeat: Infinity, repeatDelay: 2.5 }}><ArrowUpRight size={19} strokeWidth={2.4} /></motion.span>
+        <span className="absolute bottom-1 text-[9px] font-extrabold">Niknote</span>
+      </motion.button>
     </nav>
   );
 }

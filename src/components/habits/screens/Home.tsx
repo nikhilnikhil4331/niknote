@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Check, Plus, Trash2 } from 'lucide-react';
+import { Check, Cloud, CloudOff, LoaderCircle, Plus, Trash2 } from 'lucide-react';
 import { useRoutine } from '@/components/habits/RoutineProvider';
 import { BellButton, CountUp, MiniGlass, Ring, StatTile } from '@/components/habits/ui';
 import { greetingFor, habitStreak, isScheduled, toDay } from '@/lib/trackers';
@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export type Nav = (s: { name: string; id?: string }) => void;
 
 export function HomeScreen({ go }: { go: Nav }) {
-  const { state, today, activeHabits, setNotifications, addTodo, toggleTodo, deleteTodo, bump } = useRoutine();
+  const { state, today, activeHabits, syncBusy, syncMsg, setNotifications, addTodo, toggleTodo, deleteTodo, bump } = useRoutine();
   const { user } = useAuth() as any;
   const reduced = useReducedMotion();
   const now = new Date();
@@ -64,9 +64,15 @@ export function HomeScreen({ go }: { go: Nav }) {
             {firstName} <span className="nnh-anim-float inline-block">👋</span>
           </h1>
         </div>
-        <p className="text-[11px] font-semibold" style={{ color: 'var(--nnh-sub)' }}>
-          {now.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-        </p>
+        <div className="text-right min-w-0">
+          <p className="text-[10px] font-semibold whitespace-nowrap" style={{ color: 'var(--nnh-sub)' }}>
+            {now.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}
+          </p>
+          <button type="button" onClick={() => go({ name: 'tab', id: 'profile' })} className="mt-0.5 inline-flex items-center gap-1 text-[9px] font-bold whitespace-nowrap" style={{ color: syncMsg === 'failed' ? '#e11d48' : 'var(--nnh-purple)' }} aria-label="Open Niknote sync settings">
+            {syncBusy ? <LoaderCircle size={11} className="animate-spin" /> : user ? (syncMsg === 'synced' ? <Cloud size={11} /> : <Cloud size={11} />) : <CloudOff size={11} />}
+            {syncBusy ? 'Syncing' : syncMsg === 'failed' ? 'Sync attention' : syncMsg === 'synced' ? 'Synced to Niknote' : user ? 'Niknote ready' : 'Device only'}
+          </button>
+        </div>
         <BellButton on={state.notifications} onClick={() => setNotifications(!state.notifications)} />
       </div>
 
