@@ -92,10 +92,6 @@ function Shell() {
 
   return (
     <div className={`nn-habits relative w-full h-full flex flex-col ${state.theme === 'dark' ? 'nnh-dark' : ''}`}>
-      {/* ambient blobs */}
-      <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full nnh-anim-float-slow pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(236,72,153,0.16), transparent 70%)' }} aria-hidden="true" />
-      <div className="absolute top-1/3 -left-20 w-56 h-56 rounded-full nnh-anim-float-slow pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.16), transparent 70%)', animationDelay: '-3s' }} aria-hidden="true" />
-
       {/* screen stack */}
       <div className="relative flex-1 overflow-hidden">
         <AnimatePresence mode="sync" custom={dir} initial={false}>
@@ -143,8 +139,8 @@ export function RoutineApp() {
 /** Phone-style frame on desktop, full-bleed on mobile. */
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen w-full flex justify-center md:py-5" style={{ background: 'linear-gradient(135deg, #f9d9ec 0%, #e7dbfc 50%, #d7e5ff 100%)' }}>
-      <div className="relative w-full max-w-[420px] h-[100dvh] md:h-[820px] md:max-h-[92vh] md:rounded-[2.4rem] overflow-hidden md:border-[10px] md:border-[#241d3a] md:shadow-[0_40px_80px_-30px_rgba(76,49,133,0.5)]">
+    <div className="min-h-screen w-full flex justify-center md:py-5" style={{ background: 'linear-gradient(135deg, #f7f3f8 0%, #f2f3f8 52%, #edf3f8 100%)' }}>
+      <div className="relative w-full max-w-[420px] h-[100dvh] md:h-[820px] md:max-h-[92vh] md:rounded-[2.4rem] overflow-hidden md:border-[8px] md:border-[#2f2936] md:shadow-[0_30px_70px_-35px_rgba(54,39,80,0.35)]">
         {children}
       </div>
     </div>

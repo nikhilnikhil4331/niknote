@@ -88,11 +88,11 @@ export function TopBar({ title, icon, onBack, right, sub }: { title: string; ico
           <ArrowLeft size={18} />
         </motion.button>
       )}
-      <div className="flex-1 min-w-0 text-center">
-        <h1 className="font-bold text-[17px] truncate" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          {icon} {title}
+      <div className="flex-1 min-w-0 text-left">
+        <h1 className="font-bold text-[18px] tracking-[-0.035em] truncate" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+          {icon && <span className="mr-1.5">{icon}</span>}{title}
         </h1>
-        {sub && <p className="text-[11px] truncate" style={{ color: 'var(--nnh-sub)' }}>{sub}</p>}
+        {sub && <p className="text-[11px] mt-0.5 truncate" style={{ color: 'var(--nnh-sub)' }}>{sub}</p>}
       </div>
       {right ?? (onBack ? <div className="w-10 shrink-0" /> : null)}
     </div>
@@ -106,19 +106,19 @@ export function BottomNav({ active, onTab, onAdd }: { active: TabId | ''; onTab:
     const on = active === id;
     return (
       <button key={id} type="button" onClick={() => onTab(id)} aria-label={label} className="relative flex-1 h-12 grid place-items-center">
-        {on && <motion.span layoutId="nnh-nav-glow" className="absolute w-11 h-11 rounded-full nnh-gradient-btn" transition={spring.gentle} initial={false} />}
-        <span className={cn('relative transition-colors', on ? 'text-white' : 'text-[var(--nnh-sub)]')}>{icon}</span>
-        <span className={cn('absolute bottom-1 text-[9px] font-semibold', on ? 'text-[var(--nnh-purple)]' : 'text-transparent')}>{label}</span>
+        {on && <motion.span layoutId="nnh-nav-glow" className="absolute top-0 w-9 h-8 rounded-2xl" style={{ background: 'rgba(118,43,178,0.09)' }} transition={spring.gentle} initial={false} />}
+        <span className={cn('relative transition-colors', on ? 'text-[var(--nnh-purple)]' : 'text-[var(--nnh-sub)]')}>{icon}</span>
+        <span className={cn('absolute bottom-0.5 text-[9px] font-semibold', on ? 'text-[var(--nnh-purple)]' : 'text-[var(--nnh-sub)]')}>{label}</span>
       </button>
     );
   };
   return (
-    <nav className="absolute bottom-3 inset-x-3 z-30 nnh-card rounded-3xl flex items-center px-2 py-1" style={{ background: 'var(--nnh-nav)', backdropFilter: 'blur(18px)' }}>
+    <nav className="absolute bottom-3 inset-x-3 z-30 nnh-card rounded-[1.65rem] flex items-center px-2 py-1" style={{ background: 'var(--nnh-nav)', backdropFilter: 'blur(18px)', boxShadow: '0 10px 30px -16px rgba(37, 28, 50, 0.34)' }}>
       {item('home', 'Home', <Home size={20} strokeWidth={2.2} />)}
       {item('habits', 'Habits', <Sparkles size={20} strokeWidth={2.2} />)}
       <div className="flex-1 grid place-items-center">
         <motion.button whileTap={{ scale: 0.88 }} whileHover={{ scale: 1.06 }} type="button" onClick={onAdd} aria-label="Add habit"
-          className="w-14 h-14 -mt-8 rounded-full nnh-gradient-btn grid place-items-center text-white border-4" style={{ borderColor: 'var(--nnh-bg2)' }}>
+          className="w-12 h-12 -mt-7 rounded-full nnh-gradient-btn grid place-items-center text-white border-[3px]" style={{ borderColor: 'var(--nnh-card)' }}>
           <Plus size={26} strokeWidth={2.6} />
         </motion.button>
       </div>

@@ -1,59 +1,73 @@
-/* Niknote Habit experience — scoped pastel theme + motion keyframes */
+/* Niknote Habit experience — calm, tactile surfaces with the original violet/pink brand accents. */
 .nn-habits {
-  --nnh-bg1: #fde7f3;
-  --nnh-bg2: #ece2fd;
-  --nnh-bg3: #dbe8ff;
+  --nnh-bg1: #fbf6fb;
+  --nnh-bg2: #f6f2fb;
+  --nnh-bg3: #f2f6fc;
   --nnh-card: #ffffff;
-  --nnh-card-soft: #f6f3fc;
-  --nnh-ink: #372d52;
-  --nnh-sub: #9a8fb0;
-  --nnh-line: #ece7f6;
-  --nnh-purple: #8b5cf6;
-  --nnh-pink: #ec4899;
-  --nnh-orange: #f97316;
-  --nnh-green: #22c55e;
-  --nnh-blue: #0ea5e9;
-  --nnh-indigo: #6366f1;
-  --nnh-amber: #f59e0b;
-  --nnh-shadow: 0 10px 30px -12px rgba(97, 72, 158, 0.22);
-  --nnh-nav: rgba(255, 255, 255, 0.88);
+  --nnh-card-soft: #f8f6fb;
+  --nnh-ink: #292337;
+  --nnh-sub: #898397;
+  --nnh-line: #ebe7f1;
+  --nnh-purple: #762bb2;
+  --nnh-pink: #df559f;
+  --nnh-orange: #e99a52;
+  --nnh-green: #55a985;
+  --nnh-blue: #599dc4;
+  --nnh-indigo: #7776bd;
+  --nnh-amber: #dba347;
+  --nnh-shadow: 0 5px 18px -10px rgba(54, 39, 80, 0.22), 0 1px 3px rgba(54, 39, 80, 0.045);
+  --nnh-nav: rgba(255, 255, 255, 0.94);
   color: var(--nnh-ink);
   background:
-    radial-gradient(120% 60% at 0% 0%, var(--nnh-bg1) 0%, transparent 60%),
-    radial-gradient(120% 70% at 100% 10%, var(--nnh-bg2) 0%, transparent 55%),
-    linear-gradient(160deg, var(--nnh-bg3) 0%, var(--nnh-bg2) 45%, var(--nnh-bg1) 100%);
+    radial-gradient(90% 52% at 100% 0%, rgba(245, 221, 240, 0.42) 0%, transparent 72%),
+    radial-gradient(90% 56% at 0% 100%, rgba(220, 231, 248, 0.42) 0%, transparent 72%),
+    linear-gradient(145deg, var(--nnh-bg3) 0%, var(--nnh-bg2) 48%, var(--nnh-bg1) 100%);
+  font-family: 'Inter', 'DM Sans', system-ui, sans-serif;
 }
 .nn-habits.nnh-dark {
-  --nnh-bg1: #241b3d;
-  --nnh-bg2: #1d1836;
-  --nnh-bg3: #171331;
-  --nnh-card: #251e40;
-  --nnh-card-soft: #2c2450;
-  --nnh-ink: #efeafe;
-  --nnh-sub: #a79cc9;
-  --nnh-line: #372e5e;
-  --nnh-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.55);
-  --nnh-nav: rgba(30, 24, 55, 0.88);
+  --nnh-bg1: #1c1825;
+  --nnh-bg2: #1b1825;
+  --nnh-bg3: #191923;
+  --nnh-card: #272331;
+  --nnh-card-soft: #302b3b;
+  --nnh-ink: #f3eff8;
+  --nnh-sub: #aaa2b6;
+  --nnh-line: #413a4d;
+  --nnh-purple: #bd8be8;
+  --nnh-pink: #e98aba;
+  --nnh-orange: #e9ad73;
+  --nnh-green: #7fc2a2;
+  --nnh-blue: #83b9d5;
+  --nnh-indigo: #aaa7e7;
+  --nnh-amber: #e5bf72;
+  --nnh-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  --nnh-nav: rgba(39, 35, 49, 0.95);
   background:
-    radial-gradient(120% 60% at 0% 0%, #33235c 0%, transparent 60%),
-    radial-gradient(120% 70% at 100% 10%, #2b1f52 0%, transparent 55%),
-    linear-gradient(160deg, var(--nnh-bg3) 0%, var(--nnh-bg2) 55%, var(--nnh-bg1) 100%);
+    radial-gradient(90% 52% at 100% 0%, rgba(102, 61, 107, 0.14) 0%, transparent 72%),
+    linear-gradient(145deg, #191923 0%, #1b1825 55%, #211a27 100%);
 }
 
 .nn-habits * { -webkit-tap-highlight-color: transparent; }
+.nn-habits button { -webkit-appearance: none; }
 
 .nnh-card {
   background: var(--nnh-card);
-  border-radius: 1.5rem;
+  border: 1px solid color-mix(in srgb, var(--nnh-line) 82%, transparent);
+  border-radius: 1.35rem;
   box-shadow: var(--nnh-shadow);
 }
 .nnh-chip {
   background: var(--nnh-card);
-  border: 1.5px solid var(--nnh-line);
+  border: 1px solid var(--nnh-line);
   border-radius: 999px;
 }
 .nnh-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
 .nnh-scroll::-webkit-scrollbar { width: 0; height: 0; }
+
+/* Lighten the over-saturated per-category tints while preserving user-selected habit colours. */
+.nnh-card button, .nn-habits button { transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease; }
+.nn-habits input, .nn-habits textarea { color: var(--nnh-ink); }
+.nn-habits input::placeholder, .nn-habits textarea::placeholder { color: var(--nnh-sub); opacity: .78; }
 
 /* ── keyframes ── */
 @keyframes nnh-wave { from { transform: translateX(0); } to { transform: translateX(-40px); } }
@@ -84,24 +98,21 @@
 .nnh-anim-birds { animation: nnh-birds 9s ease-in-out infinite; }
 .nnh-anim-twinkle { animation: nnh-twinkle 2.4s ease-in-out infinite; }
 .nnh-anim-pulse { animation: nnh-pulse-soft 1.6s ease-in-out infinite; }
-
 .nnh-bubble { animation: nnh-bubble 3.4s ease-in infinite; }
-
 .nnh-shimmer {
-  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.65) 50%, transparent 70%);
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.42) 50%, transparent 70%);
   background-size: 200% 100%;
-  animation: nnh-shimmer 2.8s linear infinite;
+  animation: nnh-shimmer 3.4s linear infinite;
 }
-
 .nnh-gradient-text {
-  background: linear-gradient(92deg, var(--nnh-pink) 0%, var(--nnh-purple) 55%, var(--nnh-indigo) 100%);
+  background: linear-gradient(92deg, var(--nnh-purple) 0%, var(--nnh-pink) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 .nnh-gradient-btn {
-  background: linear-gradient(92deg, var(--nnh-purple) 0%, var(--nnh-pink) 100%);
-  box-shadow: 0 12px 24px -10px rgba(168, 85, 247, 0.55);
+  background: linear-gradient(105deg, #7025ad 0%, #9b3db6 58%, #d84e9c 100%);
+  box-shadow: 0 7px 16px -10px rgba(118, 43, 178, 0.62);
 }
 .nnh-gradient-btn:active { transform: scale(0.97); }
 

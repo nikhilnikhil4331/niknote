@@ -116,7 +116,7 @@ export function HomeScreen({ go }: { go: Nav }) {
       {/* habit cards */}
       <div className="grid grid-cols-2 gap-3">
         {water && (
-          <HabitCard label="Water" icon="💧" tint="#0ea5e9" onTap={() => go({ name: 'detail', id: water.id })}>
+          <HabitCard label="Water" icon="💧" tint="#6da9c9" onTap={() => go({ name: 'detail', id: water.id })}>
             <div className="flex items-end justify-between">
               <div>
                 <p className="text-[11px] font-semibold" style={{ color: 'var(--nnh-sub)' }}>
@@ -129,7 +129,7 @@ export function HomeScreen({ go }: { go: Nav }) {
           </HabitCard>
         )}
         {sleep && (
-          <HabitCard label="Sleep" icon="🌙" tint="#8b5cf6" onTap={() => go({ name: 'sleep' })}>
+          <HabitCard label="Sleep" icon="🌙" tint="#9787bc" onTap={() => go({ name: 'sleep' })}>
             <p className="text-[11px] font-semibold" style={{ color: 'var(--nnh-sub)' }}>
               <b className="text-[17px] text-[var(--nnh-ink)]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{fmtH(state.entries[`${sleep.id}|${today}`]?.v ?? 0)}</b> h
             </p>
@@ -137,14 +137,14 @@ export function HomeScreen({ go }: { go: Nav }) {
           </HabitCard>
         )}
         {exercise && (
-          <HabitCard label="Exercise" icon="🏃" tint="#22c55e" onTap={() => go({ name: 'exercise' })}>
+          <HabitCard label="Exercise" icon="🏃" tint="#68a587" onTap={() => go({ name: 'exercise' })}>
             <p className="text-[11px] font-semibold" style={{ color: 'var(--nnh-sub)' }}>
               <b className="text-[17px] text-[var(--nnh-ink)]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{state.entries[`${exercise.id}|${today}`]?.v ?? 0}</b> min
             </p>
             <MiniBar values={microBars(exercise.id)} color={exercise.color} />
           </HabitCard>
         )}
-        <HabitCard label="Streak" icon="🔥" tint="#f97316" onTap={() => go({ name: 'streaks' })}>
+        <HabitCard label="Streak" icon="🔥" tint="#d29a62" onTap={() => go({ name: 'streaks' })}>
           <div className="flex items-center gap-2">
             <span className="text-2xl nnh-anim-flicker inline-block">🔥</span>
             <div>
