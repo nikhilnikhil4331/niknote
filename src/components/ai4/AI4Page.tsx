@@ -18,6 +18,7 @@ import {
   ArrowLeft, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { renderBoldSegments } from '@/lib/richText';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -170,20 +171,21 @@ export const AI4Page: React.FC = () => {
       // Headers
       if (line.startsWith('## ')) return <h2 key={i} className="text-lg font-bold mt-4 mb-2">{line.replace('## ', '')}</h2>;
       if (line.startsWith('# ')) return <h1 key={i} className="text-xl font-bold mt-4 mb-2">{line.replace('# ', '')}</h1>;
-      // Bold
-      const boldLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      // Bold is rendered as React nodes, never as HTML (audit F-01):
+      // `**x**` used to become `<strong>x</strong>` and then go through
+      // dangerouslySetInnerHTML, so any markup in model output was live.
       // Bullet points
       if (line.startsWith('- ') || line.startsWith('* ')) {
-        return <li key={i} className="ml-4 list-disc" dangerouslySetInnerHTML={{ __html: boldLine.replace(/^[-*]\s/, '') }} />;
+        return <li key={i} className="ml-4 list-disc">{renderBoldSegments(line.replace(/^[-*]\s/, ''), `l${i}`)}</li>;
       }
       // Numbered lists
       if (/^\d+\.\s/.test(line)) {
-        return <li key={i} className="ml-4 list-decimal" dangerouslySetInnerHTML={{ __html: boldLine.replace(/^\d+\.\s/, '') }} />;
+        return <li key={i} className="ml-4 list-decimal">{renderBoldSegments(line.replace(/^\d+\.\s/, ''), `l${i}`)}</li>;
       }
       // Empty line
       if (!line.trim()) return <br key={i} />;
       // Regular text
-      return <p key={i} className="mb-1" dangerouslySetInnerHTML={{ __html: boldLine }} />;
+      return <p key={i} className="mb-1">{renderBoldSegments(line, `l${i}`)}</p>;
     });
   };
 

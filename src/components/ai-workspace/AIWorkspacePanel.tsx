@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { renderBoldSegments } from '@/lib/richText';
 import { toast } from 'sonner';
 import {
   aiOrchestrator, AgentType, AgentResponse, AgentAction
@@ -215,15 +216,15 @@ export const AIWorkspacePanel: React.FC<AIWorkspacePanelProps> = ({
       if (line.startsWith('## ')) return <h2 key={i} className="text-base font-bold mt-3 mb-1">{line.replace('## ', '')}</h2>;
       if (line.startsWith('# ')) return <h1 key={i} className="text-lg font-bold mt-3 mb-1">{line.replace('# ', '')}</h1>;
       if (line.startsWith('### ')) return <h3 key={i} className="text-sm font-bold mt-2 mb-1">{line.replace('### ', '')}</h3>;
-      const boldLine = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      // Bold is rendered as React nodes, never as HTML (audit F-01).
       if (line.startsWith('- ') || line.startsWith('* ')) {
-        return <li key={i} className="ml-3 list-disc text-xs" dangerouslySetInnerHTML={{ __html: boldLine.replace(/^[-*]\s/, '') }} />;
+        return <li key={i} className="ml-3 list-disc text-xs">{renderBoldSegments(line.replace(/^[-*]\s/, ''), `l${i}`)}</li>;
       }
       if (/^\d+\.\s/.test(line)) {
-        return <li key={i} className="ml-3 list-decimal text-xs" dangerouslySetInnerHTML={{ __html: boldLine.replace(/^\d+\.\s/, '') }} />;
+        return <li key={i} className="ml-3 list-decimal text-xs">{renderBoldSegments(line.replace(/^\d+\.\s/, ''), `l${i}`)}</li>;
       }
       if (!line.trim()) return <br key={i} />;
-      return <p key={i} className="mb-0.5 text-xs" dangerouslySetInnerHTML={{ __html: boldLine }} />;
+      return <p key={i} className="mb-0.5 text-xs">{renderBoldSegments(line, `l${i}`)}</p>;
     });
   };
 
