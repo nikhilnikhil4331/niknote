@@ -8,6 +8,7 @@ import { render, screen, fireEvent, waitFor, act, cleanup, within } from '@testi
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { createActionGate, radialLayout } from '@/lib/navLayout';
+import { localHabitSummary } from '@/components/mobile/MobileTrackerCards';
 
 // ── Supabase mock (must be before any import of @/integrations/supabase/client) ──
 type MockSupabase = {
@@ -69,7 +70,7 @@ import { RoutineProvider } from '@/components/habits/RoutineProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
 import * as routineStore from '@/lib/routineStore';
 import {
-  toDay, focusDurations, sleepMinutes, exerciseStats, habitStreak, waterProgress, GLASS_ML,
+  toDay, isScheduled, focusDurations, sleepMinutes, exerciseStats, habitStreak, waterProgress, GLASS_ML,
   bestHabitStreakEver, bestStreakHistory, completionForDay, rangeCompletion, categoryBreakdown, milestoneProgress,
 } from '@/lib/trackers';
 import { endAtFor, secondsLeft, remainingOnPause, formatClock, clockParts, phaseComplete } from '@/lib/focusClock';
@@ -946,6 +947,27 @@ describe('Mobile navigation', () => {
 // ──────────────────────────────────────────────────────────────────
 // 6b. Home dashboard interactions
 // ──────────────────────────────────────────────────────────────────
+describe('Daily Tracker entry point', () => {
+  it('reads the same local store that /habit uses, so card and screen agree', () => {
+    const now = new Date();
+    routineStore.saveState('anon', routineStore.seedState(now));
+    const seeded = routineStore.readState('anon');
+    expect(seeded).toBeTruthy();
+    const day = toDay(now);
+    const scheduled = seeded!.habits.filter(h => !h.archived && isScheduled(h.days, now));
+    const done = scheduled.filter(h => (seeded!.entries[`${h.id}|${day}`]?.v ?? 0) >= h.target).length;
+
+    const summary = localHabitSummary('anon', now);
+    expect(summary.habitsTotal).toBe(scheduled.length);
+    expect(summary.habitsDone).toBe(done);
+    expect(summary.habitsTotal).toBeGreaterThan(0);
+  });
+
+  it('returns an empty summary when the device has no habit data yet', () => {
+    expect(localHabitSummary('someone-with-no-data', new Date())).toEqual({ habitsTotal: 0, habitsDone: 0 });
+  });
+});
+
 describe('Home dashboard', () => {
   const enterApp = async () => {
     await act(async () => { vi.advanceTimersByTime(200); });
