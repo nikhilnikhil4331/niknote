@@ -73,9 +73,10 @@ export default function AgentConsole() {
       { role: "assistant", content: "", agentId: agent.id },
     ]);
     ai.run({
-      action: "custom",
+      action: "chat",
       text: msg,
       instruction: agent.systemPrompt,
+      history: messages.slice(-10).map((message) => ({ role: message.role, content: message.content })),
     });
   };
 

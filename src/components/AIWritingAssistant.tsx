@@ -94,29 +94,32 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
 
       const decoder = new TextDecoder();
       let fullText = '';
+      let buffered = '';
+      const consumeLine = (line: string) => {
+        if (!line.startsWith('data:')) return;
+        const data = line.slice(5).trim();
+        if (!data || data === '[DONE]') return;
+        try {
+          const parsed = JSON.parse(data);
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (typeof content === 'string' && content) {
+            fullText += content;
+            setResult(fullText);
+          }
+        } catch {
+          // Ignore malformed gateway events; preserve partial lines until complete.
+        }
+      };
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (data === '[DONE]') continue;
-
-          try {
-            const parsed = JSON.parse(data);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              fullText += content;
-              setResult(fullText);
-            }
-          } catch {
-            // Ignore parse errors for partial chunks
-          }
+        buffered += decoder.decode(value, { stream: !done });
+        const lines = buffered.split('\n');
+        buffered = lines.pop() || '';
+        lines.forEach(consumeLine);
+        if (done) {
+          if (buffered) consumeLine(buffered);
+          break;
         }
       }
 

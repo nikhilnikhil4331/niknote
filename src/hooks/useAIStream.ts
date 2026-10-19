@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type AIAction =
   | "improve" | "fix_grammar" | "shorten" | "lengthen"
-  | "continue" | "translate" | "summarize" | "explain" | "custom";
+  | "continue" | "translate" | "summarize" | "explain" | "custom" | "chat";
 
 export interface AIStreamRequest {
   action: AIAction;
@@ -15,6 +15,7 @@ export interface AIStreamRequest {
   context?: string;
   targetLanguage?: string;
   instruction?: string;
+  history?: { role: "user" | "assistant"; content: string }[];
 }
 
 export interface AIStreamState {
@@ -23,9 +24,9 @@ export interface AIStreamState {
   error: string | null;
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined) || supabase.supabaseUrl;
 const PUBLISHABLE_KEY = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  import.meta.env.VITE_SUPABASE_ANON_KEY) as string;
+  import.meta.env.VITE_SUPABASE_ANON_KEY || supabase.supabaseKey) as string;
 
 export function useAIStream() {
   const [state, setState] = useState<AIStreamState>({
@@ -91,6 +92,11 @@ export function useAIStream() {
         acc += decoder.decode(value, { stream: true });
         setState({ output: acc, status: "streaming", error: null });
       }
+      acc += decoder.decode();
+      if (!acc.trim()) {
+        setState({ output: "", status: "error", error: "NikNote AI returned an empty response. Please try again." });
+        return;
+      }
       setState({ output: acc, status: "done", error: null });
     } catch (err) {
       if ((err as Error).name === "AbortError") {
@@ -103,7 +109,7 @@ export function useAIStream() {
         error: (err as Error).message || "Network error",
       });
     } finally {
-      abortRef.current = null;
+      if (abortRef.current === ctrl) abortRef.current = null;
     }
   }, [cancel]);
 

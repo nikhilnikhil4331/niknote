@@ -8,7 +8,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 type Action =
   | "improve" | "fix_grammar" | "shorten" | "lengthen"
-  | "continue" | "translate" | "summarize" | "explain" | "custom";
+  | "continue" | "translate" | "summarize" | "explain" | "custom" | "chat";
 
 interface Body {
   action: Action;
@@ -16,6 +16,7 @@ interface Body {
   context?: string;             // surrounding block/page text (optional)
   targetLanguage?: string;      // for translate
   instruction?: string;         // for custom
+  history?: { role: "user" | "assistant"; content: string }[]; // recent chat turns
 }
 
 const SYSTEM_BASE = `You are NikNote's inline writing assistant. You edit or produce text that will directly replace or extend the user's note.
@@ -25,7 +26,17 @@ Rules:
 - Match the tone and register of the original.
 - Keep formatting minimal; no headings unless the input had them.`;
 
+const CHAT_SYSTEM = `You are NikNote AI, the helpful built-in assistant for NikNote: a notes, learning, and personal productivity app. Answer the user's actual question directly; do not behave like an inline text editor unless asked to edit text.
+
+Be accurate, practical, and concise by default. For school or study questions, explain in clear student-friendly language and show steps when useful. For note-related requests, help summarize, organize, explain, or turn ideas into useful notes. For planning requests, give realistic actionable steps. Preserve the language the user writes in (including Hindi or Hinglish). Use light Markdown only when it improves readability. Never claim you can see a note, file, or app data unless it was included in the conversation. If unsure, say so rather than inventing facts. Use recent conversation turns to understand follow-up questions.`;
+
 function buildPrompt(b: Body): { system: string; user: string } {
+  if (b.action === "chat") {
+    const specialist = b.instruction?.trim()
+      ? `\n\nSpecialist role for this chat:\n${b.instruction.trim().slice(0, 4000)}`
+      : "";
+    return { system: `${CHAT_SYSTEM}${specialist}`, user: b.text.trim() };
+  }
   const ctx = b.context ? `\n\nSurrounding context (for reference only, do not repeat):\n${b.context}` : "";
   switch (b.action) {
     case "improve":
@@ -68,26 +79,40 @@ Deno.serve(async (req) => {
     });
   }
 
-  if (!body.action || (!body.text && body.action !== "custom") ) {
+  if (!body.action || (!body.text && body.action !== "custom") || !["improve", "fix_grammar", "shorten", "lengthen", "continue", "translate", "summarize", "explain", "custom", "chat"].includes(body.action)) {
     return new Response(JSON.stringify({ error: "Missing action or text" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
+  if (body.text && body.text.length > 12000) {
+    return new Response(JSON.stringify({ error: "Message is too long. Please keep it under 12,000 characters." }), {
+      status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const { system, user } = buildPrompt(body);
+  const history = body.action === "chat" && Array.isArray(body.history)
+    ? body.history
+        .filter((message) => message && (message.role === "user" || message.role === "assistant") && typeof message.content === "string")
+        .slice(-10)
+        .map((message) => ({ role: message.role, content: message.content.slice(-2500) }))
+    : [];
 
   const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Lovable-API-Key": key,
-      "X-Lovable-AIG-SDK": "fetch",
+      "Authorization": `Bearer ${key}`,
     },
     body: JSON.stringify({
-      model: "google/gemini-3.6-flash",
+      model: "google/gemini-2.5-flash",
       stream: true,
+      temperature: body.action === "chat" ? 0.4 : 0.5,
+      max_tokens: body.action === "chat" ? 1200 : 1600,
       messages: [
         { role: "system", content: system },
+        ...history,
         { role: "user", content: user },
       ],
     }),
@@ -133,6 +158,19 @@ Deno.serve(async (req) => {
               }
             } catch {
               // ignore parse errors on partial chunks
+            }
+          }
+        }
+        buffered += decoder.decode();
+        if (buffered.trim().startsWith("data:")) {
+          const data = buffered.trim().slice(5).trim();
+          if (data && data !== "[DONE]") {
+            try {
+              const json = JSON.parse(data);
+              const delta = json?.choices?.[0]?.delta?.content;
+              if (typeof delta === "string" && delta.length > 0) controller.enqueue(encoder.encode(delta));
+            } catch {
+              // Ignore an incomplete final gateway event.
             }
           }
         }
