@@ -56,7 +56,7 @@ export function SleepScreen({ go }: { go: (s: { name: string; id?: string }) => 
 
   if (!sleep) {
     return (
-      <div className="pb-32">
+      <div className="pb-2">
         <TopBar title="Sleep" onBack={() => go({ name: 'tab', id: 'insights' })} icon={<span>🌙</span>} />
         <p className="text-center text-[13px] mt-16 px-8" style={{ color: 'var(--nnh-sub)' }}>Add a Sleep habit to track your nights 🌙</p>
       </div>
@@ -67,7 +67,7 @@ export function SleepScreen({ go }: { go: (s: { name: string; id?: string }) => 
   const fmtHM = (m: number | null) => m == null ? '—' : `${Math.floor(m / 60)}h ${m % 60 ? `${m % 60}m` : ''}`.trim();
 
   return (
-    <div className="pb-10">
+    <div className="pb-2">
       <TopBar title="Sleep" onBack={() => go({ name: 'tab', id: 'insights' })} icon={<span>🌙</span>}
         sub="Rest is productivity too" />
       <div className="px-4 space-y-4">
@@ -113,9 +113,9 @@ export function SleepScreen({ go }: { go: (s: { name: string; id?: string }) => 
                 className="mt-2 w-full bg-transparent text-center text-[15px] font-extrabold outline-none" style={{ color: 'var(--nnh-ink)', fontFamily: "'Space Grotesk', sans-serif" }} aria-label="Wake time" />
               <span className="text-[10px] font-semibold" style={{ color: 'var(--nnh-sub)' }}>Wake up</span>
             </label>
-            <div className="rounded-2xl p-3 text-center" style={{ background: 'linear-gradient(160deg, #ede9fe, #fce7f3)' }}>
+            <div className="rounded-2xl p-3 text-center" style={{ background: 'linear-gradient(160deg, var(--nnh-lavender), var(--nnh-pale-pink))' }}>
               <MoonIcon />
-              <p className="mt-2 text-[15px] font-extrabold" style={{ color: '#6d28d9', fontFamily: "'Space Grotesk', sans-serif" }}>{fmtHM(computed) || `${shown} h`}</p>
+              <p className="mt-2 text-[15px] font-extrabold" style={{ color: 'var(--nnh-violet)', fontFamily: "'Space Grotesk', sans-serif" }}>{fmtHM(computed) || `${shown} h`}</p>
               <span className="text-[10px] font-semibold" style={{ color: 'var(--nnh-sub)' }}>Total sleep</span>
             </div>
           </div>

@@ -4,9 +4,10 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi, beforeAll } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { createActionGate, radialLayout } from '@/lib/navLayout';
 
 // ── Supabase mock (must be before any import of @/integrations/supabase/client) ──
 type MockSupabase = {
@@ -67,7 +68,11 @@ import { RoutineApp } from '@/components/habits/RoutineApp';
 import { RoutineProvider } from '@/components/habits/RoutineProvider';
 import { AuthProvider } from '@/contexts/AuthContext';
 import * as routineStore from '@/lib/routineStore';
-import { toDay, focusDurations, sleepMinutes, exerciseStats, habitStreak, waterProgress, GLASS_ML } from '@/lib/trackers';
+import {
+  toDay, focusDurations, sleepMinutes, exerciseStats, habitStreak, waterProgress, GLASS_ML,
+  bestHabitStreakEver, bestStreakHistory, completionForDay, rangeCompletion, categoryBreakdown, milestoneProgress,
+} from '@/lib/trackers';
+import { endAtFor, secondsLeft, remainingOnPause, formatClock, clockParts, phaseComplete } from '@/lib/focusClock';
 import { HomeScreen } from '@/components/habits/screens/Home';
 import { HabitsScreen } from '@/components/habits/screens/Habits';
 import { AddHabitScreen } from '@/components/habits/screens/AddHabit';
@@ -76,6 +81,7 @@ import { FocusTimerScreen } from '@/components/habits/screens/FocusTimer';
 import { SleepScreen } from '@/components/habits/screens/Sleep';
 import { ExerciseScreen } from '@/components/habits/screens/Exercise';
 import { CalendarScreen } from '@/components/habits/screens/CalendarView';
+import { InsightsScreen } from '@/components/habits/screens/Insights';
 import { StreaksScreen } from '@/components/habits/screens/Streaks';
 import { ProfileScreen } from '@/components/habits/screens/Profile';
 
@@ -625,14 +631,48 @@ describe('Focus timer', () => {
 // ──────────────────────────────────────────────────────────────────
 // 6. Mobile navigation
 // ──────────────────────────────────────────────────────────────────
+describe('Floating nav geometry and tap gating', () => {
+  it('fans actions evenly around the FAB, mirrored and inside the radius', () => {
+    const points = radialLayout(5, 116);
+    expect(points).toHaveLength(5);
+    expect(points.map(p => p.angle)).toEqual([-64, -32, 0, 32, 64]);
+    // symmetric around the vertical
+    expect(points[0].x).toBeCloseTo(-points[4].x, 6);
+    expect(points[1].x).toBeCloseTo(-points[3].x, 6);
+    expect(points[2].x).toBeCloseTo(0, 6);
+    // every bubble sits above the FAB and inside the radius
+    for (const p of points) {
+      expect(p.y).toBeLessThan(0);
+      expect(Math.hypot(p.x, p.y)).toBeCloseTo(116, 6);
+    }
+  });
+
+  it('handles single and empty menus without producing stray offsets', () => {
+    expect(radialLayout(0, 116)).toEqual([]);
+    expect(radialLayout(1, 116)).toEqual([{ x: 0, y: -116, angle: 0 }]);
+  });
+
+  it('debounces a repeated action but allows a different one right away', () => {
+    const gate = createActionGate(320);
+    expect(gate('water', 1000)).toBe(true);
+    expect(gate('water', 1200)).toBe(false);   // double tap
+    expect(gate('task', 1201)).toBe(true);     // another action is fine
+    expect(gate('water', 1400)).toBe(true);    // after the window
+  });
+});
+
 describe('Mobile navigation', () => {
-  it('BottomNav tabs switch views and Add launches add screen', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
-    renderWithProviders(<RoutineApp />);
+  const enterApp = async () => {
     await act(async () => { vi.advanceTimersByTime(200); });
     const splash = screen.queryByRole('button', { name: /Get Started|Continue/i });
-    if (splash) await user.click(splash);
+    if (splash) fireEvent.click(splash);
     await act(async () => { vi.advanceTimersByTime(400); });
+  };
+
+  it('floating navigation switches views and the central action opens quick actions', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
 
     // Home is default
     expect(screen.getByText("Today's Progress")).toBeInTheDocument();
@@ -642,20 +682,31 @@ describe('Mobile navigation', () => {
     expect(habitsTab).toHaveAccessibleName('Habits');
     await user.click(habitsTab);
     await waitFor(() => expect(screen.getByText('My Habits')).toBeInTheDocument());
-    expect(habitsTab).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Habits' })).toHaveAttribute('aria-current', 'page');
 
-    // Add via center + button (BottomNav, not TopBar)
-    const addBtns = screen.getAllByLabelText('Add habit');
-    const addBtn = addBtns.find(b => b.className.includes('w-14')) ?? addBtns[0];
-    expect(addBtn).toBeInTheDocument();
-    expect(addBtn.getBoundingClientRect).toBeTruthy();
-    await user.click(addBtn);
+    // central action opens the quick-action menu
+    const fab = screen.getByRole('button', { name: 'Quick actions' });
+    expect(fab).toHaveAttribute('aria-expanded', 'false');
+    expect(fab).toHaveAttribute('aria-haspopup', 'menu');
+    expect(fab).toHaveAttribute('aria-controls', 'nnh-quick-actions');
+    await user.click(fab);
+    await waitFor(() => expect(screen.getByRole('menu', { name: 'Quick actions' })).toBeInTheDocument());
+    expect(fab).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('menuitem', { name: 'Add Habit' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Add Task' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Log Activity' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Focus Timer' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Log Water' })).toBeInTheDocument();
+    expect(screen.getAllByRole('menuitem')).toHaveLength(5);
+
+    // quick action performs a real navigation and closes the menu
+    await user.click(screen.getByRole('menuitem', { name: 'Add Habit' }));
     await waitFor(() => expect(screen.getByText('Add New Habit')).toBeInTheDocument());
+    expect(screen.queryByRole('menu', { name: 'Quick actions' })).not.toBeInTheDocument();
 
-    // Back to habits via TopBar back
-    const back = screen.getByRole('button', { name: /Go back/i });
-    await user.click(back);
-    expect(screen.getByText('My Habits')).toBeInTheDocument();
+    // back to habits via TopBar back
+    await user.click(screen.getByRole('button', { name: /Go back/i }));
+    await waitFor(() => expect(screen.getByText('My Habits')).toBeInTheDocument());
 
     // Insights
     await user.click(screen.getByRole('button', { name: 'Insights' }));
@@ -670,37 +721,190 @@ describe('Mobile navigation', () => {
     await waitFor(() => expect(screen.getByText("Today's Progress")).toBeInTheDocument());
   });
 
+  it('quick actions close on Escape, on the scrim, and when navigating', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
+    const fab = screen.getByRole('button', { name: 'Quick actions' });
+
+    await user.click(fab);
+    await waitFor(() => expect(screen.getByRole('menu', { name: 'Quick actions' })).toBeInTheDocument());
+    await act(async () => { fireEvent.keyDown(window, { key: 'Escape' }); });
+    await waitFor(() => expect(screen.queryByRole('menu', { name: 'Quick actions' })).not.toBeInTheDocument());
+    // Escape must not have popped the tab (still Home)
+    expect(screen.getByText("Today's Progress")).toBeInTheDocument();
+
+    await user.click(fab);
+    await waitFor(() => screen.getByRole('menu', { name: 'Quick actions' }));
+    await user.click(screen.getByRole('button', { name: 'Close quick actions' }));
+    await waitFor(() => expect(screen.queryByRole('menu', { name: 'Quick actions' })).not.toBeInTheDocument());
+
+    // navigating via a tab also dismisses the menu
+    await user.click(fab);
+    await waitFor(() => screen.getByRole('menu', { name: 'Quick actions' }));
+    await user.click(screen.getByRole('button', { name: 'Insights' }));
+    await waitFor(() => expect(screen.queryByRole('menu', { name: 'Quick actions' })).not.toBeInTheDocument());
+  });
+
+  it('quick action opens the real activity screen and back returns to the origin', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
+
+    await user.click(screen.getByRole('button', { name: 'Quick actions' }));
+    await waitFor(() => screen.getByRole('menu', { name: 'Quick actions' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Log Activity' }));
+    await waitFor(() => expect(screen.getAllByText('Exercise').length).toBeGreaterThan(0));
+    expect(screen.queryByRole('menu', { name: 'Quick actions' })).not.toBeInTheDocument();
+
+    // navigation history: back returns to the screen that launched it
+    await user.click(screen.getByRole('button', { name: /Go back/i }));
+    await waitFor(() => expect(screen.getByText("Today's Progress")).toBeInTheDocument());
+  });
+
+  it('quick action Focus Timer opens the timer and back returns to the origin', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
+
+    await user.click(screen.getByRole('button', { name: 'Insights' }));
+    await waitFor(() => screen.getByText(/Your week at a glance/i));
+
+    await user.click(screen.getByRole('button', { name: 'Quick actions' }));
+    await waitFor(() => screen.getByRole('menu', { name: 'Quick actions' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Focus Timer' }));
+
+    // real focus screen with its modes, not a placeholder
+    await waitFor(() => expect(screen.getByText('Pomodoro')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Go back/i }));
+    await waitFor(() => expect(screen.getByText(/Your week at a glance/i)).toBeInTheDocument());
+  });
+
+  it('double-tapping a quick action performs it exactly once', async () => {
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
+    const water = routineStore.readState('anon')!.habits.find(h => h.type === 'water')!;
+    const day = toDay(new Date());
+    const before = routineStore.readState('anon')?.entries[`${water.id}|${day}`]?.v ?? 0;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quick actions' }));
+    await waitFor(() => screen.getByRole('menu', { name: 'Quick actions' }));
+    const item = screen.getByRole('menuitem', { name: 'Log Water' });
+    await act(async () => {
+      fireEvent.click(item);
+      fireEvent.click(item); // second tap lands before the menu unmounts
+    });
+    await act(async () => { vi.advanceTimersByTime(120); });
+
+    const after = routineStore.readState('anon')?.entries[`${water.id}|${day}`]?.v ?? 0;
+    expect(after).toBe(before + 1);
+  });
+
+  it('quick-action menu supports arrow keys and returns focus to the FAB on Escape', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
+
+    const fab = screen.getByRole('button', { name: 'Quick actions' });
+    await user.click(fab);
+    await waitFor(() => screen.getByRole('menu', { name: 'Quick actions' }));
+
+    const menu = screen.getByRole('menu', { name: 'Quick actions' });
+    const items = within(menu).getAllByRole('menuitem');
+    await waitFor(() => expect(items[0]).toHaveFocus());
+
+    fireEvent.keyDown(menu, { key: 'ArrowRight' });
+    expect(items[1]).toHaveFocus();
+    fireEvent.keyDown(menu, { key: 'ArrowLeft' });
+    expect(items[0]).toHaveFocus();
+
+    await act(async () => { fireEvent.keyDown(window, { key: 'Escape' }); });
+    await waitFor(() => expect(screen.queryByRole('menu', { name: 'Quick actions' })).not.toBeInTheDocument());
+    await waitFor(() => expect(fab).toHaveFocus());
+  });
+
+  it('tab changes clear pushed screens so the tab owns the history root', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
+
+    await user.click(screen.getByRole('button', { name: 'Habits' }));
+    await waitFor(() => screen.getByText('My Habits'));
+    // query habit rows explicitly: the outgoing Home screen can still be in the
+    // tree while its exit animation runs, and its "Open calendar" row comes first.
+    const row = screen.getAllByLabelText(/^Open (Water Intake|Sleep|Exercise|Hydration)/i)[0];
+    await user.click(row);
+    await waitFor(() => expect(document.body.textContent).toMatch(/Weekly Progress|Stay hydrated|Water Intake|Habit not found/i));
+
+    // the nav keeps the parent tab highlighted while a screen is pushed
+    expect(screen.getByRole('button', { name: 'Habits' })).toHaveAttribute('aria-current', 'page');
+
+    await user.click(screen.getByRole('button', { name: 'Profile' }));
+    await waitFor(() => screen.getByText(/Niknote Habits/i));
+    expect(screen.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('quick action logs water and persists it', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
+    const water = routineStore.readState('anon')!.habits.find(h => h.type === 'water')!;
+    const today = toDay(new Date());
+    const before = routineStore.readState('anon')?.entries[`${water.id}|${today}`]?.v ?? 0;
+
+    await user.click(screen.getByRole('button', { name: 'Quick actions' }));
+    await waitFor(() => screen.getByRole('menu', { name: 'Quick actions' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Log Water' }));
+    await act(async () => { vi.advanceTimersByTime(120); });
+
+    const after = routineStore.readState('anon')?.entries[`${water.id}|${today}`]?.v ?? 0;
+    expect(after).toBe(before + 1);
+    expect(screen.queryByRole('menu', { name: 'Quick actions' })).not.toBeInTheDocument();
+  });
+
+  it('quick action adds a task through the composer', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
+    await user.click(screen.getByRole('button', { name: 'Quick actions' }));
+    await waitFor(() => screen.getByRole('menu', { name: 'Quick actions' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Add Task' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'New task' });
+    const input = within(dialog).getByLabelText('Task title');
+    await user.type(input, 'Read ten pages');
+    await user.click(within(dialog).getByRole('button', { name: 'Add task' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'New task' })).not.toBeInTheDocument());
+    const todos = routineStore.readState('anon')!.todos;
+    expect(todos.some(t => t.title === 'Read ten pages')).toBe(true);
+  });
+
   it('detail navigation from Home then back via habit row', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
     renderWithProviders(<RoutineApp />);
-    await act(async () => { vi.advanceTimersByTime(200); });
-    if (screen.queryByRole('button', { name: /Get Started/i })) await user.click(screen.getByRole('button', { name: /Get Started/i }));
-    await act(async () => { vi.advanceTimersByTime(400); });
+    await enterApp();
 
-    // Habits tab
     await user.click(screen.getByRole('button', { name: 'Habits' }));
     await waitFor(() => screen.getByText('My Habits'));
-    // tap habit row's icon (first habit)
     const firstHabitIcon = screen.getAllByLabelText(/Open /i)[0];
     await user.click(firstHabitIcon);
     await waitFor(() => expect(document.body.textContent).toMatch(/Weekly Progress|Stay hydrated|Water Intake/));
 
-    // back should return
     await user.click(screen.getByRole('button', { name: /Go back/i }));
-    expect(screen.getByText('My Habits')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('My Habits')).toBeInTheDocument());
   });
 
   it('Escape key pops pushed view', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
     renderWithProviders(<RoutineApp />);
-    await act(async () => { vi.advanceTimersByTime(200); });
-    if (screen.queryByRole('button', { name: /Get Started/i })) await user.click(screen.getByRole('button', { name: /Get Started/i }));
-    await act(async () => { vi.advanceTimersByTime(400); });
+    await enterApp();
     await user.click(screen.getByRole('button', { name: 'Habits' }));
     await waitFor(() => screen.getByText('My Habits'));
     await user.click(screen.getAllByLabelText(/Open /i)[0]);
     await waitFor(() => expect(document.body.textContent).toMatch(/Weekly Progress|Stay hydrated|Water Intake|Habit not found/i));
-    // Escape
     await act(async () => { fireEvent.keyDown(window, { key: 'Escape' }); });
     await waitFor(() => expect(screen.getByText('My Habits')).toBeInTheDocument());
   });
@@ -708,45 +912,290 @@ describe('Mobile navigation', () => {
   it('Calendar and Streaks reachable from Home', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
     renderWithProviders(<RoutineApp />);
-    await act(async () => { vi.advanceTimersByTime(200); });
-    if (screen.queryByRole('button', { name: /Get Started/i })) await user.click(screen.getByRole('button', { name: /Get Started/i }));
-    await act(async () => { vi.advanceTimersByTime(400); });
+    await enterApp();
 
-    // week strip opens calendar
-    const calBtn = screen.getByLabelText('Open calendar');
-    await user.click(calBtn);
+    await user.click(screen.getByLabelText('Open calendar'));
     await waitFor(() => expect(screen.getByText('Calendar')).toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: /Go back/i }));
-    // streak via home card
-    const streakCard = screen.getByText('Streak');
-    await user.click(streakCard.closest('div')!.parentElement as HTMLElement ?? streakCard);
-    // Alternative: click the parent card directly
-    const streakBtn = document.evaluate("//p[contains(text(),'Streak')]/ancestor::button", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-    if (streakBtn) fireEvent.click(streakBtn as Element);
-    // fallback: go directly via insights->streaks not needed for pass
+
+    await user.click(screen.getByRole('button', { name: 'Streak details' }));
+    await waitFor(() => expect(screen.getByText(/Streaks & Achievements/i)).toBeInTheDocument());
   });
 
-  it('bottom nav has 44px minimum hit targets and proper aria labels', async () => {
+  it('floating nav has 44px minimum hit targets and proper aria labels', async () => {
     renderWithProviders(<RoutineApp />);
-    await act(async () => { vi.advanceTimersByTime(200); });
-    if (screen.queryByRole('button', { name: /Get Started/i })) fireEvent.click(screen.getByRole('button', { name: /Get Started/i }));
-    await act(async () => { vi.advanceTimersByTime(400); });
-
+    await enterApp();
     for (const name of ['Home', 'Habits', 'Insights', 'Profile']) {
       const btn = screen.getByRole('button', { name });
       expect(btn).toBeInTheDocument();
-      // Tailwind h-12 => 48px meets 44px
-      expect(btn.className).toContain('h-12');
+      expect(btn.className).toContain('nnh-nav-item');
     }
-    expect(screen.getByLabelText('Add habit').className).toContain('w-14');
+    const fab = screen.getByLabelText('Quick actions');
+    expect(fab.className).toContain('h-16');
+    expect(fab.className).toContain('w-16');
   });
 
   it('phone frame renders desktop preview correctly', async () => {
     const { container } = renderWithProviders(<RoutineApp />);
     await act(async () => { vi.advanceTimersByTime(200); });
-    // Frame has max-w-[420px] and rounded outer container
-    const frame = container.querySelector('.md\\:rounded-\\[2\\.4rem\\]') ?? container.querySelector('[class*=\"max-w-[420px]\"]') ?? container.firstElementChild;
+    const frame = container.querySelector('.md\\:rounded-\\[2\\.4rem\\]') ?? container.querySelector('[class*="max-w-[430px]"]') ?? container.firstElementChild;
     expect(frame).toBeTruthy();
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────
+// 6b. Home dashboard interactions
+// ──────────────────────────────────────────────────────────────────
+describe('Home dashboard', () => {
+  const enterApp = async () => {
+    await act(async () => { vi.advanceTimersByTime(200); });
+    const splash = screen.queryByRole('button', { name: /Get Started|Continue/i });
+    if (splash) fireEvent.click(splash);
+    await act(async () => { vi.advanceTimersByTime(400); });
+  };
+
+  it('completes a habit from Home, updates progress and persists; reopening restores it', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
+    const today = toDay(new Date());
+    const target = routineStore.readState('anon')!.habits.find(h => h.type === 'water')!;
+
+    const completeButtons = screen.getAllByLabelText(/^Complete /);
+    expect(completeButtons.length).toBeGreaterThan(0);
+    // Completing the habit that is not yet done (water 5/8 by default)
+    const waterBtn = screen.getByLabelText(`Complete ${target.name}`);
+    await user.click(waterBtn);
+    await act(async () => { vi.advanceTimersByTime(150); });
+    const entry = routineStore.readState('anon')?.entries[`${target.id}|${today}`]?.v ?? 0;
+    expect(entry).toBeGreaterThanOrEqual(target.target);
+    await waitFor(() => expect(screen.getByLabelText(`Reopen ${target.name}`)).toBeInTheDocument());
+
+    await user.click(screen.getByLabelText(`Reopen ${target.name}`));
+    await act(async () => { vi.advanceTimersByTime(150); });
+    expect(routineStore.readState('anon')?.entries[`${target.id}|${today}`]?.v ?? 0).toBe(0);
+  });
+
+  it('fires exactly one completion burst when a habit is checked in', async () => {
+    const confetti = (await import('canvas-confetti')).default as unknown as ReturnType<typeof vi.fn>;
+    confetti.mockClear();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
+    const water = routineStore.readState('anon')!.habits.find(h => h.type === 'water')!;
+
+    await user.click(screen.getByLabelText(`Complete ${water.name}`));
+    await act(async () => { vi.advanceTimersByTime(200); });
+    expect(confetti).toHaveBeenCalledTimes(1);
+
+    // reopening is quiet: no second celebration
+    await user.click(screen.getByLabelText(`Reopen ${water.name}`));
+    await act(async () => { vi.advanceTimersByTime(200); });
+    expect(confetti).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps calendar check-ins locked for future days', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
+    await user.click(screen.getByLabelText('Open calendar'));
+    await waitFor(() => screen.getByText('Calendar'));
+
+    const now = new Date();
+    const tomorrow = toDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+    const cell = screen.getByLabelText(new RegExp(`^${tomorrow}`));
+    await user.click(cell);
+    await act(async () => { vi.advanceTimersByTime(120); });
+
+    // the selected-day card swaps with an exit animation; wait for the new day
+    const dayLabel = new Date(tomorrow + 'T12:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const dayCard = await waitFor(() => {
+      const hit = Array.from(document.querySelectorAll('.nnh-card'))
+        .find(el => new RegExp(`Habits on ${dayLabel}`).test(el.textContent ?? ''));
+      expect(hit).toBeTruthy();
+      return hit as HTMLElement;
+    });
+    const card = dayCard;
+    const toggles = within(card).getAllByLabelText(/^(Complete|Reopen) /);
+    expect(toggles.length).toBeGreaterThan(0);
+    for (const t of toggles) expect(t).toBeDisabled();
+  });
+
+  it("selects a previous day and shows that day's records", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
+    const now = new Date();
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    const yKey = toDay(yesterday);
+
+    await user.click(screen.getByTestId(`week-day-${yKey}`));
+    await act(async () => { vi.advanceTimersByTime(120); });
+    expect(screen.getByTestId(`week-day-${yKey}`)).toHaveAttribute('aria-pressed', 'true');
+    // seeded yesterday has water complete, so the control becomes a reopen action
+    const water = routineStore.readState('anon')!.habits.find(h => h.type === 'water')!;
+    await waitFor(() => expect(screen.getByLabelText(`Reopen ${water.name}`)).toBeInTheDocument());
+    // back to today
+    await user.click(screen.getByRole('button', { name: /^Today$/ }));
+    await act(async () => { vi.advanceTimersByTime(120); });
+    expect(screen.getByTestId(`week-day-${toDay(now)}`)).toHaveAttribute('aria-pressed', 'true');
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────
+// 6c. Insights & analytics
+// ──────────────────────────────────────────────────────────────────
+describe('Insights analytics', () => {
+  it('switches ranges, exposes accessible bars and uses real completion data', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    wrapHabit(<InsightsScreen go={vi.fn()} />);
+    await waitFor(() => expect(screen.getByText(/Your week at a glance/i)).toBeInTheDocument());
+
+    // week chart bars are labelled with real percentages
+    const bars = screen.getAllByRole('button', { name: /: \d+%$/ });
+    expect(bars.length).toBeGreaterThanOrEqual(7);
+    await user.click(bars[0]);
+    expect(bars[0]).toHaveAttribute('aria-pressed', 'true');
+
+    // switch to month range
+    await user.click(screen.getByRole('button', { name: 'month' }));
+    await waitFor(() => expect(screen.getByText('Monthly Progress')).toBeInTheDocument());
+    expect(screen.getByText(/Your month at a glance/i)).toBeInTheDocument();
+
+    // conservation: no duplicate counting — weekly completion equals slots/done math
+    const entries = routineStore.readState('anon')!.entries;
+    const habits = routineStore.readState('anon')!.habits.filter(h => !h.archived);
+    const week = rangeCompletion(entries, habits, [toDay(new Date())]);
+    expect(week.done).toBeLessThanOrEqual(week.slots);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────
+// 6d. Pure helper rules for the new analytics
+// ──────────────────────────────────────────────────────────────────
+describe('Analytics helpers', () => {
+  const entries = {
+    'h|2026-10-10': { v: 1 }, 'h|2026-10-11': { v: 1 }, 'h|2026-10-12': { v: 1 },
+    'h|2026-10-13': { v: 0 }, 'h|2026-10-14': { v: 1 }, 'h|2026-10-15': { v: 1 },
+    'w|2026-10-15': { v: 8 },
+  };
+  const habit = { id: 'h', target: 1, days: [0, 1, 2, 3, 4, 5, 6] };
+  const today = new Date(2026, 9, 15);
+
+  it('best historic streak counts the longest run, not just the current one', () => {
+    expect(bestHabitStreakEver(entries, habit, today)).toBe(3);
+    expect(bestStreakHistory(entries, [habit], today)).toBe(3);
+  });
+
+  it('day completion and range completion never double count a slot', () => {
+    const day = completionForDay(entries, [habit], new Date(2026, 9, 15));
+    expect(day).toMatchObject({ total: 1, done: 1, pct: 100 });
+    const range = rangeCompletion(entries, [habit], ['2026-10-14', '2026-10-15']);
+    expect(range).toEqual({ slots: 2, done: 2, pct: 100 });
+  });
+
+  it('category breakdown aggregates scheduled slots by category', () => {
+    const cats = categoryBreakdown(entries, [
+      { id: 'h', category: 'health', target: 1, days: [0, 1, 2, 3, 4, 5, 6] },
+      { id: 'w', category: 'health', target: 8, days: [0, 1, 2, 3, 4, 5, 6] },
+    ], today, 1);
+    expect(cats).toHaveLength(1);
+    expect(cats[0]).toMatchObject({ category: 'health', total: 2, done: 2, pct: 100 });
+  });
+
+  it('milestones report reached state and progress', () => {
+    expect(milestoneProgress(8)).toEqual([
+      { days: 3, reached: true, pct: 1 },
+      { days: 7, reached: true, pct: 1 },
+      { days: 30, reached: false, pct: 8 / 30 },
+    ]);
+  });
+
+  it('focus clock is timestamp based and never negative', () => {
+    const now = 1_000_000;
+    const endAt = endAtFor(1500, now);
+    expect(secondsLeft(endAt, now)).toBe(1500);
+    expect(secondsLeft(endAt, now + 2_100)).toBe(1498);
+    expect(secondsLeft(endAt, now + 2_000_000)).toBe(0);
+    expect(remainingOnPause(endAt, now + 60_000)).toBe(1440);
+    expect(formatClock(1498)).toBe('24:58');
+    expect(clockParts(3661)).toEqual({ minutes: 61, seconds: 1, label: '61:01' });
+    expect(phaseComplete(0)).toBe(true);
+    expect(phaseComplete(1)).toBe(false);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────
+// 6e. Focus timing, editing and theme persistence
+// ──────────────────────────────────────────────────────────────────
+describe('Session integrity, editing and preferences', () => {
+  it('records a focus session exactly once after completion', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    wrapHabit(<FocusTimerScreen go={vi.fn()} />);
+    const day = toDay(new Date());
+    const before = routineStore.readState('anon')?.focus[day] ?? 0;
+
+    await user.click(screen.getByLabelText('Start'));
+    await user.click(screen.getByLabelText('Skip to next phase'));
+    await act(async () => { vi.advanceTimersByTime(120); });
+    await waitFor(() => expect(screen.getByText('Break')).toBeInTheDocument());
+    const after = routineStore.readState('anon')?.focus[day] ?? 0;
+    expect(after).toBe(before + 1);
+
+    // further ticks (and a suspended tab) must not add a duplicate record
+    await act(async () => { vi.advanceTimersByTime(5000); });
+    expect(routineStore.readState('anon')?.focus[day] ?? 0).toBe(after);
+  });
+
+  it('pause/resume keeps the remaining time and does not drift while paused', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    wrapHabit(<FocusTimerScreen go={vi.fn()} />);
+    await user.click(screen.getByLabelText('Start'));
+    await act(async () => { vi.advanceTimersByTime(3000); });
+    expect(screen.getByText('24:57')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Pause'));
+    const frozen = screen.getByText('24:57').textContent;
+    await act(async () => { vi.advanceTimersByTime(10000); });
+    expect(screen.getByText('24:57').textContent).toBe(frozen);
+    await user.click(screen.getByLabelText('Start'));
+    await act(async () => { vi.advanceTimersByTime(1000); });
+    expect(screen.getByText('24:56')).toBeInTheDocument();
+  });
+
+  it('edits a habit name from the detail sheet and persists it', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    const seed = routineStore.loadState('anon');
+    const target = seed.habits[0];
+    wrapHabit(<HabitDetailScreen id={target.id} go={vi.fn()} />);
+    await waitFor(() => expect(screen.getByText(target.name)).toBeInTheDocument());
+
+    await user.click(screen.getByLabelText('Habit options'));
+    await user.click(screen.getByText('Edit habit'));
+    const input = await screen.findByLabelText('Edit habit name');
+    await user.clear(input);
+    await user.type(input, 'Renamed habit');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    await act(async () => { vi.advanceTimersByTime(150); });
+
+    const saved = routineStore.readState('anon')?.habits.find(h => h.id === target.id);
+    expect(saved?.name).toBe('Renamed habit');
+  });
+
+  it('persists the dark theme choice and applies the dark surface class', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime as any });
+    const { container } = renderWithProviders(<RoutineApp />);
+    await act(async () => { vi.advanceTimersByTime(200); });
+    const splash = screen.queryByRole('button', { name: /Get Started|Continue/i });
+    if (splash) fireEvent.click(splash);
+    await act(async () => { vi.advanceTimersByTime(400); });
+
+    await user.click(screen.getByRole('button', { name: 'Profile' }));
+    await waitFor(() => expect(screen.getByText('Theme')).toBeInTheDocument());
+    await user.click(screen.getByLabelText('Toggle dark theme'));
+    await act(async () => { vi.advanceTimersByTime(150); });
+
+    expect(routineStore.readState('anon')?.theme).toBe('dark');
+    expect(container.querySelector('.nn-habits.nnh-dark')).toBeTruthy();
   });
 });
 

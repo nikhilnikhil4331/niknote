@@ -68,7 +68,7 @@ export function ExerciseScreen({ go }: { go: (s: { name: string; id?: string }) 
 
   if (!ex) {
     return (
-      <div className="pb-32">
+      <div className="pb-2">
         <TopBar title="Exercise" onBack={() => go({ name: 'tab', id: 'insights' })} icon={<span>🏃</span>} />
         <p className="text-center text-[13px] mt-16 px-8" style={{ color: 'var(--nnh-sub)' }}>Add an exercise habit to track workouts 🏃</p>
       </div>
@@ -80,7 +80,7 @@ export function ExerciseScreen({ go }: { go: (s: { name: string; id?: string }) 
   const wkStats = exerciseStats(wk);
 
   return (
-    <div className="pb-10">
+    <div className="pb-2">
       <TopBar title="Exercise" onBack={() => go({ name: 'tab', id: 'insights' })} icon={<span>🏃</span>} sub="Sweat today, shine tomorrow" />
       <div className="px-4 space-y-4">
         <Segmented options={[{ id: 'day', label: 'Day' }, { id: 'week', label: 'Week' }, { id: 'month', label: 'Month' }] as { id: Range; label: string }[]} value={range} onChange={v => setRange(v)} />
@@ -104,7 +104,7 @@ export function ExerciseScreen({ go }: { go: (s: { name: string; id?: string }) 
             </div>
           </div>
           <Ring size={84} stroke={9} pct={pct} from="#4ade80" to="#16a34a">
-            <span className="text-[18px] font-extrabold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}><CountUp value={Math.round(pct * 100)} />%</span>
+            <span className="nnh-display text-[18px] font-extrabold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}><CountUp value={Math.round(pct * 100)} />%</span>
           </Ring>
         </section>
 
@@ -126,7 +126,7 @@ export function ExerciseScreen({ go }: { go: (s: { name: string; id?: string }) 
               {recent.map((r, i) => (
                 <motion.div key={r.day} layout initial={reduced ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
                   className="flex items-center gap-3 p-2.5 rounded-xl" style={{ background: 'var(--nnh-card-soft)' }}>
-                  <span className="w-9 h-9 rounded-xl grid place-items-center text-lg" style={{ background: '#dcfce7' }}>🏃</span>
+                  <span className="w-9 h-9 rounded-xl grid place-items-center text-lg" style={{ background: 'color-mix(in srgb, #22c55e 18%, transparent)' }}>🏃</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-bold">Running</p>
                     <p className="text-[11px] font-semibold" style={{ color: 'var(--nnh-sub)' }}>{r.v} min · {r.km} km · {r.kcal} kcal</p>

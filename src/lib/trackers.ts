@@ -316,3 +316,95 @@ export function dailyCashSeries(txs: { kind: string; amount: number; occurred_on
   for (const r of out) { running += r.income - r.expense; r.net = running; }
   return out;
 }
+
+/** Longest historical run of scheduled completions (not just the current streak). */
+export function bestHabitStreakEver(
+  entries: Record<string, { v: number; at?: string }>,
+  habit: { id: string; target: number; days?: number[] },
+  today: Date = new Date(),
+  limit = 400,
+) {
+  const done = new Set(habitDoneDays(entries, habit.id, habit.target, today, limit));
+  let best = 0;
+  let run = 0;
+  const cursor = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (limit - 1));
+  for (let i = 0; i < limit; i++, cursor.setDate(cursor.getDate() + 1)) {
+    if (!isScheduled(habit.days, cursor)) continue;
+    if (done.has(toDay(cursor))) {
+      run += 1;
+      if (run > best) best = run;
+    } else {
+      run = 0;
+    }
+  }
+  return best;
+}
+
+/** Best historical streak across all habits (0 when there are none). */
+export function bestStreakHistory(
+  entries: Record<string, { v: number; at?: string }>,
+  habits: { id: string; target: number; days?: number[] }[],
+  today: Date = new Date(),
+) {
+  return habits.reduce((best, h) => Math.max(best, bestHabitStreakEver(entries, h, today)), 0);
+}
+
+/** Scheduled / completed counts for one calendar day. */
+export function completionForDay(
+  entries: Record<string, { v: number; at?: string }>,
+  habits: { id: string; target: number; days?: number[] }[],
+  date: Date,
+) {
+  const day = toDay(date);
+  const scheduled = habits.filter(h => isScheduled(h.days, date));
+  const done = scheduled.filter(h => (entries[entryKey(h.id, day)]?.v ?? 0) >= h.target).length;
+  return { day, total: scheduled.length, done, pct: scheduled.length ? Math.round((done / scheduled.length) * 100) : 0 };
+}
+
+/** Completion over an arbitrary list of day keys (duplicate-free: one slot per habit/day). */
+export function rangeCompletion(
+  entries: Record<string, { v: number; at?: string }>,
+  habits: { id: string; target: number; days?: number[] }[],
+  days: string[],
+) {
+  let slots = 0;
+  let done = 0;
+  for (const day of days) {
+    const date = new Date(day + 'T12:00');
+    for (const h of habits) {
+      if (!isScheduled(h.days, date)) continue;
+      slots += 1;
+      if ((entries[entryKey(h.id, day)]?.v ?? 0) >= h.target) done += 1;
+    }
+  }
+  return { slots, done, pct: slots ? Math.round((done / slots) * 100) : 0 };
+}
+
+/** Completions grouped by habit category over the trailing `daysBack` days. */
+export function categoryBreakdown(
+  entries: Record<string, { v: number; at?: string }>,
+  habits: { id: string; category: string; target: number; days?: number[] }[],
+  today: Date = new Date(),
+  daysBack = 7,
+) {
+  const buckets = new Map<string, { done: number; total: number }>();
+  for (let i = daysBack - 1; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+    for (const h of habits) {
+      if (!isScheduled(h.days, d)) continue;
+      const b = buckets.get(h.category) ?? { done: 0, total: 0 };
+      b.total += 1;
+      if ((entries[entryKey(h.id, toDay(d))]?.v ?? 0) >= h.target) b.done += 1;
+      buckets.set(h.category, b);
+    }
+  }
+  return [...buckets.entries()]
+    .map(([category, b]) => ({ category, ...b, pct: b.total ? Math.round((b.done / b.total) * 100) : 0 }))
+    .sort((a, b) => b.pct - a.pct);
+}
+
+/** Streak milestones used by the streaks screen. */
+export const STREAK_MILESTONES = [3, 7, 30] as const;
+export function milestoneProgress(best: number) {
+  return STREAK_MILESTONES.map(days => ({ days, reached: best >= days, pct: Math.min(1, best / days) }));
+}

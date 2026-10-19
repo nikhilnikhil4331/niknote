@@ -22,6 +22,8 @@ type Routine = {
   deleteHabit: (id: string) => void;
   setEntry: (habit: Habit, day: string, v: number) => void;
   bump: (habit: Habit, delta: number, day?: string) => void;
+  /** Complete a habit for the day, or reopen it when already complete. */
+  toggleHabitDone: (habit: Habit, day?: string) => void;
   setSleepTime: (day: string, k: 'bed' | 'wake', value: string) => void;
   addTodo: (title: string, priority: Todo['priority']) => void;
   toggleTodo: (id: string) => void;
@@ -41,6 +43,7 @@ export const useRoutine = () => {
 };
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
 
 /** Fetch legacy /routine Supabase data and shape it into a local state (names map to types). */
 async function restoreFromSupabase(userId: string, now = new Date()): Promise<RoutineState | null> {
@@ -93,7 +96,7 @@ async function restoreFromSupabase(userId: string, now = new Date()): Promise<Ro
 }
 
 export function RoutineProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth() as any;
+  const { user } = useAuth();
   const userId: string = user?.id || 'anon';
   const reduced = useReducedMotion();
   const [state, setState] = useState<RoutineState>(() => loadState(userId));
@@ -102,6 +105,18 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
+
+  /**
+   * One user action should produce at most one celebration: a completion burst and
+   * an achievement unlock can land in the same tick, so the later one stays quiet.
+   */
+  const lastBurstRef = useRef(0);
+  const celebrate = useCallback((opts: Parameters<typeof confetti>[0]) => {
+    const at = Date.now();
+    if (at - lastBurstRef.current < 450) return;
+    lastBurstRef.current = at;
+    confetti(opts);
+  }, []);
   // Bumped by every user action — the cloud restore must never clobber changes
   // the user already made while the (slow) fetch was in flight.
   const dirtyRef = useRef(0);
@@ -159,7 +174,7 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
     setState(s => ({ ...s, unlocked: [...new Set([...s.unlocked, ...fresh])] }));
     const a = ACHIEVEMENTS.find(x => x.id === fresh[fresh.length - 1]);
     if (a) {
-      if (!reduced) confetti({ particleCount: 90, spread: 75, origin: { y: 0.7 }, colors: [a.color, '#fbbf24', '#ffffff'] });
+      if (!reduced) celebrate({ particleCount: 90, spread: 75, origin: { y: 0.7 }, colors: [a.color, '#fbbf24', '#ffffff'] });
       toast.success(`${a.icon} Achievement unlocked: ${a.name}!`);
     }
   }, [unlockedIds, reduced]);
@@ -175,6 +190,7 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
   const activeHabits = useMemo(() => state.habits.filter(h => !h.archived), [state.habits]);
 
   const mutate = useCallback((fn: (s: RoutineState) => RoutineState) => { dirtyRef.current++; setState(fn); }, []);
+
 
   const setOnboarded = useCallback((v: boolean) => mutate(s => ({ ...s, onboarded: v })), [mutate]);
   const setTheme = useCallback((t: 'light' | 'dark') => { haptic('selection'); mutate(s => ({ ...s, theme: t })); }, [mutate]);
@@ -219,10 +235,30 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
     const is = next >= habit.target;
     if (delta > 0 && !was && is) {
       haptic('success');
-      if (!reduced) confetti({ particleCount: 50, spread: 55, origin: { y: 0.75 }, colors: [habit.color, '#ffffff'] });
+      if (!reduced) celebrate({ particleCount: 50, spread: 55, origin: { y: 0.75 }, colors: [habit.color, '#ffffff'] });
       toast.success(`${habit.icon} ${habit.name} — goal reached!`);
     }
     setEntry(habit, d, next);
+  }, [setEntry, reduced]);
+
+  const toggleHabitDone = useCallback((habit: Habit, day?: string) => {
+    const d = day ?? toDay(new Date());
+    if (d > toDay(new Date())) {
+      toast('That day hasn’t happened yet 🙂');
+      return;
+    }
+    const cur = stateRef.current.entries[entryKey(habit.id, d)]?.v ?? 0;
+    const wasDone = cur >= habit.target;
+    haptic(wasDone ? 'light' : 'medium');
+    if (wasDone) {
+      setEntry(habit, d, 0);
+      toast(`${habit.icon} ${habit.name} reopened`);
+      return;
+    }
+    setEntry(habit, d, habit.target);
+    haptic('success');
+    if (!reduced) celebrate({ particleCount: 42, spread: 60, origin: { y: 0.72 }, colors: [habit.color, '#ec4899', '#ffffff'] });
+    toast.success(`${habit.icon} ${habit.name} — done for the day`);
   }, [setEntry, reduced]);
 
   const setSleepTime = useCallback((day: string, k: 'bed' | 'wake', value: string) => {
@@ -315,7 +351,7 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
   const value: Routine = {
     state, today, activeHabits, syncBusy, syncMsg,
     setOnboarded, setTheme, setNotifications,
-    addHabit, updateHabit, deleteHabit, setEntry, bump, setSleepTime,
+    addHabit, updateHabit, deleteHabit, setEntry, bump, toggleHabitDone, setSleepTime,
     addTodo, toggleTodo, deleteTodo,
     addFocusSession, setFocusMode, setCustom,
     exportData, syncNow,

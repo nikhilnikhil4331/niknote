@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useRef, useState, useId } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, Bell, Home, LayoutGrid, Plus, Sparkles, User } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { spring } from '@/lib/motion';
 
@@ -67,8 +67,8 @@ export function Segmented<T extends string>({ options, value, onChange, classNam
       {options.map(o => {
         const on = o.id === value;
         return (
-          <button key={o.id} type="button" onClick={() => onChange(o.id)}
-            className={cn('relative flex-1 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors', on ? 'text-white' : 'text-[var(--nnh-sub)]')}>
+          <button key={o.id} type="button" onClick={() => onChange(o.id)} aria-pressed={on}
+            className={cn('relative min-h-[40px] flex-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors', on ? 'text-white' : 'text-[var(--nnh-sub)]')}>
             {on && <motion.span className="absolute inset-0 rounded-full nnh-gradient-btn" layoutId={layoutId} initial={false} transition={spring.snappy} />}
             <span className="relative">{o.label}</span>
           </button>
@@ -83,50 +83,24 @@ export function TopBar({ title, icon, onBack, right, sub }: { title: string; ico
   return (
     <div className="flex items-center gap-3 px-4 pt-4 pb-2">
       {onBack && (
-        <motion.button whileTap={{ scale: 0.85 }} type="button" onClick={onBack} aria-label="Go back"
-          className="w-10 h-10 rounded-full nnh-card grid place-items-center shrink-0">
+        <motion.button whileTap={{ scale: 0.88 }} type="button" onClick={onBack} aria-label="Go back"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full nnh-card">
           <ArrowLeft size={18} />
         </motion.button>
       )}
       <div className="flex-1 min-w-0 text-center">
-        <h1 className="font-bold text-[17px] truncate" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+        <h1 className="truncate text-[17px] font-extrabold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
           {icon} {title}
         </h1>
         {sub && <p className="text-[11px] truncate" style={{ color: 'var(--nnh-sub)' }}>{sub}</p>}
       </div>
-      {right ?? (onBack ? <div className="w-10 shrink-0" /> : null)}
+      {right ?? (onBack ? <div className="w-11 shrink-0" aria-hidden="true" /> : null)}
     </div>
   );
 }
 
-/* ── Bottom navigation ── */
+/* ── Navigation types (shared with FloatingNav) ── */
 export type TabId = 'home' | 'habits' | 'insights' | 'profile';
-export function BottomNav({ active, onTab, onAdd }: { active: TabId | ''; onTab: (t: TabId) => void; onAdd: () => void }) {
-  const item = (id: TabId, label: string, icon: ReactNode) => {
-    const on = active === id;
-    return (
-      <button key={id} type="button" onClick={() => onTab(id)} aria-label={label} className="relative flex-1 h-12 grid place-items-center">
-        {on && <motion.span layoutId="nnh-nav-glow" className="absolute w-11 h-11 rounded-full nnh-gradient-btn" transition={spring.gentle} initial={false} />}
-        <span className={cn('relative transition-colors', on ? 'text-white' : 'text-[var(--nnh-sub)]')}>{icon}</span>
-        <span className={cn('absolute bottom-1 text-[9px] font-semibold', on ? 'text-[var(--nnh-purple)]' : 'text-transparent')}>{label}</span>
-      </button>
-    );
-  };
-  return (
-    <nav className="absolute bottom-3 inset-x-3 z-30 nnh-card rounded-3xl flex items-center px-2 py-1" style={{ background: 'var(--nnh-nav)', backdropFilter: 'blur(18px)' }}>
-      {item('home', 'Home', <Home size={20} strokeWidth={2.2} />)}
-      {item('habits', 'Habits', <Sparkles size={20} strokeWidth={2.2} />)}
-      <div className="flex-1 grid place-items-center">
-        <motion.button whileTap={{ scale: 0.88 }} whileHover={{ scale: 1.06 }} type="button" onClick={onAdd} aria-label="Add habit"
-          className="w-14 h-14 -mt-8 rounded-full nnh-gradient-btn grid place-items-center text-white border-4" style={{ borderColor: 'var(--nnh-bg2)' }}>
-          <Plus size={26} strokeWidth={2.6} />
-        </motion.button>
-      </div>
-      {item('insights', 'Insights', <LayoutGrid size={20} strokeWidth={2.2} />)}
-      {item('profile', 'Profile', <User size={20} strokeWidth={2.2} />)}
-    </nav>
-  );
-}
 
 /* ── Weekly bar row (gradient bars, staggered grow-in) ── */
 export function WeekBars({ data, colorFrom, colorTo, height = 96, max, suffix = '', reduced }: {
@@ -167,8 +141,8 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
         <>
           <motion.div className="absolute inset-0 z-40 bg-black/35" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           <motion.div
-            className="absolute inset-x-2 bottom-2 z-50 nnh-card p-4 pb-6 max-h-[75%] overflow-y-auto nnh-scroll"
-            style={{ background: 'var(--nnh-card)' }}
+            className="absolute inset-x-2 z-50 max-h-[78%] overflow-y-auto rounded-[1.6rem] p-4 nnh-card nnh-scroll"
+            style={{ bottom: 'calc(8px + env(safe-area-inset-bottom, 0px))', background: 'var(--nnh-card)' }}
             initial={{ y: '110%' }} animate={{ y: 0 }} exit={{ y: '110%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 32 }}
             role="dialog" aria-modal="true" aria-label={title}
@@ -176,7 +150,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
             <div className="w-10 h-1.5 rounded-full mx-auto mb-3" style={{ background: 'var(--nnh-line)' }} />
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-bold text-[15px]">{title}</h2>
-              <button type="button" onClick={onClose} className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: 'var(--nnh-card-soft)', color: 'var(--nnh-sub)' }}>Close</button>
+              <button type="button" onClick={onClose} className="min-h-[36px] rounded-full px-3.5 py-1.5 text-xs font-semibold" style={{ background: 'var(--nnh-card-soft)', color: 'var(--nnh-sub)' }}>Close</button>
             </div>
             {children}
           </motion.div>
@@ -231,15 +205,5 @@ export function StatTile({ value, label, accent, icon }: { value: ReactNode; lab
       </div>
       <div className="text-[10px] font-medium mt-0.5" style={{ color: 'var(--nnh-sub)' }}>{label}</div>
     </div>
-  );
-}
-
-/* ── Bell with dot ── */
-export function BellButton({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <button type="button" onClick={onClick} aria-label="Notifications" className="relative w-10 h-10 rounded-full nnh-card grid place-items-center">
-      <Bell size={18} className={on ? '' : 'opacity-50'} />
-      {on && <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full nnh-gradient-btn" />}
-    </button>
   );
 }
