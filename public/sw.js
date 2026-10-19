@@ -5,9 +5,9 @@
 // Only static assets (JS, CSS, images) use cache-first
 // ============================================================
 
-const CACHE_NAME = 'niknote-v5.0.3';
-const STATIC_CACHE = 'niknote-static-v5.0.3';
-const DYNAMIC_CACHE = 'niknote-dynamic-v5.0.3';
+const CACHE_NAME = 'niknote-v5.0.4';
+const STATIC_CACHE = 'niknote-static-v5.0.4';
+const DYNAMIC_CACHE = 'niknote-dynamic-v5.0.4';
 
 // Static assets to cache on install — ONLY truly static files, NOT HTML
 const STATIC_ASSETS = [
