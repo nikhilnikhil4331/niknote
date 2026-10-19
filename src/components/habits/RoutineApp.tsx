@@ -37,6 +37,11 @@ function Shell() {
   const [pushed, setPushed] = useState<View | null>(null);
   const [dir, setDir] = useState(1);
 
+  // Returning users go directly to their dashboard; onboarding is first-run only.
+  useEffect(() => {
+    if (state.onboarded) setSplash(false);
+  }, [state.onboarded]);
+
   const view: View = pushed ?? { name: 'tab', id: tab };
   const viewKey = pushed ? pushed.name + (pushed.name === 'detail' ? pushed.id : '') : 'tab:' + tab;
 

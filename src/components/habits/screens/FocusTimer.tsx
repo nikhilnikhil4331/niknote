@@ -27,16 +27,23 @@ export function FocusTimerScreen({ go }: { go: (s: { name: string; id?: string }
   const C = 2 * Math.PI * R;
   const quote = FOCUS_QUOTES[(doneToday + sessionNo) % FOCUS_QUOTES.length];
 
-  // keep the clock on the wall
+  // Wall-clock deadline keeps the timer accurate after throttling or backgrounding.
+  const deadline = useRef<number | null>(null);
   useEffect(() => {
     if (!running) return;
-    const id = window.setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000);
-    return () => window.clearInterval(id);
+    if (deadline.current === null) deadline.current = Date.now() + secs * 1000;
+    const tick = () => setSecs(Math.max(0, Math.ceil(((deadline.current ?? Date.now()) - Date.now()) / 1000)));
+    tick();
+    const id = window.setInterval(tick, 250);
+    const onVisible = () => { if (document.visibilityState === 'visible') tick(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { window.clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
   }, [running]);
 
   useEffect(() => {
     if (secs > 0) return;
     setRunning(false);
+    deadline.current = null;
     if (phase === 'focus') {
       addFocusSession();
       setSessionNo(n => n + 1);
@@ -126,12 +133,12 @@ export function FocusTimerScreen({ go }: { go: (s: { name: string; id?: string }
 
           <div className="flex items-center gap-5 mt-4">
             <motion.button whileTap={{ scale: 0.85 }} type="button" aria-label="Reset"
-              onClick={() => { haptic('light'); setRunning(false); setPhase('focus'); setSecs(focus); }}
+              onClick={() => { haptic('light'); setRunning(false); deadline.current = null; setPhase('focus'); setSecs(focus); }}
               className="w-13 h-13 rounded-full grid place-items-center" style={{ width: 52, height: 52, background: 'var(--nnh-card-soft)' }}>
               <RotateCcw size={19} />
             </motion.button>
             <motion.button whileTap={reduced ? undefined : { scale: 0.9 }} whileHover={reduced ? undefined : { scale: 1.06 }} type="button"
-              onClick={() => { haptic('success'); setRunning(r => !r); }} aria-label={running ? 'Pause' : 'Start'}
+              onClick={() => { haptic('success'); if (running) { const remaining = Math.max(0, Math.ceil(((deadline.current ?? Date.now()) - Date.now()) / 1000)); setSecs(remaining); deadline.current = null; setRunning(false); } else { deadline.current = Date.now() + secs * 1000; setRunning(true); } }} aria-label={running ? 'Pause' : 'Start'}
               className="w-18 h-18 rounded-full nnh-gradient-btn grid place-items-center text-white relative" style={{ width: 72, height: 72 }}>
               {running && !reduced && <motion.span className="absolute inset-0 rounded-full nnh-gradient-btn" animate={{ scale: [1, 1.35], opacity: [0.45, 0] }} transition={{ duration: 1.4, repeat: Infinity }} />}
               {running ? <Pause size={28} className="relative" fill="currentColor" /> : <Play size={28} className="relative translate-x-0.5" fill="currentColor" />}
