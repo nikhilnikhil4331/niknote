@@ -3,12 +3,17 @@
 // Shows at bottom of screen on mobile when app is installable
 // ============================================================
 
+import { useLocation } from 'react-router-dom';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { X, Download, Smartphone } from 'lucide-react';
 
 export function InstallBanner() {
   const { isInstallable, installApp, dismissInstall } = usePWAInstall();
+  const { pathname } = useLocation();
 
+  // The habit app owns the bottom of the screen (floating capsule + FAB);
+  // a fixed install sheet there covers navigation. Offer install on other pages.
+  if (pathname.startsWith('/habit')) return null;
   if (!isInstallable) return null;
 
   return (

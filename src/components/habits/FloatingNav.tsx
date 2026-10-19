@@ -291,12 +291,14 @@ export function FloatingNav({ active, onTab, onNavigate }: {
           )}
 
           {/* capsule */}
-          <nav
+          <motion.nav
             ref={navRef}
             aria-label="Primary"
             data-menu-open={menuOpen || undefined}
             onKeyDown={onNavKeyDown}
             className="nnh-nav relative flex h-[68px] items-center px-2"
+            animate={{ scale: menuOpen && !reduced ? 1.012 : 1 }}
+            transition={habitSpring.nav}
           >
             {NAV_ITEMS.slice(0, 2).map(item => (
               <NavItem key={item.id} item={item} active={active === item.id} reduced={reduced}
@@ -307,7 +309,7 @@ export function FloatingNav({ active, onTab, onNavigate }: {
               <NavItem key={item.id} item={item} active={active === item.id} reduced={reduced}
                 onClick={() => { haptic('selection'); closeMenu(); onTab(item.id); }} />
             ))}
-          </nav>
+          </motion.nav>
 
           {/* central action */}
           <motion.button
@@ -318,12 +320,25 @@ export function FloatingNav({ active, onTab, onNavigate }: {
             aria-controls="nnh-quick-actions"
             aria-haspopup="menu"
             onClick={() => { haptic(menuOpen ? 'light' : 'medium'); setMenuOpen(v => !v); }}
-            className="nnh-fab absolute left-1/2 top-0 z-40 grid h-16 w-16 -translate-x-1/2 -translate-y-[22px] place-items-center rounded-full border-[3px]"
-            style={{ borderColor: 'var(--nnh-card)' }}
-            whileTap={reduced ? undefined : { scale: 0.88 }}
-            whileHover={reduced ? undefined : { scale: 1.04 }}
+            className="nnh-fab absolute left-1/2 top-0 z-40 grid h-16 w-16 place-items-center rounded-full border-[3px]"
+            /* x/y live in motion values, never in Tailwind: framer-motion writes its own
+               transform for whileTap/whileHover, which would otherwise cancel the
+               -translate-x-1/2 and throw the button off-centre on the first press. */
+            style={{ x: '-50%', y: -22, borderColor: 'var(--nnh-card)' }}
+            whileTap={reduced ? undefined : { scale: 0.9 }}
+            whileHover={reduced ? undefined : { scale: 1.045 }}
             transition={habitSpring.nav}
+            data-open={menuOpen || undefined}
           >
+            {/* press ripple — pure decoration, pointer-events off */}
+            <motion.span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-full"
+              style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.55), transparent 65%)' }}
+              initial={false}
+              animate={{ opacity: menuOpen ? 0.35 : 0, scale: menuOpen ? 1.35 : 0.7 }}
+              transition={reduced ? { duration: 0 } : { duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            />
             <motion.span
               className="grid place-items-center"
               aria-hidden="true"

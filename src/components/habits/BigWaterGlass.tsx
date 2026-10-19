@@ -71,7 +71,7 @@ export function BigWaterGlass({ glasses, goal, onAdd, onRemove }: {
       <AnimatePresence>
         {!reduced && splash > 0 && (
           <motion.span key={`drop-${splash}`} initial={{ y: -46, opacity: 0, scale: 0.5 }} animate={{ y: 14, opacity: [0, 1, 0], scale: 1 }}
-            transition={{ duration: 0.55 }} className="absolute left-1/2 -translate-x-1/2 top-0 text-2xl" aria-hidden="true">💧</motion.span>
+            transition={{ duration: 0.55 }} style={{ x: '-50%' }} className="absolute left-1/2 top-0 text-2xl" aria-hidden="true">💧</motion.span>
         )}
       </AnimatePresence>
 

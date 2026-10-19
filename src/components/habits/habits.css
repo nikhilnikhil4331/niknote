@@ -195,7 +195,12 @@
   box-shadow: var(--nnh-fab-shadow);
   color: #fff;
 }
-.nnh-nav-item { min-width: 44px; min-height: 48px; touch-action: manipulation; }
+.nnh-nav {
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform;
+}
+.nnh-nav-item { min-width: 44px; min-height: 48px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .nnh-nav-item:active { transform: scale(0.94); }
 
 /* quick actions ---------------------------------------------------------- */
@@ -216,6 +221,18 @@
   color: var(--nnh-ink);
   border: 1px solid var(--nnh-line);
   box-shadow: var(--nnh-shadow-sm);
+}
+
+/* FAB: crisp, stable press feedback; the fan anchors to this exact centre */
+.nnh-fab {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;
+  transform-origin: center;
+}
+.nnh-fab[data-open] {
+  box-shadow: 0 18px 34px -8px rgba(147, 51, 234, 0.6), 0 8px 16px -8px rgba(236, 72, 153, 0.5),
+    0 0 0 6px rgba(147, 51, 234, 0.08);
 }
 
 /* capsule responds softly while the fan is open */

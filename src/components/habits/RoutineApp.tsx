@@ -45,6 +45,22 @@ export function Shell() {
   const reduced = useReducedMotion();
   const [splash, setSplash] = useState(true);
   const [tab, setTab] = useState<TabId>('home');
+
+  // The habit screen owns the viewport: no page-level scrolling behind the app,
+  // so the floating nav always sits exactly where it is drawn.
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prev = { htmlOverflow: html.style.overflow, bodyOverflow: body.style.overflow, bodyTouch: body.style.touchAction };
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    body.style.touchAction = 'pan-x pan-y';
+    return () => {
+      html.style.overflow = prev.htmlOverflow;
+      body.style.overflow = prev.bodyOverflow;
+      body.style.touchAction = prev.bodyTouch;
+    };
+  }, []);
   // Navigation history: tabs are roots, pushed screens form a real stack so
   // Back (and the hardware/browser back key) returns to the previous screen.
   const [stack, setStack] = useState<View[]>([]);
@@ -184,7 +200,9 @@ function Frame({ children, dark }: { children: React.ReactNode; dark?: boolean }
   const brandAccent = dark ? '#c4b5fd' : '#7c3aed';
   return (
     <div
-      className="flex min-h-screen w-full items-center justify-center gap-8 px-0 py-0 md:px-6 md:py-5"
+      /* Mobile: pin to the visual viewport so the floating nav can never end up
+         below the browser's URL bar / whatever made the page taller than the screen. */
+      className="fixed inset-0 flex h-[100dvh] w-full items-center justify-center gap-8 overflow-hidden px-0 py-0 md:static md:h-auto md:min-h-screen md:overflow-visible md:px-6 md:py-5"
       style={{
         background: dark
           ? 'linear-gradient(135deg, #171331 0%, #1c1638 48%, #141127 100%)'
@@ -204,7 +222,7 @@ function Frame({ children, dark }: { children: React.ReactNode; dark?: boolean }
         </div>
       </div>
 
-      <div className="relative h-[100dvh] w-full max-w-[430px] overflow-hidden md:h-[844px] md:max-h-[92vh] md:rounded-[2.6rem] md:border-[10px] md:border-[#241d3a] md:shadow-[0_50px_100px_-40px_rgba(76,49,133,0.55)]">
+      <div className="relative h-full w-full max-w-[430px] overflow-hidden md:h-[844px] md:max-h-[92vh] md:rounded-[2.6rem] md:border-[10px] md:border-[#241d3a] md:shadow-[0_50px_100px_-40px_rgba(76,49,133,0.55)]">
         {children}
       </div>
     </div>

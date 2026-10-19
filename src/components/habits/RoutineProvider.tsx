@@ -362,8 +362,8 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
       {children}
       <AnimatePresence>
         {syncBusy && (
-          <motion.div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 nnh-card px-4 py-2 text-xs font-semibold flex items-center gap-2"
-            style={{ background: 'var(--nnh-card)' }}
+          <motion.div className="absolute top-3 left-1/2 z-50 nnh-card px-4 py-2 text-xs font-semibold flex items-center gap-2"
+            style={{ x: '-50%', background: 'var(--nnh-card)' }}
             initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
             <motion.span className="w-3 h-3 rounded-full border-2 border-[var(--nnh-purple)] border-t-transparent" animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }} />
             Syncing to the cloud…

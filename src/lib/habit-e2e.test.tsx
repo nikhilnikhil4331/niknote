@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { createActionGate, radialLayout } from '@/lib/navLayout';
 import { localHabitSummary } from '@/components/mobile/MobileTrackerCards';
+import { InstallBanner } from '@/components/InstallBanner';
 
 // ── Supabase mock (must be before any import of @/integrations/supabase/client) ──
 type MockSupabase = {
@@ -783,6 +784,50 @@ describe('Mobile navigation', () => {
     await waitFor(() => expect(screen.getByText(/Your week at a glance/i)).toBeInTheDocument());
   });
 
+  it('keeps the FAB exactly centred while pressed and when the fan opens', async () => {
+    renderWithProviders(<RoutineApp />);
+    await enterApp();
+    const fab = screen.getByRole('button', { name: 'Quick actions' });
+
+    // The centre offset must live in motion values; a Tailwind translate class would be
+    // overwritten by framer-motion's own transform on the first press (the "jumps off" bug).
+    expect(fab.className).not.toContain('-translate-x-1/2');
+    expect(fab.style.transform).toContain('-50%');
+
+    const before = fab.style.transform;
+    await act(async () => {
+      fireEvent.pointerDown(fab, { pointerId: 1, button: 0 });
+      vi.advanceTimersByTime(40);
+    });
+    expect(fab.style.transform).toContain('-50%');
+    await act(async () => {
+      fireEvent.pointerUp(fab, { pointerId: 1, button: 0 });
+      fireEvent.click(fab);
+      vi.advanceTimersByTime(200);
+    });
+    await waitFor(() => screen.getByRole('menu', { name: 'Quick actions' }));
+    // opening the fan must not move the button either
+    expect(fab.style.transform).toContain('-50%');
+    expect(fab.style.transform).not.toBe(before === '' ? 'none' : '__unused__');
+  });
+
+  it('pins the habit screen to the viewport and locks page scrolling', async () => {
+    const { unmount } = renderWithProviders(<RoutineApp />);
+    await enterApp();
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(document.documentElement.style.overflow).toBe('hidden');
+
+    // the nav lives inside a viewport-fixed shell, so it can never scroll below the fold
+    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    const shell = nav.closest('.fixed');
+    expect(shell).toBeTruthy();
+    expect(shell!.className).toContain('inset-0');
+
+    unmount();
+    expect(document.body.style.overflow).toBe('');
+    expect(document.documentElement.style.overflow).toBe('');
+  });
+
   it('double-tapping a quick action performs it exactly once', async () => {
     renderWithProviders(<RoutineApp />);
     await enterApp();
@@ -947,6 +992,20 @@ describe('Mobile navigation', () => {
 // ──────────────────────────────────────────────────────────────────
 // 6b. Home dashboard interactions
 // ──────────────────────────────────────────────────────────────────
+describe('Bottom-of-screen chrome', () => {
+  it('never stacks the install banner on top of the habit navigation', () => {
+    const { container, unmount } = render(
+      <MemoryRouter initialEntries={['/habit']}><InstallBanner /></MemoryRouter>
+    );
+    expect(container).toBeEmptyDOMElement();
+    unmount();
+
+    // other routes still get the (route-aware) banner component mounted
+    const other = render(<MemoryRouter initialEntries={['/notebooks']}><InstallBanner /></MemoryRouter>);
+    expect(other.container.querySelector('div')).toBeNull();
+  });
+});
+
 describe('Daily Tracker entry point', () => {
   it('reads the same local store that /habit uses, so card and screen agree', () => {
     const now = new Date();
