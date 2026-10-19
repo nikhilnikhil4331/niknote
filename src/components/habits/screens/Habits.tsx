@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronRight, Flame, Plus } from 'lucide-react';
 import { useRoutine } from '@/components/habits/RoutineProvider';
-import { CountUp, TopBar } from '@/components/habits/ui';
+import { CountUp, Ring, TopBar } from '@/components/habits/ui';
 import { HABIT_CATEGORIES, fmtHabitValue, habitStreak, isScheduled, toDay } from '@/lib/trackers';
 import { haptic } from '@/hooks/useHaptics';
 
@@ -15,6 +15,9 @@ export function HabitsScreen({ go }: { go: (s: { name: string; id?: string }) =>
 
   const rows = (archived: boolean) => state.habits.filter(h => h.archived === archived);
   const archived = rows(true);
+  const scheduledToday = rows(false).filter(h => isScheduled(h.days, now));
+  const completedToday = scheduledToday.filter(h => (state.entries[`${h.id}|${today}`]?.v ?? 0) >= h.target).length;
+  const todayProgress = scheduledToday.length ? completedToday / scheduledToday.length : 0;
 
   const row = (h: (typeof state.habits)[number], i: number, isArchived: boolean) => {
     const v = state.entries[`${h.id}|${today}`]?.v ?? 0;
@@ -71,6 +74,29 @@ export function HabitsScreen({ go }: { go: (s: { name: string; id?: string }) =>
           </motion.button>
         } />
       <div className="px-4 pt-2 space-y-2.5">
+        {!!scheduledToday.length && (
+          <motion.section initial={reduced ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+            className="nnh-card relative overflow-hidden p-4 flex items-center gap-4 border border-white/60"
+            style={{ background: 'linear-gradient(130deg, var(--nnh-card) 35%, #8b5cf610 100%)' }}>
+            <motion.div aria-hidden="true" className="absolute -right-8 -top-12 w-32 h-32 rounded-full pointer-events-none"
+              animate={reduced ? undefined : { scale: [1, 1.12, 1], opacity: [0.25, 0.48, 0.25] }}
+              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+              style={{ background: 'radial-gradient(circle, #c4b5fd88, transparent 70%)' }} />
+            <Ring size={68} stroke={6} pct={todayProgress} from="#8b5cf6" to="#ec4899">
+              <span className="text-[13px] font-extrabold tabular-nums"><CountUp value={Math.round(todayProgress * 100)} />%</span>
+            </Ring>
+            <div className="relative min-w-0 flex-1">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] nnh-gradient-text">Your daily rhythm</p>
+              <p className="text-[15px] font-extrabold mt-1 leading-tight">
+                <CountUp value={completedToday} /> of {scheduledToday.length} done
+                {completedToday === scheduledToday.length && <motion.span className="ml-1 inline-block" animate={reduced ? undefined : { rotate: [0, 12, -12, 0], scale: [1, 1.15, 1] }} transition={{ duration: 0.7 }}>✨</motion.span>}
+              </p>
+              <p className="text-[10px] font-medium mt-1" style={{ color: 'var(--nnh-sub)' }}>
+                {completedToday === scheduledToday.length ? 'You showed up for yourself today.' : `${scheduledToday.length - completedToday} small ${scheduledToday.length - completedToday === 1 ? 'step' : 'steps'} left — keep your pace.`}
+              </p>
+            </div>
+          </motion.section>
+        )}
         {rows(false).map((h, i) => row(h, i, false))}
         {!rows(false).length && (
           <div className="nnh-card p-8 text-center">

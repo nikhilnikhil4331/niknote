@@ -8,13 +8,19 @@ import { haptic } from '@/hooks/useHaptics';
 
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const QUICK: { name: string; icon: string; category: (typeof HABIT_CATEGORIES)[number]['id']; type: HabitType; target: number }[] = [
-  { name: 'Drink Water', icon: '💧', category: 'health', type: 'water', target: 8 },
-  { name: 'Sleep 8h', icon: '🌙', category: 'health', type: 'sleep', target: 8 },
-  { name: 'Workout 30m', icon: '💪', category: 'health', type: 'minutes', target: 30 },
-  { name: 'Read 20m', icon: '📖', category: 'study', type: 'minutes', target: 20 },
-  { name: 'Meditate 10m', icon: '🧘', category: 'mind', type: 'minutes', target: 10 },
-  { name: 'Journal', icon: '✍️', category: 'mind', type: 'times', target: 1 },
+const QUICK: { name: string; icon: string; category: (typeof HABIT_CATEGORIES)[number]['id']; type: HabitType; target: number; color: string; note: string }[] = [
+  { name: 'Drink Water', icon: '💧', category: 'health', type: 'water', target: 8, color: '#0ea5e9', note: 'Small sips, steady energy' },
+  { name: 'Sleep 8h', icon: '🌙', category: 'health', type: 'sleep', target: 8, color: '#6366f1', note: 'Build a calmer bedtime' },
+  { name: 'Workout 30m', icon: '💪', category: 'health', type: 'minutes', target: 30, color: '#f97316', note: 'Move your body today' },
+  { name: 'Read 20m', icon: '📖', category: 'study', type: 'minutes', target: 20, color: '#8b5cf6', note: 'A few pages add up' },
+  { name: 'Meditate 10m', icon: '🧘', category: 'mind', type: 'minutes', target: 10, color: '#22c55e', note: 'Make space to reset' },
+  { name: 'Journal', icon: '✍️', category: 'mind', type: 'times', target: 1, color: '#ec4899', note: 'Capture one thought' },
+  { name: 'Morning Stretch', icon: '🤸', category: 'health', type: 'minutes', target: 5, color: '#f59e0b', note: 'Start gently, feel ready' },
+  { name: 'Daily Walk', icon: '🚶', category: 'health', type: 'minutes', target: 20, color: '#14b8a6', note: 'Get outside and recharge' },
+  { name: 'Study Session', icon: '🎓', category: 'study', type: 'minutes', target: 45, color: '#6366f1', note: 'One focused study block' },
+  { name: 'Plan My Day', icon: '🗓️', category: 'productivity', type: 'times', target: 1, color: '#8b5cf6', note: 'Choose your top priority' },
+  { name: 'Practice a Language', icon: '🗣️', category: 'study', type: 'minutes', target: 15, color: '#ec4899', note: 'Practice a little every day' },
+  { name: 'Screen-free Break', icon: '🌿', category: 'mind', type: 'minutes', target: 10, color: '#22c55e', note: 'Give your eyes a pause' },
 ];
 
 export function AddHabitScreen({ go }: { go: (s: { name: string; id?: string }) => void }) {
@@ -28,6 +34,7 @@ export function AddHabitScreen({ go }: { go: (s: { name: string; id?: string }) 
   const [target, setTarget] = useState(1);
   const [type, setType] = useState<HabitType>('times');
   const [shake, setShake] = useState(0);
+  const [showAllTemplates, setShowAllTemplates] = useState(false);
 
   const toggleDay = (i: number) => {
     haptic('selection');
@@ -35,7 +42,7 @@ export function AddHabitScreen({ go }: { go: (s: { name: string; id?: string }) 
   };
   const preset = (q: (typeof QUICK)[number]) => {
     haptic('success');
-    setName(q.name); setIcon(q.icon); setCategory(q.category); setType(q.type); setTarget(q.target);
+    setName(q.name); setIcon(q.icon); setCategory(q.category); setType(q.type); setTarget(q.target); setColor(q.color);
   };
   const applyType = (t: HabitType) => {
     setType(t);
@@ -66,16 +73,45 @@ export function AddHabitScreen({ go }: { go: (s: { name: string; id?: string }) 
       <TopBar title="Add New Habit" onBack={() => go({ name: 'tab', id: 'habits' })}
         icon={<span className="nnh-gradient-text">✦</span>} />
       <div className="px-4 space-y-5">
-        {/* quick presets */}
-        <div className="flex gap-2 overflow-x-auto nnh-scroll pb-1 -mx-1 px-1">
-          {QUICK.map(q => (
-            <button key={q.name} type="button" onClick={() => preset(q)}
-              className="shrink-0 flex items-center gap-1.5 ch-nnh px-3 py-1.5 rounded-full text-[11px] font-bold nnh-chip"
-              style={name === q.name ? { borderColor: color, color } : undefined}>
-              <span>{q.icon}</span>{q.name}
-            </button>
-          ))}
-        </div>
+        {/* one-tap habit templates */}
+        <section aria-label="Habit templates" className="space-y-2.5">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] nnh-gradient-text">A good place to start</p>
+              <h2 className="text-[15px] font-extrabold mt-0.5">Choose a habit template</h2>
+            </div>
+            <span className="text-[10px] font-semibold pb-0.5" style={{ color: 'var(--nnh-sub)' }}>Tap to customize</span>
+          </div>
+          <motion.div layout className="grid grid-cols-2 gap-2">
+            {(showAllTemplates ? QUICK : QUICK.slice(0, 4)).map((q, i) => (
+              <motion.button key={q.name} layout whileTap={reduced ? undefined : { scale: 0.96 }}
+                initial={reduced ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reduced ? 0 : i * 0.035, duration: 0.22 }}
+                type="button" onClick={() => preset(q)} aria-label={`Use ${q.name} template`} aria-pressed={name === q.name}
+                className="nnh-card text-left p-2.5 flex items-center gap-2 min-h-[66px] border transition-shadow"
+                style={name === q.name
+                  ? { borderColor: q.color, boxShadow: `0 8px 22px -12px ${q.color}99, var(--nnh-shadow)` }
+                  : { borderColor: 'transparent' }}>
+                <motion.span animate={name === q.name && !reduced ? { rotate: [0, -8, 8, 0], scale: [1, 1.08, 1] } : { rotate: 0, scale: 1 }}
+                  transition={{ duration: 0.35 }}
+                  className="w-10 h-10 rounded-2xl shrink-0 grid place-items-center text-[20px]"
+                  style={{ background: `linear-gradient(145deg, ${q.color}24, ${q.color}10)`, boxShadow: `inset 0 0 0 1px ${q.color}22` }}>
+                  {q.icon}
+                </motion.span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] font-extrabold leading-tight truncate">{q.name}</span>
+                  <span className="block text-[9px] font-medium leading-tight mt-1 truncate" style={{ color: 'var(--nnh-sub)' }}>{q.note}</span>
+                </span>
+                {name === q.name && <Check size={13} style={{ color: q.color }} aria-hidden="true" />}
+              </motion.button>
+            ))}
+          </motion.div>
+          <button type="button" onClick={() => setShowAllTemplates(v => !v)} aria-expanded={showAllTemplates}
+            className="w-full py-2 text-[11px] font-bold rounded-xl transition-colors"
+            style={{ color: 'var(--nnh-purple)', background: 'var(--nnh-card-soft)' }}>
+            {showAllTemplates ? 'Show fewer templates' : `Browse ${QUICK.length - 4} more ideas`}
+          </button>
+        </section>
 
         {/* name */}
         <AnimatePresence>
