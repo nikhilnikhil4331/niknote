@@ -917,8 +917,8 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             {!embedded && (
               <button
                 type="button"
-                onClick={() => navigate('/hub')}
-                title="Back to NikNote Hub"
+                onClick={() => navigate('/')}
+                title="Back to NikNote"
                 className="w-8 h-8 rounded-xl border border-purple-200/80 flex items-center justify-center text-purple-700 hover:bg-purple-50 transition-colors shrink-0"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -1059,6 +1059,17 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
         {/* Top Signature Bar */}
         <header className="h-14 px-3 sm:px-5 border-b border-purple-200/60 bg-white/88 backdrop-blur-xl flex items-center justify-between gap-2 shrink-0 z-20">
           <div className="flex items-center gap-2 min-w-0">
+            {!embedded && (
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                aria-label="Back to NikNote"
+                className="lg:hidden flex w-9 h-9 rounded-xl border border-purple-200/80 items-center justify-center text-purple-800 hover:bg-purple-50 active:scale-95 shrink-0"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setSidebarOpen((v) => !v)}

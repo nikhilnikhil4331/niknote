@@ -180,11 +180,26 @@ describe('NikAI Brand Identity, Cross-Session Memory, Multi-Ink Smart Notes & Th
     expect(screen.getByText(/= \?/)).toBeTruthy();
   });
 
-  it('streams inside NikAIWorkspace & Editor AIWorkspacePanel and saves structured Smart Notes in 1 tap', async () => {
+  it('keeps AIWorkspacePanel completely unmounted when isOpen is false and streams cleanly when isOpen is true', async () => {
     const onInsert = vi.fn();
+    const { container: closedContainer } = render(
+      <MemoryRouter initialEntries={['/']}>
+        <AIWorkspacePanel
+          isOpen={false}
+          onClose={() => {}}
+          noteTitle="Physics Chapter 4"
+          noteContent="Projectile motion formulas"
+          onInsertContent={onInsert}
+        />
+      </MemoryRouter>
+    );
+    // Crucial regression guard: NEVER auto-open NikAI on PC when isOpen === false!
+    expect(closedContainer.firstChild).toBeNull();
+
     render(
       <MemoryRouter initialEntries={['/ai']}>
         <AIWorkspacePanel
+          isOpen={true}
           onClose={() => {}}
           noteTitle="Physics Chapter 4"
           noteContent="Projectile motion formulas"
@@ -269,6 +284,27 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     localStorage.clear();
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 390 });
     Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  it('shows the classic NikNote PC screen FIRST on desktop (1440px) without opening NikAI until the NikAI button is clicked', async () => {
+    window.history.pushState({}, '', '/');
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1440 });
+    window.dispatchEvent(new Event('resize'));
+
+    render(<App />);
+
+    // 1. Classic PC screen loads first — NikAI is NOT open automatically!
+    const pcNikAIBtn = await screen.findByTestId('pc-open-nikai-btn');
+    expect(pcNikAIBtn.textContent).toContain('NikAI');
+    expect(document.querySelector('[data-nikai-root="true"]')).toBeNull();
+
+    // 2. Clicking the single NikAI option opens full NikAI Studio (/ai)!
+    fireEvent.click(pcNikAIBtn);
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/ai');
+      expect(document.querySelector('[data-nikai-root="true"]')).not.toBeNull();
+    });
+    window.history.pushState({}, '', '/');
   });
 
   it('mounts the entire <App /> tree cleanly at / without router or overlay errors', async () => {

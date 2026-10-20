@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 interface NikAIBrandProps {
-  size?: 'sm' | 'md' | 'lg' | 'hero';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'hero';
   showTagline?: boolean;
   subtitle?: string;
   className?: string;
@@ -12,6 +12,7 @@ const SIZE_MAP = {
   sm: { starBox: 24, fontSize: 'text-[23px]', badge: 'text-[9px] px-1.5 py-0.5', gap: 'gap-1.5' },
   md: { starBox: 30, fontSize: 'text-[28px]', badge: 'text-[9.5px] px-2 py-0.5', gap: 'gap-2' },
   lg: { starBox: 40, fontSize: 'text-[38px]', badge: 'text-[10px] px-2.5 py-0.5', gap: 'gap-2.5' },
+  xl: { starBox: 48, fontSize: 'text-[46px] sm:text-[54px]', badge: 'text-[10.5px] px-2.5 py-0.5', gap: 'gap-3' },
   hero: { starBox: 56, fontSize: 'text-[52px] sm:text-[62px]', badge: 'text-[11px] px-3 py-1', gap: 'gap-3' },
 };
 
@@ -20,7 +21,11 @@ const SIZE_MAP = {
  * - Signature 3-star golden-amber-to-coral constellation mark on the left
  * - Flowing handwritten script wordmark ("Dancing Script" / "Caveat") in royal violet -> magenta -> coral ink
  */
-export const NikAIStarConstellation: React.FC<{ size?: number; animate?: boolean; className?: string }> = ({
+export const NikAIStarConstellation: React.FC<{
+  size?: number;
+  animate?: boolean | 'fast' | 'idle';
+  className?: string;
+}> = ({
   size = 32,
   animate = true,
   className = '',
@@ -108,7 +113,7 @@ export const NikAIBrand: React.FC<NikAIBrandProps> = ({
   subtitle,
   className = '',
 }) => {
-  const cfg = SIZE_MAP[size];
+  const cfg = SIZE_MAP[size] || SIZE_MAP.lg;
 
   return (
     <div className={`inline-flex flex-col ${className}`}>

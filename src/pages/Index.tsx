@@ -252,7 +252,11 @@ const Index = () => {
         const safeBlocks = note.blocks.length ? note.blocks : [createBlock()];
         blockEditor.setBlocks(safeBlocks);
         updateCurrentPageLines(
-          safeBlocks.map((b) => createLineWithVariation(b.content || '', (b.color as any) || 'blue'))
+          safeBlocks.map((b) => ({
+            id: generateLineId(),
+            text: b.content || '',
+            color: (b.color as LineInkColor) || 'blue',
+          }))
         );
         setCloudNotebookId(note.notebookId || null);
         if (note.style) updateSettings({ pageStyle: note.style });
@@ -926,10 +930,11 @@ const Index = () => {
               </>
             ) : (
               <>
-                {/* Single Unified NikAI Button in Authentic NikNote Logo Style */}
+                {/* Single Unified NikAI Option on PC — Opens /ai ONLY on click */}
                 <motion.div whileTap={{ scale: 0.94 }} whileHover={{ scale: 1.04 }}>
                   <button
-                    onClick={() => setShowAIWorkspace(prev => !prev)}
+                    onClick={() => navigate('/ai')}
+                    data-testid="pc-open-nikai-btn"
                     className="relative group flex items-center gap-2 h-9 px-5 rounded-full text-white shadow-[0_6px_22px_rgba(139,30,224,0.38)] hover:shadow-[0_8px_28px_rgba(219,39,119,0.52)] transition-all"
                     style={{
                       background: 'linear-gradient(100deg, #5B1BC9 0%, #8B1EE0 42%, #DB2777 80%, #F46B55 100%)',
@@ -1101,7 +1106,7 @@ const Index = () => {
               <div className="nn-board-footer">
                 <Button variant="ghost" onClick={() => setShowMobileStyleSheet(true)}><Settings2 className="h-4 w-4" />Paper & pen</Button>
                 <Button variant="ghost" onClick={() => setShowImportPanel(true)} aria-label="Import document" title="Import document"><Upload className="h-4 w-4" /></Button>
-                <Button variant="ghost" onClick={() => setShowAIWorkspace(true)} aria-label="NikAI" title="NikAI"><Sparkles className="h-4 w-4 text-purple-600" /></Button>
+                <Button variant="ghost" onClick={() => navigate('/ai')} aria-label="NikAI" title="NikAI"><Sparkles className="h-4 w-4 text-purple-600" /></Button>
                 <Button onClick={handleExportPDF} disabled={isExporting}><FileDown className="h-4 w-4" />PDF</Button>
               </div>
 
@@ -1264,9 +1269,6 @@ const Index = () => {
                   <div className="p-3 space-y-3">
                     {/* Quick tools */}
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <Button variant="ghost" size="sm" onClick={() => setShowAIWorkspace(true)} className="h-8 px-3 rounded-xl text-xs font-bold gap-1.5 bg-gradient-to-r from-purple-50 via-fuchsia-50 to-orange-50 border border-purple-200 text-purple-900">
-                        <Sparkles className="w-3.5 h-3.5 text-pink-600" /> NikAI
-                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => setShowScanPanel(true)} className="h-8 px-2.5 rounded-xl text-[10px] gap-1 bg-emerald-50 border border-emerald-100">
                         <Scan className="w-3 h-3 text-emerald-500" /> DNA Scan
                       </Button>
