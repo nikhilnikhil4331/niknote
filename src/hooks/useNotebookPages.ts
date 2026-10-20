@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { NoteLine, LineInkColor, generateLineId } from '@/types/noteLine';
+import { PC_ACTIVE_PAGES_KEY } from '@/lib/cloudSyncEngine';
 
 export interface NotebookPage {
   id: string;
@@ -16,13 +17,11 @@ interface UseNotebookPagesReturn {
   nextPage: () => void;
   prevPage: () => void;
   addNewPage: () => void;
-  /** Insert a page after the given index WITHOUT navigating */
   insertPageAfter: (index: number, page?: NotebookPage) => void;
   deletePage: (index: number) => void;
   updateCurrentPageLines: (lines: NoteLine[]) => void;
-  /** Update any page's lines (used by pagination engine) */
   updatePageLines: (index: number, lines: NoteLine[]) => void;
-  /** Move overflow lines (beyond linesPerPage) into subsequent pages */
+  replaceAllPages: (nextPages: NotebookPage[]) => void;
   flowOverflowFrom: (startPageIndex: number, linesPerPage: number) => void;
   canGoNext: boolean;
   canGoPrev: boolean;
@@ -39,9 +38,38 @@ const ensureAtLeastOneLine = (lines: NoteLine[]): NoteLine[] => {
   return [{ id: generateLineId(), text: '', color: 'black' as LineInkColor, timestamp: Date.now() }];
 };
 
+function loadInitialPages(): NotebookPage[] {
+  if (typeof window === 'undefined') return [createEmptyPage()];
+  try {
+    const raw = localStorage.getItem(PC_ACTIVE_PAGES_KEY);
+    if (!raw) return [createEmptyPage()];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed.map((p: any, idx: number) => ({
+        id: p?.id || `page-restored-${idx}`,
+        lines: ensureAtLeastOneLine(Array.isArray(p?.lines) ? p.lines : []),
+        createdAt: typeof p?.createdAt === 'number' ? p.createdAt : Date.now(),
+      }));
+    }
+  } catch {
+    // ignore corrupt draft
+  }
+  return [createEmptyPage()];
+}
+
 export function useNotebookPages(): UseNotebookPagesReturn {
-  const [pages, setPages] = useState<NotebookPage[]>(() => [createEmptyPage()]);
+  const [pages, setPages] = useState<NotebookPage[]>(loadInitialPages);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
+
+  // Instant zero-lag local persistence on every page/line change
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(PC_ACTIVE_PAGES_KEY, JSON.stringify(pages));
+    } catch {
+      // ignore storage quota errors
+    }
+  }, [pages]);
 
   const currentPage = pages[currentPageIndex] || pages[0];
   const totalPages = pages.length;
@@ -56,18 +84,18 @@ export function useNotebookPages(): UseNotebookPagesReturn {
 
   const nextPage = useCallback(() => {
     if (canGoNext) {
-      setCurrentPageIndex(prev => prev + 1);
+      setCurrentPageIndex((prev) => prev + 1);
     }
   }, [canGoNext]);
 
   const prevPage = useCallback(() => {
     if (canGoPrev) {
-      setCurrentPageIndex(prev => prev - 1);
+      setCurrentPageIndex((prev) => prev - 1);
     }
   }, [canGoPrev]);
 
   const insertPageAfter = useCallback((index: number, page?: NotebookPage) => {
-    setPages(prev => {
+    setPages((prev) => {
       const newPages = [...prev];
       const newPage = page ?? createEmptyPage();
       newPages.splice(index + 1, 0, newPage);
@@ -77,48 +105,60 @@ export function useNotebookPages(): UseNotebookPagesReturn {
 
   const addNewPage = useCallback(() => {
     const newPage = createEmptyPage();
-    setPages(prev => {
+    setPages((prev) => {
       const newPages = [...prev];
       newPages.splice(currentPageIndex + 1, 0, newPage);
       return newPages;
     });
-    setCurrentPageIndex(prev => prev + 1);
+    setCurrentPageIndex((prev) => prev + 1);
   }, [currentPageIndex]);
 
   const deletePage = useCallback((index: number) => {
-    if (pages.length <= 1) return; // Don't delete the last page
-
-    setPages(prev => prev.filter((_, i) => i !== index));
-    setCurrentPageIndex(prev => {
-      if (prev >= index && prev > 0) {
-        return prev - 1;
-      }
-      return prev;
-    });
+    if (pages.length <= 1) return;
+    setPages((prev) => prev.filter((_, i) => i !== index));
+    setCurrentPageIndex((prev) => (prev >= index && prev > 0 ? prev - 1 : prev));
   }, [pages.length]);
 
   const updatePageLines = useCallback((index: number, lines: NoteLine[]) => {
-    setPages(prev => prev.map((page, i) => (
-      i === index ? { ...page, lines: ensureAtLeastOneLine(lines) } : page
-    )));
+    setPages((prev) =>
+      prev.map((page, i) => (i === index ? { ...page, lines: ensureAtLeastOneLine(lines) } : page))
+    );
   }, []);
 
-  const updateCurrentPageLines = useCallback((lines: NoteLine[]) => {
-    setPages(prev => prev.map((page, i) => (
-      i === currentPageIndex ? { ...page, lines: ensureAtLeastOneLine(lines) } : page
-    )));
-  }, [currentPageIndex]);
+  const updateCurrentPageLines = useCallback(
+    (lines: NoteLine[]) => {
+      setPages((prev) =>
+        prev.map((page, i) =>
+          i === currentPageIndex ? { ...page, lines: ensureAtLeastOneLine(lines) } : page
+        )
+      );
+    },
+    [currentPageIndex]
+  );
 
-  // CRITICAL: Move overflow into subsequent pages. This is the single source of truth
-  // for "auto page" on paste *and* typing.
+  const replaceAllPages = useCallback((nextPages: NotebookPage[]) => {
+    if (!Array.isArray(nextPages) || nextPages.length === 0) {
+      setPages([createEmptyPage()]);
+      setCurrentPageIndex(0);
+      return;
+    }
+    setPages(
+      nextPages.map((p, idx) => ({
+        id: p.id || `page-${Date.now()}-${idx}`,
+        lines: ensureAtLeastOneLine(p.lines || []),
+        createdAt: p.createdAt || Date.now(),
+      }))
+    );
+    setCurrentPageIndex(0);
+  }, []);
+
   const flowOverflowFrom = useCallback((startPageIndex: number, linesPerPage: number) => {
     if (!Number.isFinite(linesPerPage) || linesPerPage <= 0) return;
 
-    setPages(prev => {
-      let newPages = [...prev];
+    setPages((prev) => {
+      const newPages = [...prev];
       let i = Math.max(0, Math.min(startPageIndex, newPages.length - 1));
 
-      // Safety guard to avoid infinite loops if something goes wrong.
       for (let guard = 0; guard < 500; guard++) {
         if (i >= newPages.length) break;
 
@@ -133,18 +173,14 @@ export function useNotebookPages(): UseNotebookPagesReturn {
         newPages[i] = { ...page, lines: keep };
 
         if (overflow.length > 0) {
-          // Ensure next page exists.
           if (i + 1 >= newPages.length) {
             newPages.splice(i + 1, 0, createEmptyPage());
           }
 
           const next = newPages[i + 1];
           const nextLinesRaw = ensureAtLeastOneLine(next.lines ?? []);
-
-          // If next page is just the empty placeholder line, replace it.
-          const nextLines = (nextLinesRaw.length === 1 && nextLinesRaw[0]?.text === '')
-            ? []
-            : nextLinesRaw;
+          const nextLines =
+            nextLinesRaw.length === 1 && nextLinesRaw[0]?.text === '' ? [] : nextLinesRaw;
 
           newPages[i + 1] = {
             ...next,
@@ -175,6 +211,7 @@ export function useNotebookPages(): UseNotebookPagesReturn {
     deletePage,
     updateCurrentPageLines,
     updatePageLines,
+    replaceAllPages,
     flowOverflowFrom,
     canGoNext,
     canGoPrev,

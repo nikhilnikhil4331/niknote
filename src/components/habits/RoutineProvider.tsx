@@ -97,7 +97,8 @@ async function restoreFromSupabase(userId: string, now = new Date()): Promise<Ro
 
 export function RoutineProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const userId: string = user?.id || 'anon';
+  const isOfflineGuest = Boolean(user?.id && String(user.id).startsWith('local-guest-'));
+  const userId: string = user?.id && !isOfflineGuest ? user.id : 'anon';
   const reduced = useReducedMotion();
   const [state, setState] = useState<RoutineState>(() => loadState(userId));
   const [restored, setRestored] = useState(false);
@@ -146,7 +147,7 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
     dirtyRef.current = 0;
     setState(loadState(userId));
     setRestored(false);
-    if (user && !hadSaved) {
+    if (user && !isOfflineGuest && !hadSaved) {
       restoreFromSupabase(userId).then(s => {
         if (s && s.habits.length && dirtyRef.current === 0) { setState(s); toast.success('Restored your habits from the cloud ☁️'); }
         setRestored(true);
@@ -301,14 +302,17 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // ── Cloud backup (mirrors to the same Supabase tables as /routine) ──
-  const syncNow = useCallback(async () => {
-    setSyncBusy(true);
+  // ── Cloud backup + optional quiet background sync ──
+  const syncNow = useCallback(async (quiet = false) => {
+    setSyncBusy(!quiet);
     setSyncMsg(null);
     try {
       const s = stateRef.current;
       const uid = (user as any)?.id;
-      if (!uid) throw new Error('Not signed in — data stays on this device');
+      if (!uid || String(uid).startsWith('local-guest-')) {
+        if (quiet) return;
+        throw new Error('Not signed in — data stays on this device');
+      }
       const habitsRes = await supabase.from('habits').upsert(
         s.habits.map(h => ({ id: h.id, user_id: uid, name: h.name, emoji: h.icon, block: 'morning', days: h.days, archived: h.archived } as any)),
         { onConflict: 'id' },
@@ -333,20 +337,38 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
       if (settingsRes.error) throw new Error(settingsRes.error.message);
       let delRes: any = { error: null };
       if (s.habits.length) {
-        const ids = s.habits.map(h => h.id);
-        delRes = await supabase.from('habits').delete().eq('user_id', uid).not('id', 'in', `(${ids.join(',')})` as any);
+        const quotedIds = s.habits.map(h => `"${String(h.id).replace(/"/g, '')}"`).join(',');
+        delRes = await supabase.from('habits').delete().eq('user_id', uid).not('id', 'in', `(${quotedIds})` as any);
       }
       if (delRes?.error) throw new Error(delRes.error.message);
-      haptic('success');
       setSyncMsg('synced');
-      toast.success('Backed up to the cloud ☁️');
+      if (!quiet) {
+        haptic('success');
+        toast.success('Backed up to the cloud ☁️');
+      }
     } catch (e) {
-      setSyncMsg('failed');
-      toast.error(`Sync failed — ${e instanceof Error ? e.message : 'offline'}`);
+      if (!quiet) {
+        setSyncMsg('failed');
+        toast.error(`Sync failed — ${e instanceof Error ? e.message : 'offline'}`);
+      }
     } finally {
-      setSyncBusy(false);
+      if (!quiet) setSyncBusy(false);
     }
   }, [user]);
+
+  // Automatic quiet cloud sync 2.5s after user edits habits, water, sleep, todos, or focus
+  const syncedRevisionRef = useRef(0);
+  useEffect(() => {
+    const uid = (user as any)?.id;
+    if (!uid || String(uid).startsWith('local-guest-')) return;
+    if (dirtyRef.current === 0 || dirtyRef.current === syncedRevisionRef.current) return;
+    const rev = dirtyRef.current;
+    const timer = window.setTimeout(() => {
+      syncedRevisionRef.current = rev;
+      void syncNow(true);
+    }, 2500);
+    return () => window.clearTimeout(timer);
+  }, [state, user, syncNow]);
 
   const value: Routine = {
     state, today, activeHabits, syncBusy, syncMsg,

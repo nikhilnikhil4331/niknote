@@ -35,8 +35,13 @@ export const useNotebooks = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchNotebooks = useCallback(async () => {
-    if (!user) {
-      setNotebooks([]);
+    if (!user || String(user.id || '').startsWith('local-guest-')) {
+      try {
+        const localRaw = localStorage.getItem('niknote.mobile.notebooks.v1');
+        setNotebooks(localRaw ? (JSON.parse(localRaw) as Notebook[]) : []);
+      } catch {
+        setNotebooks([]);
+      }
       setLoading(false);
       return;
     }
@@ -52,8 +57,13 @@ export const useNotebooks = () => {
 
       setNotebooks((data || []) as Notebook[]);
     } catch (error) {
-      console.error('Error fetching notebooks:', error);
-      toast.error('Failed to load notebooks');
+      console.warn('Notebook fetch fallback to local cache:', error);
+      try {
+        const localRaw = localStorage.getItem('niknote.mobile.notebooks.v1');
+        if (localRaw) setNotebooks(JSON.parse(localRaw) as Notebook[]);
+      } catch {
+        // ignore
+      }
     } finally {
       setLoading(false);
     }

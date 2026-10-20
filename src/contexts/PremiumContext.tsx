@@ -1,5 +1,5 @@
 import { FREE_TRIAL } from "@/config/features";
-import React, { createContext, useContext, useCallback, useEffect, useState } from "react";
+import React, { createContext, useContext, useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -43,17 +43,27 @@ export const usePremiumContext = () => {
 
 export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  const mountedRef = useRef(true);
   const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string | null>(null);
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
   const [usageMap, setUsageMap] = useState<Record<string, number>>({});
 
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
   const currentDay = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const isLocalOnlyGuest = Boolean(user?.id && String(user.id).startsWith("local-guest-"));
 
   const fetchSubscription = useCallback(async () => {
-    if (!user) {
+    if (!user || isLocalOnlyGuest) {
+      if (!mountedRef.current) return;
       setIsPremium(false);
       setStatus(null);
       setCurrentPeriodEnd(null);
@@ -61,27 +71,23 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return;
     }
 
+    let timer: ReturnType<typeof setTimeout> | null = null;
     try {
-      // Mobile-safe: timeout after 8 seconds
       const result = await Promise.race([
         supabase
           .from("user_subscriptions")
           .select("status, current_period_end, plan_code")
           .eq("user_id", user.id)
           .maybeSingle(),
-        new Promise<{ data: null; error: { message: 'timeout' } }>((resolve) =>
-          setTimeout(() => resolve({ data: null, error: { message: 'timeout' } }), 8000)
-        )
+        new Promise<{ data: null; error: { message: "timeout" } }>((resolve) => {
+          timer = setTimeout(() => resolve({ data: null, error: { message: "timeout" } }), 8000);
+        }),
       ]);
 
+      if (!mountedRef.current) return;
       const { data, error } = result as any;
 
       if (error) {
-        if (error.message === 'timeout') {
-          console.warn('Subscription fetch timed out (slow network)');
-        } else {
-          console.error("Subscription fetch error:", error);
-        }
         setIsPremium(false);
       } else if (data) {
         const isActive = data.status === "active";
@@ -96,47 +102,48 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setStatus(null);
         setCurrentPeriodEnd(null);
       }
-    } catch (err) {
-      // Network error — allow app to function, just set free tier
-      console.warn("Premium check failed (network):", err);
-      setIsPremium(false);
+    } catch {
+      if (mountedRef.current) setIsPremium(false);
     } finally {
-      setLoading(false);
+      if (timer) clearTimeout(timer);
+      if (mountedRef.current) setLoading(false);
     }
-  }, [user]);
+  }, [user, isLocalOnlyGuest]);
 
   const fetchUsage = useCallback(async () => {
-    if (!user) return;
+    if (!user || isLocalOnlyGuest) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
     try {
-      // Mobile-safe: timeout after 8 seconds
       const result = await Promise.race([
         supabase
           .from("feature_usage")
           .select("feature_name, usage_count, usage_month")
           .eq("user_id", user.id),
-        new Promise<{ data: null }>((resolve) =>
-          setTimeout(() => resolve({ data: null }), 8000)
-        )
+        new Promise<{ data: null }>((resolve) => {
+          timer = setTimeout(() => resolve({ data: null }), 8000);
+        }),
       ]);
 
+      if (!mountedRef.current) return;
       const { data } = result as any;
 
       if (data) {
         const map: Record<string, number> = {};
-        data.forEach((row) => {
+        data.forEach((row: any) => {
           map[`${row.feature_name}_${row.usage_month}`] = row.usage_count;
         });
         setUsageMap(map);
       }
-    } catch (err) {
-      // Silently fail — usage data is optional
-      console.warn("Usage fetch failed (network):", err);
+    } catch {
+      // Usage data is optional
+    } finally {
+      if (timer) clearTimeout(timer);
     }
-  }, [user]);
+  }, [user, isLocalOnlyGuest]);
 
   useEffect(() => {
-    fetchSubscription();
-    fetchUsage();
+    void fetchSubscription();
+    void fetchUsage();
   }, [fetchSubscription, fetchUsage]);
 
   const checkFeatureAccess = useCallback(
@@ -157,16 +164,21 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const incrementUsage = useCallback(
     async (feature: PremiumFeature): Promise<boolean> => {
       if (FREE_TRIAL || isPremium) return true;
-      if (!user) return false;
-
       const access = checkFeatureAccess(feature);
       if (!access.allowed) return false;
 
       const config = FREE_LIMITS[feature];
       const usageMonth = config.period === "month" ? currentMonth : currentDay;
+      const key = `${feature}_${usageMonth}`;
+
+      if (!user || isLocalOnlyGuest) {
+        if (mountedRef.current) {
+          setUsageMap((prev) => ({ ...prev, [key]: access.used + 1 }));
+        }
+        return true;
+      }
 
       try {
-        // Upsert usage
         const { error } = await supabase
           .from("feature_usage")
           .upsert(
@@ -180,20 +192,18 @@ export const PremiumProvider: React.FC<{ children: React.ReactNode }> = ({ child
           );
 
         if (error) {
-          console.error("Usage increment failed:", error);
           return false;
         }
 
-        // Update local state
-        const key = `${feature}_${usageMonth}`;
-        setUsageMap((prev) => ({ ...prev, [key]: access.used + 1 }));
+        if (mountedRef.current) {
+          setUsageMap((prev) => ({ ...prev, [key]: access.used + 1 }));
+        }
         return true;
-      } catch (err) {
-        console.error("Usage increment error:", err);
+      } catch {
         return false;
       }
     },
-    [isPremium, user, checkFeatureAccess, currentMonth, currentDay]
+    [isPremium, user, isLocalOnlyGuest, checkFeatureAccess, currentMonth, currentDay]
   );
 
   return (

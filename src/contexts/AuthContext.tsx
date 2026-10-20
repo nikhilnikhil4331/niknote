@@ -1,13 +1,97 @@
 // ============================================================
-// NikNote 4.0 — Auth Context (CRASH-FIXED)
-// Handles Supabase auth + Google OAuth gracefully
-// No more refresh crashes or redirect loops
+// NikNote 4.0 — Bulletproof Auth + Cloud Guest Provisioning + Sync
+// Works with native Supabase Anonymous Auth, Edge Guest Provisioning,
+// AND 100% Offline Device Guest Mode with Automatic Cloud Promotion!
 // ============================================================
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { AUTO_GUEST } from '@/config/features';
+import { isCloudUserId, syncAllLocalDataToCloud, updateSyncSnapshot } from '@/lib/cloudSyncEngine';
+
+const GUEST_VAULT_KEY = 'niknote.guest.vault.v1';
+const OFFLINE_GUEST_KEY = 'niknote.offline.guest.v1';
+
+interface GuestVault {
+  email: string;
+  password: string;
+  userId?: string;
+  name?: string;
+}
+
+function readGuestVault(): GuestVault | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(GUEST_VAULT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.email && parsed?.password) return parsed as GuestVault;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function writeGuestVault(vault: GuestVault | null) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (!vault) localStorage.removeItem(GUEST_VAULT_KEY);
+    else localStorage.setItem(GUEST_VAULT_KEY, JSON.stringify(vault));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function readOfflineGuestUser(): User | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(OFFLINE_GUEST_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.id) return parsed as User;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function buildOfflineGuestUser(displayName?: string): User {
+  const existing = readOfflineGuestUser();
+  const cleanName = (displayName || existing?.user_metadata?.full_name || 'Guest').trim().slice(0, 40) || 'Guest';
+  const id = existing?.id || `local-guest-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const offlineUser = {
+    id,
+    aud: 'authenticated',
+    role: 'authenticated',
+    email: '',
+    app_metadata: { provider: 'local_guest', providers: ['local_guest'] },
+    user_metadata: {
+      full_name: cleanName,
+      is_guest: true,
+      is_local_guest: true,
+    },
+    is_anonymous: true,
+    created_at: existing?.created_at || new Date().toISOString(),
+  } as unknown as User;
+
+  try {
+    localStorage.setItem(OFFLINE_GUEST_KEY, JSON.stringify(offlineUser));
+  } catch {
+    // ignore
+  }
+  return offlineUser;
+}
+
+export function isGuestUser(u: User | null | undefined): boolean {
+  if (!u) return false;
+  return Boolean(
+    (u as any).is_anonymous ||
+      u.user_metadata?.is_guest ||
+      u.user_metadata?.is_local_guest ||
+      (typeof u.email === 'string' && u.email.endsWith('@guest.niknote.online'))
+  );
+}
 
 interface AuthContextType {
   user: User | null;
@@ -19,7 +103,8 @@ interface AuthContextType {
   signInWithGitHub: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   isGuest: boolean;
-  signInAsGuest: () => Promise<{ error: Error | null }>;
+  signInAsGuest: (displayName?: string, opts?: { allowOfflineFallback?: boolean }) => Promise<{ error: Error | null; offline?: boolean }>;
+  upgradeGuestAccount: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,63 +121,289 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const guestRef = useRef<Promise<{ error: Error | null; offline?: boolean }> | null>(null);
+
+  const timed = (p: Promise<any>, ms: number, label: string): Promise<any> =>
+    Promise.race([p, new Promise<any>((_, reject) => setTimeout(() => reject(new Error(label)), ms))]);
+
+  // Core helper: provisions or resumes a REAL cloud guest session via:
+  // 1) Existing session -> 2) Native Supabase signInAnonymously -> 3) Edge function `guest-session`
+  const provisionCloudGuest = useCallback(async (displayName?: string): Promise<{ error: Error | null; session?: Session | null; user?: User | null }> => {
+    try {
+      const { data: sessionData } = await timed(
+        supabase.auth.getSession(),
+        4000,
+        'Guest sign-in is taking too long — check your internet'
+      );
+      if (sessionData?.session?.user) {
+        return { error: null, session: sessionData.session, user: sessionData.session.user };
+      }
+    } catch {
+      // continue to sign-in strategies
+    }
+
+    // Strategy 1: Native GoTrue anonymous auth (fast path when enabled, and preserves unit-test mocks)
+    let firstErr: Error | null = null;
+    try {
+      const anonRes = await timed(
+        supabase.auth.signInAnonymously(
+          displayName ? { options: { data: { full_name: displayName, is_guest: true } } } : undefined
+        ),
+        8000,
+        'Guest sign-in is taking too long — check your internet'
+      );
+      if (!anonRes?.error) {
+        return {
+          error: null,
+          session: anonRes?.data?.session ?? null,
+          user: anonRes?.data?.user ?? null,
+        };
+      }
+      firstErr = anonRes.error as Error;
+    } catch (err) {
+      firstErr = err instanceof Error ? err : new Error('Guest sign-in failed');
+    }
+
+    // Strategy 2: Provision or resume real Supabase cloud guest session via Edge Function `guest-session`
+    if (typeof supabase.functions?.invoke === 'function') {
+      try {
+        const storedVault = readGuestVault();
+        const invokeRes = await timed(
+          supabase.functions.invoke('guest-session', {
+            body: {
+              action: 'create',
+              guest_name: displayName || storedVault?.name || 'Guest',
+              ...(storedVault ? { email: storedVault.email, password: storedVault.password } : {}),
+            },
+          }),
+          10000,
+          'Guest sign-in is taking too long — check your internet'
+        );
+
+        const payload = invokeRes?.data;
+        if (!invokeRes?.error && payload?.access_token && payload?.refresh_token) {
+          if (payload.email && payload.password) {
+            writeGuestVault({
+              email: payload.email,
+              password: payload.password,
+              userId: payload.user?.id,
+              name: displayName || storedVault?.name || 'Guest',
+            });
+          }
+          try {
+            localStorage.removeItem(OFFLINE_GUEST_KEY);
+          } catch {
+            // ignore
+          }
+
+          if (typeof supabase.auth.setSession === 'function') {
+            const setRes = await supabase.auth.setSession({
+              access_token: payload.access_token,
+              refresh_token: payload.refresh_token,
+            });
+            const resolvedSession = setRes?.data?.session ?? null;
+            const resolvedUser = setRes?.data?.user ?? payload.user ?? null;
+            if (resolvedUser) {
+              setSession(resolvedSession);
+              setUser(resolvedUser);
+            }
+            return { error: null, session: resolvedSession, user: resolvedUser };
+          }
+
+          if (payload.user) {
+            setUser(payload.user);
+            return { error: null, user: payload.user };
+          }
+        }
+        if (invokeRes?.error) {
+          firstErr = invokeRes.error instanceof Error ? invokeRes.error : new Error(String(invokeRes.error.message || invokeRes.error));
+        }
+      } catch (edgeErr) {
+        firstErr = edgeErr instanceof Error ? edgeErr : new Error('Guest cloud session failed');
+      }
+    }
+
+    return { error: firstErr || new Error('Guest sign-in failed') };
+  }, []);
+
+  const signInAsGuest = useCallback(
+    (displayName?: string, opts?: { allowOfflineFallback?: boolean }) => {
+      if (guestRef.current) return guestRef.current;
+      guestRef.current = (async () => {
+        try {
+          const result = await provisionCloudGuest(displayName);
+          if (!result.error) {
+            if (isCloudUserId(result.user?.id)) {
+              void syncAllLocalDataToCloud(result.user.id, { pullCloud: true });
+            }
+            return { error: null, offline: false };
+          }
+
+          // When explicitly initiated by a user clicking "Continue as Guest" on /login or /auth,
+          // NEVER lock them out even on a dead mobile connection — open an instant local guest workspace
+          // and auto-promote to cloud the moment connectivity returns!
+          if (opts?.allowOfflineFallback) {
+            const localUser = buildOfflineGuestUser(displayName);
+            setUser(localUser);
+            setSession(null);
+            updateSyncSnapshot({ state: 'offline', errorMessage: null });
+            return { error: null, offline: true };
+          }
+
+          return { error: result.error };
+        } finally {
+          guestRef.current = null;
+        }
+      })();
+      return guestRef.current;
+    },
+    [provisionCloudGuest]
+  );
+
+  const upgradeGuestAccount = useCallback(async (email: string, password: string, fullName?: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
+      return { error: new Error('Please enter a valid email address') };
+    }
+    if (password.length < 8) {
+      return { error: new Error('Password must be at least 8 characters') };
+    }
+
+    try {
+      // Ensure offline guest has a cloud user before upgrading so all device data attaches to this account
+      let activeSession = session;
+      if (!activeSession?.access_token && typeof supabase.functions?.invoke === 'function') {
+        const prov = await provisionCloudGuest(fullName);
+        activeSession = prov.session ?? null;
+      }
+
+      if (typeof supabase.functions?.invoke === 'function' && activeSession?.access_token) {
+        const { data, error } = await supabase.functions.invoke('guest-session', {
+          body: {
+            action: 'upgrade',
+            email: cleanEmail,
+            password,
+            full_name: fullName,
+          },
+          headers: {
+            Authorization: `Bearer ${activeSession.access_token}`,
+          },
+        });
+
+        if (!error && !data?.error) {
+          writeGuestVault(null);
+          try {
+            localStorage.removeItem(OFFLINE_GUEST_KEY);
+          } catch {
+            // ignore
+          }
+          if (data?.access_token && data?.refresh_token && typeof supabase.auth.setSession === 'function') {
+            const setRes = await supabase.auth.setSession({
+              access_token: data.access_token,
+              refresh_token: data.refresh_token,
+            });
+            if (setRes?.data?.user) {
+              setSession(setRes.data.session);
+              setUser(setRes.data.user);
+              if (isCloudUserId(setRes.data.user.id)) {
+                void syncAllLocalDataToCloud(setRes.data.user.id, { pullCloud: true });
+              }
+            }
+          }
+          return { error: null };
+        }
+
+        if (data?.error) {
+          return { error: new Error(String(data.error)) };
+        }
+      }
+
+      // Fallback standard Supabase updateUser
+      const { error } = await supabase.auth.updateUser({
+        email: cleanEmail,
+        password,
+        data: { is_guest: false, ...(fullName ? { full_name: fullName } : {}) },
+      });
+      if (!error) writeGuestVault(null);
+      return { error: (error as Error) ?? null };
+    } catch (err) {
+      return { error: err instanceof Error ? err : new Error('Could not upgrade guest account') };
+    }
+  }, [session, provisionCloudGuest]);
+
+  // Automatically sync all local device data whenever a real cloud user becomes active
+  useEffect(() => {
+    if (isCloudUserId(user?.id)) {
+      void syncAllLocalDataToCloud(user.id, { pullCloud: true });
+    }
+  }, [user?.id]);
+
+  // Auto-promote offline guest to cloud session as soon as internet reconnects
+  useEffect(() => {
+    if (!user?.user_metadata?.is_local_guest) return;
+    const onOnline = () => {
+      void signInAsGuest(user.user_metadata?.full_name).then((res) => {
+        if (!res.error) {
+          updateSyncSnapshot({ state: 'synced', errorMessage: null });
+        }
+      });
+    };
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [user, signInAsGuest]);
 
   useEffect(() => {
     let mounted = true;
 
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!mounted) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, nextSession: Session | null) => {
+      if (!mounted) return;
 
-        // After Google sign-in, send user back to where they wanted to go
-        if (event === 'SIGNED_IN' && session) {
-          const target = sessionStorage.getItem('niknote_post_auth_redirect');
-          // Auth pages navigate in-app themselves; a full reload here showed a long "Loading..." screen for guests.
-          const onAuthPage = /^\/(login|signup|auth)(\/|$)/.test(window.location.pathname);
-          if (target && !onAuthPage) {
-            sessionStorage.removeItem('niknote_post_auth_redirect');
-            if (window.location.pathname !== target) {
-              setTimeout(() => window.location.assign(target), 0);
-            }
+      if (event === 'SIGNED_IN' && nextSession) {
+        const target = sessionStorage.getItem('niknote_post_auth_redirect');
+        const onAuthPage = /^\/(login|signup|auth)(\/|$)/.test(window.location.pathname);
+        if (target && !onAuthPage) {
+          sessionStorage.removeItem('niknote_post_auth_redirect');
+          if (window.location.pathname !== target) {
+            setTimeout(() => window.location.assign(target), 0);
           }
         }
-
-        // Handle all auth events gracefully
-        switch (event) {
-          case 'TOKEN_REFRESHED':
-            if (!session) {
-              // Token refresh failed — clear stale session silently
-              console.warn('Token refresh failed, clearing session');
-              setSession(null);
-              setUser(null);
-            } else {
-              setSession(session);
-              setUser(session.user);
-            }
-            break;
-
-          case 'SIGNED_OUT':
-            setSession(null);
-            setUser(null);
-            break;
-
-          case 'SIGNED_IN':
-          case 'USER_UPDATED':
-            setSession(session);
-            setUser(session?.user ?? null);
-            break;
-
-          default:
-            setSession(session);
-            setUser(session?.user ?? null);
-        }
-
-        setLoading(false);
       }
-    );
 
-    // Then check for existing session (with mobile network timeout)
+      switch (event) {
+        case 'TOKEN_REFRESHED':
+          if (!nextSession) {
+            setSession(null);
+            setUser(readOfflineGuestUser());
+          } else {
+            setSession(nextSession);
+            setUser(nextSession.user);
+          }
+          break;
+
+        case 'SIGNED_OUT':
+          setSession(null);
+          setUser(null);
+          break;
+
+        case 'SIGNED_IN':
+        case 'USER_UPDATED':
+          setSession(nextSession);
+          setUser(nextSession?.user ?? null);
+          break;
+
+        default:
+          if (nextSession?.user) {
+            setSession(nextSession);
+            setUser(nextSession.user);
+          } else {
+            setSession(null);
+            setUser(readOfflineGuestUser());
+          }
+      }
+
+      setLoading(false);
+    });
+
     const sessionPromise = supabase.auth.getSession();
     const timeoutPromise = new Promise<{ data: { session: Session | null }; error: null }>((resolve) =>
       setTimeout(() => resolve({ data: { session: null }, error: null }), 10000)
@@ -101,38 +412,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     Promise.race([sessionPromise, timeoutPromise])
       .then(({ data, error }) => {
         if (!mounted) return;
-        const session = data?.session ?? (data as any)?.session ?? null;
+        const activeSession = data?.session ?? (data as any)?.session ?? null;
         if (error) {
-          console.warn('Session fetch error:', error.message);
           setSession(null);
-          setUser(null);
+          setUser(readOfflineGuestUser());
+        } else if (activeSession?.user) {
+          setSession(activeSession);
+          setUser(activeSession.user);
         } else {
-          setSession(session);
-          setUser(session?.user ?? null);
+          setSession(null);
+          setUser(readOfflineGuestUser());
         }
-        if (!session && AUTO_GUEST && !/^\/(login|auth|reset-password)/.test(window.location.pathname)) {
-          // One private anonymous identity per browser; listener sets user when ready.
+
+        if (!activeSession && AUTO_GUEST && !/^\/(login|auth|reset-password)/.test(window.location.pathname)) {
           (async () => {
-            // Retry slow/flaky mobile networks, but never stall when server explicitly disables anon auth.
-            for (let i = 0; i < 3 && mounted; i++) {
-              try {
-                const { error } = await timed(supabase.auth.signInAnonymously(), 9000, 'Auto guest sign-in timed out');
-                if (!error) break;
-                if (/disabled|not enabled|422/i.test(error.message || '')) break;
-              } catch { /* network timeout — retry with backoff */ }
-              await new Promise(r => setTimeout(r, 800 * (i + 1)));
+            for (let i = 0; i < 2 && mounted; i++) {
+              const res = await provisionCloudGuest();
+              if (!res.error) break;
+              if (/disabled|not enabled|422/i.test(res.error.message || '')) break;
+              await new Promise((r) => setTimeout(r, 800 * (i + 1)));
             }
             if (mounted) setLoading(false);
           })();
           return;
         }
         setLoading(false);
-      }).catch(() => {
+      })
+      .catch(() => {
         if (!mounted) return;
-        // Network error on mobile — allow app to load anyway
-        console.warn('Session fetch network error — allowing offline mode');
         setSession(null);
-        setUser(null);
+        setUser(readOfflineGuestUser());
         setLoading(false);
       });
 
@@ -140,7 +449,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [provisionCloudGuest]);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     try {
@@ -166,6 +475,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
       });
+      if (!error) {
+        writeGuestVault(null);
+        try {
+          localStorage.removeItem(OFFLINE_GUEST_KEY);
+        } catch {
+          // ignore
+        }
+      }
       return { error: error as Error | null };
     } catch (err) {
       return { error: err instanceof Error ? err : new Error('Sign in failed') };
@@ -174,13 +491,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = useCallback(async () => {
     try {
-      // Remember intended destination (e.g. ?redirect=/payment) for after sign-in
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get('redirect');
       if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
         sessionStorage.setItem('niknote_post_auth_redirect', redirect);
       }
-      // Use our own Google OAuth credentials (shows "Niknote" on the Google screen)
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -207,7 +522,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
       if (error) {
-        if (error.message?.includes('provider') || error.message?.includes('not enabled') || error.message?.includes('Unsupported') || error.message?.includes('missing OAuth secret')) {
+        if (
+          error.message?.includes('provider') ||
+          error.message?.includes('not enabled') ||
+          error.message?.includes('Unsupported') ||
+          error.message?.includes('missing OAuth secret')
+        ) {
           return { error: new Error('GitHub sign-in abhi configured nahi hai. Email/Password use karo!') };
         }
         return { error: error as Error };
@@ -219,42 +539,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // One in-flight guest request at a time, so rerenders never create extra anonymous users.
-  // Every Supabase call is race-limited — on flaky mobile networks a hung fetch used to
-  // pin the "Opening guest mode" loader / first-load spinner for minutes.
-  // (non-generic: the supabase client is typed `any` in this project, and TS
-  // infers `T = {}` from `any` arguments, which breaks call-site destructuring)
-  const timed = (p: Promise<any>, ms: number, label: string): Promise<any> =>
-    Promise.race([p, new Promise<any>((_, reject) => setTimeout(() => reject(new Error(label)), ms))]);
-  const guestRef = React.useRef<Promise<{ error: Error | null }> | null>(null);
-  const signInAsGuest = useCallback(() => {
-    if (guestRef.current) return guestRef.current;
-    guestRef.current = (async () => {
-      try {
-        const { data } = await timed(supabase.auth.getSession(), 4000, 'Guest sign-in is taking too long — check your internet');
-        if (data?.session) return { error: null };
-        const { error } = await timed(supabase.auth.signInAnonymously(), 12000, 'Guest sign-in is taking too long — check your internet');
-        return { error: (error as Error) ?? null };
-      } catch (err) {
-        return { error: err instanceof Error ? err : new Error('Guest sign-in failed') };
-      } finally { guestRef.current = null; }
-    })();
-    return guestRef.current;
-  }, []);
-  const isGuest = !!(user as any)?.is_anonymous;
+  const isGuest = isGuestUser(user);
 
   const signOut = async () => {
+    writeGuestVault(null);
+    try {
+      localStorage.removeItem(OFFLINE_GUEST_KEY);
+    } catch {
+      // ignore
+    }
+    setUser(null);
+    setSession(null);
     try {
       await supabase.auth.signOut();
     } catch (err) {
       console.warn('Sign out error:', err);
     }
-    setSession(null);
-    setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithGoogle, signInWithGitHub, signOut, isGuest, signInAsGuest }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        signUp,
+        signIn,
+        signInWithGoogle,
+        signInWithGitHub,
+        signOut,
+        isGuest,
+        signInAsGuest,
+        upgradeGuestAccount,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

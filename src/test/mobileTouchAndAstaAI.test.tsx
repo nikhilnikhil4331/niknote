@@ -19,6 +19,7 @@ import RoutineTracker from '@/pages/RoutineTracker';
 import BoardPage from '@/pages/Board';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { PremiumProvider } from '@/contexts/PremiumContext';
+import { supabase } from '@/integrations/supabase/client';
 import { streamAstaAI } from '@/lib/aiEngine';
 import {
   learnFromConversationTurn,
@@ -342,5 +343,175 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
 
     wrap(<BoardPage />, '/board');
     await waitFor(() => expect(screen.getByText(/New board/i)).toBeTruthy());
+  });
+
+  it('opens Guest Mode cleanly with zero errors on /login even when anonymous auth fails or device is offline', async () => {
+    const { NiknoteAuth } = await import('@/components/auth/NiknoteAuth');
+    const spyAnon = vi
+      .spyOn(supabase.auth, 'signInAnonymously')
+      .mockResolvedValue({ data: null, error: new Error('Anonymous sign-ins are disabled') } as any);
+    const spyEdgeInvoke = vi.fn().mockRejectedValue(new Error('Network offline'));
+    const spyFunctionsGetter = vi
+      .spyOn(supabase, 'functions', 'get')
+      .mockReturnValue({ invoke: spyEdgeInvoke } as any);
+
+    wrap(<NiknoteAuth mode="login" />, '/login');
+    const nameInput = screen.getByPlaceholderText(/Your name/i);
+    fireEvent.change(nameInput, { target: { value: 'Nikhil' } });
+
+    const continueBtn = screen.getByTestId('guest-continue-btn');
+    fireEvent.click(continueBtn);
+
+    await waitFor(() => {
+      expect(localStorage.getItem('niknote.offline.guest.v1')).toContain('Nikhil');
+      expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    spyAnon.mockRestore();
+    spyFunctionsGetter.mockRestore();
+  });
+
+  it('provisions real Supabase cloud session via guest-session Edge Function when signInAnonymously is disabled', async () => {
+    const { NiknoteAuth } = await import('@/components/auth/NiknoteAuth');
+    const fakeCloudUuid = '550e8400-e29b-41d4-a716-446655440000';
+    const spyAnon = vi
+      .spyOn(supabase.auth, 'signInAnonymously')
+      .mockResolvedValue({ data: null, error: new Error('Anonymous sign-ins are disabled') } as any);
+    const spyEdgeInvoke = vi.fn().mockResolvedValue({
+      data: {
+        access_token: 'tok_live_access',
+        refresh_token: 'tok_live_refresh',
+        email: 'guest_demo@guest.niknote.online',
+        password: 'NkGuest!secretpassword',
+        user: {
+          id: fakeCloudUuid,
+          email: 'guest_demo@guest.niknote.online',
+          user_metadata: { full_name: 'Nikhil', is_guest: true },
+        },
+      },
+      error: null,
+    });
+    const spyFunctionsGetter = vi
+      .spyOn(supabase, 'functions', 'get')
+      .mockReturnValue({ invoke: spyEdgeInvoke } as any);
+    const spySetSession = vi.spyOn(supabase.auth, 'setSession').mockResolvedValue({
+      data: {
+        session: {
+          access_token: 'tok_live_access',
+          refresh_token: 'tok_live_refresh',
+          user: { id: fakeCloudUuid, user_metadata: { full_name: 'Nikhil', is_guest: true } },
+        },
+        user: { id: fakeCloudUuid, user_metadata: { full_name: 'Nikhil', is_guest: true } },
+      },
+      error: null,
+    } as any);
+
+    wrap(<NiknoteAuth mode="login" />, '/login');
+    fireEvent.click(screen.getByTestId('guest-continue-btn'));
+
+    await waitFor(() => {
+      expect(spyEdgeInvoke).toHaveBeenCalledWith(
+        'guest-session',
+        expect.objectContaining({
+          body: expect.objectContaining({ action: 'create' }),
+        })
+      );
+      expect(spySetSession).toHaveBeenCalledWith({
+        access_token: 'tok_live_access',
+        refresh_token: 'tok_live_refresh',
+      });
+    });
+    expect(screen.queryByRole('alert')).toBeNull();
+
+    spyAnon.mockRestore();
+    spyFunctionsGetter.mockRestore();
+    spySetSession.mockRestore();
+  });
+
+  it('syncs local Notes, Money, Routine & Boards to Supabase Cloud cleanly without data loss', async () => {
+    const { syncAllLocalDataToCloud, getSyncSnapshot } = await import('@/lib/cloudSyncEngine');
+    const cloudUserId = '550e8400-e29b-41d4-a716-446655440099';
+    const tablesWritten: string[] = [];
+
+    const spyFrom = vi.spyOn(supabase, 'from').mockImplementation(((table: string) => {
+      tablesWritten.push(table);
+      let idx = 0;
+      const makeBuilder = () => {
+        idx += 1;
+        const validUuid = `660e8400-e29b-41d4-a716-${String(idx).padStart(12, '0')}`;
+        const listRes = { data: [], error: null };
+        const singleRes = {
+          data: { id: validUuid, amount: 250, target: 1000, saved: 0 },
+          error: null,
+        };
+        const builder: any = Promise.resolve(listRes);
+        builder.select = vi.fn().mockImplementation(() => makeBuilder());
+        builder.insert = vi.fn().mockImplementation(() => makeBuilder());
+        builder.update = vi.fn().mockImplementation(() => makeBuilder());
+        builder.upsert = vi.fn().mockImplementation(() => makeBuilder());
+        builder.delete = vi.fn().mockImplementation(() => makeBuilder());
+        builder.eq = vi.fn().mockImplementation(() => makeBuilder());
+        builder.in = vi.fn().mockImplementation(() => makeBuilder());
+        builder.order = vi.fn().mockImplementation(() => makeBuilder());
+        builder.limit = vi.fn().mockImplementation(() => makeBuilder());
+        builder.single = vi.fn().mockResolvedValue(singleRes);
+        builder.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+        return builder;
+      };
+      return makeBuilder();
+    }) as any);
+
+    localStorage.setItem(
+      'niknote.mobile.notebooks.v1',
+      JSON.stringify([
+        {
+          id: 'local-note-1',
+          title: 'Physics Revision',
+          blocks: [{ id: 'b1', type: 'text', content: 'Newton Laws' }],
+          updated_at: '2026-10-20T10:00:00.000Z',
+        },
+      ])
+    );
+    localStorage.setItem(
+      'niknote.money.v1.local',
+      JSON.stringify({
+        txs: [{ id: 'local_tx_1', kind: 'expense', amount: 250, category: 'Food', note: 'Lunch', occurred_on: '2026-10-20', account: 'Cash', to_account: null }],
+        goals: [],
+        bills: [],
+        currency: 'INR',
+        budget: 5000,
+      })
+    );
+    localStorage.setItem(
+      'niknote.routine.v1.local',
+      JSON.stringify({
+        habits: [{ id: 'rt_h1', name: 'Morning Study', emoji: '📚', block: 'morning', days: [0, 1, 2, 3, 4, 5, 6], archived: false }],
+        checks: [{ habit_id: 'rt_h1', day: '2026-10-20' }],
+        todos: [],
+        week: {},
+        waterGoal: 8,
+      })
+    );
+    localStorage.setItem(
+      'niknote.boards.v1.local',
+      JSON.stringify([
+        {
+          id: 'local-board-1',
+          title: 'Organic Chemistry Map',
+          data: { version: 1, pages: [] },
+        },
+      ])
+    );
+
+    const res = await syncAllLocalDataToCloud(cloudUserId);
+    expect(res.ok).toBe(true);
+    expect(res.synced).toBeGreaterThanOrEqual(4);
+    expect(getSyncSnapshot().state).toBe('synced');
+    expect(tablesWritten).toContain('notebooks');
+    expect(tablesWritten).toContain('money_transactions');
+    expect(tablesWritten).toContain('habits');
+    expect(tablesWritten).toContain('boards');
+
+    spyFrom.mockRestore();
   });
 });

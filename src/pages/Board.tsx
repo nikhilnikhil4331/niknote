@@ -13,6 +13,7 @@ import {
   BoardData, BoardItem, BoardPage, History, MARGIN, PAGE_PRESETS, PAPER_COLORS, Pattern, Stroke, StrokeTool, Tool,
   duplicatePage, emptyBoard, eraseAt, movePage, newPage, normalizeBoard, orient, paginateText, strokesInLasso, textCapacity, uid, validateImage,
 } from '@/lib/board';
+import { syncLocalBoardsToCloud } from '@/lib/cloudSyncEngine';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 const COLORS = ['#1a1a2e', '#1565c0', '#d32f2f', '#2e7d32', '#7b1fa2', '#ef6c00', '#facc15'];
@@ -118,9 +119,11 @@ export default function BoardScreen() {
     try { localStorage.setItem(LOCAL_BOARDS_KEY, JSON.stringify(list)); } catch { /* quota */ }
   };
 
+  const isLocalOnly = !user || String(user.id || '').startsWith('local-guest-');
+
   useEffect(() => {
     if (loading) return;
-    if (!user) {
+    if (isLocalOnly || !user) {
       const list = readLocalBoards();
       if (!boardId) { setBoards(list); return; }
       const row = list.find(b => b.id === boardId);
@@ -133,14 +136,28 @@ export default function BoardScreen() {
       return;
     }
     if (!boardId) {
-      supabase.from('boards').select('id,title,updated_at').order('updated_at', { ascending: false }).then(({ data: rows, error }: any) => {
-        if (error) toast.error('Could not load boards'); setBoards(rows ?? []);
-      });
+      (async () => {
+        await syncLocalBoardsToCloud(user.id).catch(() => 0);
+        const { data: rows, error } = await supabase.from('boards').select('id,title,updated_at').order('updated_at', { ascending: false });
+        if (error) {
+          setBoards(readLocalBoards());
+          return;
+        }
+        setBoards(rows ?? []);
+      })();
       return;
     }
     setReady(false);
     supabase.from('boards').select('*').eq('id', boardId).maybeSingle().then(({ data: row, error }: any) => {
-      if (error || !row) { toast.error('Board not found'); setParams({}); return; }
+      if (error || !row) {
+        const localFallback = readLocalBoards().find(b => b.id === boardId);
+        if (localFallback) {
+          const d = normalizeBoard(localFallback.data);
+          setData(d); setTitle(localFallback.title); setPageIdx(0); history.current = new History(); setReady(true); setSave('saved');
+          return;
+        }
+        toast.error('Board not found'); setParams({}); return;
+      }
       const local = localStorage.getItem(`nn-board:${boardId}`);
       let d = normalizeBoard(row.data);
       if (local) { try { const l = JSON.parse(local); if (l.at > new Date(row.updated_at).getTime()) { d = normalizeBoard(l.data); toast.info('Restored unsaved changes'); } } catch { /* ignore */ } }
@@ -149,14 +166,14 @@ export default function BoardScreen() {
         setZoom(Math.max(0.35, Math.min(1, +((window.innerWidth - 36) / d.pages[0].width).toFixed(2))));
       }
     });
-  }, [user, loading, boardId, setParams]);
+  }, [user, isLocalOnly, loading, boardId, setParams]);
 
   // ---------- autosave ----------
   const dirty = useRef(false);
   const persist = useCallback(async () => {
     if (!boardId) return;
     setSave('saving');
-    if (!user) {
+    if (isLocalOnly || !user) {
       const list = readLocalBoards();
       const idx = list.findIndex(b => b.id === boardId);
       const entry = { id: boardId, title, updated_at: new Date().toISOString(), data };
@@ -168,7 +185,7 @@ export default function BoardScreen() {
     const { error } = await supabase.from('boards').update({ data, title }).eq('id', boardId);
     if (error) { setSave('error'); return; }
     dirty.current = false; localStorage.removeItem(`nn-board:${boardId}`); setSave('saved');
-  }, [boardId, data, title, user]);
+  }, [boardId, data, title, user, isLocalOnly]);
   useEffect(() => {
     if (!ready || !dirty.current) return;
     localStorage.setItem(`nn-board:${boardId}`, JSON.stringify({ at: Date.now(), data }));
