@@ -2,6 +2,22 @@
 import { NoteLine, LineInkColor, LINE_INK_COLORS, generateRealPenVariation } from '@/types/noteLine';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePointerMagnify } from '@/hooks/usePointerMagnify';
+import { graphToSVG, decodeGraphSpec } from '@/lib/noteGraphs';
+
+// Per-block-type presentation for structured (AI/pasted) note lines.
+// Headings get real hierarchy, lists get markers, code gets a mono
+// box, callouts a tinted rail, equations a calm serif plate.
+const BLOCK_PRESENTATION: Record<string, { fontSize?: string; fontWeight?: number; fontFamily?: string; marker?: string; className?: string }> = {
+  h1: { fontSize: '1.55em', fontWeight: 800 },
+  h2: { fontSize: '1.3em', fontWeight: 700 },
+  h3: { fontSize: '1.12em', fontWeight: 700 },
+  bullet: { marker: '•' },
+  callout: { className: 'border-l-4 border-emerald-400/80 bg-emerald-50/60 -ml-1 rounded-r-lg' },
+  equation: { fontFamily: "'Georgia', 'Times New Roman', serif", fontWeight: 500, className: 'bg-indigo-50/70 rounded-lg -ml-1 border border-indigo-100' },
+  code: { fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: '0.82em', className: 'bg-zinc-900/[0.045] rounded-lg -ml-1 border border-zinc-900/10' },
+  divider: { className: '' },
+};
 
 interface LineBasedEditorProps {
   lines: NoteLine[];
@@ -52,6 +68,15 @@ const EditableLine: React.FC<EditableLineProps> = ({
   const variation = generateRealPenVariation(lineIndex, realPenMode);
   const inkColor = LINE_INK_COLORS.find(c => c.value === line.color);
 
+  // Structured line presentation (AI-inserted content)
+  const bt = line.blockType;
+  const pres = bt ? BLOCK_PRESENTATION[bt] : undefined;
+  const isGraph = bt === 'graph';
+  const isDivider = bt === 'divider';
+  const graphSpec = React.useMemo(() => (isGraph ? decodeGraphSpec(line.text) : null), [isGraph, line.text]);
+  const graphSVG = React.useMemo(() => (graphSpec ? graphToSVG(graphSpec) : null), [graphSpec]);
+  const isVisual = isGraph || isDivider; // rendered content line — textarea stays hidden but focusable
+
   // Register input ref with parent
   useEffect(() => {
     onMount?.(inputRef.current);
@@ -80,7 +105,9 @@ const EditableLine: React.FC<EditableLineProps> = ({
     if (e.key === 'Enter') {
       e.preventDefault();
       onEnter();
-    } else if (e.key === 'Backspace' && line.text === '') {
+    } else if (e.key === 'Backspace' && (isVisual || line.text === '')) {
+      // Visual lines (graph/divider) carry encoded data — remove the whole
+      // line instead of editing the payload; empty lines merge as usual.
       e.preventDefault();
       onBackspaceEmpty();
     } else if (e.key === 'ArrowUp') {
@@ -197,22 +224,47 @@ const EditableLine: React.FC<EditableLineProps> = ({
         transition={{ type: 'spring', stiffness: 400, damping: 17 }}
       />
 
+      {/* Structured visual lines: graph SVG / divider — rendered content,
+          textarea hidden but focusable so Backspace can still remove the line */}
+      {isGraph && graphSVG && (
+        <div
+          className="min-w-0 flex-1 rounded-xl border border-border/60 bg-white/60 p-2 shadow-sm"
+          dangerouslySetInnerHTML={{ __html: graphSVG }}
+        />
+      )}
+      {isGraph && !graphSVG && (
+        <div className="flex-1 text-sm text-muted-foreground italic">Graph (corrupted spec)</div>
+      )}
+      {isDivider && (
+        <div className="min-h-[20px] flex-1 self-center" aria-hidden="true">
+          <div className="h-px w-full bg-border/70" />
+        </div>
+      )}
+
+      {/* Bullet marker for list lines */}
+      {pres?.marker && !isVisual && (
+        <span aria-hidden="true" className="mr-2 flex-shrink-0 select-none font-bold" style={{ color: inkColor?.hex }}>
+          {pres.marker}
+        </span>
+      )}
+
       {/* CRITICAL: Mobile-optimized textarea with proper paste handling */}
       <textarea
         ref={inputRef}
-        rows={1}
-        value={line.text}
+        rows={isGraph || isDivider ? 1 : (bt === 'code' ? Math.max(1, line.text.split('\n').length) : 1)}
+        value={isVisual ? '' : line.text}
         onChange={handleInput}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
-        placeholder={lineIndex === 0 ? "Start writing here..." : ""}
+        placeholder={isVisual ? ' ' : lineIndex === 0 ? "Start writing here..." : ""}
         autoComplete="off"
         autoCorrect="on"
         spellCheck={true}
+        readOnly={isVisual}
         // Mobile-specific attributes for better paste handling
         inputMode="text"
         enterKeyHint="next"
-        wrap="off"
+        wrap={bt === 'code' ? 'off' : 'off'}
         className={cn(
           "block flex-1 bg-transparent border-none outline-none font-handwriting-1",
           "text-lg sm:text-xl leading-[48px] tracking-wide",
@@ -220,11 +272,18 @@ const EditableLine: React.FC<EditableLineProps> = ({
           "placeholder:text-muted-foreground/30 placeholder:italic",
           "focus:outline-none focus-visible:outline-none focus-visible:ring-0",
           "caret-primary caret-[2px]",
-          "selection:bg-primary/20"
+          "selection:bg-primary/20",
+          pres?.className,
+          isVisual && "absolute inset-0 opacity-0"
         )}
         style={{
           ...getInkStyle(),
           caretColor: 'hsl(var(--primary))',
+          ...(pres?.fontSize ? { fontSize: pres.fontSize } : null),
+          ...(pres?.fontWeight ? { fontWeight: pres.fontWeight } : null),
+          ...(pres?.fontFamily ? { fontFamily: pres.fontFamily } : null),
+          ...(bt === 'code' ? { lineHeight: 1.5 } : null),
+          ...(line.indent ? { marginLeft: `${line.indent * 1.25}rem` } : null),
         }}
       />
       
@@ -255,11 +314,16 @@ export const LineBasedEditor: React.FC<LineBasedEditorProps> = ({
   onLineColorChange: _onLineColorChange,
   onSelectLine,
   onAddLine,
-  onRemoveLine: _onRemoveLine,
+  onRemoveLine,
   onPaste,
   onMergeLinesUp,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { magnifyRef, magnifyHandlers } = usePointerMagnify();
+  const setRootRef = useCallback((el: HTMLDivElement | null) => {
+    containerRef.current = el;
+    magnifyRef.current = el;
+  }, []);
   const inputRefs = useRef<Map<string, HTMLTextAreaElement>>(new Map());
   const lastAddedLineId = useRef<string | null>(null);
   const [newLineIds, setNewLineIds] = useState<Set<string>>(new Set());
@@ -331,6 +395,13 @@ export const LineBasedEditor: React.FC<LineBasedEditorProps> = ({
   }, [onAddLine]);
 
   const handleBackspaceEmpty = useCallback((lineId: string, lineIndex: number) => {
+    // Graph/divider lines carry encoded payloads — remove the whole line
+    // rather than merging raw data into the previous line.
+    const target = lines[lineIndex];
+    if (target && (target.blockType === 'graph' || target.blockType === 'divider')) {
+      onRemoveLine(lineId);
+      return;
+    }
     if (lineIndex > 0) {
       const prevLine = lines[lineIndex - 1];
       const prevInput = inputRefs.current.get(prevLine.id);
@@ -346,7 +417,7 @@ export const LineBasedEditor: React.FC<LineBasedEditorProps> = ({
       
       onMergeLinesUp(lineId);
     }
-  }, [lines, onMergeLinesUp]);
+  }, [lines, onMergeLinesUp, onRemoveLine]);
 
   const handleArrowUp = useCallback((lineIndex: number) => {
     if (lineIndex > 0) {
@@ -371,10 +442,11 @@ export const LineBasedEditor: React.FC<LineBasedEditorProps> = ({
   }, [lines, handleAddLine]);
 
   return (
-    <div 
-      ref={containerRef}
+    <div
+      ref={setRootRef}
+      {...magnifyHandlers}
       className={cn(
-        "relative rounded-2xl border overflow-hidden",
+        "nn-magnify relative rounded-2xl border overflow-hidden",
         "bg-paper/90 backdrop-blur-xl",
         "border-white/15 shadow-lg",
         "transition-all duration-200",

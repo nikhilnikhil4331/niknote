@@ -19,6 +19,8 @@ interface PenPaletteProps {
   onRealPenModeChange: (enabled: boolean) => void;
   currentText?: string;
   onInsertText?: (text: string) => void;
+  /** Preferred path: insert organised (structured) note lines. */
+  onInsertStructured?: (lines: import('@/lib/noteStructure').StructuredLine[]) => void;
   showAiAssistant?: boolean;
   premiumLocked?: boolean;
   onPremiumTap?: () => void;
@@ -36,6 +38,7 @@ export const PenPalette: React.FC<PenPaletteProps> = ({
   onRealPenModeChange,
   currentText = '',
   onInsertText,
+  onInsertStructured,
   showAiAssistant = true,
   premiumLocked = false,
   onPremiumTap,
@@ -70,6 +73,7 @@ export const PenPalette: React.FC<PenPaletteProps> = ({
                   <AIWritingAssistant
                     currentText={currentText}
                     onInsertText={onInsertText}
+                    onInsertStructured={onInsertStructured}
                     locked={premiumLocked}
                     onLockedTap={onPremiumTap}
                   />

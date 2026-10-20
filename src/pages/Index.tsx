@@ -40,7 +40,8 @@ const WorkspaceSidebar = lazy(() => import('@/components/workspace/WorkspaceSide
 import {
   Settings2, Edit3, FileDown, Palette, Crown, LogIn, Cloud, RefreshCw, CheckCircle2,
   Gem, MoreVertical, Moon, Sun, RotateCcw, Share2, Image, FileText,
-  LayoutGrid, Scan, Brain, PanelLeft, ChevronDown, MessageSquare, Zap, Undo2, Redo2, Save, Eye, PenLine, Upload
+  LayoutGrid, Scan, Brain, PanelLeft, ChevronDown, MessageSquare, Zap, Undo2, Redo2, Save, Eye, PenLine, Upload,
+  Calculator, ListChecks, FileUp, Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -75,6 +76,16 @@ import { useInlineContent } from '@/hooks/useInlineContent';
 import { Toolbar } from '@/components/Toolbar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toggleMark } from '@/lib/inlineMarks';
+import {
+  markdownToStructuredLines,
+  stripMarkdownNoise,
+  structuredToBlocks,
+  structuredToNoteLines,
+  type StructuredLine,
+} from '@/lib/noteStructure';
+import { SemiCircularDial } from '@/components/dial/SemiCircularDial';
+import { readPdf } from '@/lib/pdfText';
+const HandwritingStudio = lazy(() => import('@/components/handwriting-dna/HandwritingStudio').then(m => ({ default: m.HandwritingStudio })));
 
 const Index = () => {
   const navigate = useNavigate();
@@ -134,6 +145,8 @@ const Index = () => {
   const [showScanPanel, setShowScanPanel] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showAIWorkspace, setShowAIWorkspace] = useState(false);
+  const [showStudioPanel, setShowStudioPanel] = useState(false);
+  const homePdfRef = useRef<HTMLInputElement>(null);
 
   // Mobile state
   const [mobileTab, setMobileTab] = useState<MobileTab>('write');
@@ -671,20 +684,18 @@ const Index = () => {
 
   const autoPagination = useAutoPagination({ settings, lines, updateLines: updateCurrentPageLines, addNewPage, totalPages, currentPageIndex, goToPage });
 
-  const handlePaste = useCallback((rawText: string, atLineId?: string) => {
-    const normalized = (rawText ?? '').replace(/\r/g, '');
-    const pastedLines = normalized.split('\n');
-    if (pastedLines.length <= 1) return;
+  /** Shared low-level insert into the lines model (batches + auto-flow pages). */
+  const insertNoteLinesAt = useCallback((newLinesData: NoteLine[], atLineId?: string) => {
+    if (!newLinesData.length) return;
     const insertIndex = atLineId ? lines.findIndex(l => l.id === atLineId) : lines.length - 1;
     if (insertIndex === -1) return;
-    const newLinesData = pastedLines.map((text, i) => ({ id: generateLineId(), text, color: getDefaultColorForLine(insertIndex + i), timestamp: Date.now() + i }));
     const currentLine = lines[insertIndex];
     const baseBefore = (currentLine?.text ?? '') === '' ? lines.slice(0, insertIndex) : lines.slice(0, insertIndex + 1);
-    const baseAfter = (currentLine?.text ?? '') === '' ? lines.slice(insertIndex + 1) : lines.slice(insertIndex + 1);
+    const baseAfter = lines.slice(insertIndex + 1);
     isPastingRef.current = true;
     let inserted: NoteLine[] = [];
     let lastWorking: NoteLine[] = [...baseBefore, ...baseAfter];
-    const batchSize = normalized.length > 500 ? 12 : 30;
+    const batchSize = newLinesData.length > 50 ? 12 : 30;
     const tick = () => {
       const nextBatch = newLinesData.slice(inserted.length, inserted.length + batchSize);
       inserted = inserted.concat(nextBatch);
@@ -699,10 +710,80 @@ const Index = () => {
     tick();
   }, [lines, updateCurrentPageLines, autoPagination.linesPerPage, flowOverflowFrom, currentPageIndex]);
 
+  const handlePaste = useCallback((rawText: string, atLineId?: string) => {
+    const normalized = (rawText ?? '').replace(/\r/g, '');
+    const pastedLines = normalized.split('\n');
+    if (pastedLines.length <= 1) return;
+    const insertIndex = atLineId ? lines.findIndex(l => l.id === atLineId) : lines.length - 1;
+    if (insertIndex === -1) return;
+    const newLinesData = pastedLines.map((text, i) => ({ id: generateLineId(), text, color: getDefaultColorForLine(insertIndex + i), timestamp: Date.now() + i }));
+    insertNoteLinesAt(newLinesData, atLineId);
+  }, [lines, insertNoteLinesAt]);
+
+  /**
+   * Structured AI/PDF insert — the "organised notes" path.
+   * Converts markdown → structured lines, then appends proper
+   * blocks to the home canvas (BlockEditor) and mirrored lines to
+   * the pages model (preview/pagination), so ### / $$ / /// never
+   * appear as raw artifacts.
+   */
+  const handleAIInsertStructured = useCallback((structured: StructuredLine[]) => {
+    if (!structured.length) return;
+    const newBlocks = structuredToBlocks(structured);
+    const blocks = blockEditor.blocks;
+    const last = blocks[blocks.length - 1];
+    // Don't leave a dangling empty line above the inserted content
+    const nextBlocks = last && last.type === 'text' && !last.content.trim()
+      ? [...blocks.slice(0, -1), ...newBlocks]
+      : [...blocks, ...newBlocks];
+    blockEditor.setBlocks(nextBlocks);
+    insertNoteLinesAt(structuredToNoteLines(structured));
+    toast.success('Added to your notes — organised ✦');
+  }, [blockEditor, insertNoteLinesAt]);
+
+  /** Markdown string → structured insert (used by AI + PDF import). */
+  const handleAIInsertMarkdown = useCallback((markdown: string) => {
+    const structured = markdownToStructuredLines(markdown);
+    handleAIInsertStructured(structured);
+  }, [handleAIInsertStructured]);
+
+  /** PDF → structured note insert (offline, read locally). */
+  const handleHomePdfImport = useCallback(async (file: File | undefined) => {
+    if (!file) return;
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      toast.error('Please choose a PDF file');
+      return;
+    }
+    try {
+      toast.info('Reading PDF locally…');
+      const { pages } = await readPdf(file, 12);
+      const text = pages.map(p => p.lines.join('\n')).join('\n\n').trim();
+      if (!text) { toast.error('No extractable text in this PDF (scanned PDFs need OCR)'); return; }
+      handleAIInsertMarkdown(text);
+      toast.success(`Imported ${pages.filter(p => p.lines.some(l => l.trim())).length} page(s) from “${file.name}”`);
+    } catch (e) {
+      console.error('pdf import failed', e);
+      toast.error('Could not read that PDF');
+    }
+  }, [handleAIInsertMarkdown]);
+
   useEffect(() => {
     if (isPastingRef.current) return;
     if (lines.length > autoPagination.linesPerPage) flowOverflowFrom(currentPageIndex, autoPagination.linesPerPage);
   }, [lines.length, autoPagination.linesPerPage, currentPageIndex, flowOverflowFrom]);
+
+  // Page auto-shrink: when content is deleted, a trailing page that
+  // becomes fully empty is removed (one per pass, debounced).
+  useEffect(() => {
+    if (isPastingRef.current || totalPages <= 1) return;
+    const t = setTimeout(() => {
+      const last = pages[totalPages - 1];
+      if (last && last.lines.length > 0 && last.lines.every(l => !l.text.trim())) {
+        deletePage(totalPages - 1);
+      }
+    }, 900);
+    return () => clearTimeout(t);
+  }, [pages, totalPages, deletePage]);
 
   const undoLine = useCallback((lineId: string) => {
     const h = lineHistories.get(lineId);
@@ -1370,7 +1451,7 @@ const Index = () => {
 
           {/* ---- DESKTOP NOTION-STYLE LAYOUT ---- */}
           {!isMobile && (
-            <div className="flex-1 flex overflow-hidden min-h-0 gap-0">
+            <div className="flex-1 flex overflow-hidden min-h-0 gap-0 relative">
               {/* MAIN CONTENT — Notion-style integrated editor + preview */}
               <div className="flex-1 overflow-hidden flex flex-col min-w-0">
                 <ScrollArea className="flex-1">
@@ -1510,6 +1591,7 @@ const Index = () => {
                       onRealPenModeChange={setRealPenMode}
                       currentText={getPlainText()}
                       onInsertText={(text) => handlePaste(text)}
+                      onInsertStructured={handleAIInsertStructured}
                       premiumLocked={!premium.isPremium}
                       onPremiumTap={() => requirePremium('handwriting_styles')}
                     />
@@ -1538,6 +1620,31 @@ const Index = () => {
                   </div>
                 </ScrollArea>
               </div>
+
+              {/* Home quick-nav dial — same semi-circular menu as Daily Tracker / Money */}
+              <div className="absolute bottom-4 left-4 z-40">
+                <SemiCircularDial
+                  menuLabel="Quick menu"
+                  centerLabel="Menu"
+                  align="left"
+                  items={[
+                    { id: 'nikai', label: 'NikAI', icon: Sparkles, tint: '#7c3aed', onSelect: () => navigate('/ai') },
+                    { id: 'money', label: 'Money', icon: Calculator, tint: '#059669', onSelect: () => navigate('/money') },
+                    { id: 'routine', label: 'Routine', icon: ListChecks, tint: '#2563eb', onSelect: () => navigate('/routine') },
+                    { id: 'handwriting', label: 'Handwriting', icon: PenLine, tint: '#d97706', onSelect: () => setShowStudioPanel(true) },
+                    { id: 'pdf', label: 'Import PDF', icon: FileUp, tint: '#e11d48', onSelect: () => homePdfRef.current?.click() },
+                    { id: 'notebooks', label: 'Notebooks', icon: FileText, tint: '#0891b2', onSelect: () => navigate('/notebooks') },
+                    { id: 'settings', label: 'Settings', icon: Settings2, tint: '#64748b', onSelect: () => navigate('/appearance') },
+                  ]}
+                />
+              </div>
+              <input
+                ref={homePdfRef}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={e => { handleHomePdfImport(e.target.files?.[0]); e.target.value = ''; }}
+              />
             </div>
           )}
         </div>
@@ -1546,7 +1653,7 @@ const Index = () => {
 
       {/* ============ MOBILE PANELS ============ */}
       <SlidePanel isOpen={showPenPanel} onClose={() => setShowPenPanel(false)} title="Pen Palette" icon={<Palette className="w-4 h-4 text-primary" />} side="right">
-        <PenPalette currentColor={currentColor} onColorChange={handleColorChange} selectedCount={selectedLines.size} onUndo={handleUndo} onRedo={handleRedo} canUndo={firstSelectedLineId ? canUndo(firstSelectedLineId) : false} canRedo={firstSelectedLineId ? canRedo(firstSelectedLineId) : false} realPenMode={realPenMode} onRealPenModeChange={setRealPenMode} currentText={getPlainText()} onInsertText={(text) => handlePaste(text)} premiumLocked={!premium.isPremium} onPremiumTap={() => requirePremium('ai_text_tools')} />
+        <PenPalette currentColor={currentColor} onColorChange={handleColorChange} selectedCount={selectedLines.size} onUndo={handleUndo} onRedo={handleRedo} canUndo={firstSelectedLineId ? canUndo(firstSelectedLineId) : false} canRedo={firstSelectedLineId ? canRedo(firstSelectedLineId) : false} realPenMode={realPenMode} onRealPenModeChange={setRealPenMode} currentText={getPlainText()} onInsertText={(text) => handlePaste(text)} onInsertStructured={handleAIInsertStructured} premiumLocked={!premium.isPremium} onPremiumTap={() => requirePremium('ai_text_tools')} />
       </SlidePanel>
 
       <SlidePanel isOpen={showStylePanel} onClose={() => setShowStylePanel(false)} title="Page Style" icon={<Settings2 className="w-4 h-4 text-primary" />} side="right">
@@ -1563,6 +1670,17 @@ const Index = () => {
               toast.success(`✅ ${dna.styleName} DNA applied!`);
             }}
             onClose={() => setShowScanPanel(false)}
+          />
+        </React.Suspense>
+      </SlidePanel>
+
+      {/* Handwriting Studio — style profiles + PDF → handwritten conversion */}
+      <SlidePanel isOpen={showStudioPanel} onClose={() => setShowStudioPanel(false)} title="Handwriting Studio" icon={<PenLine className="w-4 h-4 text-primary" />} side="right">
+        <React.Suspense fallback={<div className="p-6 text-center text-sm text-muted-foreground">Loading Studio…</div>}>
+          <HandwritingStudio
+            onInsertStructured={handleAIInsertStructured}
+            onUpdateDNA={(dna) => dnaContext.updateDNA(dna)}
+            currentDNA={dnaContext.dna}
           />
         </React.Suspense>
       </SlidePanel>
@@ -1682,18 +1800,8 @@ const Index = () => {
           isOpen={showAIWorkspace}
           onClose={() => setShowAIWorkspace(false)}
           onInsertContent={(content) => {
-            // Insert AI content as new blocks
-            const lines = content.split('\n').filter(l => l.trim());
-            const newBlocks = lines.map(line => ({
-              id: `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              type: line.startsWith('#') ? 'heading2' : line.startsWith('-') ? 'bullet' : 'text' as any,
-              content: line.replace(/^#+\s/, '').replace(/^[-*]\s/, ''),
-              color: currentColor,
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
-            }));
-            blockEditor.setBlocks([...blockEditor.blocks, ...newBlocks]);
-            toast.success('AI content inserted! ✍️');
+            // Insert AI content as properly organised blocks (no raw markdown)
+            handleAIInsertStructured(markdownToStructuredLines(content));
           }}
         />
       </React.Suspense>

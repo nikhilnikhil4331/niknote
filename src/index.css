@@ -1504,3 +1504,43 @@
 .nn-loader-retry { min-height:44px; padding:0 20px; border-radius:999px; border:1px solid hsl(var(--border)); background:hsl(var(--card)); color:hsl(var(--foreground)); font-weight:600; font-size:14px; }
 .nn-loader-retry:focus-visible { outline:2px solid hsl(var(--ring)); outline-offset:2px; }
 @media (prefers-reduced-motion: reduce) { .nn-lens { display:none; } }
+
+/* ============================================================
+   Cursor-aware magnification — subtle local zoom on designated
+   NikNote content areas (notes canvas, preview). Off for touch
+   input and reduced-motion; neutralised while typing/editing.
+   ============================================================ */
+.nn-magnify {
+  --mag-scale: 1;
+  --mag-x: 50%;
+  --mag-y: 50%;
+  transform: scale(var(--mag-scale));
+  transform-origin: var(--mag-x) var(--mag-y);
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+.nn-magnify:focus-within { --mag-scale: 1; transition: transform 140ms ease-out; }
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .nn-magnify { transform: none !important; }
+}
+
+/* ============================================================
+   NikAI generation indicator — logo pop + light sweep.
+   A calm "awake" pulse while the model is generating.
+   ============================================================ */
+.nn-nikai-pop { position: relative; overflow: hidden; border-radius: 10px; }
+.nn-nikai-pop::after {
+  content: '';
+  position: absolute;
+  inset: -40% -20%;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.55) 50%, transparent 58%);
+  transform: translateX(-120%);
+  animation: nn-nikai-sweep 2.4s ease-in-out infinite;
+}
+@keyframes nn-nikai-sweep {
+  0% { transform: translateX(-130%); }
+  55%, 100% { transform: translateX(130%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nn-nikai-pop::after { animation: none; opacity: 0; }
+}

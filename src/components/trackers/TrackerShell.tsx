@@ -61,9 +61,9 @@ export function TrackerShell({ title, subtitle, children }: { title: string; sub
   );
 }
 
-export function Panel({ title, action, children, className = '' }: { title: string; action?: ReactNode; children: ReactNode; className?: string }) {
+export function Panel({ title, action, children, className = '', id }: { title: string; action?: ReactNode; children: ReactNode; className?: string; id?: string }) {
   return (
-    <section className={`rounded-3xl border border-border bg-card/90 p-5 shadow-sm ${className}`}>
+    <section id={id} className={`rounded-3xl border border-border bg-card/90 p-5 shadow-sm scroll-mt-20 ${className}`}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-semibold text-foreground">{title}</h2>
         {action}

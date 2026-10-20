@@ -3,6 +3,7 @@ import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { GripVertical, Trash2, Plus, Palette, ChevronRight, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Block, BlockType, createBlock, detectBlockPrefix, generateBlockId } from '@/types/block';
+import { stripMarkdownNoise } from '@/lib/noteStructure';
 import { SlashCommandMenu } from './SlashCommandMenu';
 import { InlineAIMenu } from './InlineAIMenu';
 import { MentionPopup, MentionItem } from './MentionPopup';
@@ -440,10 +441,12 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
             onClose={() => setAiOpen(false)}
             text={targetText}
             context={ctx}
-            onAccept={(newText) => {
+            onAccept={(raw) => {
               if (!aiTargetId) return;
               const t = blocks.find(b => b.id === aiTargetId);
               if (!t) return;
+              // Strip markdown artifacts so the block reads like typed notes.
+              const newText = stripMarkdownNoise(raw);
               // If block was empty or "continue" style, append; otherwise replace.
               const shouldAppend = (t.content || '').trim().length > 0 && newText.startsWith(t.content.trim());
               const finalText = shouldAppend ? newText : newText;
