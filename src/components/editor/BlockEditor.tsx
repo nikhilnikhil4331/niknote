@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { GripVertical, Trash2, Plus, Palette, ChevronRight, Sparkles, MessageSquare } from 'lucide-react';
+import { GripVertical, Trash2, Plus, Palette, ChevronRight, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Block, BlockType, createBlock, detectBlockPrefix, generateBlockId } from '@/types/block';
+import { stripMarkdownNoise } from '@/lib/noteStructure';
 import { SlashCommandMenu } from './SlashCommandMenu';
 import { InlineAIMenu } from './InlineAIMenu';
 import { MentionPopup, MentionItem } from './MentionPopup';
@@ -413,10 +414,17 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
           setAiTargetId(targetId);
           setAiOpen(true);
         }}
-        aria-label="Ask AI"
+        aria-label="Ask NikAI"
         className="fixed z-40 bottom-24 right-4 sm:bottom-6 sm:right-6 h-14 w-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-xl shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-transform"
       >
-        <Sparkles className="w-6 h-6" />
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white">
+          <img
+            src="/nikai-mark.png"
+            alt=""
+            aria-hidden="true"
+            className="h-7 w-auto object-contain select-none pointer-events-none"
+          />
+        </span>
       </button>
 
       {/* Inline AI menu */}
@@ -433,10 +441,12 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
             onClose={() => setAiOpen(false)}
             text={targetText}
             context={ctx}
-            onAccept={(newText) => {
+            onAccept={(raw) => {
               if (!aiTargetId) return;
               const t = blocks.find(b => b.id === aiTargetId);
               if (!t) return;
+              // Strip markdown artifacts so the block reads like typed notes.
+              const newText = stripMarkdownNoise(raw);
               // If block was empty or "continue" style, append; otherwise replace.
               const shouldAppend = (t.content || '').trim().length > 0 && newText.startsWith(t.content.trim());
               const finalText = shouldAppend ? newText : newText;

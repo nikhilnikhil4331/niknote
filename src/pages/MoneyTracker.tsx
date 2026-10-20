@@ -1,15 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area, CartesianGrid } from 'recharts';
 import { MoneyArt } from '@/components/motion/FeatureArt';
-import { Plus, Trash2, Target, Users, Download, Coins, Camera, Loader2, Bell, CheckCircle2, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Target, Users, Download, Coins, Camera, Loader2, Bell, CheckCircle2, Sparkles, TrendingDown, TrendingUp, FileDown, PiggyBank, ReceiptText } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { haptic } from '@/hooks/useHaptics';
 import { toast } from 'sonner';
 import { TrackerShell, Panel } from '@/components/trackers/TrackerShell';
+import { SemiCircularDial, type DialItem } from '@/components/dial/SemiCircularDial';
 import { EXPENSE_CATEGORIES, CURRENCIES, formatMoney, accountBalances, cashflow, ACCOUNTS, toDay, splitBill, billStatus, topCategories, dailyCashSeries } from '@/lib/trackers';
 import { syncLocalMoneyToCloud } from '@/lib/cloudSyncEngine';
 
@@ -60,8 +61,18 @@ export default function MoneyTracker() {
   const [scanning, setScanning] = useState(false);
   const [bills, setBills] = useState<Bill[]>(() => readLocalMoney().bills);
   const [billForm, setBillForm] = useState({ name: '', amount: '', due_day: '' });
+  const [search, setSearch] = useState('');
+
+  const amountRef = useRef<HTMLInputElement>(null);
+  const scanRef = useRef<HTMLInputElement>(null);
 
   const isLocalOnly = !user || String(user.id || '').startsWith('local-guest-');
+
+  /** Smoothly reveal a panel (and focus an input when given) — used by the dial. */
+  const focusPanel = (id: string, focus?: React.RefObject<HTMLInputElement>) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.setTimeout(() => focus?.current?.focus({ preventScroll: true }), 350);
+  };
 
   // Always mirror device state cleanly when not signed in to cloud
   useEffect(() => {
@@ -331,7 +342,7 @@ export default function MoneyTracker() {
             whileHover={{ rotateX: 4, rotateY: -4, scale: 1.02 }} style={{ transformPerspective: 600 }}
             className="rounded-3xl border border-border bg-card p-3 sm:p-5 shadow-sm min-w-0">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <motion.span animate={{ rotateY: 360 }} transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}><Coins className="w-4 h-4 text-amber-500" /></motion.span>
+              <Coins className="w-4 h-4" style={{ color: c.tone.startsWith('text-emerald') ? '#059669' : c.tone.startsWith('text-rose') ? '#e11d48' : undefined, opacity: 0.7 }} />
               {c.label}
             </div>
             <p className={`text-base sm:text-2xl font-bold mt-1 truncate ${c.tone}`}>{formatMoney(c.value, currency)}</p>
@@ -393,7 +404,7 @@ export default function MoneyTracker() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*]:min-w-0">
-        <Panel title="Add transaction">
+        <Panel id="panel-tx" title="Add transaction">
           <div className="flex gap-2 mb-3">
             {['expense', 'income', 'transfer'].map(k => (
               <button key={k} onClick={() => setForm(f => ({ ...f, kind: k }))}
@@ -401,7 +412,7 @@ export default function MoneyTracker() {
             ))}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <input inputMode="decimal" placeholder="Amount" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+            <input ref={amountRef} inputMode="decimal" placeholder="Amount" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
               className="h-11 rounded-xl border border-border bg-background px-3 text-sm" />
             <input type="date" value={form.occurred_on} onChange={e => setForm(f => ({ ...f, occurred_on: e.target.value }))}
               className="h-11 rounded-xl border border-border bg-background px-3 text-sm" />
@@ -429,18 +440,18 @@ export default function MoneyTracker() {
             className="mt-4 w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2"><Plus className="w-4 h-4" />Add</motion.button>
           <label className={`mt-2 w-full h-11 rounded-xl border-2 border-dashed border-primary/40 text-primary font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition ${scanning ? 'opacity-60 pointer-events-none' : ''}`}>
             {scanning ? <><Loader2 className="w-4 h-4 animate-spin" />Reading receipt…</> : <><Camera className="w-4 h-4" />Scan receipt photo</>}
-            <input type="file" accept="image/png,image/jpeg,image/webp" capture="environment" className="hidden" onChange={e => { scanReceipt(e.target.files?.[0]); e.target.value = ''; }} />
+            <input ref={scanRef} type="file" accept="image/png,image/jpeg,image/webp" capture="environment" className="hidden" onChange={e => { scanReceipt(e.target.files?.[0]); e.target.value = ''; }} />
           </label>
         </Panel>
 
-        <Panel title="Account balances">
+        <Panel id="panel-accounts" title="Account balances">
           <p className="text-xs text-muted-foreground mb-3">From all your saved entries (income − spending ± transfers).</p>
           <div className="grid grid-cols-2 gap-2">
             {ACCOUNTS.map(a => <div key={a} className="rounded-xl bg-muted/50 p-3"><p className="text-xs text-muted-foreground">{a}</p><p className={`font-semibold ${(balances[a] ?? 0) < 0 ? 'text-destructive' : ''}`}>{formatMoney(balances[a] ?? 0, currency)}</p></div>)}
           </div>
         </Panel>
 
-        <Panel title="Monthly budget">
+        <Panel id="panel-budget" title="Monthly budget">
           <div className="flex gap-2">
             <input inputMode="decimal" value={budget || ''} placeholder="Set budget" onChange={e => setBudget(Number(e.target.value) || 0)}
               onBlur={() => saveSettings({ monthly_budget: budget })} className="flex-1 min-w-0 h-11 rounded-xl border border-border bg-background px-3 text-sm" />
@@ -464,7 +475,7 @@ export default function MoneyTracker() {
         </Panel>
       </div>
 
-      <Panel title="Graphs" action={<div className="nn-chart-tabs" role="group" aria-label="Choose graph">{([['flow', 'Flow'], ['balance', 'Balance'], ['compare', 'Compare']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={chart === k} onClick={() => { haptic('selection'); setChart(k); }}>{l}</button>)}</div>}>
+      <Panel id="panel-graphs" title="Graphs" action={<div className="nn-chart-tabs" role="group" aria-label="Choose graph">{([['flow', 'Flow'], ['balance', 'Balance'], ['compare', 'Compare']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={chart === k} onClick={() => { haptic('selection'); setChart(k); }}>{l}</button>)}</div>}>
         {series.every(r => !r.income && !r.expense) ? <p className="text-sm text-muted-foreground py-10 text-center flex items-center justify-center gap-1.5">Add a transaction to see your graph grow <Sparkles className="w-4 h-4 text-primary shrink-0" aria-hidden="true" /></p> : (
         <motion.div key={chart + range} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="h-60">
           <ResponsiveContainer>
@@ -506,7 +517,7 @@ export default function MoneyTracker() {
       </Panel>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 [&>*]:min-w-0">
-        <Panel title="Savings goals" action={<Target className="w-4 h-4 text-muted-foreground" />}>
+        <Panel id="panel-goals" title="Savings goals" action={<Target className="w-4 h-4 text-muted-foreground" />}>
           <div className="flex gap-2 mb-4">
             <input placeholder="Goal (e.g. New phone)" value={goalForm.name} onChange={e => setGoalForm(g => ({ ...g, name: e.target.value }))} className="flex-1 min-w-0 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
             <input inputMode="decimal" placeholder="Target" value={goalForm.target} onChange={e => setGoalForm(g => ({ ...g, target: e.target.value }))} className="w-20 shrink-0 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
@@ -546,7 +557,7 @@ export default function MoneyTracker() {
         </Panel>
       </div>
 
-      <Panel title="Bill reminders" action={<Bell className="w-4 h-4 text-muted-foreground" />}>
+      <Panel id="panel-bills" title="Bill reminders" action={<Bell className="w-4 h-4 text-muted-foreground" />}>
         <div className="flex gap-2 mb-4">
           <input placeholder="Bill (e.g. Electricity)" value={billForm.name} onChange={e => setBillForm(f => ({ ...f, name: e.target.value }))} className="flex-1 min-w-0 h-10 rounded-xl border border-border bg-background px-3 text-sm" />
           <input inputMode="decimal" placeholder="Amount" value={billForm.amount} onChange={e => setBillForm(f => ({ ...f, amount: e.target.value }))} className="w-20 h-10 rounded-xl border border-border bg-background px-2 text-sm" />
@@ -575,10 +586,19 @@ export default function MoneyTracker() {
       </Panel>
 
       <Panel title="Recent transactions">
-        <p className="text-xs text-muted-foreground mb-3">Swipe left on a row to delete</p>
+        <div className="mb-3 flex items-center gap-2">
+          <p className="text-xs text-muted-foreground">Swipe left on a row to delete</p>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search note or category…"
+            aria-label="Search transactions"
+            className="ml-auto h-9 w-44 rounded-xl border border-border bg-background px-3 text-xs"
+          />
+        </div>
         <div className="space-y-2 overflow-hidden">
           <AnimatePresence initial={false}>
-            {inRange.slice(0, 50).map(t => {
+            {inRange.filter(t => !search.trim() || `${t.note} ${t.category}`.toLowerCase().includes(search.trim().toLowerCase())).slice(0, 50).map(t => {
               const c = catOf(t.category);
               return (
                 <motion.div key={t.id} layout initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -200 }}
@@ -596,9 +616,29 @@ export default function MoneyTracker() {
               );
             })}
           </AnimatePresence>
-          {!inRange.length && <p className="text-sm text-muted-foreground">Nothing here yet.</p>}
+          {inRange.filter(t => !search.trim() || `${t.note} ${t.category}`.toLowerCase().includes(search.trim().toLowerCase())).length === 0 && (
+            <p className="text-sm text-muted-foreground">{search ? `No entries match “${search}”.` : 'Nothing here yet.'}</p>
+          )}
         </div>
       </Panel>
+
+      {/* Semi-circular quick dial — same rotating nav language as the Daily Tracker */}
+      <div className="fixed z-40 bottom-24 right-3 md:bottom-8 md:right-8" data-testid="money-dial">
+        <SemiCircularDial
+          menuLabel="Money quick actions"
+          centerLabel="Open money quick actions"
+          align="right"
+          items={[
+            { id: 'expense', label: 'Add expense', icon: TrendingDown, tint: '#e11d48', onSelect: () => { setForm(f => ({ ...f, kind: 'expense' })); focusPanel('panel-tx', amountRef); } },
+            { id: 'income', label: 'Add income', icon: TrendingUp, tint: '#059669', onSelect: () => { setForm(f => ({ ...f, kind: 'income' })); focusPanel('panel-tx', amountRef); } },
+            { id: 'receipt', label: 'Scan receipt', icon: Camera, tint: '#0ea5e9', onSelect: () => scanRef.current?.click() },
+            { id: 'budget', label: 'Budget', icon: PiggyBank, tint: '#7c3aed', onSelect: () => focusPanel('panel-budget') },
+            { id: 'goals', label: 'Goals', icon: Target, tint: '#f59e0b', onSelect: () => focusPanel('panel-goals') },
+            { id: 'bills', label: 'Bills', icon: ReceiptText, tint: '#64748b', onSelect: () => focusPanel('panel-bills') },
+            { id: 'report', label: 'PDF report', icon: FileDown, tint: '#334155', onSelect: exportPdf },
+          ]}
+        />
+      </div>
     </TrackerShell>
   );
 }

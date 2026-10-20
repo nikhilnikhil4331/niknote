@@ -527,24 +527,29 @@ export function MobileExperience() {
             </div>
             <div className="nn-settings-group">
               {[
-                { label: 'NikAI', icon: Sparkles, action: () => navigate('/ai') },
-                { label: 'Account', icon: Settings, action: () => navigate('/account-details') },
-                { label: 'Appearance', icon: LayoutGrid, action: () => navigate('/appearance') },
+                { label: 'NikAI', icon: Sparkles, customImg: '/nikai-mark.png', action: () => navigate('/ai') },
+                { label: 'Account', icon: Settings, customImg: '', action: () => navigate('/account-details') },
+                { label: 'Appearance', icon: LayoutGrid, customImg: '', action: () => navigate('/appearance') },
                 {
                   label: 'Notifications',
                   icon: Bell,
+                  customImg: '',
                   action: async () => {
                     if (!('Notification' in window)) { toast.info('Notifications are unavailable on this browser'); return; }
                     const permission = await Notification.requestPermission();
                     toast.info(permission === 'granted' ? 'Notifications enabled' : 'Notifications not enabled');
                   },
                 },
-                { label: 'Privacy', icon: Shield, action: () => navigate('/privacy') },
-                { label: 'Donate', icon: Crown, action: () => navigate('/donate') },
-                { label: 'Help & Feedback', icon: HelpCircle, action: () => navigate('/feedback') },
-              ].map(({ label, icon: Icon, action }) => (
+                { label: 'Privacy', icon: Shield, customImg: '', action: () => navigate('/privacy') },
+                { label: 'Donate', icon: Crown, customImg: '', action: () => navigate('/donate') },
+                { label: 'Help & Feedback', icon: HelpCircle, customImg: '', action: () => navigate('/feedback') },
+              ].map(({ label, icon: Icon, customImg, action }) => (
                 <Button variant="ghost" className="nn-profile-row" key={label} onClick={action}>
-                  <Icon className="h-5 w-5 text-primary" />
+                  {customImg ? (
+                    <img src={customImg} alt="" aria-hidden="true" className="h-5 w-auto object-contain" />
+                  ) : (
+                    <Icon className="h-5 w-5 text-primary" />
+                  )}
                   <span>{label}</span>
                   <ChevronRight className="h-4 w-4" />
                 </Button>

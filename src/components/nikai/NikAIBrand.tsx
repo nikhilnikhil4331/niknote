@@ -137,6 +137,23 @@ export const NikAIStarConstellation: React.FC<{
 };
 
 /**
+ * Compact NikAI mark image (calligraphic N ribbon + sparkle) —
+ * drop-in logo for buttons, menus, chips & headers anywhere the app invokes NikAI.
+ */
+export const NikAIMark: React.FC<{ size?: number; className?: string }> = ({
+  size = 20,
+  className = '',
+}) => (
+  <img
+    src="/nikai-mark.png"
+    alt=""
+    aria-hidden="true"
+    style={{ height: size, width: 'auto' }}
+    className={`object-contain shrink-0 select-none pointer-events-none ${className}`}
+  />
+);
+
+/**
  * Official NikAI Logo Component (supports both Horizontal Inline & Stacked Hero layouts)
  */
 export const NikAIBrand: React.FC<NikAIBrandProps> = ({

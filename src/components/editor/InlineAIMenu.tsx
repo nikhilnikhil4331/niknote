@@ -144,11 +144,11 @@ export const InlineAIMenu: React.FC<InlineAIMenuProps> = ({
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
+                <div className="w-9 h-9 rounded-xl bg-[#F4F1FC] border border-purple-100 flex items-center justify-center">
+                  <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-6 w-auto object-contain select-none" />
                 </div>
                 <div>
-                  <div className="text-[15px] font-semibold text-gray-900">Ask AI</div>
+                  <div className="text-[15px] font-semibold text-gray-900">Ask NikAI</div>
                   <div className="text-[11px] text-gray-500">
                     {chosen ? chosen.label : `${text.trim().split(/\s+/).filter(Boolean).length} words selected`}
                   </div>

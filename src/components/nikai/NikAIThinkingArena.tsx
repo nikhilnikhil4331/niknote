@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ChevronDown, ChevronUp, Flame, Gamepad2, Sparkles, Trophy, Zap } from 'lucide-react';
-import { NikAIStarConstellation } from '@/components/nikai/NikAIBrand';
 
 const HIGHSCORE_KEY = 'niknote.nikai.highscore.v1';
 
@@ -55,12 +54,19 @@ interface NikAIThinkingArenaProps {
 }
 
 const THINKING_PHASES = [
-  'Scanning Session Memory & Personal Context…',
-  ' Synthesizing Concepts through Astra Neural Core…',
-  'Structuring Exam-Grade Notes, Formulas & Examples…',
-  'Polishing Clarity & Finalizing Response…',
+  'Reading your note context…',
+  'Working through the answer…',
+  'Structuring headings, bullets & steps…',
+  'Polishing the final draft…',
 ];
 
+/**
+ * NikAI Thinking Arena — minimal light companion panel.
+ * While NikAI generates, the NikAI mark gently "pops" (the real brand
+ * asset, never a redraw) and the phase + elapsed time stay honest.
+ * The mini-game is a small, real-score distraction — collapsed by
+ * default so the panel never competes with the answer.
+ */
 export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
   isStreaming,
   thinkingText,
@@ -68,8 +74,9 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
   forceOpen = false,
   onCloseManual,
 }) => {
+  const reducedMotion = useReducedMotion();
   const [miniMode, setMiniMode] = useState<'stars' | 'math'>('stars');
-  const [gameExpanded, setGameExpanded] = useState(true);
+  const [gameExpanded, setGameExpanded] = useState(false); // collapsed by default
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [highScore, setHighScore] = useState<number>(() => {
@@ -86,9 +93,9 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
   const [showReasoning, setShowReasoning] = useState(false);
 
   const idCounter = useRef(1);
-  const active = (isStreaming && gameExpanded) || forceOpen;
+  const active = gameExpanded && (isStreaming || forceOpen);
 
-  // Elapsed live neural timer while streaming
+  // Elapsed live timer while streaming
   useEffect(() => {
     if (!isStreaming) return;
     setElapsedMs(0);
@@ -111,7 +118,7 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
     }
   }, [score, highScore]);
 
-  // Spawn interactive orbs smoothly while arena is active
+  // Spawn interactive orbs while the game is open
   useEffect(() => {
     if (!active || miniMode !== 'stars') return;
 
@@ -153,7 +160,7 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
     if (orb.kind === 'bomb') {
       setCombo(0);
       setScore((s) => Math.max(0, s - 15));
-      setBursts((b) => [...b, { id: bid, x: orb.x, y: orb.y, label: '-15 💥', tone: 'bad' }]);
+      setBursts((b) => [...b, { id: bid, x: orb.x, y: orb.y, label: '−15', tone: 'bad' }]);
       return;
     }
 
@@ -168,7 +175,7 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
           id: bid,
           x: orb.x,
           y: orb.y,
-          label: orb.kind === 'astra' ? `+${gained} 💎 ASTRA!` : `+${gained} ✦`,
+          label: `+${gained}`,
           tone: orb.kind === 'astra' ? 'super' : 'good',
         },
       ]);
@@ -188,33 +195,51 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
     setMathQ(makeMathChallenge());
   };
 
-  const phaseIndex = Math.min(THINKING_PHASES.length - 1, Math.floor(elapsedMs / 1800));
+  const phaseIndex = Math.min(THINKING_PHASES.length - 1, Math.floor(elapsedMs / 2200));
 
   if (!isStreaming && !forceOpen) return null;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.99 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
-      className="my-3 overflow-hidden rounded-2xl border border-violet-500/30 bg-gradient-to-br from-violet-600/[0.08] via-fuchsia-500/[0.06] to-amber-500/[0.07] shadow-md backdrop-blur-md"
+      className="my-3 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm"
     >
-      {/* Top Neural Telemetry Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-violet-500/20 px-3.5 py-2.5">
+      {/* Header — logo pop + honest status */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5">
         <div className="flex items-center gap-2.5 min-w-0">
-          <NikAIStarConstellation size={24} />
+          {/* The real NikAI mark, gently popping while generating */}
+          <div className={`h-8 w-8 flex-shrink-0 overflow-hidden rounded-lg ${isStreaming && !reducedMotion ? 'nn-nikai-pop' : ''}`}>
+            <motion.img
+              src="/nikai-mark.png"
+              alt="NikAI"
+              draggable={false}
+              className="h-full w-full object-contain p-0.5"
+              animate={
+                isStreaming && !reducedMotion
+                  ? { scale: [1, 1.08, 1] }
+                  : { scale: 1 }
+              }
+              transition={
+                isStreaming && !reducedMotion
+                  ? { duration: 1.15, repeat: Infinity, ease: 'easeInOut' }
+                  : { duration: 0.2 }
+              }
+            />
+          </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-extrabold tracking-tight bg-gradient-to-r from-violet-600 via-pink-600 to-amber-500 bg-clip-text text-transparent">
-                {isStreaming ? 'NikAI Astra Thinking…' : 'NikAI Star Reflex Arena'}
+              <span className="text-xs font-semibold text-foreground">
+                {isStreaming ? 'NikAI is writing…' : 'NikAI mini-game'}
               </span>
               {isStreaming && (
-                <span className="rounded-full bg-violet-500/15 px-2 py-0.5 font-mono text-[10px] font-bold text-violet-700 dark:text-violet-300">
+                <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
                   {(elapsedMs / 1000).toFixed(1)}s
                 </span>
               )}
               {modelName && (
-                <span className="hidden sm:inline rounded-md bg-background/70 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                <span className="hidden sm:inline rounded-md bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
                   {modelName}
                 </span>
               )}
@@ -227,63 +252,59 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
           </div>
         </div>
 
-        {/* Score + Mode Controls */}
+        {/* Real score + controls */}
         <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 rounded-full bg-background/85 px-2.5 py-1 text-[11px] font-bold text-foreground shadow-2xs">
+          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-foreground">
             <Zap className="h-3 w-3 text-amber-500" />
             {score}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-bold text-amber-700 dark:text-amber-300">
+          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
             <Trophy className="h-3 w-3 text-amber-500" />
             Best {highScore}
           </span>
 
-          {forceOpen && onCloseManual ? (
+          <button
+            type="button"
+            onClick={() => setGameExpanded((v) => !v)}
+            className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-muted/70"
+          >
+            <Gamepad2 className="h-3.5 w-3.5 text-primary" />
+            <span>{gameExpanded ? 'Hide game' : 'Play'}</span>
+            {gameExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </button>
+          {forceOpen && onCloseManual && (
             <button
               type="button"
               onClick={onCloseManual}
-              className="rounded-lg bg-background/80 px-2.5 py-1 text-[11px] font-semibold text-foreground hover:bg-muted"
+              className="rounded-lg bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-90"
             >
               Done
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setGameExpanded((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-lg bg-background/80 px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-muted"
-            >
-              <Gamepad2 className="h-3.5 w-3.5 text-fuchsia-500" />
-              <span>{gameExpanded ? 'Hide Game' : 'Play Mini-Game'}</span>
-              {gameExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </button>
           )}
         </div>
       </div>
 
-      {/* Liquid Animated Neural Wave Strip */}
+      {/* Progress hairline while streaming */}
       {isStreaming && (
-        <div className="relative h-1 w-full overflow-hidden bg-violet-500/15">
+        <div className="h-0.5 w-full overflow-hidden bg-muted/60">
           <motion.div
-            animate={{ x: ['-100%', '200%'] }}
-            transition={{ duration: 1.15, repeat: Infinity, ease: 'linear' }}
-            className="h-full w-1/2"
-            style={{
-              background: 'linear-gradient(90deg, transparent, #7C3AED, #DB2777, #F59E0B, transparent)',
-            }}
+            animate={reducedMotion ? { width: '40%' } : { x: ['-100%', '200%'] }}
+            transition={reducedMotion ? { duration: 0.3 } : { duration: 1.4, repeat: Infinity, ease: 'linear' }}
+            className="h-full w-1/2 bg-primary/70"
           />
         </div>
       )}
 
-      {/* Optional Collapsible Deep Reasoning Trace */}
+      {/* Optional collapsible reasoning trace */}
       {thinkingText && (
-        <div className="border-b border-violet-500/15 px-3.5 py-2 bg-background/40">
+        <div className="border-t border-border/50 px-3.5 py-2">
           <button
             type="button"
             onClick={() => setShowReasoning((v) => !v)}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-violet-700 dark:text-violet-300"
+            className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
           >
             <Sparkles className="h-3 w-3" />
-            <span>{showReasoning ? 'Hide Astra Reasoning Chain' : 'Show Live Astra Reasoning Chain'}</span>
+            <span>{showReasoning ? 'Hide reasoning' : 'Show reasoning'}</span>
           </button>
           {showReasoning && (
             <pre className="mt-1.5 max-h-36 overflow-y-auto whitespace-pre-wrap text-[11.5px] leading-relaxed text-muted-foreground font-sans">
@@ -293,131 +314,128 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
         </div>
       )}
 
-      {/* Interactive Playable Mini-Game Stage */}
-      {active && (
-        <div className="p-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setMiniMode('stars')}
-                className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all ${
-                  miniMode === 'stars'
-                    ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-2xs'
-                    : 'bg-background/70 text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                ✦ Star Catch
-              </button>
-              <button
-                type="button"
-                onClick={() => setMiniMode('math')}
-                className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all ${
-                  miniMode === 'math'
-                    ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-2xs'
-                    : 'bg-background/70 text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                ⚡ Brain Blitz
-              </button>
-            </div>
-
-            {combo >= 2 && (
-              <motion.span
-                key={combo}
-                initial={{ scale: 0.7, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-fuchsia-600 to-amber-500 px-2.5 py-0.5 text-[10.5px] font-extrabold text-white shadow-xs"
-              >
-                <Flame className="h-3 w-3" />
-                {combo}x COMBO!
-              </motion.span>
-            )}
-          </div>
-
-          {miniMode === 'stars' ? (
-            <div
-              data-testid="nikai-star-game"
-              className="relative h-40 w-full select-none overflow-hidden rounded-xl border border-violet-500/20"
-              style={{
-                background:
-                  'radial-gradient(circle at 20% 25%, rgba(124,58,237,0.22), transparent 55%), radial-gradient(circle at 80% 75%, rgba(219,39,119,0.20), transparent 55%), linear-gradient(160deg, #160F29 0%, #1F1438 55%, #2B1747 100%)',
-              }}
-            >
-              {/* Subtle Starfield Hint */}
-              <div className="pointer-events-none absolute inset-x-0 bottom-2 text-center text-[10.5px] font-medium text-white/55">
-                Tap golden stars ✦ (+10) & purple Astra gems 💎 (+25) · Dodge bombs 💥!
-              </div>
-
-              <AnimatePresence>
-                {orbs.map((orb) => (
-                  <motion.button
-                    key={orb.id}
+      {/* Mini-game — minimal light stage, collapsed by default */}
+      <AnimatePresence>
+        {active && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-border/50 p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1">
+                  <button
                     type="button"
-                    aria-label={orb.kind === 'bomb' ? 'Bomb orb' : 'Star orb'}
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: [0.92, 1.1, 0.96], opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    transition={{ duration: 0.35 }}
-                    onPointerDown={(e) => catchOrb(orb, e)}
-                    style={{ left: `${orb.x}%`, top: `${orb.y}%` }}
-                    className={`absolute -translate-x-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full text-lg shadow-lg active:scale-125 cursor-pointer ${
-                      orb.kind === 'astra'
-                        ? 'bg-gradient-to-br from-violet-400 via-fuchsia-500 to-pink-500 ring-2 ring-white/70 shadow-fuchsia-500/50'
-                        : orb.kind === 'bomb'
-                          ? 'bg-rose-950/90 border border-rose-500/60'
-                          : 'bg-gradient-to-br from-amber-300 via-amber-400 to-orange-500 ring-2 ring-amber-200/70 shadow-amber-400/50'
+                    onClick={() => setMiniMode('stars')}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                      miniMode === 'stars' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    <span>{orb.kind === 'astra' ? '💎' : orb.kind === 'bomb' ? '💥' : '✦'}</span>
-                  </motion.button>
-                ))}
-              </AnimatePresence>
-
-              {/* Floating Score Popups */}
-              {bursts.map((b) => (
-                <motion.span
-                  key={b.id}
-                  initial={{ opacity: 1, y: 0, scale: 0.85 }}
-                  animate={{ opacity: 0, y: -26, scale: 1.15 }}
-                  transition={{ duration: 0.65 }}
-                  style={{ left: `${b.x}%`, top: `${b.y}%` }}
-                  className={`pointer-events-none absolute -translate-x-1/2 text-xs font-extrabold ${
-                    b.tone === 'super'
-                      ? 'text-fuchsia-300'
-                      : b.tone === 'bad'
-                        ? 'text-rose-400'
-                        : 'text-amber-300'
-                  }`}
-                >
-                  {b.label}
-                </motion.span>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-violet-500/20 bg-zinc-950/90 p-4 text-white">
-              <span className="text-[11px] uppercase tracking-wider text-violet-300/80">
-                 Instant Mental Warmup
-              </span>
-              <div className="my-2 text-2xl font-extrabold tracking-tight text-amber-300">
-                {mathQ.question} = ?
-              </div>
-              <div className="grid w-full max-w-sm grid-cols-4 gap-2">
-                {mathQ.options.map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => answerMath(opt)}
-                    className="min-h-[42px] rounded-xl border border-white/15 bg-white/10 text-sm font-bold text-white transition-all hover:bg-violet-600 active:scale-95"
-                  >
-                    {opt}
+                    Star catch
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => setMiniMode('math')}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                      miniMode === 'math' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Brain blitz
+                  </button>
+                </div>
+
+                {combo >= 2 && (
+                  <motion.span
+                    key={combo}
+                    initial={{ scale: 0.85, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10.5px] font-bold text-amber-700"
+                  >
+                    <Flame className="h-3 w-3" />
+                    {combo}× combo
+                  </motion.span>
+                )}
               </div>
+
+              {miniMode === 'stars' ? (
+                <div
+                  data-testid="nikai-star-game"
+                  className="relative h-40 w-full select-none overflow-hidden rounded-xl border border-border/60 bg-muted/30"
+                >
+                  <div className="pointer-events-none absolute inset-x-0 bottom-2 text-center text-[10.5px] font-medium text-muted-foreground">
+                    Catch ✦ +10 · ◆ +25 · avoid the bomb −15
+                  </div>
+
+                  <AnimatePresence>
+                    {orbs.map((orb) => (
+                      <motion.button
+                        key={orb.id}
+                        type="button"
+                        aria-label={orb.kind === 'bomb' ? 'Bomb orb' : 'Star orb'}
+                        initial={reducedMotion ? { opacity: 0 } : { scale: 0, opacity: 0 }}
+                        animate={reducedMotion ? { opacity: 1 } : { scale: [0.92, 1.08, 0.98], opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{ duration: 0.35 }}
+                        onPointerDown={(e) => catchOrb(orb, e)}
+                        style={{ left: `${orb.x}%`, top: `${orb.y}%` }}
+                        className={`absolute -translate-x-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full text-lg shadow-sm active:scale-125 cursor-pointer ${
+                          orb.kind === 'astra'
+                            ? 'bg-violet-100 text-violet-700 ring-2 ring-violet-300'
+                            : orb.kind === 'bomb'
+                              ? 'bg-rose-100 text-rose-700 ring-2 ring-rose-300'
+                              : 'bg-amber-100 text-amber-600 ring-2 ring-amber-300'
+                        }`}
+                      >
+                        <span>{orb.kind === 'astra' ? '◆' : orb.kind === 'bomb' ? '✕' : '✦'}</span>
+                      </motion.button>
+                    ))}
+                  </AnimatePresence>
+
+                  {/* Floating score popups */}
+                  {bursts.map((b) => (
+                    <motion.span
+                      key={b.id}
+                      initial={{ opacity: 1, y: 0, scale: 0.9 }}
+                      animate={{ opacity: 0, y: -22, scale: 1.1 }}
+                      transition={{ duration: 0.6 }}
+                      style={{ left: `${b.x}%`, top: `${b.y}%` }}
+                      className={`pointer-events-none absolute -translate-x-1/2 text-xs font-bold ${
+                        b.tone === 'super' ? 'text-violet-600' : b.tone === 'bad' ? 'text-rose-500' : 'text-amber-600'
+                      }`}
+                    >
+                      {b.label}
+                    </motion.span>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-border/60 bg-muted/20 p-4">
+                  <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                    Quick mental warmup
+                  </span>
+                  <div className="my-2 text-2xl font-bold tracking-tight text-foreground">
+                    {mathQ.question} = ?
+                  </div>
+                  <div className="grid w-full max-w-sm grid-cols-4 gap-2">
+                    {mathQ.options.map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => answerMath(opt)}
+                        className="min-h-[42px] rounded-xl border border-border/70 bg-background text-sm font-semibold text-foreground transition-colors hover:bg-muted active:scale-95"
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

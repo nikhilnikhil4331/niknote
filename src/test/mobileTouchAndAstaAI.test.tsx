@@ -174,6 +174,8 @@ describe('NikAI Brand Identity, Cross-Session Memory, Multi-Ink Smart Notes & Th
 
   it('plays NikAIThinkingArena Star Catch & Brain Blitz mini-games with live score updates', () => {
     render(<NikAIThinkingArena isStreaming={false} forceOpen modelName="NikAI Astra Pro" />);
+    // Game is collapsed by default — open it first
+    fireEvent.click(screen.getByRole('button', { name: /play/i }));
     expect(screen.getByTestId('nikai-star-game')).toBeTruthy();
 
     // Switch to Brain Blitz and back cleanly
