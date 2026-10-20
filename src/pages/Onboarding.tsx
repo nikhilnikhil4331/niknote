@@ -37,7 +37,7 @@ export default function OnboardingPage() {
   // Skip ends onboarding entirely so the welcome flow never returns.
   const skip = () => {
     localStorage.setItem('niknote_onboarding_done', 'true');
-    if (user) {
+    if (user && !String(user.id).startsWith('local-guest-')) {
       void supabase.from("profiles").update({ onboarding_completed: true } as any).eq("user_id", user.id);
     }
     navigate("/");
@@ -46,7 +46,7 @@ export default function OnboardingPage() {
   const handleUseCaseSelect = async (uc: string) => {
     setUseCase(uc);
     // save to profile
-    if (user) {
+    if (user && !String(user.id).startsWith('local-guest-')) {
       await supabase
         .from("profiles")
         .update({ use_case: uc } as any)
@@ -57,7 +57,7 @@ export default function OnboardingPage() {
 
   const handleExamSelect = async (exam: string) => {
     setExamBoard(exam);
-    if (user) {
+    if (user && !String(user.id).startsWith('local-guest-')) {
       await supabase
         .from("profiles")
         .update({ exam_board: exam } as any)
@@ -100,7 +100,7 @@ export default function OnboardingPage() {
   };
 
   const finishOnboarding = async () => {
-    if (user) {
+    if (user && !String(user.id).startsWith('local-guest-')) {
       await supabase
         .from("profiles")
         .update({ onboarding_completed: true } as any)

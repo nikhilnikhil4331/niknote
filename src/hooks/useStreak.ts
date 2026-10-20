@@ -15,7 +15,7 @@ export function useStreak() {
 
   // Fetch current streak
   const fetchStreak = useCallback(async () => {
-    if (!user) { setLoading(false); return; }
+    if (!user || String(user.id || '').startsWith('local-guest-')) { setLoading(false); return; }
 
     const { data, error } = await supabase
       .from('user_streaks')
@@ -35,7 +35,7 @@ export function useStreak() {
 
   // Update streak (call when user performs an action)
   const recordActivity = useCallback(async () => {
-    if (!user) return;
+    if (!user || String(user.id || '').startsWith('local-guest-')) return;
 
     const { data, error } = await supabase.rpc('update_user_streak', { p_user_id: user.id });
 

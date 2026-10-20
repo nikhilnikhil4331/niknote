@@ -38,7 +38,7 @@ import { toast } from 'sonner';
 import { shareAsImage, shareAsPDF } from '@/utils/share';
 const WorkspaceSidebar = lazy(() => import('@/components/workspace/WorkspaceSidebar').then(m => ({ default: m.WorkspaceSidebar })));
 import {
-  Settings2, Edit3, FileDown, Palette, Crown, LogIn,
+  Settings2, Edit3, FileDown, Palette, Crown, LogIn, Cloud, RefreshCw, CheckCircle2,
   Gem, MoreVertical, Moon, Sun, RotateCcw, Share2, Image, FileText, Sparkles,
   LayoutGrid, Scan, Brain, PanelLeft, ChevronDown, MessageSquare, Zap, Undo2, Redo2, Save, Eye, PenLine, Upload
 } from 'lucide-react';
@@ -53,6 +53,12 @@ import { InlineDiagram } from '@/types/noteLine';
 import { useAutoPagination } from '@/hooks/useAutoPagination';
 import { useSpeechDictation } from '@/hooks/useSpeechDictation';
 import { PaywallModal } from '@/components/premium/PaywallModal';
+import {
+  isCloudUserId,
+  PC_ACTIVE_META_KEY,
+  useCloudSyncStatus,
+  updateSyncSnapshot,
+} from '@/lib/cloudSyncEngine';
 import { usePremium, PremiumFeature } from '@/hooks/usePremium';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -92,7 +98,8 @@ const Index = () => {
     document.addEventListener('selectionchange', capture);
     return () => document.removeEventListener('selectionchange', capture);
   }, []);
-  const { user, signInAsGuest } = useAuth();
+  const { user, isGuest, signInAsGuest } = useAuth();
+  const cloudSync = useCloudSyncStatus(user?.id);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
   const dnaContext = useHandwritingDNA();
   const { theme: uiTheme, setTheme: setUITheme, classes: themeClasses } = useUITheme();
@@ -159,7 +166,7 @@ const Index = () => {
   const {
     pages, currentPageIndex, currentPage, totalPages,
     goToPage, nextPage, prevPage, addNewPage, deletePage,
-    updateCurrentPageLines, flowOverflowFrom, canGoNext, canGoPrev
+    updateCurrentPageLines, replaceAllPages, flowOverflowFrom, canGoNext, canGoPrev
   } = useNotebookPages();
 
   const [selectedLines, setSelectedLines] = useState<Set<string>>(new Set());
@@ -176,9 +183,154 @@ const Index = () => {
   const previewLines = blockEditor.blocks.some(b => b.content.trim()) ? blockEditor.lines : lines;
   const hasContent = blockEditor.blocks.some(b => b.content.trim()) || lines.some(l => l.text.trim());
 
-  // Auto-trigger onboarding for new users + Welcome back toast + Streak
+  // Restore PC cloud notebook automatically on clean browsers & auto-sync edits to Supabase Cloud
+  const pcHydratedUserRef = useRef<string | null>(null);
+  const pcInitialRenderRef = useRef(true);
+
   useEffect(() => {
-    if (user) {
+    if (isMobile || !isCloudUserId(user?.id)) return;
+    if (pcHydratedUserRef.current === user.id) return;
+    pcHydratedUserRef.current = user.id;
+
+    // Restore cloudNotebookId if cached on this browser
+    let storedNotebookId: string | null = null;
+    try {
+      const meta = JSON.parse(localStorage.getItem(PC_ACTIVE_META_KEY) || '{}');
+      if (meta?.userId === user.id && isCloudUserId(meta?.notebookId)) {
+        storedNotebookId = meta.notebookId;
+        setCloudNotebookId(meta.notebookId);
+        if (meta.title) setNoteTitle(meta.title);
+      }
+    } catch {
+      // ignore
+    }
+
+    const localHasLines = pages.some((p) => p.lines.some((l) => l.text.trim().length > 0));
+    if (localHasLines) return;
+
+    // Clean device with empty paper -> pull most recent cloud notebook onto PC studio automatically!
+    void (async () => {
+      try {
+        const nbQuery = storedNotebookId
+          ? await supabase.from('notebooks').select('id, title, page_style').eq('id', storedNotebookId).maybeSingle()
+          : await supabase.from('notebooks').select('id, title, page_style').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+        const nb = nbQuery?.data;
+        if (!nb?.id) return;
+
+        const { data: nbPages } = await supabase
+          .from('notebook_pages')
+          .select('id, page_number, lines')
+          .eq('notebook_id', nb.id)
+          .order('page_number', { ascending: true });
+
+        if (Array.isArray(nbPages) && nbPages.length > 0 && nbPages.some((p: any) => Array.isArray(p.lines) && p.lines.some((l: any) => l?.text))) {
+          setCloudNotebookId(nb.id);
+          setNoteTitle(nb.title || 'Untitled Note');
+          replaceAllPages(
+            nbPages.map((p: any, idx: number) => ({
+              id: p.id || `page-cloud-${idx}`,
+              lines: Array.isArray(p.lines) ? p.lines : [],
+              createdAt: Date.now(),
+            }))
+          );
+          updateSyncSnapshot({ state: 'synced', lastSyncedAt: new Date().toISOString() });
+        }
+      } catch {
+        // local paper remains active
+      }
+    })();
+  }, [isMobile, user?.id, pages, replaceAllPages]);
+
+  // Debounced background cloud sync of PC Notebook pages -> Supabase `notebooks` + `notebook_pages` + `pages`
+  useEffect(() => {
+    if (isMobile) return;
+    if (pcInitialRenderRef.current) {
+      pcInitialRenderRef.current = false;
+      return;
+    }
+    if (!isCloudUserId(user?.id)) return;
+    const anyNonEmpty = pages.some((p) => p.lines.some((l) => l.text.trim().length > 0));
+    if (!anyNonEmpty) return;
+
+    const timer = window.setTimeout(async () => {
+      try {
+        updateSyncSnapshot({ state: 'syncing', errorMessage: null });
+        let nbId = cloudNotebookId && isCloudUserId(cloudNotebookId) ? cloudNotebookId : null;
+
+        if (!nbId) {
+          const { data: created, error: createErr } = await supabase
+            .from('notebooks')
+            .insert({
+              user_id: user.id,
+              title: noteTitle || 'PC Notebook',
+              cover_color: '#7c3aed',
+              page_style: settings.pageStyle,
+              page_size: settings.pageSize,
+              tags: ['PC Studio'],
+            })
+            .select('id')
+            .single();
+          if (createErr || !created?.id) throw createErr || new Error('Could not create cloud notebook');
+          nbId = created.id;
+          setCloudNotebookId(nbId);
+        } else {
+          await supabase
+            .from('notebooks')
+            .update({ title: noteTitle || 'PC Notebook', page_style: settings.pageStyle })
+            .eq('id', nbId);
+        }
+
+        try {
+          localStorage.setItem(
+            PC_ACTIVE_META_KEY,
+            JSON.stringify({ userId: user.id, notebookId: nbId, title: noteTitle || 'PC Notebook' })
+          );
+        } catch {
+          // ignore
+        }
+
+        // Sync rich handwritten multi-page lines to `notebook_pages`
+        await supabase.from('notebook_pages').delete().eq('notebook_id', nbId);
+        await supabase.from('notebook_pages').insert(
+          pages.map((p, idx) => ({
+            notebook_id: nbId,
+            page_number: idx + 1,
+            lines: p.lines as any,
+          }))
+        );
+
+        // Mirror flat blocks into `pages` so mobile editor & NikAI Smart Notes also see PC notes immediately!
+        const allBlocks: Block[] = pages
+          .flatMap((p) => p.lines)
+          .filter((l) => l.text.trim().length > 0)
+          .map((l) => ({ ...createBlock('text', l.text), color: l.color }));
+
+        await supabase.from('pages').upsert(
+          {
+            notebook_id: nbId,
+            user_id: user.id,
+            page_number: 1,
+            title: noteTitle || 'PC Notebook',
+            content: (allBlocks.length ? allBlocks : [createBlock('text', '')]) as any,
+          },
+          { onConflict: 'notebook_id,page_number' }
+        );
+
+        updateSyncSnapshot({ state: 'synced', lastSyncedAt: new Date().toISOString(), errorMessage: null });
+      } catch (err) {
+        updateSyncSnapshot({
+          state: typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'error',
+          errorMessage: err instanceof Error ? err.message : 'Sync paused',
+        });
+      }
+    }, 2200);
+
+    return () => window.clearTimeout(timer);
+  }, [pages, noteTitle, settings.pageStyle, settings.pageSize, isMobile, user?.id, cloudNotebookId]);
+
+  // Auto-trigger onboarding ONLY for permanent registered accounts (never hijack Guest or PC Studio load!)
+  useEffect(() => {
+    if (user && !isGuest) {
       const hasSeenOnboarding = localStorage.getItem('niknote_onboarding_done');
       if (!hasSeenOnboarding) {
         navigate('/onboarding');
@@ -277,8 +429,8 @@ const Index = () => {
     if (savingNote) return;
     setSavingNote(true);
     try {
-      // Local-first device persistence whenever user is not signed in to cloud
-      if (!user) {
+      // Local-first device persistence whenever user is not signed into cloud UUID yet
+      if (!isCloudUserId(user?.id)) {
         const localRaw = localStorage.getItem('niknote.mobile.notebooks.v1');
         const list: any[] = localRaw ? JSON.parse(localRaw) : [];
         const id = cloudNotebookId || `local-${Date.now()}`;
@@ -930,6 +1082,46 @@ const Index = () => {
               </>
             ) : (
               <>
+                {/* Live Cloud Sync Pill — Shows live sync state & triggers instant full sync on click */}
+                <button
+                  type="button"
+                  data-testid="cloud-sync-pill"
+                  onClick={async () => {
+                    if (!isCloudUserId(user?.id)) {
+                      const g = await signInAsGuest();
+                      if (g.error) {
+                        toast.info('Saved safely on this device — will sync automatically when online.');
+                        return;
+                      }
+                    }
+                    const res = await cloudSync.syncNow();
+                    if (res.ok) {
+                      toast.success('All notes, pages & trackers synced to Cloud ☁️');
+                    } else {
+                      toast.info('Saved safely on this device — cloud sync will retry automatically.');
+                    }
+                  }}
+                  title="Cloud Sync Status — click to sync now"
+                  className="hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-medium bg-white/25 hover:bg-white/40 dark:bg-slate-800/60 border border-white/30 text-foreground transition-all"
+                >
+                  {cloudSync.state === 'syncing' ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 text-violet-600 animate-spin" />
+                      <span>Syncing…</span>
+                    </>
+                  ) : cloudSync.state === 'synced' ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Synced</span>
+                    </>
+                  ) : (
+                    <>
+                      <Cloud className="w-3.5 h-3.5 text-sky-600" />
+                      <span>Sync</span>
+                    </>
+                  )}
+                </button>
+
                 {/* Single Unified NikAI Option on PC — Opens /ai ONLY on click */}
                 <motion.div whileTap={{ scale: 0.94 }} whileHover={{ scale: 1.04 }}>
                   <button

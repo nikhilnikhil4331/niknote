@@ -1,65 +1,144 @@
 import { useState } from 'react';
+import { Cloud, CheckCircle2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCloudSyncStatus } from '@/lib/cloudSyncEngine';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 /**
- * Turns the current guest into a permanent account WITHOUT changing the user ID,
- * so every note, board, money entry and habit stays attached.
- * Step 1: add an email (confirmation link). Step 2 (after confirming): set a password.
+ * Turns the current guest workspace into a permanent Email + Password account
+ * WITHOUT changing user_id — so every note, notebook, board, money entry, and habit
+ * stays 100% intact and opens across all phones & laptops.
  */
 export function GuestUpgradeCard() {
-  const { user, isGuest, signOut } = useAuth();
+  const { user, isGuest, signOut, signInAsGuest, upgradeGuestAccount } = useAuth();
+  const sync = useCloudSyncStatus(user?.id);
   const [confirmNew, setConfirmNew] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
-  const [sent, setSent] = useState(false);
-  const needsPassword = !isGuest && typeof window !== 'undefined' && localStorage.getItem('nn-guest-linking') === user?.id;
-  if (!user || (!isGuest && !needsPassword)) return null;
 
-  const linkEmail = async () => {
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return toast.error('Enter a valid email');
+  if (!user || !isGuest) return null;
+
+  const savePermanentAccount = async () => {
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return toast.error('Enter a valid email address');
+    if (password.length < 8) return toast.error('Password must be at least 8 characters');
     setBusy(true);
-    const { error } = await supabase.auth.updateUser({ email: email.trim() }, { emailRedirectTo: `${window.location.origin}/account-details` });
+    const { error } = await upgradeGuestAccount(
+      email.trim(),
+      password,
+      user.user_metadata?.full_name
+    );
     setBusy(false);
     if (error) return toast.error(error.message);
-    localStorage.setItem('nn-guest-linking', user.id);
-    setSent(true);
-  };
-  const setPw = async () => {
-    if (password.length < 8) return toast.error('Use at least 8 characters');
-    setBusy(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    localStorage.removeItem('nn-guest-linking');
-    toast.success('Account saved — sign in with your email and password on any device');
+    toast.success('Account upgraded & synced! Sign in from any device anytime ☁️');
+    setEmail('');
     setPassword('');
   };
 
+  const handleManualSync = async () => {
+    setBusy(true);
+    if (user.user_metadata?.is_local_guest) {
+      const promoted = await signInAsGuest(user.user_metadata?.full_name);
+      setBusy(false);
+      if (promoted.error) {
+        toast.error('Still offline — your notes stay safely saved on this device.');
+      } else {
+        toast.success('Connected & synced to NikNote Cloud ☁️');
+      }
+      return;
+    }
+    const res = await sync.syncNow();
+    setBusy(false);
+    if (res.ok) {
+      toast.success('All notes, habits, boards & money entries synced to cloud ☁️');
+    } else {
+      toast.error(res.error || 'Could not reach cloud right now');
+    }
+  };
+
   return (
-    <section className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3 text-left" aria-label="Keep your guest work">
-      {needsPassword ? <>
-        <h3 className="font-semibold text-foreground">Last step: set a password</h3>
-        <p className="text-sm text-muted-foreground">Your email is confirmed and your work is kept. Add a password to sign in from other devices.</p>
-        <Input type="password" autoComplete="new-password" placeholder="New password (8+ characters)" value={password} onChange={e => setPassword(e.target.value)} />
-        <Button className="w-full" disabled={busy} onClick={setPw}>Save password</Button>
-      </> : sent ? <>
-        <h3 className="font-semibold text-foreground">Check your email</h3>
-        <p className="text-sm text-muted-foreground">Open the link sent to <strong className="break-all">{email}</strong>. Your guest notes and trackers stay with you, then you can set a password.</p>
-      </> : <>
-        <h3 className="font-semibold text-foreground">You're using Niknote as a guest</h3>
-        <p className="text-sm text-muted-foreground">Your work lives only in this browser's session. Clearing site data or signing out loses access. Add an email to keep everything.</p>
-        <Input type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} />
-        <Button className="w-full" disabled={busy} onClick={linkEmail}>Keep my work</Button>
-        {confirmNew ? <div role="alertdialog" aria-label="Start a new guest workspace" className="rounded-xl border border-destructive/40 p-3 space-y-2">
-          <p className="text-sm text-foreground">The new workspace starts empty. This guest's notes and trackers will not move over and may be lost unless you added an email above.</p>
-          <div className="flex gap-2"><Button variant="outline" className="flex-1" onClick={() => setConfirmNew(false)}>Cancel</Button><Button variant="destructive" className="flex-1" onClick={async () => { await signOut(); window.location.assign('/login'); }}>Start new</Button></div>
-        </div> : <Button variant="ghost" className="w-full" onClick={() => setConfirmNew(true)}>Sign out / start a new guest workspace</Button>}
-      </>}
+    <section
+      className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3 text-left"
+      aria-label="Keep your guest work"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="font-semibold text-foreground">Guest Workspace Active</h3>
+        <button
+          type="button"
+          onClick={handleManualSync}
+          disabled={busy || sync.state === 'syncing'}
+          className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-background/80 px-2.5 py-1 text-xs font-medium text-foreground hover:bg-background transition"
+        >
+          {sync.state === 'syncing' ? (
+            <>
+              <RefreshCw size={12} className="animate-spin text-primary" /> Syncing…
+            </>
+          ) : sync.state === 'synced' ? (
+            <>
+              <CheckCircle2 size={12} className="text-emerald-500" /> Cloud Synced
+            </>
+          ) : (
+            <>
+              <Cloud size={12} className="text-primary" /> Sync Now
+            </>
+          )}
+        </button>
+      </div>
+
+      <p className="text-sm text-muted-foreground">
+        Save an email &amp; password below to keep all your notes, habits, boards &amp; money entries across every phone and PC without losing anything.
+      </p>
+
+      <Input
+        type="email"
+        autoComplete="email"
+        placeholder="you@example.com"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <Input
+        type="password"
+        autoComplete="new-password"
+        placeholder="Create password (8+ characters)"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <Button className="w-full" disabled={busy} onClick={savePermanentAccount}>
+        {busy ? 'Saving & syncing…' : 'Save Permanent Account & Sync'}
+      </Button>
+
+      {confirmNew ? (
+        <div
+          role="alertdialog"
+          aria-label="Start a new guest workspace"
+          className="rounded-xl border border-destructive/40 p-3 space-y-2"
+        >
+          <p className="text-sm text-foreground">
+            Starting a new workspace clears this browser session. Add an email above first if you want to keep your notes.
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setConfirmNew(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={async () => {
+                await signOut();
+                window.location.assign('/login');
+              }}
+            >
+              Start new
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="ghost" className="w-full" onClick={() => setConfirmNew(true)}>
+          Sign out / start a new guest workspace
+        </Button>
+      )}
     </section>
   );
 }

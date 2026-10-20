@@ -8,6 +8,7 @@ import { haptic } from '@/hooks/useHaptics';
 import { toast } from 'sonner';
 import { TrackerShell, Panel } from '@/components/trackers/TrackerShell';
 import { scheduledStreak, isScheduled, toDay } from '@/lib/trackers';
+import { syncLocalRoutineToCloud } from '@/lib/cloudSyncEngine';
 import { WaterGlass } from '@/components/motion/WaterGlass';
 import { RoutineArt } from '@/components/motion/FeatureArt';
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
@@ -63,16 +64,21 @@ export default function RoutineTracker() {
 
   const w: Wellness = week[today] ?? { water: 0, sleep_hours: 0, exercise_minutes: 0, mood: '', pomodoros: 0 };
 
-  useEffect(() => {
-    if (authLoading || user) return;
-    try { localStorage.setItem(LOCAL_ROUTINE_KEY, JSON.stringify({ habits, checks, todos, week, waterGoal })); } catch { /* quota */ }
-  }, [habits, checks, todos, week, waterGoal, user, authLoading]);
+  const isLocalOnly = !user || String(user.id || '').startsWith('local-guest-');
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading || !isLocalOnly) return;
+    try { localStorage.setItem(LOCAL_ROUTINE_KEY, JSON.stringify({ habits, checks, todos, week, waterGoal })); } catch { /* quota */ }
+  }, [habits, checks, todos, week, waterGoal, isLocalOnly, authLoading]);
+
+  useEffect(() => {
+    if (isLocalOnly || !user) return;
     const from = new Date(); from.setDate(from.getDate() - 60);
     const loadTimer = window.setTimeout(() => setLoadError(true), 12000);
     (async () => {
+      // Upload any offline/local routine entries to Supabase BEFORE fetching cloud rows
+      await syncLocalRoutineToCloud(user.id).catch(() => 0);
+
       const [h, c, t, d, s] = await Promise.all([
         db.from('habits').select('*').order('created_at'),
         db.from('habit_checks').select('habit_id, day').gte('day', toDay(from)),
@@ -82,12 +88,14 @@ export default function RoutineTracker() {
       ]);
       window.clearTimeout(loadTimer);
       setLoadError(!!h.error);
-      setHabits(h.data ?? []); setChecks(c.data ?? []); setTodos(t.data ?? []);
-      setWeek(Object.fromEntries((d.data ?? []).map((r: any) => [r.day, { ...r, sleep_hours: Number(r.sleep_hours) }])));
-      if (s.data) setWaterGoal(s.data.water_goal);
+      if (!h.error) {
+        setHabits(h.data ?? []); setChecks(c.data ?? []); setTodos(t.data ?? []);
+        setWeek(Object.fromEntries((d.data ?? []).map((r: any) => [r.day, { ...r, sleep_hours: Number(r.sleep_hours) }])));
+        if (s.data) setWaterGoal(s.data.water_goal);
+      }
     })();
     return () => window.clearTimeout(loadTimer);
-  }, [user, reload]);
+  }, [user, isLocalOnly, reload]);
 
   const saveWellness = async (patch: Partial<Wellness>) => {
     const next = { ...w, ...patch };
