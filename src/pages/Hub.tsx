@@ -5,6 +5,7 @@ import { AppDock } from '@/components/AppDock';
 import { haptic } from '@/hooks/useHaptics';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccountName } from '@/hooks/useAccountName';
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 const GROUPS = [
   { title: 'Write', items: [
@@ -14,7 +15,7 @@ const GROUPS = [
     { to: '/history', label: 'History', desc: 'Recent work', icon: History, hue: 190 },
   ]},
   { title: 'NikAI & Study', items: [
-    { to: '/ai', label: 'NikAI', desc: 'Astra Core · Memory · Smart Notes', icon: Sparkles, hue: 280 },
+    { to: '/ai', label: 'NikAI', desc: 'Astra Core · Memory · Smart Notes', icon: Sparkles, hue: 280, brandMark: true },
     { to: '/flashcards', label: 'Flashcards', desc: 'Smart revision decks', icon: Layers, hue: 20 },
     { to: '/handbook', label: 'Study Handbook', desc: 'Exam prep guides', icon: GraduationCap, hue: 160 },
   ]},
@@ -56,8 +57,14 @@ export default function Hub() {
                   <Link to={it.to} onClick={() => haptic('light')}
                     className="block h-full rounded-3xl border border-border bg-card/80 backdrop-blur p-4 shadow-sm active:shadow-none">
                     <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3"
-                      style={{ background: `linear-gradient(135deg, hsl(${it.hue} 85% 62%), hsl(${it.hue + 30} 85% 55%))` }}>
-                      <it.icon className="w-5 h-5 text-primary-foreground" />
+                      style={
+                        (it as { brandMark?: boolean }).brandMark
+                          ? { background: 'linear-gradient(135deg, #FFFFFF, #F6EEFF)', border: '1px solid #EFE3FE' }
+                          : { background: `linear-gradient(135deg, hsl(${it.hue} 85% 62%), hsl(${it.hue + 30} 85% 55%))` }
+                      }>
+                      {(it as { brandMark?: boolean }).brandMark
+                        ? <NikAIMarkIcon className="w-8 h-[18px]" />
+                        : <it.icon className="w-5 h-5 text-primary-foreground" />}
                     </div>
                     <p className="font-semibold text-sm text-foreground leading-tight">{it.label}</p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">{it.desc}</p>

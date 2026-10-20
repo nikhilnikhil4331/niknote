@@ -22,6 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 interface WorkspaceSidebarProps {
   isOpen: boolean;
@@ -82,7 +83,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   // Main navigation items (Notion-style left rail)
   const mainNav: NavItem[] = [
     { id: 'home', icon: <FileText className="w-4 h-4" />, label: 'Home', action: () => navigate('/') },
-    { id: 'ai', icon: <Sparkles className="w-4 h-4 text-purple-500" />, label: 'NikAI', action: () => navigate('/ai'), color: 'text-purple-600', badge: 'ASTRA' },
+    { id: 'ai', icon: <NikAIMarkIcon className="w-[18px] h-[18px]" />, label: 'NikAI', action: () => navigate('/ai'), color: 'text-purple-600', badge: 'ASTRA' },
     { id: 'dna', icon: <Scan className="w-4 h-4 text-emerald-500" />, label: 'DNA Scanner', action: () => {}, color: 'text-emerald-600' },
     { id: 'documents', icon: <BookOpen className="w-4 h-4" />, label: 'Documents', action: () => navigate('/documents') },
     { id: 'notebooks', icon: <Layers className="w-4 h-4" />, label: 'Notebooks', action: () => navigate('/notebooks') },

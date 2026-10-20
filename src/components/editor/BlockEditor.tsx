@@ -9,6 +9,7 @@ import { MentionPopup, MentionItem } from './MentionPopup';
 import { BlockCommentsThread } from './BlockCommentsThread';
 import { FlashcardBlock } from './blocks/FlashcardBlock';
 import { LineInkColor, LINE_INK_COLORS } from '@/types/noteLine';
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 interface BlockEditorProps {
   blocks: Block[];
@@ -414,9 +415,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
           setAiOpen(true);
         }}
         aria-label="Ask AI"
-        className="fixed z-40 bottom-24 right-4 sm:bottom-6 sm:right-6 h-14 w-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-xl shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-transform"
+        title="Ask NikAI"
+        className="fixed z-40 bottom-24 right-4 sm:bottom-6 sm:right-6 h-14 w-14 rounded-full bg-white border border-[#EDE3FD] shadow-xl shadow-purple-500/25 flex items-center justify-center active:scale-95 transition-transform"
       >
-        <Sparkles className="w-6 h-6" />
+        <NikAIMarkIcon className="w-9 h-6" />
       </button>
 
       {/* Inline AI menu */}

@@ -15,6 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { aiOrchestrator } from '@/agents/orchestrator';
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 interface ExtractedContent {
   text: string;
@@ -334,7 +335,7 @@ ${extractedText.substring(0, 4000)}`,
               {isGeneratingNotes ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Sparkles className="w-4 h-4" />
+                <NikAIMarkIcon className="w-[22px] h-4" />
               )}
               Handwritten Notes Banao
             </Button>

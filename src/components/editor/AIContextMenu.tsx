@@ -12,6 +12,7 @@ import {
   Brain, Zap, FileText, ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 interface AIAction {
   id: string;
@@ -74,8 +75,8 @@ export const AIContextMenu: React.FC<AIContextMenuProps> = ({
       >
         {/* Header */}
         <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gradient-to-r from-indigo-500 to-purple-600">
-          <Sparkles className="w-3.5 h-3.5 text-white" />
-          <span className="text-[11px] font-semibold text-white">AI Actions</span>
+          <NikAIMarkIcon className="w-[20px] h-3.5" />
+          <span className="text-[11px] font-semibold text-white">NikAI Actions</span>
           <span className="text-[10px] text-white/60 ml-auto truncate max-w-[120px]">
             "{selectedText.slice(0, 30)}{selectedText.length > 30 ? '...' : ''}"
           </span>

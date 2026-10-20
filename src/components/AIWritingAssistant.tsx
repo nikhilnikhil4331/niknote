@@ -6,6 +6,7 @@ import { Loader2, Sparkles, Wand2, FileText, BookOpen, PenTool, X } from 'lucide
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 interface AIWritingAssistantProps {
   onInsertText: (text: string) => void;
@@ -118,7 +119,7 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
             onLockedTap?.();
           }}
         >
-          <Sparkles className="w-4 h-4 text-accent" />
+          <NikAIMarkIcon className="w-[20px] h-4" />
           <span className="sr-only">AI Writing Assistant</span>
         </Button>
       </DialogTrigger>
@@ -126,10 +127,10 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
-              <Sparkles className="h-4 w-4 text-primary" />
+            <span className="inline-flex h-8 w-10 items-center justify-center rounded-xl bg-primary/10">
+              <NikAIMarkIcon className="w-[26px] h-[15px]" />
             </span>
-            AI Writing Assistant
+            NikAI Writing Assistant
           </DialogTitle>
           <DialogDescription>Generate, expand, summarize, or improve text — then insert it into your handwritten notes.</DialogDescription>
         </DialogHeader>

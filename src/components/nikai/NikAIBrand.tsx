@@ -2,15 +2,19 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 /**
- * NikAI brand — uses the official NikAI logo artwork (3-star mark + calligraphy
- * wordmark) exactly as delivered:
- *   /nikai/nikai-star.png      → 3-star mark
- *   /nikai/nikai-wordmark.png  → "NikAI" script wordmark (violet → magenta → coral)
+ * NikAI brand — the official NikAI logo artwork is the ONLY brand mark used
+ * wherever AI is shown in NikNote:
+ *   /nikai/nikai-mark.png      → signature "M" brushmark + sparkle (AI mark)
+ *   /nikai/nikai-star.png      → sparkle alone (decorative accents)
+ *   /nikai/nikai-wordmark.png  → "NikAI" wordmark (violet → magenta → coral)
  *   /nikai/nikai-logo.png      → full stacked lockup
  */
 
+export const NIKAI_MARK_SRC = '/nikai/nikai-mark.png';
 const STAR_SRC = '/nikai/nikai-star.png';
 const WORDMARK_SRC = '/nikai/nikai-wordmark.png';
+/** Aspect ratio of the official mark (w / h). */
+export const NIKAI_MARK_RATIO = 1.98;
 
 interface NikAIBrandProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'hero';
@@ -22,60 +26,70 @@ interface NikAIBrandProps {
 }
 
 const SIZE_MAP = {
-  sm: { star: 27, word: 56, badge: 'text-[9px] px-2 py-[3px]', gap: 'gap-2' },
-  md: { star: 33, word: 67, badge: 'text-[9.5px] px-2.5 py-[3px]', gap: 'gap-2.5' },
-  lg: { star: 41, word: 85, badge: 'text-[10px] px-2.5 py-1', gap: 'gap-3' },
-  xl: { star: 52, word: 108, badge: 'text-[10.5px] px-3 py-1', gap: 'gap-3' },
-  hero: { star: 62, word: 129, badge: 'text-[11px] px-3 py-1', gap: 'gap-3.5' },
+  sm: { mark: 22, word: 50, badge: 'text-[9px] px-2 py-[3px]', gap: 'gap-1.5' },
+  md: { mark: 27, word: 60, badge: 'text-[9.5px] px-2.5 py-[3px]', gap: 'gap-2' },
+  lg: { mark: 33, word: 76, badge: 'text-[10px] px-2.5 py-1', gap: 'gap-2.5' },
+  xl: { mark: 42, word: 96, badge: 'text-[10.5px] px-3 py-1', gap: 'gap-3' },
+  hero: { mark: 50, word: 115, badge: 'text-[11px] px-3 py-1', gap: 'gap-3' },
 };
 
 /**
- * The three-spark mark — big four-point star with two smaller sparks,
- * composed from the official star artwork.
+ * The official NikAI mark — the signature brush "M" with its sparkle.
+ * Used everywhere AI is surfaced (nav, buttons, AI panels, AI answers…).
  */
 export const NikAILogoMark: React.FC<{
   size?: number;
   className?: string;
   animate?: boolean | 'fast' | 'idle';
-}> = ({ size = 36, className = '', animate = false }) => {
-  const big = size * 0.74;
-  const small = size * 0.4;
+  /** Renders the mark inside a soft rounded tile (used for icon slots). */
+  tile?: boolean;
+  alt?: string;
+}> = ({ size = 36, className = '', animate = false, tile = false, alt = 'NikAI' }) => {
+  const mark = (
+    <motion.img
+      key="nikai-mark"
+      src={NIKAI_MARK_SRC}
+      alt={alt}
+      draggable={false}
+      className="w-auto select-none"
+      style={{ height: tile ? size * 0.66 : size }}
+      animate={animate ? { scale: [1, 1.045, 1] } : undefined}
+      transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+    />
+  );
+
+  if (!tile) {
+    return <span className={`inline-flex shrink-0 items-center justify-center ${className}`}>{mark}</span>;
+  }
+
   return (
     <span
-      aria-hidden="true"
-      className={`relative inline-block shrink-0 select-none ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-[10px] border border-[#F1E9FE] bg-gradient-to-br from-white via-[#FBF7FF] to-[#FDF2FB] shadow-[0_2px_10px_-4px_rgba(124,58,237,0.35)] ${className}`}
       style={{ width: size, height: size }}
     >
-      <motion.img
-        src={STAR_SRC}
-        alt=""
-        draggable={false}
-        className="absolute right-0 top-[8%] w-auto"
-        style={{ height: big }}
-        animate={animate ? { scale: [1, 1.06, 1] } : undefined}
-        transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <motion.img
-        src={STAR_SRC}
-        alt=""
-        draggable={false}
-        className="absolute left-0 top-0 w-auto"
-        style={{ height: small }}
-        animate={animate ? { scale: [1, 1.14, 1], opacity: [0.85, 1, 0.85] } : undefined}
-        transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut', delay: 0.35 }}
-      />
-      <motion.img
-        src={STAR_SRC}
-        alt=""
-        draggable={false}
-        className="absolute bottom-0 left-[2%] w-auto"
-        style={{ height: small }}
-        animate={animate ? { scale: [1, 1.12, 1] } : undefined}
-        transition={{ duration: 3.1, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
-      />
+      {mark}
     </span>
   );
 };
+
+/**
+ * Lucide-compatible wrapper so the AI mark can be dropped into any icon slot
+ * (`<Icon className="w-4 h-4" />`). No AI surface should fall back to a
+ * generic glyph.
+ */
+export const NikAIMarkIcon: React.FC<React.ImgHTMLAttributes<HTMLImageElement>> = ({
+  className = 'w-4 h-4',
+  alt = 'NikAI',
+  ...rest
+}) => (
+  <img
+    src={NIKAI_MARK_SRC}
+    alt={alt}
+    draggable={false}
+    className={`select-none object-contain ${className}`}
+    {...rest}
+  />
+);
 
 /** Kept for backwards compatibility across the app. */
 export const NikAIStarConstellation: React.FC<{
@@ -113,7 +127,7 @@ export const NikAIBrand: React.FC<NikAIBrandProps> = ({
   return (
     <div className={`inline-flex flex-col ${className}`}>
       <div className={`inline-flex items-center ${cfg.gap}`}>
-        <NikAILogoMark size={cfg.star} />
+        <NikAILogoMark size={cfg.mark} />
         <img
           src={WORDMARK_SRC}
           alt="NikAI"

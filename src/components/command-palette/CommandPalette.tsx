@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 interface CommandItem {
   id: string;
@@ -47,7 +48,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const commands: CommandItem[] = useMemo(() => [
     // Pages
     { id: 'home', label: 'Go to Home', icon: <FileText className="w-4 h-4" />, category: 'page', action: () => navigate('/') },
-    { id: 'ai', label: 'NikAI (Astra Core)', icon: <Sparkles className="w-4 h-4 text-purple-500" />, category: 'page', action: () => navigate('/ai') },
+    { id: 'ai', label: 'NikAI (Astra Core)', icon: <NikAIMarkIcon className="w-[18px] h-[18px]" />, category: 'page', action: () => navigate('/ai') },
     { id: 'notebooks', label: 'My Notebooks', icon: <BookOpen className="w-4 h-4" />, category: 'page', action: () => navigate('/notebooks') },
     { id: 'documents', label: 'Documents', icon: <FileText className="w-4 h-4" />, category: 'page', action: () => navigate('/documents') },
     { id: 'history', label: 'History', icon: <Clock className="w-4 h-4" />, category: 'page', action: () => navigate('/history') },
@@ -65,12 +66,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     { id: 'delete', label: 'Delete Note', icon: <Trash2 className="w-4 h-4 text-red-500" />, category: 'action', action: () => {} },
 
     // NikAI Powers
-    { id: 'ai-write', label: 'NikAI Smart Notes', description: 'Generate multi-ink notes & flashcards', icon: <Sparkles className="w-4 h-4 text-purple-500" />, category: 'ai', action: () => navigate('/ai') },
-    { id: 'ai-solve', label: 'NikAI Solver & Pro Reasoning', description: 'Solve math, science & coding step by step', icon: <Brain className="w-4 h-4 text-purple-500" />, category: 'ai', action: () => navigate('/ai') },
+    { id: 'ai-write', label: 'NikAI Smart Notes', description: 'Generate multi-ink notes & flashcards', icon: <NikAIMarkIcon className="w-[18px] h-[18px]" />, category: 'ai', action: () => navigate('/ai') },
+    { id: 'ai-solve', label: 'NikAI Solver & Pro Reasoning', description: 'Solve math, science & coding step by step', icon: <NikAIMarkIcon className="w-[18px] h-[18px]" />, category: 'ai', action: () => navigate('/ai') },
     { id: 'ai-dna', label: 'Handwriting DNA Scanner', description: 'Scan handwriting DNA', icon: <Scan className="w-4 h-4 text-emerald-500" />, category: 'ai', action: () => {} },
-    { id: 'ai-quiz', label: 'NikAI Live Quiz', description: 'Play interactive 5-MCQ test', icon: <Zap className="w-4 h-4 text-yellow-500" />, category: 'ai', action: () => navigate('/ai') },
-    { id: 'ai-flashcards', label: 'NikAI Flashcards', description: 'Extract flashcards automatically', icon: <BookOpen className="w-4 h-4 text-blue-500" />, category: 'ai', action: () => navigate('/ai') },
-    { id: 'ai-explain', label: 'AI Explain', description: 'Explain selected text', icon: <Brain className="w-4 h-4 text-indigo-500" />, category: 'ai', action: () => {} },
+    { id: 'ai-quiz', label: 'NikAI Live Quiz', description: 'Play interactive 5-MCQ test', icon: <NikAIMarkIcon className="w-[18px] h-[18px]" />, category: 'ai', action: () => navigate('/ai') },
+    { id: 'ai-flashcards', label: 'NikAI Flashcards', description: 'Extract flashcards automatically', icon: <NikAIMarkIcon className="w-[18px] h-[18px]" />, category: 'ai', action: () => navigate('/ai') },
+    { id: 'ai-explain', label: 'AI Explain', description: 'Explain selected text', icon: <NikAIMarkIcon className="w-[18px] h-[18px]" />, category: 'ai', action: () => {} },
     { id: 'ai-translate', label: 'AI Translate', description: 'Translate to Hindi/English', icon: <Hash className="w-4 h-4 text-green-500" />, category: 'ai', action: () => {} },
     { id: 'ai-dictate', label: 'Voice Dictation', description: 'Type with your voice', icon: <Mic className="w-4 h-4 text-red-500" />, category: 'ai', action: () => {} },
 

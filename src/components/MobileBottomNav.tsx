@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { haptic } from '@/hooks/useHaptics';
 import { motion, useReducedMotion } from 'framer-motion';
 import { spring } from '@/lib/motion';
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 export type MobileTab = 'write' | 'style' | 'preview' | 'ai';
 
@@ -25,7 +26,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activeTab, onT
   const tabs: { id: MobileTab; label: string; icon: React.ElementType }[] = [
     { id: 'write', label: 'Write', icon: PenLine },
     { id: 'style', label: 'Style', icon: Palette },
-    { id: 'ai', label: 'AI', icon: Sparkles },
+    { id: 'ai', label: 'AI', icon: NikAIMarkIcon },
     { id: 'preview', label: 'More', icon: MoreHorizontal },
   ];
 

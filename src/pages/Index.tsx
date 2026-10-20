@@ -74,6 +74,7 @@ import { useInlineContent } from '@/hooks/useInlineContent';
 import { Toolbar } from '@/components/Toolbar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toggleMark } from '@/lib/inlineMarks';
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -1033,7 +1034,7 @@ const Index = () => {
                   className="flex items-center gap-1.5 h-8 px-3 rounded-full text-[11px] font-semibold text-white bg-gradient-to-r from-violet-500 to-indigo-500 shadow-sm active:scale-95 transition-transform"
                   style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', cursor: 'pointer' }}
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <NikAIMarkIcon className="w-[20px] h-3.5" />
                   <span>AI</span>
                 </button>
 
@@ -1127,23 +1128,21 @@ const Index = () => {
                   <button
                     onClick={() => navigate('/ai')}
                     data-testid="pc-open-nikai-btn"
-                    className="relative group flex items-center gap-2 h-9 px-5 rounded-full text-white shadow-[0_6px_22px_rgba(139,30,224,0.38)] hover:shadow-[0_8px_28px_rgba(219,39,119,0.52)] transition-all"
-                    style={{
-                      background: 'linear-gradient(100deg, #5B1BC9 0%, #8B1EE0 42%, #DB2777 80%, #F46B55 100%)',
-                    }}
+                    title="Open NikAI"
+                    className="relative group flex items-center gap-1.5 h-9 pl-2 pr-3 rounded-full bg-white/95 border border-[#EDE3FD] shadow-[0_6px_22px_rgba(139,30,224,0.22)] hover:shadow-[0_8px_28px_rgba(219,39,119,0.32)] hover:border-[#DCC8FB] transition-all"
                   >
-                    <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                    <span
-                      style={{
-                        fontFamily: "'Dancing Script', 'Caveat', cursive",
-                        fontWeight: 700,
-                        fontSize: 19,
-                        lineHeight: 1,
-                        letterSpacing: '-0.01em',
-                      }}
-                    >
-                      NikAI
+                    <NikAIMarkIcon className="w-[30px] h-[17px]" />
+                    <img
+                      src="/nikai/nikai-wordmark.png"
+                      alt=""
+                      aria-hidden="true"
+                      draggable={false}
+                      className="w-[44px] select-none"
+                    />
+                    <span className="rounded-full bg-[#F5EEFE] px-1.5 py-[2px] text-[8.5px] font-extrabold tracking-[0.14em] text-[#7C3AED]">
+                      ASTRA
                     </span>
+                    <span className="sr-only">NikAI</span>
                   </button>
                 </motion.div>
 
@@ -1298,7 +1297,7 @@ const Index = () => {
               <div className="nn-board-footer">
                 <Button variant="ghost" onClick={() => setShowMobileStyleSheet(true)}><Settings2 className="h-4 w-4" />Paper & pen</Button>
                 <Button variant="ghost" onClick={() => setShowImportPanel(true)} aria-label="Import document" title="Import document"><Upload className="h-4 w-4" /></Button>
-                <Button variant="ghost" onClick={() => navigate('/ai')} aria-label="NikAI" title="NikAI"><Sparkles className="h-4 w-4 text-purple-600" /></Button>
+                <Button variant="ghost" onClick={() => navigate('/ai')} aria-label="NikAI" title="NikAI"><NikAIMarkIcon className="h-4 w-[22px]" /></Button>
                 <Button onClick={handleExportPDF} disabled={isExporting}><FileDown className="h-4 w-4" />PDF</Button>
               </div>
 

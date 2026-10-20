@@ -13,6 +13,7 @@ import {
 import { useAIStream, AIAction } from "@/hooks/useAIStream";
 import { AIDiffView } from "./AIDiffView";
 import { cn } from "@/lib/utils";
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 // Actions where a side-by-side diff makes sense (text is being transformed in-place)
 const DIFF_ACTIONS: AIAction[] = ["improve", "fix_grammar", "shorten", "lengthen", "translate"];
@@ -144,11 +145,11 @@ export const InlineAIMenu: React.FC<InlineAIMenuProps> = ({
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
+                <div className="w-9 h-8 rounded-xl bg-white border border-[#EDE3FD] flex items-center justify-center">
+                  <NikAIMarkIcon className="w-[24px] h-4" />
                 </div>
                 <div>
-                  <div className="text-[15px] font-semibold text-gray-900">Ask AI</div>
+                  <div className="text-[15px] font-semibold text-gray-900">Ask NikAI</div>
                   <div className="text-[11px] text-gray-500">
                     {chosen ? chosen.label : `${text.trim().split(/\s+/).filter(Boolean).length} words selected`}
                   </div>

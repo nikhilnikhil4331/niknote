@@ -4,6 +4,7 @@
 // ============================================================
 
 import { FileText, BookOpen, Search, Sparkles, Pen } from 'lucide-react';
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 interface EmptyStateProps {
   icon?: React.ReactNode;
@@ -95,7 +96,7 @@ export function EmptySearchResult({ query }: { query: string }) {
 export function EmptyAI() {
   return (
     <EmptyState
-      icon={<Sparkles className="w-9 h-9 text-primary/60" />}
+      icon={<NikAIMarkIcon className="w-16 h-9" />}
       title="AI Writing Assistant"
       description="Ask AI to help write, solve, or improve your notes. Type a question or paste content to get started!"
     />

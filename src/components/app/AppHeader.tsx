@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, MoreVertical, Undo2, Redo2, Sparkles, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 interface AppHeaderProps {
   title: string;
@@ -115,7 +116,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   <MenuButton icon={<Undo2 className="w-4 h-4" />} label="Undo" onClick={() => setShowMenu(false)} />
                   <MenuButton icon={<Redo2 className="w-4 h-4" />} label="Redo" onClick={() => setShowMenu(false)} />
                   <div className="h-px bg-border/50 my-1 mx-3" />
-                  <MenuButton icon={<Sparkles className="w-4 h-4" />} label="AI Writing Help" onClick={() => setShowMenu(false)} />
+                  <MenuButton icon={<NikAIMarkIcon className="w-[18px] h-[18px]" />} label="AI Writing Help" onClick={() => setShowMenu(false)} />
                 </motion.div>
               </>
             )}

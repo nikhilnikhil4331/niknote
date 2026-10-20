@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NikAIWorkspace } from '@/components/nikai/NikAIWorkspace';
-import { NikAIBrand, NikAILogoMark } from '@/components/nikai/NikAIBrand';
+import { NikAIBrand, NikAILogoMark, NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 /**
  * Guards the NikAI home screen ("What can I help you create?") and the
@@ -49,17 +49,19 @@ describe('NikAI home screen & brand assets', () => {
       <div>
         <NikAIBrand size="lg" />
         <NikAILogoMark size={48} />
+        <NikAIMarkIcon className="w-4 h-4" />
       </div>,
     );
 
-    const wordmark = document.querySelector('img[alt="NikAI"]') as HTMLImageElement | null;
-    expect(wordmark?.getAttribute('src')).toBe('/nikai/nikai-wordmark.png');
-    expect(screen.getByText('Astra')).toBeTruthy();
-
-    const starSources = Array.from(document.querySelectorAll('img')).map((img) =>
+    const sources = Array.from(document.querySelectorAll('img')).map((img) =>
       img.getAttribute('src'),
     );
-    expect(starSources).toContain('/nikai/nikai-star.png');
+    // Official brushmark + sparkle artwork and the real wordmark artwork.
+    expect(sources).toContain('/nikai/nikai-mark.png');
+    expect(sources).toContain('/nikai/nikai-wordmark.png');
+    // No emoji/stand-in star glyphs are used for the brand.
+    expect(screen.getByText('Astra')).toBeTruthy();
+    expect(document.body.textContent || '').not.toContain('✦');
   });
 
   it('hides the chat rail when the workspace is embedded in the editor slide-over', () => {

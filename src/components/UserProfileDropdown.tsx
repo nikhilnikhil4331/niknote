@@ -8,6 +8,7 @@ import { usePremium } from '@/hooks/usePremium';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 export const UserProfileDropdown = forwardRef<HTMLDivElement>((_, ref) => {
   const { user, signOut } = useAuth();
@@ -49,7 +50,7 @@ export const UserProfileDropdown = forwardRef<HTMLDivElement>((_, ref) => {
     'User';
 
   const menuItems = [
-    { label: 'NikAI', icon: Brain, onClick: () => navigate('/ai') },
+    { label: 'NikAI', icon: NikAIMarkIcon, onClick: () => navigate('/ai') },
     { label: 'My History', icon: History, onClick: () => navigate('/history') },
     ...(isAdmin ? [{ label: 'Admin Panel', icon: Shield, onClick: () => navigate('/admin-panel-nikhil') }] : []),
     ...(isPremium ? [] : [{ label: 'Upgrade to Premium', icon: Crown, onClick: () => navigate('/payment'), highlight: true }]),

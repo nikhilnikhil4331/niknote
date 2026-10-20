@@ -23,6 +23,7 @@ import {
   NikAIBrand,
   NikAIStarConstellation,
   NikAILogoMark,
+  NikAIMarkIcon,
   NikAIIconGradients,
 } from '@/components/nikai/NikAIBrand';
 import { NikAIThinkingArena } from '@/components/nikai/NikAIThinkingArena';
@@ -1284,7 +1285,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 }}
                 className="flex h-11 items-center gap-2 rounded-2xl border border-[#EFE9FA] bg-white/85 px-3.5 text-[13px] font-semibold text-[#312E43] transition-colors hover:border-[#DDD2F7]"
               >
-                <Sparkles className="h-[15px] w-[15px] text-[#8B5CF6]" />
+                <NikAIMarkIcon className="h-[15px] w-[26px]" />
                 <span className="max-w-[150px] truncate">{activeModelLabel}</span>
                 <ChevronDown className="h-3.5 w-3.5 text-[#8B8AA0]" />
               </button>
@@ -1775,7 +1776,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     }}
                     className="flex h-9 items-center gap-1.5 rounded-full border border-[#E9DFFB] bg-[#FBF8FF] px-3 text-[12.5px] font-semibold text-[#4C1D95] transition-colors hover:border-[#D8C8F8]"
                   >
-                    <Sparkles className="h-3.5 w-3.5 text-[#8B5CF6]" />
+                    <NikAIMarkIcon className="h-[14px] w-6" />
                     <span className="max-w-[150px] truncate">{activeModelLabel}</span>
                     <ChevronDown className="h-3.5 w-3.5 text-[#8B5CF6]" />
                   </button>

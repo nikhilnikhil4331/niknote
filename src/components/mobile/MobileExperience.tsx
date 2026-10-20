@@ -26,6 +26,7 @@ import { useMobileAppearance } from './useMobileAppearance';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useAccountName } from '@/hooks/useAccountName';
 import AstaAIWorkspace from '@/components/asta/AstaAIWorkspace';
+import { NikAIMarkIcon } from '@/components/nikai/NikAIBrand';
 
 interface LocalDeviceNotebook {
   id: string;
@@ -327,7 +328,7 @@ export function MobileExperience() {
             <MobileTrackerCards />
             <div className="nn-quick-actions">
               {[
-                { label: 'NikAI', icon: Sparkles, tone: 'purple', action: () => navigate('/ai') },
+                { label: 'NikAI', icon: NikAIMarkIcon, tone: 'purple', action: () => navigate('/ai') },
                 { label: 'Write Note', icon: PenLine, tone: 'green', action: () => navigate('/?editor=1&new=1') },
                 { label: 'Templates', icon: LayoutGrid, tone: 'purple', action: () => navigate('/templates') },
                 { label: 'Draw Board', icon: ScanLine, tone: 'pink', action: () => navigate('/board') },
@@ -516,7 +517,7 @@ export function MobileExperience() {
             </div>
             <div className="nn-settings-group">
               {[
-                { label: 'NikAI', icon: Sparkles, action: () => navigate('/ai') },
+                { label: 'NikAI', icon: NikAIMarkIcon, action: () => navigate('/ai') },
                 { label: 'Account', icon: Settings, action: () => navigate('/account-details') },
                 { label: 'Appearance', icon: LayoutGrid, action: () => navigate('/appearance') },
                 {
@@ -582,7 +583,7 @@ export function MobileExperience() {
           <div className="nn-drawer-menu">
             {[
               { name: 'Home', icon: BookOpen, to: '/' },
-              { name: 'NikAI', icon: Sparkles, to: '/ai' },
+              { name: 'NikAI', icon: NikAIMarkIcon, to: '/ai' },
               { name: 'Notebook Studio', icon: PenLine, to: '/?editor=1' },
               { name: 'DNA Scanner', icon: ScanLine, to: '/?editor=1&panel=scan' },
               { name: 'Documents', icon: FileText, to: '/documents' },
