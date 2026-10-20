@@ -107,9 +107,14 @@ function LegacyEditorRedirect() {
   const { search } = useLocation();
   return <Navigate to={`/${search || '?editor=1'}`} replace />;
 }
+const NO_FLOATING_SHARE_ROUTES = ['/ai', '/nikai', '/ai-workspace', '/agents', '/ai-solver', '/ai-classic'];
 function DesktopFloatingShare() {
   const mobile = useIsMobile();
-  return mobile ? null : <ShareButtons variant="floating" />;
+  const { pathname } = useLocation();
+  // NikAI studio is a full-bleed app surface — the floating share bubble overlapped
+  // the sidebar upgrade card there, so keep it off that route.
+  if (mobile || NO_FLOATING_SHARE_ROUTES.includes(pathname)) return null;
+  return <ShareButtons variant="floating" />;
 }
 
 function RouteAnalytics() {
@@ -218,9 +223,9 @@ const App = () => {
                         every route and sent the whole app to the global error
                         screen. See src/lib/appShell.test.tsx. */}
                     <InstallBanner />
+                    <DesktopFloatingShare />
                   </Suspense>
                 </BrowserRouter>
-                <DesktopFloatingShare />
               </TooltipProvider>
             </HandwritingDNAProvider>
           </PremiumProvider>

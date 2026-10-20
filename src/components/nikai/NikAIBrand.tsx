@@ -1,145 +1,134 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+/**
+ * NikAI brand — uses the official NikAI logo artwork (3-star mark + calligraphy
+ * wordmark) exactly as delivered:
+ *   /nikai/nikai-star.png      → 3-star mark
+ *   /nikai/nikai-wordmark.png  → "NikAI" script wordmark (violet → magenta → coral)
+ *   /nikai/nikai-logo.png      → full stacked lockup
+ */
+
+const STAR_SRC = '/nikai/nikai-star.png';
+const WORDMARK_SRC = '/nikai/nikai-wordmark.png';
+
 interface NikAIBrandProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'hero';
   showTagline?: boolean;
   subtitle?: string;
   className?: string;
+  /** Hide the small ASTRA capsule (used where space is tight). */
+  showBadge?: boolean;
 }
 
 const SIZE_MAP = {
-  sm: { starBox: 24, fontSize: 'text-[23px]', badge: 'text-[9px] px-1.5 py-0.5', gap: 'gap-1.5' },
-  md: { starBox: 30, fontSize: 'text-[28px]', badge: 'text-[9.5px] px-2 py-0.5', gap: 'gap-2' },
-  lg: { starBox: 40, fontSize: 'text-[38px]', badge: 'text-[10px] px-2.5 py-0.5', gap: 'gap-2.5' },
-  xl: { starBox: 48, fontSize: 'text-[46px] sm:text-[54px]', badge: 'text-[10.5px] px-2.5 py-0.5', gap: 'gap-3' },
-  hero: { starBox: 56, fontSize: 'text-[52px] sm:text-[62px]', badge: 'text-[11px] px-3 py-1', gap: 'gap-3' },
+  sm: { star: 27, word: 56, badge: 'text-[9px] px-2 py-[3px]', gap: 'gap-2' },
+  md: { star: 33, word: 67, badge: 'text-[9.5px] px-2.5 py-[3px]', gap: 'gap-2.5' },
+  lg: { star: 41, word: 85, badge: 'text-[10px] px-2.5 py-1', gap: 'gap-3' },
+  xl: { star: 52, word: 108, badge: 'text-[10.5px] px-3 py-1', gap: 'gap-3' },
+  hero: { star: 62, word: 129, badge: 'text-[11px] px-3 py-1', gap: 'gap-3.5' },
 };
 
 /**
- * Authentic NikAI Brand Mark — crafted directly in the visual DNA of /niknote-logo.png:
- * - Signature 3-star golden-amber-to-coral constellation mark on the left
- * - Flowing handwritten script wordmark ("Dancing Script" / "Caveat") in royal violet -> magenta -> coral ink
+ * The three-spark mark — big four-point star with two smaller sparks,
+ * composed from the official star artwork.
  */
+export const NikAILogoMark: React.FC<{
+  size?: number;
+  className?: string;
+  animate?: boolean | 'fast' | 'idle';
+}> = ({ size = 36, className = '', animate = false }) => {
+  const big = size * 0.74;
+  const small = size * 0.4;
+  return (
+    <span
+      aria-hidden="true"
+      className={`relative inline-block shrink-0 select-none ${className}`}
+      style={{ width: size, height: size }}
+    >
+      <motion.img
+        src={STAR_SRC}
+        alt=""
+        draggable={false}
+        className="absolute right-0 top-[8%] w-auto"
+        style={{ height: big }}
+        animate={animate ? { scale: [1, 1.06, 1] } : undefined}
+        transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.img
+        src={STAR_SRC}
+        alt=""
+        draggable={false}
+        className="absolute left-0 top-0 w-auto"
+        style={{ height: small }}
+        animate={animate ? { scale: [1, 1.14, 1], opacity: [0.85, 1, 0.85] } : undefined}
+        transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut', delay: 0.35 }}
+      />
+      <motion.img
+        src={STAR_SRC}
+        alt=""
+        draggable={false}
+        className="absolute bottom-0 left-[2%] w-auto"
+        style={{ height: small }}
+        animate={animate ? { scale: [1, 1.12, 1] } : undefined}
+        transition={{ duration: 3.1, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
+      />
+    </span>
+  );
+};
+
+/** Kept for backwards compatibility across the app. */
 export const NikAIStarConstellation: React.FC<{
   size?: number;
   animate?: boolean | 'fast' | 'idle';
   className?: string;
-}> = ({
-  size = 32,
-  animate = true,
+}> = ({ size = 32, animate = true, className = '' }) => (
+  <NikAILogoMark size={size} animate={animate} className={className} />
+);
+
+/** Single spark (used in dense chips / avatars). */
+export const NikAIStar: React.FC<{ size?: number; className?: string }> = ({
+  size = 14,
   className = '',
-}) => {
-  const uid = React.useId().replace(/:/g, '');
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      fill="none"
-      aria-hidden="true"
-      className={`shrink-0 select-none overflow-visible ${className}`}
-    >
-      <defs>
-        <linearGradient id={`nikai-star-main-${uid}`} x1="18" y1="8" x2="54" y2="58" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#FBBF24" />
-          <stop offset="48%" stopColor="#F59E0B" />
-          <stop offset="100%" stopColor="#F45B69" />
-        </linearGradient>
-        <linearGradient id={`nikai-star-coral-${uid}`} x1="4" y1="32" x2="26" y2="58" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#FB923C" />
-          <stop offset="100%" stopColor="#EC4899" />
-        </linearGradient>
-        <filter id={`nikai-glow-${uid}`} x="-25%" y="-25%" width="150%" height="150%">
-          <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#EC4899" floodOpacity="0.28" />
-        </filter>
-      </defs>
-
-      {/* Main Primary 4-Point Rounded Star */}
-      <motion.path
-        d="M40 8C41.4 8 42.3 15.8 45.4 18.9C48.5 22 56.2 22.9 56.2 24.3C56.2 25.7 48.5 26.6 45.4 29.7C42.3 32.8 41.4 40.6 40 40.6C38.6 40.6 37.7 32.8 34.6 29.7C31.5 26.6 23.8 25.7 23.8 24.3C23.8 22.9 31.5 22 34.6 18.9C37.7 15.8 38.6 8 40 8Z"
-        fill={`url(#nikai-star-main-${uid})`}
-        filter={`url(#nikai-glow-${uid})`}
-        animate={
-          animate
-            ? {
-                scale: [1, 1.08, 1],
-                rotate: [0, 4, 0],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: '40px 24.3px' }}
-        transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
-      />
-
-      {/* Upper-Left Golden Spark Star */}
-      <motion.path
-        d="M17 9C17.8 9 18.3 13.4 20.1 15.2C21.9 17 26.2 17.5 26.2 18.3C26.2 19.1 21.9 19.6 20.1 21.4C18.3 23.2 17.8 27.6 17 27.6C16.2 27.6 15.7 23.2 13.9 21.4C12.1 19.6 7.8 19.1 7.8 18.3C7.8 17.5 12.1 17 13.9 15.2C15.7 13.4 16.2 9 17 9Z"
-        fill="#F59E0B"
-        animate={
-          animate
-            ? {
-                scale: [1, 1.18, 1],
-                opacity: [0.85, 1, 0.85],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: '17px 18.3px' }}
-        transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
-      />
-
-      {/* Lower-Left Warm Coral Star */}
-      <motion.path
-        d="M18 34C18.9 34 19.5 39.2 21.6 41.3C23.7 43.4 28.8 44 28.8 44.9C28.8 45.8 23.7 46.4 21.6 48.5C19.5 50.6 18.9 55.8 18 55.8C17.1 55.8 16.5 50.6 14.4 48.5C12.3 46.4 7.2 45.8 7.2 44.9C7.2 44 12.3 43.4 14.4 41.3C16.5 39.2 17.1 34 18 34Z"
-        fill={`url(#nikai-star-coral-${uid})`}
-        animate={
-          animate
-            ? {
-                scale: [1, 1.14, 1],
-                rotate: [0, -6, 0],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: '18px 44.9px' }}
-        transition={{ duration: 3.1, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
-      />
-    </svg>
-  );
-};
+}) => (
+  <img
+    src={STAR_SRC}
+    alt=""
+    aria-hidden="true"
+    draggable={false}
+    className={`shrink-0 select-none ${className}`}
+    style={{ height: size, width: size }}
+  />
+);
 
 export const NikAIBrand: React.FC<NikAIBrandProps> = ({
   size = 'md',
   showTagline = false,
   subtitle,
   className = '',
+  showBadge = true,
 }) => {
   const cfg = SIZE_MAP[size] || SIZE_MAP.lg;
 
   return (
     <div className={`inline-flex flex-col ${className}`}>
       <div className={`inline-flex items-center ${cfg.gap}`}>
-        <NikAIStarConstellation size={cfg.starBox} />
-        <span
-          style={{
-            fontFamily: "'Dancing Script', 'Caveat', cursive",
-            fontWeight: 700,
-            backgroundImage:
-              'linear-gradient(96deg, #5B1BC9 0%, #8B1EE0 28%, #DB2777 63%, #F46B55 88%, #F59E0B 100%)',
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            color: 'transparent',
-            lineHeight: 1.05,
-            paddingRight: '3px',
-          }}
-          className={`${cfg.fontSize} tracking-tight select-none drop-shadow-[0_2px_10px_rgba(192,38,211,0.16)]`}
-        >
-          NikAI
-        </span>
-        <span
-          className={`${cfg.badge} rounded-full border border-fuchsia-500/30 bg-gradient-to-r from-violet-600/12 via-pink-500/12 to-amber-500/15 font-extrabold uppercase tracking-widest text-violet-700 dark:text-violet-300 select-none`}
-        >
-          Astra
-        </span>
+        <NikAILogoMark size={cfg.star} />
+        <img
+          src={WORDMARK_SRC}
+          alt="NikAI"
+          draggable={false}
+          className="w-auto select-none"
+          style={{ width: cfg.word }}
+        />
+        <span className="sr-only">NikAI</span>
+        {showBadge && (
+          <span
+            className={`${cfg.badge} rounded-full border border-[#E6DCFB] bg-white/70 font-extrabold uppercase tracking-[0.16em] text-[#7C3AED] select-none`}
+          >
+            Astra
+          </span>
+        )}
       </div>
       {(showTagline || subtitle) && (
         <p className="mt-1 text-xs font-medium text-muted-foreground">
@@ -150,12 +139,35 @@ export const NikAIBrand: React.FC<NikAIBrandProps> = ({
   );
 };
 
+/** Gradient defs used to tint line icons with the brand gradient. */
+export const NikAIIconGradients: React.FC = () => (
+  <svg width="0" height="0" aria-hidden="true" focusable="false" style={{ position: 'absolute' }}>
+    <defs>
+      <linearGradient id="nikai-grad-violet" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0%" stopColor="#7C3AED" />
+        <stop offset="55%" stopColor="#A855F7" />
+        <stop offset="100%" stopColor="#EC4899" />
+      </linearGradient>
+      <linearGradient id="nikai-grad-pink" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0%" stopColor="#A855F7" />
+        <stop offset="60%" stopColor="#DB2777" />
+        <stop offset="100%" stopColor="#FB7185" />
+      </linearGradient>
+      <linearGradient id="nikai-grad-blue" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0%" stopColor="#3B82F6" />
+        <stop offset="100%" stopColor="#8B5CF6" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
 /**
- * Signature full-screen / embedded NikAI boot loader matching NikNote's royal gradient & paper aesthetic.
+ * Signature full-screen / embedded NikAI boot loader matching the pastel brand aesthetic.
  */
-export const NikAILoader: React.FC<{ fullScreen?: boolean; message?: string }> = ({
+export const NikAILoader: React.FC<{ fullScreen?: boolean; message?: string; label?: string }> = ({
   fullScreen = true,
   message = 'Awakening NikAI Astra Core…',
+  label,
 }) => {
   return (
     <div
@@ -166,44 +178,39 @@ export const NikAILoader: React.FC<{ fullScreen?: boolean; message?: string }> =
       }`}
       style={{
         background:
-          'radial-gradient(ellipse at 20% 20%, rgba(139,92,246,0.15), transparent 55%), radial-gradient(ellipse at 82% 75%, rgba(236,72,153,0.14), transparent 55%), var(--background, #faf8ff)',
+          'radial-gradient(ellipse at 20% 20%, rgba(139,92,246,0.12), transparent 55%), radial-gradient(ellipse at 82% 75%, rgba(236,72,153,0.10), transparent 55%), #FBF9FE',
       }}
     >
-      {/* Orbiting Neural Ring */}
-      <div className="relative flex items-center justify-center mb-5">
+      <div className="relative flex items-center justify-center mb-6">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-          className="h-28 w-28 rounded-full p-[2px]"
+          className="h-24 w-24 rounded-full p-[2px]"
           style={{
-            background:
-              'conic-gradient(from 0deg, #6D28D9, #DB2777, #F59E0B, transparent 72%, #6D28D9)',
+            background: 'conic-gradient(from 0deg, #8B5CF6, #DB2777, #FB923C, transparent 72%, #8B5CF6)',
           }}
         >
-          <div className="h-full w-full rounded-full bg-background/95 backdrop-blur-md" />
+          <div className="h-full w-full rounded-full bg-[#FBF9FE]/95 backdrop-blur-md" />
         </motion.div>
 
         <div className="absolute inset-0 flex items-center justify-center">
-          <NikAIStarConstellation size={52} />
+          <NikAILogoMark size={54} animate />
         </div>
       </div>
 
-      <NikAIBrand size="lg" />
+      <NikAIBrand size="lg" showBadge={false} />
 
-      {/* Liquid Ink Progress Ribbon */}
-      <div className="mt-5 h-1.5 w-48 overflow-hidden rounded-full bg-violet-500/15">
+      <div className="mt-5 h-1.5 w-48 overflow-hidden rounded-full bg-[#EFE9FA]">
         <motion.div
           initial={{ x: '-100%' }}
           animate={{ x: '200%' }}
           transition={{ duration: 1.35, repeat: Infinity, ease: 'easeInOut' }}
           className="h-full w-1/2 rounded-full"
-          style={{
-            background: 'linear-gradient(90deg, #6D28D9, #DB2777, #F59E0B)',
-          }}
+          style={{ background: 'linear-gradient(90deg, #8B5CF6, #DB2777, #FB923C)' }}
         />
       </div>
 
-      <p className="mt-3 text-xs font-medium tracking-wide text-muted-foreground">{message}</p>
+      <p className="mt-3 text-xs font-medium tracking-wide text-[#8B8AA0]">{label || message}</p>
     </div>
   );
 };
