@@ -1,209 +1,258 @@
+// ============================================================
+// NikAI — Official Brand Identity System
+// Renders the official calligraphic "N✦" ribbon emblem + "NikAI"
+// wordmark (public/nikai-logo.png, nikai-mark.png, nikai-wordmark.png)
+// cleanly across sidebars, hero screens, avatars, and loaders.
+// ============================================================
+
 import React from 'react';
 import { motion } from 'framer-motion';
 
-interface NikAIBrandProps {
+export interface NikAIBrandProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'hero';
-  showTagline?: boolean;
+  stacked?: boolean;
   subtitle?: string;
+  badge?: string;
+  animateStars?: boolean;
   className?: string;
 }
 
-const SIZE_MAP = {
-  sm: { starBox: 24, fontSize: 'text-[23px]', badge: 'text-[9px] px-1.5 py-0.5', gap: 'gap-1.5' },
-  md: { starBox: 30, fontSize: 'text-[28px]', badge: 'text-[9.5px] px-2 py-0.5', gap: 'gap-2' },
-  lg: { starBox: 40, fontSize: 'text-[38px]', badge: 'text-[10px] px-2.5 py-0.5', gap: 'gap-2.5' },
-  xl: { starBox: 48, fontSize: 'text-[46px] sm:text-[54px]', badge: 'text-[10.5px] px-2.5 py-0.5', gap: 'gap-3' },
-  hero: { starBox: 56, fontSize: 'text-[52px] sm:text-[62px]', badge: 'text-[11px] px-3 py-1', gap: 'gap-3' },
+const INLINE_MARK_HEIGHT: Record<NonNullable<NikAIBrandProps['size']>, number> = {
+  sm: 24,
+  md: 30,
+  lg: 42,
+  xl: 56,
+  hero: 68,
+};
+
+const INLINE_WORD_HEIGHT: Record<NonNullable<NikAIBrandProps['size']>, number> = {
+  sm: 17,
+  md: 21,
+  lg: 28,
+  xl: 36,
+  hero: 44,
+};
+
+const STACKED_LOGO_WIDTH: Record<NonNullable<NikAIBrandProps['size']>, number> = {
+  sm: 72,
+  md: 96,
+  lg: 132,
+  xl: 168,
+  hero: 196,
 };
 
 /**
- * Authentic NikAI Brand Mark — crafted directly in the visual DNA of /niknote-logo.png:
- * - Signature 3-star golden-amber-to-coral constellation mark on the left
- * - Flowing handwritten script wordmark ("Dancing Script" / "Caveat") in royal violet -> magenta -> coral ink
+ * 3-Star Sparkling Constellation matching the official NikAI Astra palette
  */
 export const NikAIStarConstellation: React.FC<{
   size?: number;
   animate?: boolean | 'fast' | 'idle';
   className?: string;
-}> = ({
-  size = 32,
-  animate = true,
-  className = '',
-}) => {
+}> = ({ size = 28, animate = 'idle', className = '' }) => {
   const uid = React.useId().replace(/:/g, '');
+  const isFast = animate === 'fast' || animate === true;
+
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 64 64"
+      viewBox="0 0 48 48"
       fill="none"
       aria-hidden="true"
       className={`shrink-0 select-none overflow-visible ${className}`}
     >
       <defs>
-        <linearGradient id={`nikai-star-main-${uid}`} x1="18" y1="8" x2="54" y2="58" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#FBBF24" />
-          <stop offset="48%" stopColor="#F59E0B" />
-          <stop offset="100%" stopColor="#F45B69" />
+        <linearGradient id={`nikai-star-a-${uid}`} x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#8B3DFF" />
+          <stop offset="52%" stopColor="#EC4899" />
+          <stop offset="100%" stopColor="#FF934F" />
         </linearGradient>
-        <linearGradient id={`nikai-star-coral-${uid}`} x1="4" y1="32" x2="26" y2="58" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#FB923C" />
-          <stop offset="100%" stopColor="#EC4899" />
+        <linearGradient id={`nikai-star-b-${uid}`} x1="12" y1="4" x2="44" y2="36" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#A855F7" />
+          <stop offset="60%" stopColor="#F472B6" />
+          <stop offset="100%" stopColor="#FDBA74" />
         </linearGradient>
-        <filter id={`nikai-glow-${uid}`} x="-25%" y="-25%" width="150%" height="150%">
-          <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#EC4899" floodOpacity="0.28" />
-        </filter>
       </defs>
 
-      {/* Main Primary 4-Point Rounded Star */}
       <motion.path
-        d="M40 8C41.4 8 42.3 15.8 45.4 18.9C48.5 22 56.2 22.9 56.2 24.3C56.2 25.7 48.5 26.6 45.4 29.7C42.3 32.8 41.4 40.6 40 40.6C38.6 40.6 37.7 32.8 34.6 29.7C31.5 26.6 23.8 25.7 23.8 24.3C23.8 22.9 31.5 22 34.6 18.9C37.7 15.8 38.6 8 40 8Z"
-        fill={`url(#nikai-star-main-${uid})`}
-        filter={`url(#nikai-glow-${uid})`}
+        d="M20 7C20.5 15.2 22.8 17.5 31 18C22.8 18.5 20.5 20.8 20 29C19.5 20.8 17.2 18.5 9 18C17.2 17.5 19.5 15.2 20 7Z"
+        fill={`url(#nikai-star-a-${uid})`}
         animate={
           animate
             ? {
-                scale: [1, 1.08, 1],
-                rotate: [0, 4, 0],
+                scale: isFast ? [0.92, 1.12, 0.92] : [0.97, 1.05, 0.97],
+                opacity: [0.9, 1, 0.9],
               }
             : undefined
         }
-        style={{ transformOrigin: '40px 24.3px' }}
-        transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{
+          duration: isFast ? 1.0 : 2.6,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+        style={{ transformOrigin: '20px 18px' }}
       />
 
-      {/* Upper-Left Golden Spark Star */}
       <motion.path
-        d="M17 9C17.8 9 18.3 13.4 20.1 15.2C21.9 17 26.2 17.5 26.2 18.3C26.2 19.1 21.9 19.6 20.1 21.4C18.3 23.2 17.8 27.6 17 27.6C16.2 27.6 15.7 23.2 13.9 21.4C12.1 19.6 7.8 19.1 7.8 18.3C7.8 17.5 12.1 17 13.9 15.2C15.7 13.4 16.2 9 17 9Z"
-        fill="#F59E0B"
+        d="M36 5C36.3 9.8 37.7 11.2 42.5 11.5C37.7 11.8 36.3 13.2 36 18C35.7 13.2 34.3 11.8 29.5 11.5C34.3 11.2 35.7 9.8 36 5Z"
+        fill={`url(#nikai-star-b-${uid})`}
         animate={
           animate
             ? {
-                scale: [1, 1.18, 1],
-                opacity: [0.85, 1, 0.85],
+                scale: isFast ? [0.85, 1.18, 0.85] : [0.94, 1.08, 0.94],
+                opacity: [0.8, 1, 0.8],
               }
             : undefined
         }
-        style={{ transformOrigin: '17px 18.3px' }}
-        transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 }}
+        transition={{
+          duration: isFast ? 0.9 : 2.2,
+          delay: 0.25,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+        style={{ transformOrigin: '36px 11.5px' }}
       />
 
-      {/* Lower-Left Warm Coral Star */}
       <motion.path
-        d="M18 34C18.9 34 19.5 39.2 21.6 41.3C23.7 43.4 28.8 44 28.8 44.9C28.8 45.8 23.7 46.4 21.6 48.5C19.5 50.6 18.9 55.8 18 55.8C17.1 55.8 16.5 50.6 14.4 48.5C12.3 46.4 7.2 45.8 7.2 44.9C7.2 44 12.3 43.4 14.4 41.3C16.5 39.2 17.1 34 18 34Z"
-        fill={`url(#nikai-star-coral-${uid})`}
+        d="M33 27C33.25 30.8 34.2 31.8 38 32C34.2 32.2 33.25 33.2 33 37C32.75 33.2 31.8 32.2 28 32C31.8 31.8 32.75 30.8 33 27Z"
+        fill={`url(#nikai-star-b-${uid})`}
         animate={
           animate
             ? {
-                scale: [1, 1.14, 1],
-                rotate: [0, -6, 0],
+                scale: isFast ? [0.85, 1.16, 0.85] : [0.94, 1.08, 0.94],
+                opacity: [0.75, 1, 0.75],
               }
             : undefined
         }
-        style={{ transformOrigin: '18px 44.9px' }}
-        transition={{ duration: 3.1, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
+        transition={{
+          duration: isFast ? 1.1 : 2.8,
+          delay: 0.45,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+        style={{ transformOrigin: '33px 32px' }}
       />
     </svg>
   );
 };
 
+/**
+ * Official NikAI Logo Component (supports both Horizontal Inline & Stacked Hero layouts)
+ */
 export const NikAIBrand: React.FC<NikAIBrandProps> = ({
   size = 'md',
-  showTagline = false,
+  stacked = false,
   subtitle,
+  badge,
   className = '',
 }) => {
-  const cfg = SIZE_MAP[size] || SIZE_MAP.lg;
+  if (stacked) {
+    return (
+      <div className={`inline-flex flex-col items-center select-none ${className}`}>
+        <img
+          src="/nikai-logo.png"
+          alt="NikAI"
+          style={{ width: STACKED_LOGO_WIDTH[size], height: 'auto' }}
+          className="object-contain select-none pointer-events-none"
+        />
+        <span className="sr-only">NikAI</span>
+        {badge && (
+          <span className="mt-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[#F4F1FC] text-[#5C4E8E] border border-[#E7E2F7]">
+            {badge}
+          </span>
+        )}
+        {subtitle && (
+          <p className="text-xs font-medium text-[#6C6688] mt-1 tracking-tight text-center">
+            {subtitle}
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div className={`inline-flex flex-col ${className}`}>
-      <div className={`inline-flex items-center ${cfg.gap}`}>
-        <NikAIStarConstellation size={cfg.starBox} />
-        <span
-          style={{
-            fontFamily: "'Dancing Script', 'Caveat', cursive",
-            fontWeight: 700,
-            backgroundImage:
-              'linear-gradient(96deg, #5B1BC9 0%, #8B1EE0 28%, #DB2777 63%, #F46B55 88%, #F59E0B 100%)',
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            color: 'transparent',
-            lineHeight: 1.05,
-            paddingRight: '3px',
-          }}
-          className={`${cfg.fontSize} tracking-tight select-none drop-shadow-[0_2px_10px_rgba(192,38,211,0.16)]`}
-        >
-          NikAI
-        </span>
-        <span
-          className={`${cfg.badge} rounded-full border border-fuchsia-500/30 bg-gradient-to-r from-violet-600/12 via-pink-500/12 to-amber-500/15 font-extrabold uppercase tracking-widest text-violet-700 dark:text-violet-300 select-none`}
-        >
-          Astra
-        </span>
+    <div className={`inline-flex flex-col select-none ${className}`}>
+      <div className="inline-flex items-center gap-2">
+        <img
+          src="/nikai-mark.png"
+          alt=""
+          aria-hidden="true"
+          style={{ height: INLINE_MARK_HEIGHT[size], width: 'auto' }}
+          className="object-contain shrink-0 select-none pointer-events-none"
+        />
+        <img
+          src="/nikai-wordmark.png"
+          alt="NikAI"
+          style={{ height: INLINE_WORD_HEIGHT[size], width: 'auto' }}
+          className="object-contain shrink-0 select-none pointer-events-none"
+        />
+        <span className="sr-only">NikAI</span>
+        {badge && (
+          <span className="ml-0.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[#F4F1FC] text-[#5C4E8E] border border-[#E7E2F7]">
+            {badge}
+          </span>
+        )}
       </div>
-      {(showTagline || subtitle) && (
-        <p className="mt-1 text-xs font-medium text-muted-foreground">
-          {subtitle || 'Powered by Astra Neural Core · Memory + Smart Notes Engine'}
-        </p>
+      {subtitle && (
+        <span className="text-[11px] font-medium text-[#6C6688] -mt-0.5 tracking-tight">
+          {subtitle}
+        </span>
       )}
     </div>
   );
 };
 
 /**
- * Signature full-screen / embedded NikAI boot loader matching NikNote's royal gradient & paper aesthetic.
+ * Full-screen / inline animated NikAI loader
  */
-export const NikAILoader: React.FC<{ fullScreen?: boolean; message?: string }> = ({
-  fullScreen = true,
-  message = 'Awakening NikAI Astra Core…',
+export const NikAILoader: React.FC<{ label?: string }> = ({
+  label = 'Awakening NikAI Neural Engine…',
 }) => {
   return (
     <div
       role="status"
-      aria-live="polite"
-      className={`relative flex flex-col items-center justify-center overflow-hidden px-6 text-center ${
-        fullScreen ? 'min-h-[100dvh] w-full' : 'py-16 w-full'
-      }`}
-      style={{
-        background:
-          'radial-gradient(ellipse at 20% 20%, rgba(139,92,246,0.15), transparent 55%), radial-gradient(ellipse at 82% 75%, rgba(236,72,153,0.14), transparent 55%), var(--background, #faf8ff)',
-      }}
+      aria-label="Loading NikAI"
+      className="flex flex-col items-center justify-center gap-3.5 py-12 px-6 select-none"
     >
-      {/* Orbiting Neural Ring */}
-      <div className="relative flex items-center justify-center mb-5">
+      <div className="relative flex items-center justify-center">
         <motion.div
           animate={{ rotate: 360 }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-          className="h-28 w-28 rounded-full p-[2px]"
+          transition={{ duration: 7, repeat: Infinity, ease: 'linear' }}
+          className="w-24 h-24 rounded-full p-[2px]"
           style={{
             background:
-              'conic-gradient(from 0deg, #6D28D9, #DB2777, #F59E0B, transparent 72%, #6D28D9)',
+              'conic-gradient(from 0deg, #8B3DFF, #EC4899, #FF934F, #C084FC, #8B3DFF)',
           }}
         >
-          <div className="h-full w-full rounded-full bg-background/95 backdrop-blur-md" />
+          <div className="w-full h-full rounded-full bg-white" />
         </motion.div>
-
         <div className="absolute inset-0 flex items-center justify-center">
-          <NikAIStarConstellation size={52} />
+          <img
+            src="/nikai-mark.png"
+            alt=""
+            aria-hidden="true"
+            className="w-14 h-auto object-contain"
+          />
         </div>
       </div>
 
-      <NikAIBrand size="lg" />
+      <NikAIBrand size="md" badge="ASTRA" />
 
-      {/* Liquid Ink Progress Ribbon */}
-      <div className="mt-5 h-1.5 w-48 overflow-hidden rounded-full bg-violet-500/15">
+      <div className="w-40 h-1.5 rounded-full overflow-hidden bg-purple-100">
         <motion.div
           initial={{ x: '-100%' }}
-          animate={{ x: '200%' }}
-          transition={{ duration: 1.35, repeat: Infinity, ease: 'easeInOut' }}
-          className="h-full w-1/2 rounded-full"
+          animate={{ x: '100%' }}
+          transition={{ duration: 1.15, repeat: Infinity, ease: 'easeInOut' }}
+          className="w-full h-full rounded-full"
           style={{
-            background: 'linear-gradient(90deg, #6D28D9, #DB2777, #F59E0B)',
+            background: 'linear-gradient(90deg, #8B3DFF, #EC4899, #FF934F)',
           }}
         />
       </div>
 
-      <p className="mt-3 text-xs font-medium tracking-wide text-muted-foreground">{message}</p>
+      <p className="text-xs font-semibold text-[#5E577C]">{label}</p>
     </div>
   );
 };
+
+export default NikAIBrand;

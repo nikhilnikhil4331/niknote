@@ -26,6 +26,7 @@ import { useMobileAppearance } from './useMobileAppearance';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useAccountName } from '@/hooks/useAccountName';
 import AstaAIWorkspace from '@/components/asta/AstaAIWorkspace';
+import { CLOUD_SYNC_EVENT, notifyLocalDataChanged } from '@/lib/cloudSyncEngine';
 
 interface LocalDeviceNotebook {
   id: string;
@@ -89,7 +90,12 @@ export function MobileExperience() {
 
   const ai = useAIStream();
   useEffect(() => () => ai.cancel(), []);
-  useEffect(() => { setLocalNotes(readLocalDeviceNotes()); }, [pathname, search]);
+  useEffect(() => {
+    const refresh = () => setLocalNotes(readLocalDeviceNotes());
+    refresh();
+    window.addEventListener(CLOUD_SYNC_EVENT, refresh);
+    return () => window.removeEventListener(CLOUD_SYNC_EVENT, refresh);
+  }, [pathname, search]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const { fullName, firstName } = useAccountName();
@@ -214,6 +220,7 @@ export function MobileExperience() {
       localStorage.setItem('niknote.notes.v1', JSON.stringify(n));
     } catch { /* ignore */ }
     setLocalNotes(readLocalDeviceNotes());
+    notifyLocalDataChanged();
   };
 
   const noteCard = (note: typeof allNotes[number], compact = false) => (
@@ -327,13 +334,17 @@ export function MobileExperience() {
             <MobileTrackerCards />
             <div className="nn-quick-actions">
               {[
-                { label: 'NikAI', icon: Sparkles, tone: 'purple', action: () => navigate('/ai') },
-                { label: 'Write Note', icon: PenLine, tone: 'green', action: () => navigate('/?editor=1&new=1') },
-                { label: 'Templates', icon: LayoutGrid, tone: 'purple', action: () => navigate('/templates') },
-                { label: 'Draw Board', icon: ScanLine, tone: 'pink', action: () => navigate('/board') },
-              ].map(({ label, icon: Icon, tone, action }) => (
+                { label: 'NikAI', icon: Sparkles, customImg: '/nikai-mark.png', tone: 'purple', action: () => navigate('/ai') },
+                { label: 'Write Note', icon: PenLine, customImg: '', tone: 'green', action: () => navigate('/?editor=1&new=1') },
+                { label: 'Templates', icon: LayoutGrid, customImg: '', tone: 'purple', action: () => navigate('/templates') },
+                { label: 'Draw Board', icon: ScanLine, customImg: '', tone: 'pink', action: () => navigate('/board') },
+              ].map(({ label, icon: Icon, customImg, tone, action }) => (
                 <Button variant="ghost" className="nn-quick" key={label} onClick={action}>
-                  <Icon className={cn('h-6 w-6', `nn-ink-${tone}`)} />
+                  {customImg ? (
+                    <img src={customImg} alt="" aria-hidden="true" className="h-6 w-auto object-contain" />
+                  ) : (
+                    <Icon className={cn('h-6 w-6', `nn-ink-${tone}`)} />
+                  )}
                   <span>{label}</span>
                 </Button>
               ))}

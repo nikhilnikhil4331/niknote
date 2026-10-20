@@ -1,54 +1,80 @@
-// ============================================================================
-// NikAI — Single Unified Flagship Intelligence of NikNote
-// Powered by Astra Neural Core · Persistent Cross-Session Memory ·
-// 1-Tap Multi-Ink Handwriting & Smart Notes Architect · Live Thinking Mini-Game
-// ============================================================================
+// ============================================================
+// NikAI — Next-Gen Astra Neural Studio (Exact Signature Design)
+// Official NikAI Brand Emblem + Dreamy Horizon Landscape + Clean Glass UI:
+// 1. Official NikAI Logo + Collapsible Left Sidebar + Recent Chats + Pro Card
+// 2. Top Search Bar (Ctrl+K) + Persistent Cross-Session Memory Pill + Model Picker
+// 3. 4 Signature Starter Cards + Floating Pill Composer (Attach, Voice, Model)
+// 4. Multi-Model Cloud Streaming + Smart Notes + Handwriting Export + Mini-Game
+// ============================================================
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Send, Plus, Sparkles, Brain, Code2, BookOpen, Calculator, ListChecks,
-  PenTool, Zap, Paperclip, Mic, MicOff, Volume2, VolumeX, Copy, Check,
-  BookmarkPlus, RotateCcw, Square, Trash2, Menu, X, KeyRound, ChevronDown,
-  FileText, ArrowLeft, Image as ImageIcon, Search, Gamepad2, Layers, Feather,
-  PlusCircle, Sparkle,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  BookmarkPlus,
+  Brain,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Code2,
+  Copy,
+  Crown,
+  Feather,
+  FileText,
+  Gamepad2,
+  GraduationCap,
+  Image as ImageIcon,
+  KeyRound,
+  Layers,
+  Menu,
+  MessageCircle,
+  MessageSquare,
+  Mic,
+  MicOff,
+  NotebookPen,
+  Paperclip,
+  Plus,
+  PlusCircle,
+  RotateCcw,
+  Search,
+  Square,
+  Target,
+  Trash2,
+  Volume2,
+  VolumeX,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { AstaMarkdown } from '@/components/asta/AstaMarkdown';
-import { NikAIBrand, NikAIStarConstellation } from '@/components/nikai/NikAIBrand';
-import { NikAIThinkingArena } from '@/components/nikai/NikAIThinkingArena';
-import {
-  loadNikAIMemory,
-  learnFromConversationTurn,
-  addManualMemoryFact,
-  deleteMemoryFact,
-  clearAllNikAIMemory,
-  buildNikAIMemoryPrompt,
-  type NikAIMemoryStore,
-} from '@/lib/nikaiMemory';
-import {
-  implementNikAINote,
-  extractAndSaveFlashcardsFromMarkdown,
-} from '@/lib/nikaiNotesBridge';
 import {
   streamAstaAI,
-  probeAstaProviders,
   readCustomAIKeys,
   saveCustomAIKeys,
   type AstaMode,
   type AstaModelChoice,
   type AstaImageAttachment,
 } from '@/lib/aiEngine';
-
-export interface NikAIWorkspaceProps {
-  embedded?: boolean;
-  onClose?: () => void;
-  noteTitle?: string;
-  noteContent?: string;
-  onInsertContent?: (markdown: string) => void;
-}
+import {
+  addManualMemoryFact,
+  buildNikAIMemoryPrompt,
+  clearAllNikAIMemory,
+  deleteMemoryFact,
+  learnFromConversationTurn,
+  loadNikAIMemory,
+  type NikAIMemoryStore,
+} from '@/lib/nikaiMemory';
+import {
+  extractAndSaveFlashcardsFromMarkdown,
+  implementNikAINote,
+} from '@/lib/nikaiNotesBridge';
+import { NikAIBrand, NikAIStarConstellation } from './NikAIBrand';
+import { NikAIThinkingArena } from './NikAIThinkingArena';
 
 export interface NikAIMessage {
   id: string;
@@ -64,7 +90,7 @@ export interface NikAIMessage {
   createdAt: number;
 }
 
-interface NikAIThread {
+export interface NikAIThread {
   id: string;
   title: string;
   mode: AstaMode;
@@ -72,195 +98,255 @@ interface NikAIThread {
   updatedAt: number;
 }
 
-interface NotePickerItem {
+interface AttachedNoteContext {
   id: string;
   title: string;
   preview: string;
 }
 
-const THREADS_KEY = 'niknote.nikai.threads.v1';
-const LEGACY_THREADS_KEY = 'niknote.asta.threads.v2';
-const ACTIVE_THREAD_KEY = 'niknote.nikai.activeThread.v1';
+export interface NikAIWorkspaceProps {
+  embedded?: boolean;
+  onClose?: () => void;
+  noteTitle?: string;
+  noteContent?: string;
+  onInsertContent?: (markdown: string) => void;
+}
 
-const MODE_DEFS: {
+const THREADS_KEY = 'niknote.nikai.threads.v2';
+const LEGACY_THREADS_KEY = 'niknote.asta.threads.v2';
+const HIDDEN_SEEDS_KEY = 'niknote.nikai.hidden_seeds.v1';
+
+interface SeedChatPreview {
+  id: string;
+  title: string;
+  relTime: string;
+  prompt: string;
+  mode: AstaMode;
+}
+
+const SEED_RECENT_CHATS: SeedChatPreview[] = [
+  {
+    id: 'seed-quantum',
+    title: 'Quantum mechanics notes',
+    relTime: '2 hours ago',
+    prompt:
+      'Create exam-ready structured Smart Notes on Quantum Mechanics: wavefunctions, Schrödinger equation, operators, uncertainty principle, and key formulas.',
+    mode: 'notes',
+  },
+  {
+    id: 'seed-mcq',
+    title: '5 MCQ mock test',
+    relTime: '4 hours ago',
+    prompt:
+      'Generate a 5-question interactive MCQ mock test on Physics Mechanics & Electromagnetism with answers and clear explanations.',
+    mode: 'quiz',
+  },
+  {
+    id: 'seed-python',
+    title: 'Build a Python project',
+    relTime: 'Yesterday',
+    prompt:
+      'Help me build a clean modular Python CLI study planner project with JSON storage, typing, and unit tests.',
+    mode: 'code',
+  },
+  {
+    id: 'seed-thermo',
+    title: 'Thermodynamics summary',
+    relTime: '2 days ago',
+    prompt:
+      'Write a crystal-clear revision summary of Thermodynamics (Zeroth, First, Second Laws, Carnot engine, entropy, and PV work formulas).',
+    mode: 'notes',
+  },
+  {
+    id: 'seed-duality',
+    title: 'Explain wave-particle duality',
+    relTime: '2 days ago',
+    prompt:
+      'Explain wave-particle duality simply with real-world intuition, de Broglie wavelength formula, and double-slit experiment clarity.',
+    mode: 'tutor',
+  },
+  {
+    id: 'seed-dsa',
+    title: 'DSA study plan',
+    relTime: '3 days ago',
+    prompt:
+      'Design a high-impact 30-day DSA study plan covering arrays, trees, graphs, dynamic programming, and daily problem targets.',
+    mode: 'auto',
+  },
+  {
+    id: 'seed-organic',
+    title: 'Organic chemistry flashcards',
+    relTime: '4 days ago',
+    prompt:
+      'Create structured notes and quick Q&A flashcards for Organic Chemistry named reactions (SN1, SN2, Aldol, Cannizzaro, Markovnikov).',
+    mode: 'notes',
+  },
+];
+
+const MODEL_OPTIONS: Array<{
+  id: AstaModelChoice;
+  label: string;
+  badge: string;
+}> = [
+  { id: 'auto', label: 'Astra Neural Auto', badge: 'Auto Best Routing' },
+  { id: 'pro', label: 'Astra Pro 120B', badge: 'Deep Reasoning' },
+  { id: 'flash', label: 'Astra Flash', badge: 'Instant Speed' },
+  { id: 'vision', label: 'Astra Vision 2.5', badge: 'Diagrams & Scans' },
+];
+
+const SIDEBAR_NAV_ITEMS: Array<{
   id: AstaMode;
   label: string;
-  shortLabel: string;
-  icon: React.ElementType;
-  badgeColor: string;
-  placeholder: string;
-}[] = [
-  {
-    id: 'auto',
-    label: 'Astra Auto',
-    shortLabel: 'Astra Auto',
-    icon: Sparkles,
-    badgeColor: '#7C3AED',
-    placeholder: 'Ask NikAI anything — notes, concepts, math, coding, exams (Hindi / Hinglish / English)…',
-  },
-  {
-    id: 'notes',
-    label: 'Smart Notes',
-    shortLabel: 'Notes Architect',
-    icon: Feather,
-    badgeColor: '#DB2777',
-    placeholder: 'Topic likho — NikAI structured multi-ink notebook notes + flashcards bana dega…',
-  },
-  {
-    id: 'deep',
-    label: 'Astra Pro Deep',
-    shortLabel: 'Astra Pro',
-    icon: Brain,
-    badgeColor: '#5B1BC9',
-    placeholder: 'Complex proofs, JEE/NEET derivations, multi-step logic & research…',
-  },
-  {
-    id: 'teacher',
-    label: 'Master Guru',
-    shortLabel: 'Guru',
-    icon: BookOpen,
-    badgeColor: '#D97706',
-    placeholder: 'Zero se advanced tak desi analogy + exam pro-tips ke saath samjho…',
-  },
-  {
-    id: 'solver',
-    label: 'Math & Science',
-    shortLabel: 'Solver',
-    icon: Calculator,
-    badgeColor: '#059669',
-    placeholder: 'Paste equation, numerical, or attach homework photo for step-by-step solution…',
-  },
-  {
-    id: 'code',
-    label: 'Astra Coder',
-    shortLabel: 'Coder',
-    icon: Code2,
-    badgeColor: '#2563EB',
-    placeholder: 'Build full apps, debug errors, write DSA algorithms or SQL queries…',
-  },
-  {
-    id: 'quiz',
-    label: 'Live Quiz',
-    shortLabel: 'Live Quiz',
-    icon: ListChecks,
-    badgeColor: '#EA580C',
-    placeholder: 'Enter any chapter or subject to launch an interactive 5-MCQ test…',
-  },
-  {
-    id: 'write',
-    label: 'Writing Studio',
-    shortLabel: 'Writer',
-    icon: PenTool,
-    badgeColor: '#E11D48',
-    placeholder: 'Draft essays, emails, summaries, SOPs, or translate naturally…',
-  },
+  icon: React.FC<{ className?: string }>;
+}> = [
+  { id: 'auto', label: 'Chat', icon: MessageCircle },
+  { id: 'notes', label: 'Smart Notes', icon: Feather },
+  { id: 'quiz', label: 'Quiz', icon: Target },
+  { id: 'writing', label: 'Writing Studio', icon: FileText },
+  { id: 'code', label: 'Code', icon: Code2 },
 ];
 
-const MODEL_OPTIONS: { id: AstaModelChoice; label: string; sub: string }[] = [
-  { id: 'astra-auto', label: '✦ Astra Neural Auto', sub: 'Best model per task · Instant streaming' },
-  { id: 'astra-pro', label: '🧠 Astra Pro 120B', sub: 'Maximum reasoning, STEM & deep analysis' },
-  { id: 'astra-flash', label: '⚡ Astra Flash', sub: 'Sub-second ultra-fast responses' },
-  { id: 'astra-vision', label: '📷 Astra Vision 2.5', sub: 'Handwriting, diagrams & photo solver' },
-  { id: 'astra-coder', label: '💻 Astra Coder Pro', sub: 'Clean architecture, debugging & DSA' },
-];
-
-const STARTER_CARDS: {
-  mode: AstaMode;
-  tag: string;
+const HERO_CARDS: Array<{
   title: string;
+  description: string;
   prompt: string;
-  accent: string;
-}[] = [
+  mode: AstaMode;
+  icon: React.FC<{ className?: string; style?: React.CSSProperties }>;
+  tintBg: string;
+  borderTint: string;
+}> = [
   {
+    title: 'Smart Notes',
+    description: 'Turn any topic into beautiful, structured handwritten-ready notes.',
+    prompt:
+      'Create complete exam-ready Smart Notes on Rotational Motion & Moment of Inertia with key formulas, memory tricks, and quick revision summary.',
     mode: 'notes',
-    tag: '✍️ Smart Notes Power',
-    title: 'Organic Chemistry / Physics ke Handwriting-ready Notes + Flashcards',
-    prompt: 'Thermodynamics (Laws, Enthalpy, Entropy & Gibbs Free Energy) ke complete color-coded exam Smart Notes banao with key formulas, comparison table, aur memory tricks!',
-    accent: '#DB2777',
+    icon: NotebookPen,
+    tintBg: 'linear-gradient(165deg, rgba(250,248,255,0.92) 0%, rgba(244,240,255,0.86) 100%)',
+    borderTint: 'rgba(221, 214, 254, 0.75)',
   },
   {
-    mode: 'teacher',
-    tag: '🎓 Hinglish Guru',
-    title: 'Quantum Mechanics & Wave-Particle Duality desi analogy se',
-    prompt: 'Quantum Mechanics aur Heisenberg Uncertainty Principle ko bilkul zero se desi real-life analogy aur exam pro-tips ke saath Hinglish mein samjhao!',
-    accent: '#7C3AED',
+    title: 'Learn a concept',
+    description: 'Get simple explanations with examples and visual clarity.',
+    prompt:
+      'Explain Bayes Theorem and Conditional Probability intuitively from scratch with clear step-by-step real-life examples.',
+    mode: 'tutor',
+    icon: GraduationCap,
+    tintBg: 'linear-gradient(165deg, rgba(255,252,245,0.93) 0%, rgba(255,247,235,0.87) 100%)',
+    borderTint: 'rgba(253, 230, 196, 0.8)',
   },
   {
+    title: 'Practice quiz',
+    description: 'Generate MCQs, mock tests and instant feedback.',
+    prompt:
+      'Create a 5-question interactive MCQ mock test on Chemical Bonding & Hybridization with instant answer explanations.',
     mode: 'quiz',
-    tag: '🎯 Live Playable Quiz',
-    title: '5-MCQ Interactive Mock Test abhi khilo (Instant Score)',
-    prompt: 'Create a 5-question interactive MCQ quiz on Indian Polity & Modern History from easy to exam-tough level.',
-    accent: '#EA580C',
+    icon: Target,
+    tintBg: 'linear-gradient(165deg, rgba(255,246,250,0.93) 0%, rgba(254,238,246,0.87) 100%)',
+    borderTint: 'rgba(251, 207, 232, 0.72)',
   },
   {
+    title: 'Write code',
+    description: 'Build, debug and explain code in Python, TypeScript and more.',
+    prompt:
+      'Write a clean, well-typed TypeScript LRU Cache implementation with O(1) get/put operations and usage examples.',
     mode: 'code',
-    tag: '💻 Astra Coder',
-    title: 'Production TypeScript / Python DSA + Dry Run & Complexity',
-    prompt: 'Write a production-ready LRU Cache in TypeScript using Map with O(1) get/put, edge cases, and step-by-step dry run.',
-    accent: '#2563EB',
+    icon: Code2,
+    tintBg: 'linear-gradient(165deg, rgba(246,250,255,0.93) 0%, rgba(238,246,255,0.87) 100%)',
+    borderTint: 'rgba(219, 234, 254, 0.85)',
   },
 ];
+
+const SingleFourPointSparkle: React.FC<{ size?: number }> = ({ size = 15 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+    <defs>
+      <linearGradient id="nikai-pill-sparkle" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stopColor="#7C3AED" />
+        <stop offset="100%" stopColor="#EC4899" />
+      </linearGradient>
+    </defs>
+    <path
+      d="M12 2C12.55 8.8 15.2 11.45 22 12C15.2 12.55 12.55 15.2 12 22C11.45 15.2 8.8 12.55 2 12C8.8 11.45 11.45 8.8 12 2Z"
+      fill="url(#nikai-pill-sparkle)"
+    />
+  </svg>
+);
 
 function uid(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  return `nk-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function formatRelativeTime(timestamp: number): string {
+  const diffSec = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  if (diffSec < 60) return 'Just now';
+  const mins = Math.floor(diffSec / 60);
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  return `${days} days ago`;
 }
 
 function loadSavedThreads(): NikAIThread[] {
   try {
-    const raw = localStorage.getItem(THREADS_KEY) || localStorage.getItem(LEGACY_THREADS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    const primary = localStorage.getItem(THREADS_KEY);
+    if (primary) {
+      const parsed = JSON.parse(primary);
+      if (Array.isArray(parsed)) return parsed;
+    }
+    const legacy = localStorage.getItem(LEGACY_THREADS_KEY);
+    if (legacy) {
+      const parsed = JSON.parse(legacy);
+      if (Array.isArray(parsed)) return parsed;
+    }
+    return [];
   } catch {
     return [];
   }
 }
 
-function saveThreadsToStorage(threads: NikAIThread[]): void {
+function persistThreads(threads: NikAIThread[]) {
   try {
-    const compact = threads.slice(0, 45).map((t) => ({
-      ...t,
-      messages: t.messages.slice(-50).map((m) => ({
-        ...m,
-        images: m.images?.map((img) =>
-          img.dataUrl.length > 180_000 ? { ...img, dataUrl: img.dataUrl } : img
-        ),
-      })),
-    }));
-    localStorage.setItem(THREADS_KEY, JSON.stringify(compact));
+    localStorage.setItem(THREADS_KEY, JSON.stringify(threads.slice(0, 60)));
   } catch {
-    try {
-      const textOnly = threads.slice(0, 25).map((t) => ({
-        ...t,
-        messages: t.messages.slice(-30).map(({ images: _omit, ...rest }) => rest),
-      }));
-      localStorage.setItem(THREADS_KEY, JSON.stringify(textOnly));
-    } catch {
-      // ignore quota failure
-    }
+    // ignore storage quota overflow
   }
 }
 
-async function compressImageFile(file: File): Promise<AstaImageAttachment> {
-  const rawDataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('Failed to read image'));
-    reader.readAsDataURL(file);
-  });
-
-  if (rawDataUrl.length < 350_000 || typeof Image === 'undefined') {
-    return { name: file.name, mimeType: file.type || 'image/jpeg', dataUrl: rawDataUrl };
+function buildFollowUps(reply: string, activeMode: AstaMode): string[] {
+  const lower = reply.toLowerCase();
+  if (activeMode === 'quiz' || lower.includes('**answer:**')) {
+    return [
+      'Give me 5 harder exam-level MCQs on this topic',
+      'Create quick revision Smart Notes from weak concepts',
+      'Explain every question shortcut step by step',
+    ];
   }
+  if (activeMode === 'code' || reply.includes('```')) {
+    return [
+      'Add edge-case tests & complexity breakdown',
+      'Refactor this for cleaner modular architecture',
+      'Turn this solution into step-by-step study notes',
+    ];
+  }
+  return [
+    'Test me with a 5-question interactive MCQ quiz on this',
+    'Convert this into crisp bullet revision Smart Notes',
+    'Explain with a real-world analogy in simple Hinglish',
+  ];
+}
 
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      try {
-        const maxSide = 1280;
+function fileToAttachment(file: File): Promise<AstaImageAttachment> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 1280;
         let { width, height } = img;
-        if (width > maxSide || height > maxSide) {
-          const ratio = Math.min(maxSide / width, maxSide / height);
+        if (width > MAX_DIM || height > MAX_DIM) {
+          const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
           width = Math.round(width * ratio);
           height = Math.round(height * ratio);
         }
@@ -269,18 +355,27 @@ async function compressImageFile(file: File): Promise<AstaImageAttachment> {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          resolve({ name: file.name, mimeType: file.type || 'image/jpeg', dataUrl: rawDataUrl });
+          resolve({
+            dataUrl: String(reader.result),
+            mimeType: file.type || 'image/jpeg',
+            name: file.name,
+          });
           return;
         }
         ctx.drawImage(img, 0, 0, width, height);
-        const compressed = canvas.toDataURL('image/jpeg', 0.82);
-        resolve({ name: file.name, mimeType: 'image/jpeg', dataUrl: compressed });
-      } catch {
-        resolve({ name: file.name, mimeType: file.type || 'image/jpeg', dataUrl: rawDataUrl });
-      }
+        const compressed = canvas.toDataURL('image/jpeg', 0.84);
+        resolve({ dataUrl: compressed, mimeType: 'image/jpeg', name: file.name });
+      };
+      img.onerror = () =>
+        resolve({
+          dataUrl: String(reader.result),
+          mimeType: file.type || 'image/png',
+          name: file.name,
+        });
+      img.src = String(reader.result);
     };
-    img.onerror = () => resolve({ name: file.name, mimeType: file.type || 'image/jpeg', dataUrl: rawDataUrl });
-    img.src = rawDataUrl;
+    reader.onerror = () => reject(new Error('Failed to read image'));
+    reader.readAsDataURL(file);
   });
 }
 
@@ -292,238 +387,262 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   onInsertContent,
 }) => {
   const navigate = useNavigate();
-  const [userId, setUserId] = useState<string | undefined>(undefined);
 
-  useEffect(() => {
-    let active = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (active) setUserId(data?.session?.user?.id);
-    }).catch(() => undefined);
-    return () => { active = false; };
-  }, []);
+  const [userId, setUserId] = useState<string | undefined>(undefined);
+  const [userAvatarSrc, setUserAvatarSrc] = useState<string>('/nikai-avatar.jpg');
 
   const [threads, setThreads] = useState<NikAIThread[]>(() => loadSavedThreads());
-  const [activeThreadId, setActiveThreadId] = useState<string>(() => {
-    try {
-      return localStorage.getItem(ACTIVE_THREAD_KEY) || '';
-    } catch {
-      return '';
-    }
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(() => {
+    const initial = loadSavedThreads();
+    return initial[0]?.id ?? null;
   });
   const [mode, setMode] = useState<AstaMode>('auto');
-  const [modelChoice, setModelChoice] = useState<AstaModelChoice>('astra-auto');
+  const [modelChoice, setModelChoice] = useState<AstaModelChoice>('auto');
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const [composerModelMenuOpen, setComposerModelMenuOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+
   const [input, setInput] = useState('');
   const [pendingImages, setPendingImages] = useState<AstaImageAttachment[]>([]);
-  const [attachedNote, setAttachedNote] = useState<NotePickerItem | null>(() =>
+  const [attachedNote, setAttachedNote] = useState<AttachedNoteContext | null>(() =>
     noteContent && noteContent.trim()
       ? {
           id: 'active-editor-note',
-          title: noteTitle || 'Open Note',
-          preview: noteContent.slice(0, 12000),
+          title: noteTitle || 'Current Note',
+          preview: noteContent.slice(0, 6000),
         }
       : null
   );
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [liveModelName, setLiveModelName] = useState('NikAI Astra Core');
-  const [liveThinkingText, setLiveThinkingText] = useState('');
-  const [cloudProviders, setCloudProviders] = useState<string[]>([]);
 
-  // Persistent Cross-Session Memory State
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [hiddenSeeds, setHiddenSeeds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(HIDDEN_SEEDS_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  });
+
   const [memoryState, setMemoryState] = useState<NikAIMemoryStore>(() => loadNikAIMemory());
   const [memoryOpen, setMemoryOpen] = useState(false);
   const [newMemoryFact, setNewMemoryFact] = useState('');
 
-  // Playable Mini-Game on demand OR auto during thinking
-  const [playgroundOpen, setPlaygroundOpen] = useState(false);
-
-  // UI drawers & modals
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [modelMenuOpen, setModelMenuOpen] = useState(false);
-  const [keysModalOpen, setKeysModalOpen] = useState(false);
   const [notePickerOpen, setNotePickerOpen] = useState(false);
-  const [availableNotes, setAvailableNotes] = useState<NotePickerItem[]>([]);
+  const [availableNotes, setAvailableNotes] = useState<AttachedNoteContext[]>([]);
+  const [keysModalOpen, setKeysModalOpen] = useState(false);
+  const [arcadeModalOpen, setArcadeModalOpen] = useState(false);
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [liveThinkingText, setLiveThinkingText] = useState('');
+  const [liveModelName, setLiveModelName] = useState('NikAI Astra Core');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
   const [implementingId, setImplementingId] = useState<string | null>(null);
 
-  const [groqInput, setGroqInput] = useState(() => readCustomAIKeys().groqKey || '');
-  const [geminiInput, setGeminiInput] = useState(() => readCustomAIKeys().geminiKey || '');
-  const [openaiInput, setOpenaiInput] = useState(() => readCustomAIKeys().openaiKey || '');
+  const customKeys = readCustomAIKeys();
+  const [groqInput, setGroqInput] = useState(customKeys.groqKey || '');
+  const [geminiInput, setGeminiInput] = useState(customKeys.geminiKey || '');
+  const [openaiInput, setOpenaiInput] = useState(customKeys.openaiKey || '');
 
   const abortRef = useRef<AbortController | null>(null);
   const scrollEndRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Sync live open note from Editor when embedded
+  useEffect(() => {
+    let active = true;
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!active) return;
+        const u = data?.session?.user;
+        if (u?.id) setUserId(u.id);
+        const pic = (u?.user_metadata as any)?.avatar_url || (u?.user_metadata as any)?.picture;
+        if (pic) setUserAvatarSrc(pic);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   useEffect(() => {
     if (noteContent && noteContent.trim()) {
       setAttachedNote({
         id: 'active-editor-note',
-        title: noteTitle || 'Open Note',
-        preview: noteContent.slice(0, 12000),
+        title: noteTitle || 'Current Note',
+        preview: noteContent.slice(0, 6000),
       });
     }
   }, [noteTitle, noteContent]);
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   const activeThread = useMemo(
-    () => threads.find((t) => t.id === activeThreadId) || null,
+    () => threads.find((t) => t.id === activeThreadId) ?? null,
     [threads, activeThreadId]
   );
 
-  const currentModeDef = useMemo(
-    () => MODE_DEFS.find((m) => m.id === mode) || MODE_DEFS[0],
-    [mode]
+  const activeMessages = activeThread?.messages ?? [];
+
+  const filteredThreads = useMemo(() => {
+    if (!searchQuery.trim()) return threads;
+    const q = searchQuery.toLowerCase();
+    return threads.filter(
+      (t) =>
+        t.title.toLowerCase().includes(q) ||
+        t.messages.some((m) => m.content.toLowerCase().includes(q))
+    );
+  }, [threads, searchQuery]);
+
+  const filteredSeedChats = useMemo(() => {
+    const visible = SEED_RECENT_CHATS.filter((s) => !hiddenSeeds.includes(s.id));
+    if (!searchQuery.trim()) return visible;
+    const q = searchQuery.toLowerCase();
+    return visible.filter((s) => s.title.toLowerCase().includes(q));
+  }, [hiddenSeeds, searchQuery]);
+
+  const selectedModelDef = useMemo(
+    () => MODEL_OPTIONS.find((m) => m.id === modelChoice) || MODEL_OPTIONS[0],
+    [modelChoice]
   );
 
-  const memoryCount = useMemo(() => {
-    let count = memoryState.facts.length + memoryState.sessionDigests.length;
-    if (memoryState.userName) count += 1;
-    if (memoryState.examOrRole) count += 1;
-    return count;
-  }, [memoryState]);
-
   useEffect(() => {
-    saveThreadsToStorage(threads);
+    persistThreads(threads);
   }, [threads]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(ACTIVE_THREAD_KEY, activeThreadId);
-    } catch {
-      // ignore
-    }
-  }, [activeThreadId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    probeAstaProviders().then((res) => {
-      if (!cancelled) setCloudProviders(res.providers);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [keysModalOpen]);
-
-  useEffect(() => {
-    scrollEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [activeThread?.messages.length, isGenerating, playgroundOpen]);
+    scrollEndRef.current?.scrollIntoView({ behavior: isGenerating ? 'auto' : 'smooth' });
+  }, [activeMessages.length, isGenerating]);
 
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
   }, [input]);
 
-  const loadNotesForPicker = useCallback(async () => {
-    const items: NotePickerItem[] = [];
-    if (noteContent && noteContent.trim()) {
-      items.push({
-        id: 'active-editor-note',
-        title: `✨ ${noteTitle || 'Currently Open Note'}`,
-        preview: noteContent.slice(0, 12000),
-      });
-    }
+  const loadNotesForPicker = useCallback(() => {
+    const collected: AttachedNoteContext[] = [];
     try {
-      const mobileRaw = JSON.parse(localStorage.getItem('niknote.mobile.notebooks.v1') || '[]');
-      for (const nb of (Array.isArray(mobileRaw) ? mobileRaw : []).slice(0, 15)) {
-        const text = Array.isArray(nb.blocks)
-          ? nb.blocks.map((b: any) => b.content || '').filter(Boolean).join('\n')
-          : String(nb.content || '');
-        items.push({
-          id: nb.id,
-          title: nb.title || 'Untitled Note',
-          preview: text.slice(0, 8000) || nb.title || 'Empty note',
-        });
-      }
-      const notesRaw = JSON.parse(localStorage.getItem('niknote.notes.v1') || '[]');
-      for (const n of (Array.isArray(notesRaw) ? notesRaw : []).slice(0, 15)) {
-        if (!items.some((x) => x.id === n.id)) {
-          items.push({
-            id: n.id,
-            title: n.title || 'Untitled Note',
-            preview: String(n.content || '').slice(0, 8000) || n.title || 'Empty note',
-          });
-        }
-      }
-    } catch {
-      // ignore local storage issues
-    }
-
-    if (userId) {
-      try {
-        const { data } = await supabase
-          .from('notes')
-          .select('id, title, content')
-          .eq('user_id', userId)
-          .order('updated_at', { ascending: false })
-          .limit(20);
-        if (data) {
-          for (const n of data) {
-            if (!items.some((x) => x.id === n.id)) {
-              const rawText = String(n.content || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-              items.push({
-                id: n.id,
-                title: n.title || 'Untitled Cloud Note',
-                preview: rawText.slice(0, 8000),
+      const mobileRaw = localStorage.getItem('niknote.mobile.notebooks.v1');
+      if (mobileRaw) {
+        const list = JSON.parse(mobileRaw);
+        if (Array.isArray(list)) {
+          for (const item of list) {
+            const text = Array.isArray(item.blocks)
+              ? item.blocks.map((b: any) => b.content || '').join('\n')
+              : item.content || '';
+            if (item.title || text) {
+              collected.push({
+                id: String(item.id || Math.random()),
+                title: String(item.title || 'Untitled Note'),
+                preview: String(text).slice(0, 6000),
               });
             }
           }
         }
-      } catch {
-        // ignore network issues
       }
+      const wsRaw = localStorage.getItem('niknote.notes.v1');
+      if (wsRaw) {
+        const list = JSON.parse(wsRaw);
+        if (Array.isArray(list)) {
+          for (const item of list) {
+            if (!item.trashedAt && (item.title || item.content)) {
+              collected.push({
+                id: String(item.id || Math.random()),
+                title: String(item.title || 'Workspace Note'),
+                preview: String(item.content || '').slice(0, 6000),
+              });
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore parse errors
     }
-    setAvailableNotes(items);
-  }, [userId, noteTitle, noteContent]);
+    setAvailableNotes(collected.slice(0, 30));
+  }, []);
 
   const startNewChat = useCallback((nextMode?: AstaMode) => {
     abortRef.current?.abort();
     setIsGenerating(false);
     setLiveThinkingText('');
-    setActiveThreadId('');
+    setActiveThreadId(null);
     if (nextMode) setMode(nextMode);
     setInput('');
     setPendingImages([]);
-    setSidebarOpen(false);
-    setTimeout(() => textareaRef.current?.focus(), 60);
+    setMobileSidebarOpen(false);
+    setTimeout(() => textareaRef.current?.focus(), 40);
   }, []);
 
-  const stopGeneration = useCallback(() => {
-    abortRef.current?.abort();
-    setIsGenerating(false);
-    setLiveThinkingText('');
+  const deleteThread = useCallback(
+    (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      setThreads((prev) => {
+        const next = prev.filter((t) => t.id !== id);
+        if (activeThreadId === id) {
+          setActiveThreadId(next[0]?.id ?? null);
+        }
+        return next;
+      });
+    },
+    [activeThreadId]
+  );
+
+  const deleteSeedChat = useCallback((id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setHiddenSeeds((prev) => {
+      const next = [...prev, id];
+      try {
+        localStorage.setItem(HIDDEN_SEEDS_KEY, JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
   }, []);
 
   const handleFilesSelected = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const added: AstaImageAttachment[] = [];
+    const additions: AstaImageAttachment[] = [];
     for (const file of Array.from(files).slice(0, 4)) {
       if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} is not an image file`);
+        toast.info('Please select an image or screenshot (PNG, JPG, WebP)');
         continue;
       }
       try {
-        const compressed = await compressImageFile(file);
-        added.push(compressed);
+        const att = await fileToAttachment(file);
+        additions.push(att);
       } catch {
-        toast.error(`Could not attach ${file.name}`);
+        toast.error('Could not attach image');
       }
     }
-    if (added.length > 0) {
-      setPendingImages((prev) => [...prev, ...added].slice(0, 4));
-      toast.success(`${added.length} image attached to NikAI Vision`);
+    if (additions.length > 0) {
+      setPendingImages((prev) => [...prev, ...additions].slice(0, 4));
     }
   }, []);
 
   const toggleVoiceInput = useCallback(() => {
-    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRec =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRec) {
-      toast.error('Voice input is not supported in this browser');
+      toast.info('Voice dictation is not supported in this browser');
       return;
     }
     if (listening && recognitionRef.current) {
@@ -533,17 +652,14 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
     }
     try {
       const rec = new SpeechRec();
-      rec.lang = 'en-IN';
-      rec.interimResults = true;
       rec.continuous = false;
-      rec.onresult = (event: any) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        if (event.results[event.results.length - 1]?.isFinal) {
-          setInput((prev) => `${prev ? `${prev} ` : ''}${transcript.trim()}`);
-        }
+      rec.interimResults = true;
+      rec.lang = 'en-IN';
+      rec.onresult = (ev: any) => {
+        const transcript = Array.from(ev.results)
+          .map((r: any) => r[0]?.transcript || '')
+          .join('');
+        setInput(transcript);
       };
       rec.onend = () => setListening(false);
       rec.onerror = () => setListening(false);
@@ -555,85 +671,95 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
     }
   }, [listening]);
 
-  const toggleSpeakMessage = useCallback((msg: NikAIMessage) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      toast.error('Text-to-speech is unavailable in this browser');
-      return;
-    }
-    window.speechSynthesis.cancel();
-    if (speakingId === msg.id) {
-      setSpeakingId(null);
-      return;
-    }
-    const plain = msg.content
-      .replace(/```[\s\S]*?```/g, ' code block. ')
-      .replace(/[#*_>`~[\]()|-]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    const utter = new SpeechSynthesisUtterance(plain.slice(0, 4000));
-    utter.rate = 1.02;
-    utter.onend = () => setSpeakingId(null);
-    utter.onerror = () => setSpeakingId(null);
-    setSpeakingId(msg.id);
-    window.speechSynthesis.speak(utter);
-  }, [speakingId]);
+  const toggleSpeakMessage = useCallback(
+    (msg: NikAIMessage) => {
+      if (!('speechSynthesis' in window)) {
+        toast.info('Read-aloud is unavailable on this browser');
+        return;
+      }
+      if (speakingId === msg.id) {
+        window.speechSynthesis.cancel();
+        setSpeakingId(null);
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const plain = msg.content
+        .replace(/```[\s\S]*?```/g, ' code block ')
+        .replace(/[#*_>`~|-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const utter = new SpeechSynthesisUtterance(plain);
+      utter.onend = () => setSpeakingId(null);
+      utter.onerror = () => setSpeakingId(null);
+      setSpeakingId(msg.id);
+      window.speechSynthesis.speak(utter);
+    },
+    [speakingId]
+  );
+
+  const stopGeneration = useCallback(() => {
+    abortRef.current?.abort();
+    setIsGenerating(false);
+  }, []);
 
   const handleImplementNote = useCallback(
-    async (msg: NikAIMessage, openHandwriting: boolean) => {
+    async (msg: NikAIMessage, openInHandwritingEditor: boolean) => {
       if (implementingId) return;
       setImplementingId(msg.id);
       try {
         const res = await implementNikAINote({
           markdown: msg.content,
-          fallbackTitle: activeThread?.title || 'NikAI Smart Note',
+          fallbackTitle: activeThread?.title || noteTitle || 'NikAI Smart Study Notes',
           userId,
-          prepareEditorOpen: openHandwriting,
+          prepareEditorOpen: openInHandwritingEditor,
         });
 
         setThreads((prev) =>
-          prev.map((t) => ({
-            ...t,
-            messages: t.messages.map((m) =>
-              m.id === msg.id ? { ...m, savedNoteId: res.notebookId } : m
-            ),
-          }))
+          prev.map((t) =>
+            t.id !== activeThreadId
+              ? t
+              : {
+                  ...t,
+                  messages: t.messages.map((m) =>
+                    m.id === msg.id ? { ...m, savedNoteId: res.notebookId } : m
+                  ),
+                }
+          )
         );
 
         const cardSuffix =
-          res.flashcardCount > 0 ? ` + ${res.flashcardCount} Flashcards!` : '';
+          res.flashcardCount > 0 ? ` + ${res.flashcardCount} Flashcards ready!` : '';
 
-        if (openHandwriting) {
-          toast.success(`Opening "${res.title}" (${res.blockCount} multi-ink blocks)${cardSuffix}`);
+        if (openInHandwritingEditor) {
+          toast.success(`Opening "${res.title}" inside NikNote Handwriting Studio!${cardSuffix}`);
           navigate(`/?editor=1&notebook=${encodeURIComponent(res.notebookId)}`);
         } else {
-          toast.success(`Saved "${res.title}" (${res.blockCount} structured blocks)${cardSuffix}`, {
-            action: {
-              label: 'Open Note ✍️',
-              onClick: () => navigate(`/?editor=1&notebook=${encodeURIComponent(res.notebookId)}`),
-            },
-          });
+          toast.success(`Saved "${res.title}" (${res.blockCount} blocks)${cardSuffix}`);
         }
       } catch {
-        toast.error('Could not save note right now');
+        toast.error('Could not save note');
       } finally {
         setImplementingId(null);
       }
     },
-    [activeThread?.title, implementingId, navigate, userId]
+    [activeThread?.title, activeThreadId, implementingId, navigate, noteTitle, userId]
   );
 
-  const handleMakeFlashcardsOnly = useCallback((msg: NikAIMessage) => {
-    const count = extractAndSaveFlashcardsFromMarkdown(
-      activeThread?.title || 'NikAI Study Deck',
-      msg.content
-    );
-    toast.success(`Created ${count} Study Flashcards from NikAI!`, {
-      action: {
-        label: 'Study Now',
-        onClick: () => navigate('/flashcards'),
-      },
-    });
-  }, [activeThread?.title, navigate]);
+  const handleMakeFlashcardsOnly = useCallback(
+    (msg: NikAIMessage) => {
+      const count = extractAndSaveFlashcardsFromMarkdown(
+        activeThread?.title || 'NikAI Flashcard Deck',
+        msg.content
+      );
+      if (count > 0) {
+        toast.success(`Extracted ${count} study flashcards! Opening Flashcard Arena…`);
+        navigate('/flashcards');
+      } else {
+        toast.info('Ask NikAI for notes with bold key terms or an MCQ quiz first!');
+      }
+    },
+    [activeThread?.title, navigate]
+  );
 
   const sendPrompt = useCallback(
     async (overridePrompt?: string, overrideMode?: AstaMode) => {
@@ -641,7 +767,10 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       const imagesToSend = overridePrompt !== undefined ? [] : pendingImages;
       if ((!text && imagesToSend.length === 0) || isGenerating) return;
 
-      const effectiveMode = overrideMode || mode;
+      const effectiveMode: AstaMode =
+        imagesToSend.length > 0 && (overrideMode || mode) === 'auto'
+          ? 'vision'
+          : overrideMode || mode;
       if (overrideMode && overrideMode !== mode) setMode(overrideMode);
 
       const userMsg: NikAIMessage = {
@@ -702,7 +831,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       }
       setIsGenerating(true);
       setLiveThinkingText('');
-      setLiveModelName('NikAI Astra Core');
+      setLiveModelName(`NikAI · ${selectedModelDef.label}`);
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -773,22 +902,24 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
           },
         });
 
+        const finalText = result.content;
+        const followUps = buildFollowUps(finalText, effectiveMode);
+
         setThreads((prev) =>
           prev.map((t) =>
             t.id === targetThreadId
               ? {
                   ...t,
-                  updatedAt: Date.now(),
                   messages: t.messages.map((m) =>
                     m.id === assistantMsgId
                       ? {
                           ...m,
-                          content: result.content,
+                          content: finalText,
                           thinking: result.thinking || m.thinking,
                           model: result.model,
                           provider: result.provider,
                           latencyMs: result.latencyMs,
-                          followUps: result.followUps,
+                          followUps,
                         }
                       : m
                   ),
@@ -797,311 +928,399 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
           )
         );
 
-        // Auto-learn user memory & cross-session history
-        const updatedMem = learnFromConversationTurn(
+        const updatedMemory = learnFromConversationTurn(
           userMsg.content,
-          result.content,
+          finalText,
           targetThreadId,
-          userMsg.content.length > 48
-            ? `${userMsg.content.slice(0, 46)}…`
-            : userMsg.content
+          titleSource.slice(0, 56) || 'Study Session'
         );
-        setMemoryState(updatedMem);
+        setMemoryState(updatedMemory);
       } catch (err: any) {
-        if (err?.name !== 'AbortError') {
-          setThreads((prev) =>
-            prev.map((t) =>
-              t.id === targetThreadId
-                ? {
-                    ...t,
-                    messages: t.messages.map((m) =>
-                      m.id === assistantMsgId && !m.content
-                        ? {
-                            ...m,
-                            content:
-                              '⚠️ NikAI encountered a connection hiccup — hit **Regenerate** to continue immediately.',
-                          }
-                        : m
-                    ),
-                  }
-                : t
-            )
-          );
-        }
+        if (err?.name === 'AbortError') return;
+        const fallbackError =
+          'NikAI hit a brief network snag — tap Regenerate to retry immediately.';
+        setThreads((prev) =>
+          prev.map((t) =>
+            t.id !== targetThreadId
+              ? t
+              : {
+                  ...t,
+                  messages: t.messages.map((m) =>
+                    m.id === assistantMsgId ? { ...m, content: fallbackError } : m
+                  ),
+                }
+          )
+        );
       } finally {
         setIsGenerating(false);
         setLiveThinkingText('');
       }
     },
     [
-      threads,
       input,
       pendingImages,
       isGenerating,
       mode,
-      activeThreadId,
-      attachedNote,
       modelChoice,
+      activeThreadId,
+      threads,
+      attachedNote,
+      selectedModelDef.label,
     ]
   );
 
   const regenerateLast = useCallback(() => {
     if (!activeThread || isGenerating) return;
-    const msgs = activeThread.messages;
-    const lastUserIdx = [...msgs].map((m) => m.role).lastIndexOf('user');
-    if (lastUserIdx === -1) return;
-    const lastUserMsg = msgs[lastUserIdx];
+    const lastUser = [...activeThread.messages].reverse().find((m) => m.role === 'user');
+    if (!lastUser) return;
     setThreads((prev) =>
       prev.map((t) =>
-        t.id === activeThread.id ? { ...t, messages: msgs.slice(0, lastUserIdx) } : t
+        t.id === activeThread.id ? { ...t, messages: t.messages.slice(0, -2) } : t
       )
     );
     setTimeout(() => {
-      sendPrompt(lastUserMsg.content, activeThread.mode);
+      sendPrompt(lastUser.content, activeThread.mode);
     }, 20);
   }, [activeThread, isGenerating, sendPrompt]);
 
-  const deleteThread = useCallback(
-    (id: string, e: React.MouseEvent) => {
-      e.stopPropagation();
-      setThreads((prev) => prev.filter((t) => t.id !== id));
-      if (activeThreadId === id) setActiveThreadId('');
-    },
-    [activeThreadId]
+  const memoryCount =
+    memoryState.facts.length +
+    memoryState.sessionDigests.length +
+    (memoryState.userName ? 1 : 0) +
+    (memoryState.examOrRole ? 1 : 0);
+
+  const SidebarContent = (
+    <div className="flex flex-col h-full justify-between px-3.5 py-4 select-none">
+      <div className="flex flex-col min-h-0 flex-1">
+        {/* Official NikAI Brand Header + Collapse Circular Button */}
+        <div className="flex items-center justify-between gap-2 px-1 mb-4">
+          <button
+            type="button"
+            onClick={() => startNewChat('auto')}
+            className="text-left focus:outline-none hover:opacity-95 transition-opacity"
+          >
+            <NikAIBrand size="md" badge="ASTRA" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (mobileSidebarOpen) setMobileSidebarOpen(false);
+              else setSidebarCollapsed(true);
+            }}
+            aria-label="Collapse sidebar"
+            className="w-8 h-8 rounded-full bg-white hover:bg-[#F6F4FC] border border-[#ECEAF6] text-[#6E698A] flex items-center justify-center transition-colors shrink-0"
+          >
+            <ChevronsLeft className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* + New Chat Signature Pill CTA */}
+        <button
+          type="button"
+          onClick={() => startNewChat('auto')}
+          className="w-full h-11 rounded-full text-white font-semibold text-[14.5px] flex items-center justify-center gap-2 shadow-[0_8px_22px_rgba(147,51,234,0.26)] hover:shadow-[0_10px_28px_rgba(236,72,153,0.34)] active:scale-[0.985] transition-all shrink-0 mb-4"
+          style={{
+            background:
+              'linear-gradient(90deg, #8B3DFF 0%, #B845F5 42%, #F266B6 74%, #FF965A 100%)',
+          }}
+        >
+          <Plus className="w-4 h-4 stroke-[2.4]" />
+          <span>New Chat</span>
+        </button>
+
+        {/* Primary 5 Specialist Navigation Links */}
+        <nav aria-label="NikAI workspaces" className="space-y-1 shrink-0">
+          {SIDEBAR_NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = mode === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setMode(item.id);
+                  setMobileSidebarOpen(false);
+                  textareaRef.current?.focus();
+                }}
+                className={`w-full px-3.5 py-2.5 rounded-2xl text-[14px] flex items-center gap-3 transition-all ${
+                  isActive
+                    ? 'bg-[#F2ECFF] text-[#6A28D9] font-semibold'
+                    : 'text-[#44405B] hover:bg-[#F8F6FE] font-medium'
+                }`}
+              >
+                <Icon
+                  className={`w-[18px] h-[18px] shrink-0 ${
+                    isActive ? 'text-[#7C3AED]' : 'text-[#827C9F]'
+                  }`}
+                />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Subtle Divider */}
+        <div className="my-4 border-t border-[#F0EEF8] shrink-0" />
+
+        {/* Recent Chats Header + Lens Trigger */}
+        <div className="flex items-center justify-between px-2 mb-2 shrink-0">
+          <span className="text-[12.5px] font-semibold text-[#6F6A8A]">Recent Chats</span>
+          <button
+            type="button"
+            onClick={() => searchInputRef.current?.focus()}
+            aria-label="Search recent chats"
+            className="p-1 rounded-lg text-[#8D88A8] hover:text-[#5B21B6] hover:bg-[#F5F2FC] transition-colors"
+          >
+            <Search className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Scrollable Recent Chats List */}
+        <div className="flex-1 overflow-y-auto space-y-0.5 pr-1 min-h-0">
+          {filteredThreads.map((t) => {
+            const isSelected = t.id === activeThreadId;
+            return (
+              <div
+                key={t.id}
+                onClick={() => {
+                  setActiveThreadId(t.id);
+                  setMode(t.mode || 'auto');
+                  setMobileSidebarOpen(false);
+                }}
+                className={`group flex items-start justify-between gap-2 px-2.5 py-2 rounded-xl cursor-pointer transition-colors ${
+                  isSelected ? 'bg-[#F4EEFF]' : 'hover:bg-[#F8F6FD]'
+                }`}
+              >
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <MessageSquare
+                    className={`w-4 h-4 mt-0.5 shrink-0 ${
+                      isSelected ? 'text-[#7C3AED]' : 'text-[#9A95B5]'
+                    }`}
+                  />
+                  <div className="min-w-0">
+                    <div
+                      className={`text-[13.5px] truncate leading-snug ${
+                        isSelected
+                          ? 'font-semibold text-[#4C1D95]'
+                          : 'font-medium text-[#242039]'
+                      }`}
+                    >
+                      {t.title}
+                    </div>
+                    <div className="text-[11.5px] text-[#9A95B2] mt-0.5">
+                      {formatRelativeTime(t.updatedAt)}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => deleteThread(t.id, e)}
+                  aria-label="Delete thread"
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-[#9A95B5] hover:text-rose-500 transition-opacity shrink-0"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            );
+          })}
+
+          {threads.length === 0 &&
+            filteredSeedChats.map((seed) => (
+              <div
+                key={seed.id}
+                onClick={() => {
+                  setMobileSidebarOpen(false);
+                  void sendPrompt(seed.prompt, seed.mode);
+                }}
+                className="group flex items-start justify-between gap-2 px-2.5 py-2 rounded-xl cursor-pointer hover:bg-[#F8F6FD] transition-colors"
+              >
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <MessageSquare className="w-4 h-4 mt-0.5 shrink-0 text-[#9A95B5] group-hover:text-[#7C3AED] transition-colors" />
+                  <div className="min-w-0">
+                    <div className="text-[13.5px] font-medium text-[#242039] truncate leading-snug">
+                      {seed.title}
+                    </div>
+                    <div className="text-[11.5px] text-[#9A95B2] mt-0.5">{seed.relTime}</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => deleteSeedChat(seed.id, e)}
+                  aria-label={`Remove ${seed.title}`}
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-[#9A95B5] hover:text-rose-500 transition-opacity shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+        </div>
+      </div>
+
+      {/* Bottom Sticky Upgrade to NikAI Pro Card */}
+      <button
+        type="button"
+        onClick={() => navigate('/upgrade')}
+        className="mt-3 w-full rounded-2xl px-3.5 py-3 border border-[#F5E4DC] flex items-center justify-between gap-2.5 text-left hover:shadow-md hover:border-[#EFCBBF] transition-all shrink-0"
+        style={{
+          background:
+            'linear-gradient(135deg, #FFF8F4 0%, #FFF4F7 55%, #FDF3FF 100%)',
+        }}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <Crown className="w-5 h-5 text-[#F59E0B] fill-[#FBBF24] shrink-0" />
+          <div className="min-w-0">
+            <div className="text-[13px] font-bold bg-gradient-to-r from-[#A21CAF] via-[#DB2777] to-[#E11D48] bg-clip-text text-transparent truncate">
+              Upgrade to NikAI Pro
+            </div>
+            <div className="text-[11.5px] text-[#7D7896] truncate">
+              More power, higher limits
+            </div>
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4 text-[#E07A5F] shrink-0" />
+      </button>
+    </div>
   );
-
-  const filteredThreads = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return threads;
-    return threads.filter(
-      (t) =>
-        t.title.toLowerCase().includes(q) ||
-        t.messages.some((m) => m.content.toLowerCase().includes(q))
-    );
-  }, [threads, searchQuery]);
-
-  const activeMessages = activeThread?.messages || [];
 
   return (
     <div
       data-nikai-root="true"
-      className={`${
+      className={
         embedded
-          ? 'relative w-full h-full'
-          : 'fixed inset-x-0 top-0 bottom-[60px] md:bottom-0 z-30'
-      } flex overflow-hidden`}
+          ? 'flex flex-col h-full w-full bg-[#FCFAFF] text-[#171429] overflow-hidden select-text'
+          : 'fixed inset-0 z-30 flex bg-[#FCFAFF] text-[#171429] overflow-hidden select-text'
+      }
       style={{
-        background:
-          'radial-gradient(ellipse 90% 45% at 50% -10%, rgba(139,30,224,0.10), rgba(244,107,85,0.04) 48%, rgba(250,248,255,1) 82%)',
-        backgroundColor: '#FAF8FF',
-        color: '#1E1B4B',
-        fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
+        fontFamily:
+          "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
-      {/* Mobile Sidebar Backdrop */}
-      {sidebarOpen && (
-        <div
-          onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-[#1E103C]/35 backdrop-blur-[2px] lg:hidden"
-        />
+      {/* Desktop Left Sidebar */}
+      {!embedded && !sidebarCollapsed && (
+        <aside className="hidden lg:flex lg:w-[266px] shrink-0 flex-col bg-white border-r border-[#EEECF7] z-20">
+          {SidebarContent}
+        </aside>
       )}
 
-      {/* Left Session History Sidebar */}
-      <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-[284px] flex flex-col border-r border-purple-200/60 bg-white/95 backdrop-blur-xl transition-transform duration-200 ${
-          sidebarOpen ? 'translate-x-0' : embedded ? '-translate-x-full hidden' : '-translate-x-full lg:translate-x-0'
-        }`}
+      {/* Mobile Slide-Over Sidebar Drawer */}
+      {!embedded && mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 z-50 lg:hidden bg-[#191233]/35 backdrop-blur-xs flex"
+          onClick={() => setMobileSidebarOpen(false)}
+        >
+          <aside
+            className="w-[278px] max-w-[85vw] h-full bg-white border-r border-[#EEECF7] shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {SidebarContent}
+          </aside>
+        </div>
+      )}
+
+      {/* Main Stage with Dreamy Pastel Horizon Background */}
+      <div
+        className="flex-1 flex flex-col min-w-0 relative overflow-hidden"
+        style={{
+          backgroundColor: '#FCFAFF',
+          backgroundImage: `url('/nikai-horizon-bg.jpg')`,
+          backgroundPosition: 'center bottom',
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+        }}
       >
-        <div className="p-3.5 border-b border-purple-100 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
+        {/* Top Floating Bar */}
+        <header className="h-16 px-4 sm:px-7 flex items-center justify-between gap-3 shrink-0 z-20">
+          <div className="flex items-center gap-2.5 min-w-0">
             {!embedded && (
               <button
                 type="button"
-                onClick={() => navigate('/')}
-                title="Back to NikNote"
-                className="w-8 h-8 rounded-xl border border-purple-200/80 flex items-center justify-center text-purple-700 hover:bg-purple-50 transition-colors shrink-0"
+                onClick={() => {
+                  if (window.innerWidth < 1024) setMobileSidebarOpen(true);
+                  else setSidebarCollapsed(false);
+                }}
+                aria-label="Open NikAI sidebar"
+                className={`${
+                  sidebarCollapsed ? 'inline-flex' : 'inline-flex lg:hidden'
+                } w-10 h-10 rounded-full bg-white/95 border border-[#ECEAF6] shadow-[0_2px_12px_rgba(30,20,70,0.04)] items-center justify-center text-[#565074] hover:text-[#6D28D9] transition-colors shrink-0`}
               >
-                <ArrowLeft className="w-4 h-4" />
+                {sidebarCollapsed ? (
+                  <ChevronsRight className="w-4 h-4" />
+                ) : (
+                  <Menu className="w-4 h-4" />
+                )}
               </button>
             )}
-            <NikAIBrand size="sm" subtitle="Astra Neural Core" />
-          </div>
-          <button
-            type="button"
-            onClick={() => setSidebarOpen(false)}
-            className={`${embedded ? 'flex' : 'lg:hidden flex'} w-8 h-8 rounded-xl items-center justify-center text-slate-400 hover:bg-slate-100`}
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
 
-        {/* New Session + Memory Vault + Game Quick Triggers */}
-        <div className="p-3 space-y-2.5">
-          <button
-            type="button"
-            onClick={() => startNewChat()}
-            className="w-full py-2.5 px-3.5 rounded-2xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-purple-500/20 active:scale-[0.99] transition-all"
-            style={{
-              background: 'linear-gradient(100deg, #5B1BC9 0%, #8B1EE0 45%, #DB2777 82%, #F46B55 100%)',
-            }}
-          >
-            <Plus className="w-4 h-4" />
-            New NikAI Session
-          </button>
-
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={() => {
-                setMemoryOpen(true);
-                setSidebarOpen(false);
-              }}
-              className="py-2 px-2.5 rounded-xl bg-purple-50/90 hover:bg-purple-100/90 border border-purple-200/70 text-[11px] font-bold text-purple-900 flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <Brain className="w-3.5 h-3.5 text-purple-600" />
-              Memory ({memoryCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPlaygroundOpen((v) => !v);
-                setSidebarOpen(false);
-              }}
-              className="py-2 px-2.5 rounded-xl bg-amber-50/90 hover:bg-amber-100/90 border border-amber-200/80 text-[11px] font-bold text-amber-900 flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <Gamepad2 className="w-3.5 h-3.5 text-amber-600" />
-              Star Game
-            </button>
-          </div>
-
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-purple-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search remembered sessions…"
-              className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-purple-50/50 border border-purple-200/70 text-xs text-slate-700 placeholder:text-purple-400/80 focus:outline-none focus:bg-white focus:border-purple-400"
-            />
-          </div>
-        </div>
-
-        {/* Thread History */}
-        <div className="flex-1 overflow-y-auto px-2.5 pb-3 space-y-1">
-          <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-purple-400">
-            Session History ({filteredThreads.length})
-          </div>
-          {filteredThreads.length === 0 ? (
-            <div className="px-3 py-8 text-center text-xs text-slate-400">
-              Your conversations & learned memories stay saved automatically across sessions.
-            </div>
-          ) : (
-            filteredThreads.map((t) => {
-              const active = t.id === activeThreadId;
-              return (
-                <div
-                  key={t.id}
-                  onClick={() => {
-                    setActiveThreadId(t.id);
-                    setMode(t.mode || 'auto');
-                    setSidebarOpen(false);
-                  }}
-                  className={`group flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
-                    active
-                      ? 'bg-gradient-to-r from-purple-100/90 to-pink-50/80 text-purple-950 font-semibold border border-purple-200/80'
-                      : 'text-slate-600 hover:bg-purple-50/60'
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs truncate">{t.title}</div>
-                    <div className="text-[10px] text-purple-400">
-                      {t.messages.length} msgs · {new Date(t.updatedAt).toLocaleDateString()}
-                    </div>
-                  </div>
+            {embedded ? (
+              <NikAIBrand size="sm" badge="ASTRA" />
+            ) : (
+              <div className="w-48 sm:w-[272px] h-10 rounded-full bg-white/95 border border-[#ECEAF6] shadow-[0_2px_12px_rgba(30,20,70,0.04)] px-3.5 flex items-center gap-2.5 focus-within:border-[#C4B5FD] transition-colors">
+                <Search className="w-4 h-4 text-[#9490AD] shrink-0" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search chats..."
+                  className="w-full bg-transparent text-[13.5px] text-[#221F36] placeholder:text-[#9893B0] focus:outline-none min-w-0"
+                />
+                {searchQuery ? (
                   <button
                     type="button"
-                    onClick={(e) => deleteThread(t.id, e)}
-                    aria-label="Delete session"
-                    className="opacity-70 lg:opacity-0 lg:group-hover:opacity-100 p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
+                    onClick={() => setSearchQuery('')}
+                    aria-label="Clear search"
+                    className="text-[#9490AD] hover:text-[#4C1D95]"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Bottom Cloud Status + Optional Custom API Keys */}
-        <div className="p-3 border-t border-purple-100 bg-purple-50/40">
-          <button
-            type="button"
-            onClick={() => setKeysModalOpen(true)}
-            className="w-full px-3 py-2 rounded-xl border border-purple-200/80 bg-white hover:bg-purple-50/60 flex items-center justify-between text-xs font-semibold text-purple-950 transition-colors"
-          >
-            <span className="flex items-center gap-2 min-w-0">
-              <span
-                className={`w-2 h-2 rounded-full shrink-0 ${
-                  cloudProviders.length > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-purple-500'
-                }`}
-              />
-              <span className="truncate">
-                {cloudProviders.length > 0 ? 'Astra Cloud Connected' : 'Astra Neural Active'}
-              </span>
-            </span>
-            <KeyRound className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-          </button>
-        </div>
-      </aside>
-
-      {/* Main NikAI Studio Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full relative">
-        {/* Top Signature Bar */}
-        <header className="h-14 px-3 sm:px-5 border-b border-purple-200/60 bg-white/88 backdrop-blur-xl flex items-center justify-between gap-2 shrink-0 z-20">
-          <div className="flex items-center gap-2 min-w-0">
-            {!embedded && (
-              <button
-                type="button"
-                onClick={() => navigate('/')}
-                aria-label="Back to NikNote"
-                className="lg:hidden flex w-9 h-9 rounded-xl border border-purple-200/80 items-center justify-center text-purple-800 hover:bg-purple-50 active:scale-95 shrink-0"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
+                ) : (
+                  <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md bg-[#F4F3FA] border border-[#E6E4F2] text-[11px] font-medium text-[#7B7696] shrink-0">
+                    Ctrl K
+                  </span>
+                )}
+              </div>
             )}
+          </div>
 
+          {/* Right: Memory Pill + Astra Neural Auto Dropdown + Profile Avatar */}
+          <div className="flex items-center gap-2.5 shrink-0">
             <button
               type="button"
-              onClick={() => setSidebarOpen((v) => !v)}
-              aria-label="Open NikAI Sessions"
-              className={`${
-                embedded ? 'flex' : 'lg:hidden flex'
-              } w-9 h-9 rounded-xl border border-purple-200/80 items-center justify-center text-purple-800 hover:bg-purple-50 active:scale-95 shrink-0`}
+              onClick={() => setMemoryOpen(true)}
+              data-testid="nikai-memory-btn"
+              className="h-10 px-3.5 rounded-full bg-white/95 hover:bg-white border border-[#ECEAF6] shadow-[0_2px_12px_rgba(30,20,70,0.04)] flex items-center gap-2 transition-all"
             >
-              <Menu className="w-4 h-4" />
+              <Brain className="w-4 h-4 text-[#7C3AED]" />
+              <span className="text-[13.5px] font-semibold text-[#231F39]">Memory</span>
+              <span className="min-w-[21px] h-[21px] px-1.5 rounded-full bg-[#7C3AED] text-white text-[11.5px] font-bold flex items-center justify-center shadow-2xs">
+                {memoryCount}
+              </span>
             </button>
 
-            <div className={`${embedded ? 'flex' : 'lg:hidden flex'} items-center`}>
-              <NikAIBrand size="sm" />
-            </div>
+            {!embedded && (
+              <div className="relative hidden sm:block">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModelMenuOpen((v) => !v);
+                    setProfileMenuOpen(false);
+                  }}
+                  className="h-10 px-4 rounded-full bg-white/95 hover:bg-white border border-[#ECEAF6] shadow-[0_2px_12px_rgba(30,20,70,0.04)] flex items-center gap-2 transition-all"
+                >
+                  <SingleFourPointSparkle size={15} />
+                  <span className="text-[13.5px] font-semibold text-[#231F39]">
+                    {selectedModelDef.label}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-[#7A7495]" />
+                </button>
 
-            {/* Astra Model Selector */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setModelMenuOpen((v) => !v)}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-50 via-fuchsia-50 to-orange-50 hover:from-purple-100 hover:to-pink-100 text-[11px] sm:text-xs font-bold text-purple-950 border border-purple-200/80 transition-colors"
-              >
-                <span className="max-w-[125px] sm:max-w-none truncate">
-                  {MODEL_OPTIONS.find((m) => m.id === modelChoice)?.label || '✦ Astra Neural Auto'}
-                </span>
-                <ChevronDown className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-              </button>
-
-              {modelMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={() => setModelMenuOpen(false)} />
-                  <div className="absolute left-0 mt-2 w-72 rounded-2xl bg-white border border-purple-200 shadow-xl p-1.5 z-40">
+                {modelMenuOpen && (
+                  <div
+                    className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[#EAE6F7] shadow-xl p-1.5 z-50"
+                    onMouseLeave={() => setModelMenuOpen(false)}
+                  >
                     {MODEL_OPTIONS.map((opt) => (
                       <button
                         key={opt.id}
@@ -1110,472 +1329,464 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                           setModelChoice(opt.id);
                           setModelMenuOpen(false);
                         }}
-                        className={`w-full text-left px-3 py-2 rounded-xl transition-colors flex items-start justify-between gap-2 ${
+                        className={`w-full px-3 py-2 rounded-xl text-left flex items-center justify-between text-xs transition-colors ${
                           modelChoice === opt.id
-                            ? 'bg-gradient-to-r from-purple-100/80 to-pink-50 text-purple-950'
-                            : 'hover:bg-purple-50/50 text-slate-700'
+                            ? 'bg-[#F3ECFF] text-[#5B21B6] font-bold'
+                            : 'text-[#312D4B] hover:bg-[#F8F6FE] font-medium'
                         }`}
                       >
                         <div>
-                          <div className="text-xs font-bold">{opt.label}</div>
-                          <div className="text-[11px] text-slate-500">{opt.sub}</div>
+                          <div>{opt.label}</div>
+                          <div className="text-[10.5px] text-[#8A84A6] font-normal">
+                            {opt.badge}
+                          </div>
                         </div>
                         {modelChoice === opt.id && (
-                          <Check className="w-4 h-4 text-purple-700 shrink-0 mt-0.5" />
+                          <Check className="w-4 h-4 text-[#7C3AED]" />
                         )}
                       </button>
                     ))}
+                    <div className="my-1 border-t border-[#F1EFF9]" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModelMenuOpen(false);
+                        setKeysModalOpen(true);
+                      }}
+                      className="w-full px-3 py-2 rounded-xl text-left text-xs font-medium text-[#5B4E89] hover:bg-[#F8F6FE] flex items-center gap-2"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-[#7C3AED]" />
+                      <span>Custom Cloud API Keys…</span>
+                    </button>
                   </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Right Power Actions: Memory Vault + Mini-Game + New Session + Close */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              type="button"
-              onClick={() => setMemoryOpen(true)}
-              data-testid="nikai-memory-btn"
-              className="px-2.5 py-1.5 rounded-xl border border-purple-200/80 bg-purple-50/70 hover:bg-purple-100/80 text-xs font-bold text-purple-900 flex items-center gap-1.5 transition-colors"
-              title="NikAI Persistent Cross-Session Memory Vault"
-            >
-              <Brain className="w-3.5 h-3.5 text-purple-600" />
-              <span className="hidden sm:inline">Memory</span>
-              <span className="px-1.5 py-0.2 rounded-full bg-purple-600 text-white text-[10px] font-extrabold">
-                {memoryCount}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setPlaygroundOpen((v) => !v)}
-              data-testid="nikai-game-btn"
-              className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
-                playgroundOpen
-                  ? 'border-pink-400 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 text-white shadow-sm'
-                  : 'border-amber-200 bg-amber-50/80 hover:bg-amber-100 text-amber-900'
-              }`}
-              title="Play NikAI Star Catch & Brain Blitz Mini-Game"
-            >
-              <Gamepad2 className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">Mini-Game</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => startNewChat()}
-              className="px-2.5 py-1.5 rounded-xl border border-purple-200/80 hover:bg-purple-50 text-xs font-bold text-purple-900 flex items-center gap-1 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">New</span>
-            </button>
-
-            {embedded && (
-              <button
-                type="button"
-                onClick={() => navigate('/ai')}
-                title="Open NikAI Fullscreen Studio"
-                className="px-2.5 py-1.5 rounded-xl border border-purple-200/80 hover:bg-purple-50 text-xs font-bold text-purple-900 hidden sm:flex items-center gap-1 transition-colors"
-              >
-                Fullscreen ↗
-              </button>
+                )}
+              </div>
             )}
 
-            {onClose && (
+            {embedded && onClose ? (
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close NikAI Panel"
-                className="w-8 h-8 rounded-xl border border-purple-200/80 flex items-center justify-center text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                aria-label="Close NikAI panel"
+                className="w-9 h-9 rounded-full bg-white border border-[#ECEAF6] flex items-center justify-center text-[#5E587D] hover:text-[#171429]"
               >
                 <X className="w-4 h-4" />
               </button>
+            ) : (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileMenuOpen((v) => !v);
+                    setModelMenuOpen(false);
+                  }}
+                  aria-label="NikAI quick menu"
+                  className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-[0_2px_12px_rgba(30,20,70,0.12)] hover:scale-[1.03] transition-transform focus:outline-none"
+                >
+                  <img
+                    src={userAvatarSrc}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+
+                {profileMenuOpen && (
+                  <div
+                    className="absolute right-0 mt-2 w-56 rounded-2xl bg-white border border-[#EAE6F7] shadow-xl p-1.5 z-50 text-xs"
+                    onMouseLeave={() => setProfileMenuOpen(false)}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileMenuOpen(false);
+                        navigate('/');
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl text-left font-semibold text-[#241F3D] hover:bg-[#F5F1FF] flex items-center gap-2.5"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5 text-[#7C3AED]" />
+                      <span>Back to NikNote Studio</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileMenuOpen(false);
+                        setArcadeModalOpen(true);
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl text-left font-medium text-[#373254] hover:bg-[#F8F6FE] flex items-center gap-2.5"
+                    >
+                      <Gamepad2 className="w-3.5 h-3.5 text-[#EC4899]" />
+                      <span>Thinking Mini-Game</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileMenuOpen(false);
+                        setKeysModalOpen(true);
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl text-left font-medium text-[#373254] hover:bg-[#F8F6FE] flex items-center gap-2.5"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-[#7C3AED]" />
+                      <span>Cloud & API Keys</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileMenuOpen(false);
+                        navigate('/notebooks');
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl text-left font-medium text-[#373254] hover:bg-[#F8F6FE] flex items-center gap-2.5"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-[#6366F1]" />
+                      <span>My Saved Notebooks</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </header>
 
-        {/* Scrollable Conversation & Hero Stream */}
-        <div
-          data-scrollable="true"
-          className="flex-1 overflow-y-auto px-3 sm:px-6 py-5"
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
-          <div className="max-w-3xl mx-auto">
-            {/* Optional On-Demand Mini-Game Playground */}
-            <AnimatePresence>
-              {playgroundOpen && !isGenerating && (
-                <NikAIThinkingArena
-                  isStreaming={false}
-                  forceOpen
-                  modelName={liveModelName}
-                  onCloseManual={() => setPlaygroundOpen(false)}
-                />
-              )}
-            </AnimatePresence>
+        {/* Scrollable Center Stage */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-8 flex flex-col">
+          {activeMessages.length === 0 ? (
+            <div
+              className={`${
+                embedded ? 'max-w-xl py-4' : 'max-w-[960px] py-6'
+              } w-full mx-auto my-auto flex flex-col items-center`}
+            >
+              {/* Official NikAI Calligraphic Emblem */}
+              <motion.img
+                src="/nikai-mark.png"
+                alt="NikAI Emblem"
+                initial={{ opacity: 0, scale: 0.92, y: 6 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                className="h-14 sm:h-16 w-auto object-contain mb-3 select-none pointer-events-none drop-shadow-[0_6px_18px_rgba(139,61,255,0.16)]"
+              />
 
-            {activeMessages.length === 0 ? (
-              /* Signature NikAI Welcome Hero in Exact NikNote Brand Identity */
-              <div className="pt-2 sm:pt-7 pb-6">
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex flex-col items-center text-center mb-6"
+              {/* Headline */}
+              <h1
+                className={`${
+                  embedded
+                    ? 'text-2xl sm:text-3xl'
+                    : 'text-[28px] sm:text-[42px]'
+                } font-extrabold tracking-[-0.025em] text-[#171429] text-center leading-[1.15]`}
+              >
+                What can I help you{' '}
+                <span
+                  style={{
+                    background:
+                      'linear-gradient(90deg, #8B3DFF 0%, #EA4A9E 58%, #FF934F 100%)',
+                    WebkitBackgroundClip: 'text',
+                    backgroundClip: 'text',
+                    color: 'transparent',
+                  }}
                 >
-                  <div className="px-5 py-3 rounded-[28px] bg-white/90 border border-purple-200/80 shadow-[0_14px_40px_-14px_rgba(124,58,237,0.28)] mb-3">
-                    <NikAIBrand size={embedded ? 'md' : 'xl'} />
-                  </div>
+                  create?
+                </span>
+              </h1>
 
-                  <p className="text-xs sm:text-sm text-slate-600 max-w-xl leading-relaxed">
-                    {memoryState.userName
-                      ? `Welcome back, ${memoryState.userName}! `
-                      : ''}
-                    Powered by <span className="font-bold text-purple-800">Astra Neural Core</span> ·{' '}
-                    <span className="font-semibold text-pink-600">Remembers Every Session</span> ·{' '}
-                    <span className="font-semibold text-amber-600">1-Tap Multi-Ink Smart Notes</span>
-                  </p>
+              {/* Subtitle */}
+              <p className="text-[14.5px] sm:text-[16px] text-[#5B5675] text-center mt-2.5 mb-8 max-w-xl">
+                Your AI companion for learning, notes, quizzes, writing and coding.
+              </p>
 
-                  {/* Memory Ribbon if active memories exist */}
-                  {memoryCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setMemoryOpen(true)}
-                      className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100/80 hover:bg-purple-200/70 text-[11px] font-bold text-purple-900 border border-purple-200 transition-colors"
-                    >
-                      <Sparkle className="w-3 h-3 text-pink-600" />
-                      <span>
-                        {memoryCount} active session {memoryCount === 1 ? 'memory' : 'memories'} synced
-                        {memoryState.examOrRole ? ` · ${memoryState.examOrRole}` : ''}
-                      </span>
-                    </button>
-                  )}
-                </motion.div>
+              {/* 4 Pastel Frosted-Glass Starter Cards */}
+              <div
+                className={`w-full grid ${
+                  embedded
+                    ? 'grid-cols-1 sm:grid-cols-2 gap-3'
+                    : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'
+                }`}
+              >
+                {/* SVG Linear Gradient Definition for Crisp Card Line Icons */}
+                <svg width="0" height="0" className="absolute pointer-events-none" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="nikai-card-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#7C3AED" />
+                      <stop offset="65%" stopColor="#D946EF" />
+                      <stop offset="100%" stopColor="#EC4899" />
+                    </linearGradient>
+                  </defs>
+                </svg>
 
-                {/* Specialist Mode Pills */}
-                <div className="flex flex-wrap justify-center gap-1.5 mb-6">
-                  {MODE_DEFS.map((m) => {
-                    const Icon = m.icon;
-                    const active = m.id === mode;
-                    return (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => setMode(m.id)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 border transition-all active:scale-95 ${
-                          active
-                            ? 'text-white border-transparent shadow-md'
-                            : 'bg-white text-slate-600 border-purple-200/80 hover:border-purple-300 hover:bg-purple-50/40'
-                        }`}
-                        style={
-                          active
-                            ? {
-                                background: `linear-gradient(120deg, ${m.badgeColor}, #DB2777)`,
-                              }
-                            : undefined
-                        }
-                      >
-                        <Icon
-                          className="w-3.5 h-3.5"
-                          style={{ color: active ? '#FFFFFF' : m.badgeColor }}
-                        />
-                        {m.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* 4 Power Starter Cards */}
-                <div className={`grid ${embedded ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'} gap-3`}>
-                  {STARTER_CARDS.map((card, i) => (
-                    <motion.button
-                      key={i}
-                      type="button"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.05, duration: 0.3 }}
-                      onClick={() => sendPrompt(card.prompt, card.mode)}
-                      className="text-left p-4 rounded-2xl bg-white/95 border border-purple-200/70 hover:border-pink-300 hover:shadow-md hover:shadow-purple-500/10 active:scale-[0.99] transition-all group"
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span
-                          className="text-[11px] font-bold px-2.5 py-0.5 rounded-full"
-                          style={{
-                            backgroundColor: `${card.accent}14`,
-                            color: card.accent,
-                          }}
-                        >
-                          {card.tag}
-                        </span>
-                        <Zap className="w-3.5 h-3.5 text-purple-300 group-hover:text-pink-500 transition-colors" />
-                      </div>
-                      <div className="text-[13px] font-bold text-slate-900 mb-1 leading-snug">
-                        {card.title}
-                      </div>
-                      <div className="text-xs text-slate-500 line-clamp-2">{card.prompt}</div>
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              /* Active Conversation Stream */
-              <div className="space-y-6 pb-4">
-                {activeMessages.map((msg, idx) => {
-                  const isLastAssistant =
-                    msg.role === 'assistant' && idx === activeMessages.length - 1;
-                  const isCurrentlyStreaming = isLastAssistant && isGenerating;
-
-                  if (msg.role === 'user') {
-                    return (
-                      <div key={msg.id} className="flex justify-end">
-                        <div
-                          className="max-w-[88%] sm:max-w-[78%] rounded-2xl rounded-tr-md px-4 py-3 text-white shadow-md shadow-purple-600/15"
-                          style={{
-                            background:
-                              'linear-gradient(115deg, #4C1D95 0%, #6D28D9 52%, #BE185D 100%)',
-                          }}
-                        >
-                          {msg.images && msg.images.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-2.5">
-                              {msg.images.map((img, i) => (
-                                <img
-                                  key={i}
-                                  src={img.dataUrl}
-                                  alt={img.name || 'Attachment'}
-                                  className="w-24 h-24 object-cover rounded-xl border border-white/25"
-                                />
-                              ))}
-                            </div>
-                          )}
-                          <p className="text-[14px] leading-relaxed whitespace-pre-wrap">
-                            {msg.content}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  }
-
+                {HERO_CARDS.map((card, i) => {
+                  const CardIcon = card.icon;
                   return (
-                    <div key={msg.id} className="flex flex-col gap-2">
-                      {/* NikAI Signature Avatar Row */}
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-purple-100 via-pink-50 to-amber-50 border border-purple-200 flex items-center justify-center shrink-0">
-                          <NikAIStarConstellation
-                            size={18}
-                            animate={isCurrentlyStreaming ? 'fast' : 'idle'}
+                    <motion.button
+                      key={card.title}
+                      type="button"
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05, duration: 0.28 }}
+                      onClick={() => sendPrompt(card.prompt, card.mode)}
+                      style={{
+                        background: card.tintBg,
+                        borderColor: card.borderTint,
+                      }}
+                      className="group relative text-left rounded-[22px] border backdrop-blur-md px-5 pt-5 pb-4 min-h-[178px] flex flex-col justify-between shadow-[0_8px_28px_rgba(45,26,95,0.04)] hover:shadow-[0_14px_34px_rgba(124,58,237,0.12)] hover:-translate-y-0.5 active:scale-[0.99] transition-all"
+                    >
+                      <div>
+                        <div className="mb-3.5">
+                          <CardIcon
+                            className="w-7 h-7 stroke-[2]"
+                            style={{ stroke: 'url(#nikai-card-stroke)' }}
                           />
                         </div>
-                        <span
-                          style={{
-                            fontFamily: "'Dancing Script', 'Caveat', cursive",
-                            fontWeight: 700,
-                            fontSize: 20,
-                            background:
-                              'linear-gradient(96deg, #5B1BC9 0%, #DB2777 65%, #F46B55 100%)',
-                            WebkitBackgroundClip: 'text',
-                            backgroundClip: 'text',
-                            color: 'transparent',
-                          }}
-                        >
-                          NikAI
-                        </span>
-                        {msg.model && (
-                          <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-purple-100/80 text-purple-800">
-                            {msg.model}
-                            {msg.latencyMs
-                              ? ` · ${(msg.latencyMs / 1000).toFixed(1)}s`
-                              : ''}
-                          </span>
-                        )}
+
+                        <div className="text-[15.5px] font-bold text-[#19162D] leading-snug mb-1.5">
+                          {card.title}
+                        </div>
+
+                        <p className="text-[13px] leading-relaxed text-[#645E7D] pr-5">
+                          {card.description}
+                        </p>
                       </div>
 
-                      {/* KHATARNAK LIVE THINKING ARENA + MINI-GAME */}
-                      {isCurrentlyStreaming && (
-                        <NikAIThinkingArena
-                          isStreaming
-                          modelName={liveModelName}
-                          thinkingText={liveThinkingText || msg.thinking}
-                        />
-                      )}
-
-                      {/* Completed Reasoning Drawer */}
-                      {!isCurrentlyStreaming && msg.thinking && (
-                        <details className="rounded-xl bg-purple-50/70 border border-purple-200/80 px-3.5 py-2 text-xs text-purple-900">
-                          <summary className="cursor-pointer font-bold select-none flex items-center gap-1.5">
-                            <Brain className="w-3.5 h-3.5 text-purple-600" />
-                            View Astra Thought Process
-                          </summary>
-                          <p className="mt-2 whitespace-pre-wrap text-slate-600 leading-relaxed">
-                            {msg.thinking}
-                          </p>
-                        </details>
-                      )}
-
-                      {/* Rich Markdown Answer Card */}
-                      {(msg.content || !isCurrentlyStreaming) && (
-                        <div className="rounded-2xl bg-white/95 border border-purple-200/75 px-4 sm:px-5 py-3.5 shadow-sm">
-                          <AstaMarkdown
-                            content={msg.content}
-                            isStreaming={isCurrentlyStreaming}
-                          />
-
-                          {/* Supercharged Smart Notes & Action Bar */}
-                          {!isCurrentlyStreaming && msg.content && (
-                            <div className="mt-4 pt-3 border-t border-purple-100 flex flex-wrap items-center gap-1.5">
-                              {/* 1. Insert directly into open Editor Note if embedded */}
-                              {onInsertContent && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    onInsertContent(msg.content);
-                                    toast.success('Inserted cleanly into your active Note!');
-                                  }}
-                                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-white flex items-center gap-1 shadow-sm transition-all active:scale-95"
-                                  style={{
-                                    background:
-                                      'linear-gradient(100deg, #5B1BC9 0%, #DB2777 100%)',
-                                  }}
-                                >
-                                  <PlusCircle className="w-3.5 h-3.5" />
-                                  Insert in Note
-                                </button>
-                              )}
-
-                              {/* 2. 1-Tap Save Rich Multi-Ink Note + Flashcards */}
-                              <button
-                                type="button"
-                                disabled={implementingId === msg.id}
-                                onClick={() => handleImplementNote(msg, false)}
-                                data-testid={`save-smart-note-${idx}`}
-                                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
-                                  msg.savedNoteId
-                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                    : 'bg-purple-50 text-purple-800 hover:bg-purple-100 border border-purple-200/80'
-                                }`}
-                              >
-                                <BookmarkPlus className="w-3.5 h-3.5" />
-                                {msg.savedNoteId ? 'Saved Smart Note ✓' : 'Save Smart Note'}
-                              </button>
-
-                              {/* 3. Open Directly Inside Multi-Ink Handwriting Canvas */}
-                              <button
-                                type="button"
-                                disabled={implementingId === msg.id}
-                                onClick={() => handleImplementNote(msg, true)}
-                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-pink-50 text-pink-700 hover:bg-pink-100 border border-pink-200/80 flex items-center gap-1 transition-colors"
-                              >
-                                <Feather className="w-3.5 h-3.5" />
-                                Open in Handwriting
-                              </button>
-
-                              {/* 4. 1-Tap Flashcard Deck Extractor */}
-                              <button
-                                type="button"
-                                onClick={() => handleMakeFlashcardsOnly(msg)}
-                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200/80 flex items-center gap-1 transition-colors"
-                              >
-                                <Layers className="w-3.5 h-3.5" />
-                                Flashcards
-                              </button>
-
-                              {/* Copy */}
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  await navigator.clipboard.writeText(msg.content);
-                                  setCopiedId(msg.id);
-                                  setTimeout(() => setCopiedId(null), 1800);
-                                }}
-                                className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1 transition-colors"
-                              >
-                                {copiedId === msg.id ? (
-                                  <>
-                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                    Copied
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-3.5 h-3.5" />
-                                    Copy
-                                  </>
-                                )}
-                              </button>
-
-                              {/* Listen */}
-                              <button
-                                type="button"
-                                onClick={() => toggleSpeakMessage(msg)}
-                                className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1 transition-colors"
-                              >
-                                {speakingId === msg.id ? (
-                                  <>
-                                    <VolumeX className="w-3.5 h-3.5 text-rose-600" />
-                                    Stop
-                                  </>
-                                ) : (
-                                  <>
-                                    <Volume2 className="w-3.5 h-3.5" />
-                                    Listen
-                                  </>
-                                )}
-                              </button>
-
-                              {isLastAssistant && (
-                                <button
-                                  type="button"
-                                  onClick={regenerateLast}
-                                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center gap-1 transition-colors"
-                                >
-                                  <RotateCcw className="w-3.5 h-3.5" />
-                                  Regenerate
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Smart Next-Step Chips */}
-                      {!isCurrentlyStreaming &&
-                        isLastAssistant &&
-                        msg.followUps &&
-                        msg.followUps.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {msg.followUps.map((f, fIdx) => (
-                              <button
-                                key={fIdx}
-                                type="button"
-                                onClick={() => sendPrompt(f)}
-                                className="text-left text-xs px-3 py-1.5 rounded-full bg-white hover:bg-purple-50 text-purple-900 border border-purple-200/80 hover:border-pink-300 font-semibold transition-all active:scale-95"
-                              >
-                                {f} →
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                    </div>
+                      <div className="mt-3 flex justify-end">
+                        <span className="w-8 h-8 rounded-full bg-white/95 border border-[#ECEAF6] text-[#5B4E8A] group-hover:text-[#7C3AED] group-hover:translate-x-0.5 flex items-center justify-center shadow-2xs transition-all">
+                          <ArrowRight className="w-4 h-4" />
+                        </span>
+                      </div>
+                    </motion.button>
                   );
                 })}
               </div>
-            )}
-            <div ref={scrollEndRef} />
-          </div>
+            </div>
+          ) : (
+            <div className="max-w-3xl w-full mx-auto py-5 space-y-6">
+              {activeMessages.map((msg, idx) => {
+                const isLastAssistant =
+                  msg.role === 'assistant' && idx === activeMessages.length - 1;
+                const isCurrentlyStreaming = isLastAssistant && isGenerating;
+
+                if (msg.role === 'user') {
+                  return (
+                    <div key={msg.id} className="flex justify-end">
+                      <div
+                        className="max-w-[88%] sm:max-w-[78%] rounded-2xl rounded-tr-md px-4 py-3 text-white shadow-md shadow-purple-700/15"
+                        style={{
+                          background:
+                            'linear-gradient(115deg, #5B21B6 0%, #7C3AED 52%, #DB2777 100%)',
+                        }}
+                      >
+                        {msg.images && msg.images.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-2.5">
+                            {msg.images.map((img, i) => (
+                              <img
+                                key={i}
+                                src={img.dataUrl}
+                                alt={img.name || 'Attachment'}
+                                className="w-24 h-24 object-cover rounded-xl border border-white/25"
+                              />
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-[14.5px] leading-relaxed whitespace-pre-wrap">
+                          {msg.content}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={msg.id} className="flex flex-col gap-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-xl bg-white border border-[#EAE6F7] shadow-2xs flex items-center justify-center shrink-0 p-1">
+                        <img
+                          src="/nikai-mark.png"
+                          alt=""
+                          aria-hidden="true"
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <span className="font-bold text-[15px] text-[#1D1936]">NikAI</span>
+                      {msg.model && (
+                        <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white/90 border border-[#EAE6F7] text-[#6D28D9]">
+                          {msg.model}
+                          {msg.latencyMs
+                            ? ` · ${(msg.latencyMs / 1000).toFixed(1)}s`
+                            : ''}
+                        </span>
+                      )}
+                    </div>
+
+                    {isCurrentlyStreaming && (
+                      <NikAIThinkingArena
+                        isStreaming
+                        modelName={liveModelName}
+                        thinkingText={liveThinkingText || msg.thinking}
+                      />
+                    )}
+
+                    {!isCurrentlyStreaming && msg.thinking && (
+                      <details className="rounded-xl bg-white/85 border border-[#E7E2F7] px-3.5 py-2 text-xs text-[#4C1D95]">
+                        <summary className="cursor-pointer font-semibold select-none flex items-center gap-1.5">
+                          <Brain className="w-3.5 h-3.5 text-[#7C3AED]" />
+                          View Astra Thought Process
+                        </summary>
+                        <p className="mt-2 whitespace-pre-wrap text-[#5B5675] leading-relaxed">
+                          {msg.thinking}
+                        </p>
+                      </details>
+                    )}
+
+                    {(msg.content || !isCurrentlyStreaming) && (
+                      <div className="rounded-2xl bg-white/95 backdrop-blur-md border border-[#EAE6F7] px-4 sm:px-5 py-4 shadow-[0_8px_28px_rgba(40,22,90,0.06)]">
+                        <AstaMarkdown
+                          content={msg.content}
+                          isStreaming={isCurrentlyStreaming}
+                        />
+
+                        {!isCurrentlyStreaming && msg.content && (
+                          <div className="mt-4 pt-3 border-t border-[#F1EFF9] flex flex-wrap items-center gap-1.5">
+                            {onInsertContent && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onInsertContent(msg.content);
+                                  toast.success('Inserted cleanly into your active Note!');
+                                }}
+                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-white flex items-center gap-1 shadow-xs transition-all active:scale-95"
+                                style={{
+                                  background:
+                                    'linear-gradient(90deg, #8B3DFF 0%, #EC4899 100%)',
+                                }}
+                              >
+                                <PlusCircle className="w-3.5 h-3.5" />
+                                Insert in Note
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              disabled={implementingId === msg.id}
+                              onClick={() => handleImplementNote(msg, false)}
+                              data-testid={`save-smart-note-${idx}`}
+                              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                                msg.savedNoteId
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : 'bg-[#F5F0FF] text-[#6D28D9] hover:bg-[#EDE4FF] border border-[#E2D4FC]'
+                              }`}
+                            >
+                              <BookmarkPlus className="w-3.5 h-3.5" />
+                              {msg.savedNoteId ? 'Saved Smart Note ✓' : 'Save Smart Note'}
+                            </button>
+
+                            <button
+                              type="button"
+                              disabled={implementingId === msg.id}
+                              onClick={() => handleImplementNote(msg, true)}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-pink-50 text-pink-700 hover:bg-pink-100 border border-pink-200/80 flex items-center gap-1 transition-colors"
+                            >
+                              <Feather className="w-3.5 h-3.5" />
+                              Open in Handwriting
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleMakeFlashcardsOnly(msg)}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200/80 flex items-center gap-1 transition-colors"
+                            >
+                              <Layers className="w-3.5 h-3.5" />
+                              Flashcards
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await navigator.clipboard.writeText(msg.content);
+                                setCopiedId(msg.id);
+                                setTimeout(() => setCopiedId(null), 1800);
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5E587D] hover:text-[#19162D] hover:bg-[#F5F3FB] flex items-center gap-1 transition-colors"
+                            >
+                              {copiedId === msg.id ? (
+                                <>
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                  Copied
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3.5 h-3.5" />
+                                  Copy
+                                </>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => toggleSpeakMessage(msg)}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5E587D] hover:text-[#19162D] hover:bg-[#F5F3FB] flex items-center gap-1 transition-colors"
+                            >
+                              {speakingId === msg.id ? (
+                                <>
+                                  <VolumeX className="w-3.5 h-3.5 text-rose-600" />
+                                  Stop
+                                </>
+                              ) : (
+                                <>
+                                  <Volume2 className="w-3.5 h-3.5" />
+                                  Listen
+                                </>
+                              )}
+                            </button>
+
+                            {isLastAssistant && (
+                              <button
+                                type="button"
+                                onClick={regenerateLast}
+                                className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5E587D] hover:text-[#19162D] hover:bg-[#F5F3FB] flex items-center gap-1 transition-colors"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                Regenerate
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {!isCurrentlyStreaming &&
+                      isLastAssistant &&
+                      msg.followUps &&
+                      msg.followUps.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {msg.followUps.map((f, fIdx) => (
+                            <button
+                              key={fIdx}
+                              type="button"
+                              onClick={() => sendPrompt(f)}
+                              className="text-left text-xs px-3.5 py-1.5 rounded-full bg-white/90 hover:bg-white text-[#4C1D95] border border-[#E5DDFB] hover:border-[#C084FC] font-medium transition-all active:scale-95"
+                            >
+                              {f} →
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div ref={scrollEndRef} />
         </div>
 
-        {/* Sticky Bottom Unified NikAI Composer */}
-        <div className="px-3 sm:px-6 pb-3 pt-2 bg-gradient-to-t from-[#FAF8FF] via-[#FAF8FF] to-transparent shrink-0">
-          <div className="max-w-3xl mx-auto">
-            {/* Active Note & Image Attachment Pills */}
+        {/* Floating Pill NikAI Composer */}
+        <div className="px-4 sm:px-8 pb-5 pt-2 shrink-0 z-20">
+          <div className="max-w-[780px] mx-auto">
             {(attachedNote || pendingImages.length > 0) && (
-              <div className="flex flex-wrap items-center gap-2 mb-2">
+              <div className="flex flex-wrap items-center gap-2 mb-2 px-1">
                 {attachedNote && (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100/90 border border-purple-200 text-xs font-bold text-purple-900">
-                    <FileText className="w-3.5 h-3.5 text-purple-600" />
-                    <span className="max-w-[200px] truncate">{attachedNote.title}</span>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 border border-[#DFD7FA] text-xs font-semibold text-[#5B21B6] shadow-2xs">
+                    <FileText className="w-3.5 h-3.5 text-[#7C3AED]" />
+                    <span className="max-w-[220px] truncate">{attachedNote.title}</span>
                     <button
                       type="button"
                       onClick={() => setAttachedNote(null)}
-                      className="ml-0.5 text-purple-500 hover:text-purple-950"
+                      aria-label="Detach note"
+                      className="ml-0.5 text-[#8B5CF6] hover:text-[#3B0764]"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -1587,14 +1798,15 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     <img
                       src={img.dataUrl}
                       alt={img.name || 'Preview'}
-                      className="w-12 h-12 rounded-xl object-cover border border-purple-300"
+                      className="w-12 h-12 rounded-xl object-cover border border-[#D8B4FE] shadow-xs"
                     />
                     <button
                       type="button"
                       onClick={() =>
                         setPendingImages((prev) => prev.filter((_, idx) => idx !== i))
                       }
-                      className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center absolute -top-1.5 -right-1.5"
+                      aria-label="Remove image"
+                      className="w-5 h-5 rounded-full bg-[#19162D] text-white flex items-center justify-center absolute -top-1.5 -right-1.5"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -1603,8 +1815,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
               </div>
             )}
 
-            {/* Main Composer Box */}
-            <div className="rounded-2xl bg-white border border-purple-200/90 shadow-lg shadow-purple-900/5 focus-within:border-purple-400 transition-colors p-2">
+            <div className="rounded-[26px] bg-white/95 backdrop-blur-md border border-[#EAE6F6] shadow-[0_14px_40px_rgba(49,28,99,0.10)] focus-within:border-[#C4B5FD] transition-all px-5 pt-3.5 pb-3">
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -1620,12 +1831,12 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     sendPrompt();
                   }
                 }}
-                placeholder={currentModeDef.placeholder}
-                className="w-full resize-none border-0 bg-transparent px-2.5 py-2 text-[14px] text-slate-900 placeholder:text-slate-400 focus:outline-none max-h-44"
+                placeholder="Ask NikAI anything..."
+                className="w-full resize-none border-0 bg-transparent px-0.5 py-1.5 text-[15px] text-[#19162D] placeholder:text-[#9893B0] focus:outline-none max-h-44"
               />
 
-              <div className="flex items-center justify-between gap-2 pt-1 px-1">
-                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+              <div className="flex items-center justify-between gap-2 pt-2">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -1638,70 +1849,118 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     }}
                   />
 
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    title="Attach photo / homework diagram"
-                    className="p-2 rounded-xl text-purple-600 hover:text-purple-900 hover:bg-purple-50 active:scale-95 transition-all"
-                  >
-                    <ImageIcon className="w-4 h-4" />
-                  </button>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setAttachMenuOpen((v) => !v)}
+                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13.5px] font-medium text-[#585275] hover:text-[#6D28D9] hover:bg-[#F6F3FD] transition-colors"
+                    >
+                      <Paperclip className="w-4 h-4 text-[#7C7699]" />
+                      <span>Attach</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      loadNotesForPicker();
-                      setNotePickerOpen(true);
-                    }}
-                    title="Attach any NikNote page as context"
-                    className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-purple-700 hover:bg-purple-50 flex items-center gap-1 active:scale-95 transition-all"
-                  >
-                    <Paperclip className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Attach Note</span>
-                  </button>
+                    {attachMenuOpen && (
+                      <div
+                        className="absolute bottom-10 left-0 w-52 rounded-2xl bg-white border border-[#EAE6F7] shadow-xl p-1.5 z-50 text-xs"
+                        onMouseLeave={() => setAttachMenuOpen(false)}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAttachMenuOpen(false);
+                            fileInputRef.current?.click();
+                          }}
+                          className="w-full px-3 py-2 rounded-xl text-left font-medium text-[#2A2545] hover:bg-[#F6F3FD] flex items-center gap-2"
+                        >
+                          <ImageIcon className="w-4 h-4 text-[#8B3DFF]" />
+                          <span>Upload Image / Diagram</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAttachMenuOpen(false);
+                            loadNotesForPicker();
+                            setNotePickerOpen(true);
+                          }}
+                          className="w-full px-3 py-2 rounded-xl text-left font-medium text-[#2A2545] hover:bg-[#F6F3FD] flex items-center gap-2"
+                        >
+                          <FileText className="w-4 h-4 text-[#EC4899]" />
+                          <span>Attach NikNote Page</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <span className="h-4 w-px bg-[#E8E5F3]" aria-hidden="true" />
 
                   <button
                     type="button"
                     onClick={toggleVoiceInput}
-                    title="Voice input"
-                    className={`p-2 rounded-xl transition-all active:scale-95 ${
+                    className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13.5px] font-medium transition-colors ${
                       listening
                         ? 'bg-rose-50 text-rose-600 animate-pulse'
-                        : 'text-purple-600 hover:text-purple-900 hover:bg-purple-50'
+                        : 'text-[#585275] hover:text-[#6D28D9] hover:bg-[#F6F3FD]'
                     }`}
                   >
-                    {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    {listening ? (
+                      <MicOff className="w-4 h-4 text-rose-600" />
+                    ) : (
+                      <Mic className="w-4 h-4 text-[#7C7699]" />
+                    )}
+                    <span>{listening ? 'Listening…' : 'Voice'}</span>
                   </button>
 
-                  {/* Quick Mode Cycle Button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextIdx =
-                        (MODE_DEFS.findIndex((m) => m.id === mode) + 1) % MODE_DEFS.length;
-                      setMode(MODE_DEFS[nextIdx].id);
-                    }}
-                    title="Switch NikAI Specialist Mode"
-                    className="px-2.5 py-1 rounded-full text-[11px] font-bold border border-purple-200 bg-purple-50/70 text-purple-900 flex items-center gap-1 shrink-0"
-                  >
-                    <span
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{ backgroundColor: currentModeDef.badgeColor }}
-                    />
-                    {currentModeDef.shortLabel}
-                  </button>
+                  <span className="hidden sm:inline-block h-4 w-px bg-[#E8E5F3]" aria-hidden="true" />
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setComposerModelMenuOpen((v) => !v)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F6F4FC] hover:bg-[#EFEAFB] border border-[#E7E2F6] text-[12.5px] font-semibold text-[#312C4D] transition-colors"
+                    >
+                      <SingleFourPointSparkle size={13} />
+                      <span>{selectedModelDef.label}</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-[#7A7495]" />
+                    </button>
+
+                    {composerModelMenuOpen && (
+                      <div
+                        className="absolute bottom-10 left-0 w-56 rounded-2xl bg-white border border-[#EAE6F7] shadow-xl p-1.5 z-50 text-xs"
+                        onMouseLeave={() => setComposerModelMenuOpen(false)}
+                      >
+                        {MODEL_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => {
+                              setModelChoice(opt.id);
+                              setComposerModelMenuOpen(false);
+                            }}
+                            className={`w-full px-3 py-2 rounded-xl text-left flex items-center justify-between ${
+                              modelChoice === opt.id
+                                ? 'bg-[#F3ECFF] text-[#5B21B6] font-bold'
+                                : 'text-[#312D4B] hover:bg-[#F8F6FE] font-medium'
+                            }`}
+                          >
+                            <span>{opt.label}</span>
+                            {modelChoice === opt.id && (
+                              <Check className="w-3.5 h-3.5 text-[#7C3AED]" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Send or Stop Button */}
                 {isGenerating ? (
                   <button
                     type="button"
                     onClick={stopGeneration}
                     aria-label="Stop generation"
-                    className="h-9 px-3.5 rounded-xl bg-rose-600 text-white text-xs font-bold flex items-center gap-1.5 hover:bg-rose-700 active:scale-95 shrink-0"
+                    className="w-11 h-11 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center shadow-md active:scale-95 transition-all shrink-0"
                   >
-                    <Square className="w-3 h-3 fill-current" />
-                    Stop
+                    <Square className="w-3.5 h-3.5 fill-current" />
                   </button>
                 ) : (
                   <button
@@ -1709,14 +1968,13 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     onClick={() => sendPrompt()}
                     disabled={!input.trim() && pendingImages.length === 0}
                     aria-label="Send message to NikAI"
-                    className="h-9 px-4 rounded-xl text-white text-xs font-bold flex items-center gap-1.5 disabled:opacity-40 active:scale-95 transition-all shrink-0 shadow-md shadow-purple-500/20"
+                    className="w-11 h-11 rounded-full text-white flex items-center justify-center disabled:opacity-55 hover:scale-[1.03] active:scale-95 transition-all shrink-0 shadow-[0_8px_20px_rgba(147,51,234,0.34)]"
                     style={{
                       background:
-                        'linear-gradient(100deg, #5B1BC9 0%, #8B1EE0 45%, #DB2777 82%, #F46B55 100%)',
+                        'linear-gradient(135deg, #8B3DFF 0%, #CE4CE2 52%, #FF9356 100%)',
                     }}
                   >
-                    <Send className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Ask NikAI</span>
+                    <ArrowUp className="w-5 h-5 stroke-[2.4]" />
                   </button>
                 )}
               </div>
@@ -1728,7 +1986,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       {/* Persistent Cross-Session Memory Vault Modal */}
       {memoryOpen && (
         <div
-          className="fixed inset-0 z-50 bg-[#1E103C]/50 backdrop-blur-xs flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-[#1E103C]/45 backdrop-blur-xs flex items-center justify-center p-4"
           onClick={() => setMemoryOpen(false)}
         >
           <div
@@ -1739,14 +1997,14 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
               className="p-4 text-white flex items-center justify-between"
               style={{
                 background:
-                  'linear-gradient(100deg, #4C1D95 0%, #7E22CE 48%, #DB2777 88%, #F46B55 100%)',
+                  'linear-gradient(95deg, #6D28D9 0%, #B845F5 48%, #EC4899 84%, #FF965A 100%)',
               }}
             >
               <div className="flex items-center gap-2.5">
-                <Brain className="w-5 h-5 text-amber-300" />
+                <Brain className="w-5 h-5 text-white" />
                 <div>
                   <h3 className="text-sm font-extrabold">NikAI Cross-Session Memory Vault</h3>
-                  <p className="text-[11px] text-white/80">
+                  <p className="text-[11px] text-white/85">
                     NikAI remembers your profile, goals & past sessions automatically
                   </p>
                 </div>
@@ -1761,7 +2019,6 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             </div>
 
             <div className="p-4 overflow-y-auto space-y-4 text-xs">
-              {/* Pin a Custom Memory */}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -1784,14 +2041,13 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                   type="submit"
                   className="px-3.5 py-2 rounded-xl text-white font-bold text-xs shrink-0"
                   style={{
-                    background: 'linear-gradient(100deg, #5B1BC9, #DB2777)',
+                    background: 'linear-gradient(95deg, #7C3AED, #EC4899)',
                   }}
                 >
                   Remember
                 </button>
               </form>
 
-              {/* Auto-Learned Profile Pills */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div className="p-2.5 rounded-xl bg-purple-50/80 border border-purple-200/70">
                   <div className="text-[10px] font-bold uppercase text-purple-500">Name</div>
@@ -1813,7 +2069,6 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 </div>
               </div>
 
-              {/* Pinned Facts */}
               <div>
                 <div className="font-bold text-slate-700 mb-1.5">
                   Pinned Facts & Preferences ({memoryState.facts.length})
@@ -1843,7 +2098,6 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 )}
               </div>
 
-              {/* Past Session Summaries */}
               {memoryState.sessionDigests.length > 0 && (
                 <div>
                   <div className="font-bold text-slate-700 mb-1.5">
@@ -1878,6 +2132,35 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Optional Thinking Mini-Game Modal */}
+      {arcadeModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-[#1E103C]/45 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setArcadeModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-3xl bg-white p-4 shadow-2xl border border-purple-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-xs font-bold text-[#4C1D95]">NikAI Focus Arcade</span>
+              <button
+                type="button"
+                onClick={() => setArcadeModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <NikAIThinkingArena
+              isStreaming={isGenerating}
+              forceOpen
+              modelName={liveModelName}
+            />
           </div>
         </div>
       )}
@@ -2017,7 +2300,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 }}
                 className="px-4 py-2 rounded-xl text-white text-xs font-bold"
                 style={{
-                  background: 'linear-gradient(100deg, #5B1BC9, #DB2777)',
+                  background: 'linear-gradient(95deg, #7C3AED, #EC4899)',
                 }}
               >
                 Save Keys

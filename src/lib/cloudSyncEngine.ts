@@ -51,6 +51,17 @@ let currentSnapshot: SyncSnapshot = {
 
 const listeners = new Set<(snap: SyncSnapshot) => void>();
 
+export const CLOUD_SYNC_EVENT = 'niknote:local-data-changed';
+
+export function notifyLocalDataChanged() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.dispatchEvent(new CustomEvent(CLOUD_SYNC_EVENT));
+  } catch {
+    // ignore in non-DOM test environments
+  }
+}
+
 export function updateSyncSnapshot(patch: Partial<SyncSnapshot>) {
   currentSnapshot = { ...currentSnapshot, ...patch };
   if (patch.lastSyncedAt && typeof window !== 'undefined') {
