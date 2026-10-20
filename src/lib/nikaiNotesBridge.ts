@@ -7,6 +7,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Block, BlockType, createBlock } from '@/types/block';
+import { isCloudUserId, notifyLocalDataChanged } from '@/lib/cloudSyncEngine';
 
 export interface SavedNikNoteResult {
   notebookId: string;
@@ -249,8 +250,8 @@ export async function implementNikAINote(params: {
     // ignore quota issues
   }
 
-  // 2. Also sync to Supabase Cloud Notebooks if user is signed in
-  if (params.userId) {
+  // 2. Also sync to Supabase Cloud Notebooks if user has a valid Cloud UUID
+  if (isCloudUserId(params.userId)) {
     try {
       const { data: nb } = await supabase
         .from('notebooks')
@@ -266,6 +267,14 @@ export async function implementNikAINote(params: {
         .single();
 
       if (nb?.id) {
+        try {
+          const mapRaw = localStorage.getItem('niknote.sync.notebook_map.v1');
+          const mapObj = mapRaw ? JSON.parse(mapRaw) : {};
+          mapObj[notebookId] = nb.id;
+          localStorage.setItem('niknote.sync.notebook_map.v1', JSON.stringify(mapObj));
+        } catch {
+          // ignore
+        }
         notebookId = nb.id;
         await supabase.from('pages').insert({
           notebook_id: nb.id,
@@ -278,6 +287,8 @@ export async function implementNikAINote(params: {
     } catch {
       // local copy already persisted safely
     }
+  } else {
+    notifyLocalDataChanged();
   }
 
   // 3. Also auto-build study flashcards in the background

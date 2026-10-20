@@ -57,6 +57,7 @@ import {
   isCloudUserId,
   PC_ACTIVE_META_KEY,
   useCloudSyncStatus,
+  notifyLocalDataChanged,
   updateSyncSnapshot,
 } from '@/lib/cloudSyncEngine';
 import { usePremium, PremiumFeature } from '@/hooks/usePremium';
@@ -323,10 +324,44 @@ const Index = () => {
           errorMessage: err instanceof Error ? err.message : 'Sync paused',
         });
       }
-    }, 2200);
+    }, 650);
 
     return () => window.clearTimeout(timer);
   }, [pages, noteTitle, settings.pageStyle, settings.pageSize, isMobile, user?.id, cloudNotebookId]);
+
+  // Mobile Editor Auto-Save (Local + Cloud): automatically persists typed blocks in 700ms so users never lose notes!
+  useEffect(() => {
+    const isEditorOpen = new URLSearchParams(search).has('editor');
+    if (!isMobile || !isEditorOpen) return;
+    const nonEmptyBlocks = blockEditor.blocks.some((b) => (b.content || '').trim().length > 0);
+    if (!nonEmptyBlocks && !noteTitle.trim()) return;
+
+    const timer = window.setTimeout(() => {
+      try {
+        const localRaw = localStorage.getItem('niknote.mobile.notebooks.v1');
+        const list: any[] = localRaw ? JSON.parse(localRaw) : [];
+        const id = cloudNotebookId || `local-${Date.now()}`;
+        if (!cloudNotebookId) setCloudNotebookId(id);
+        const now = new Date().toISOString();
+        const entry = {
+          id,
+          title: noteTitle || 'Untitled Note',
+          blocks: blockEditor.blocks,
+          page_style: settings.pageStyle,
+          tags: ['Notes'],
+          updated_at: now,
+        };
+        const idx = list.findIndex((item) => item.id === id);
+        const next = idx >= 0 ? list.map((item, i) => (i === idx ? entry : item)) : [entry, ...list];
+        localStorage.setItem('niknote.mobile.notebooks.v1', JSON.stringify(next));
+        notifyLocalDataChanged();
+      } catch {
+        // ignore quota errors
+      }
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [isMobile, search, blockEditor.blocks, noteTitle, settings.pageStyle, cloudNotebookId]);
 
   // Auto-trigger onboarding ONLY for permanent registered accounts (never hijack Guest or PC Studio load!)
   useEffect(() => {
@@ -474,6 +509,7 @@ const Index = () => {
         }
 
         setCloudNotebookId(id);
+        notifyLocalDataChanged();
         toast.success('Note saved on this device ✨');
         return;
       }
@@ -1088,8 +1124,8 @@ const Index = () => {
                   data-testid="cloud-sync-pill"
                   onClick={async () => {
                     if (!isCloudUserId(user?.id)) {
-                      const g = await signInAsGuest();
-                      if (g.error) {
+                      const g = await signInAsGuest(undefined, { allowOfflineFallback: true });
+                      if (g.error || g.offline) {
                         toast.info('Saved safely on this device — will sync automatically when online.');
                         return;
                       }
@@ -1127,21 +1163,15 @@ const Index = () => {
                   <button
                     onClick={() => navigate('/ai')}
                     data-testid="pc-open-nikai-btn"
-                    className="relative group flex items-center gap-2 h-9 px-5 rounded-full text-white shadow-[0_6px_22px_rgba(139,30,224,0.38)] hover:shadow-[0_8px_28px_rgba(219,39,119,0.52)] transition-all"
-                    style={{
-                      background: 'linear-gradient(100deg, #5B1BC9 0%, #8B1EE0 42%, #DB2777 80%, #F46B55 100%)',
-                    }}
+                    className="relative group flex items-center gap-2 h-9 pl-3 pr-4 rounded-full bg-white hover:bg-purple-50/90 text-[#19162B] border border-purple-200/90 shadow-[0_6px_22px_rgba(138,63,252,0.22)] hover:shadow-[0_8px_28px_rgba(236,72,153,0.32)] transition-all"
                   >
-                    <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                    <span
-                      style={{
-                        fontFamily: "'Dancing Script', 'Caveat', cursive",
-                        fontWeight: 700,
-                        fontSize: 19,
-                        lineHeight: 1,
-                        letterSpacing: '-0.01em',
-                      }}
-                    >
+                    <img
+                      src="/nikai-mark.png"
+                      alt=""
+                      aria-hidden="true"
+                      className="h-5 w-auto object-contain select-none"
+                    />
+                    <span className="font-bold text-[14px] tracking-tight bg-gradient-to-r from-[#241A5E] via-[#6D28D9] to-[#EC4899] bg-clip-text text-transparent">
                       NikAI
                     </span>
                   </button>

@@ -4,7 +4,7 @@
 // Never serves stale JS/CSS bundles on mobile browsers.
 // ============================================================
 
-const CACHE_VERSION = 'v6.0.0';
+const CACHE_VERSION = 'v8.0.0';
 const SHELL_CACHE = `niknote-shell-${CACHE_VERSION}`;
 
 const SHELL_URLS = [

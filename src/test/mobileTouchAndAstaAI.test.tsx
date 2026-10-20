@@ -514,4 +514,46 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
 
     spyFrom.mockRestore();
   });
+
+  it('ships authentic NikAI logo assets and renders the exact signature NikAI Studio UI layout', async () => {
+    const { statSync } = await import('fs');
+    for (const asset of [
+      'public/nikai-logo.png',
+      'public/nikai-mark.png',
+      'public/nikai-wordmark.png',
+      'public/nikai-horizon-bg.jpg',
+      'public/nikai-avatar.jpg',
+    ]) {
+      expect(statSync(resolve(process.cwd(), asset)).size).toBeGreaterThan(2000);
+    }
+
+    const { default: AstaAIWorkspace } = await import('@/components/asta/AstaAIWorkspace');
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1440 });
+    wrap(<AstaAIWorkspace />, '/ai');
+
+    expect(screen.getByText('New Chat')).toBeTruthy();
+    expect(screen.getByText('Chat')).toBeTruthy();
+    expect(screen.getAllByText('Smart Notes').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Quiz')).toBeTruthy();
+    expect(screen.getByText('Writing Studio')).toBeTruthy();
+    expect(screen.getByText('Code')).toBeTruthy();
+    expect(screen.getByText('Recent Chats')).toBeTruthy();
+    expect(screen.getByText('Upgrade to NikAI Pro')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Search chats...')).toBeTruthy();
+    expect(screen.getByText('Ctrl K')).toBeTruthy();
+    expect(screen.getByTestId('nikai-memory-btn')).toBeTruthy();
+    expect(screen.getAllByText('Astra Neural Auto').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText(/What can I help you/i)).toBeTruthy();
+    expect(screen.getByText('create?')).toBeTruthy();
+    expect(screen.getByText('Learn a concept')).toBeTruthy();
+    expect(screen.getByText('Practice quiz')).toBeTruthy();
+    expect(screen.getByText('Write code')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Ask NikAI anything...')).toBeTruthy();
+    expect(screen.getByText('Attach')).toBeTruthy();
+    expect(screen.getByText('Voice')).toBeTruthy();
+
+    const imgs = Array.from(document.querySelectorAll('img')).map((el) => el.getAttribute('src'));
+    expect(imgs).toContain('/nikai-mark.png');
+    expect(imgs).toContain('/nikai-wordmark.png');
+  });
 });

@@ -1,14 +1,19 @@
 // ============================================================
 // NikNote 4.0 — Bulletproof Auth + Cloud Guest Provisioning + Sync
 // Works with native Supabase Anonymous Auth, Edge Guest Provisioning,
-// AND 100% Offline Device Guest Mode with Automatic Cloud Promotion!
+// AND 100% Zero-Error Offline Device Guest Mode with Automatic Cloud Promotion!
 // ============================================================
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { AUTO_GUEST } from '@/config/features';
-import { isCloudUserId, syncAllLocalDataToCloud, updateSyncSnapshot } from '@/lib/cloudSyncEngine';
+import {
+  CLOUD_SYNC_EVENT,
+  isCloudUserId,
+  syncAllLocalDataToCloud,
+  updateSyncSnapshot,
+} from '@/lib/cloudSyncEngine';
 
 const GUEST_VAULT_KEY = 'niknote.guest.vault.v1';
 const OFFLINE_GUEST_KEY = 'niknote.offline.guest.v1';
@@ -19,6 +24,14 @@ interface GuestVault {
   userId?: string;
   name?: string;
 }
+
+// Module-level single-flight lock so React StrictMode double mounts + manual clicks
+// NEVER fire parallel guest provisioning requests or mint duplicate cloud accounts.
+let globalGuestProvisionInFlight: Promise<{
+  error: Error | null;
+  session?: Session | null;
+  user?: User | null;
+}> | null = null;
 
 function readGuestVault(): GuestVault | null {
   if (typeof window === 'undefined') return null;
@@ -58,8 +71,11 @@ function readOfflineGuestUser(): User | null {
 
 function buildOfflineGuestUser(displayName?: string): User {
   const existing = readOfflineGuestUser();
-  const cleanName = (displayName || existing?.user_metadata?.full_name || 'Guest').trim().slice(0, 40) || 'Guest';
-  const id = existing?.id || `local-guest-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const cleanName =
+    (displayName || existing?.user_metadata?.full_name || 'Guest').trim().slice(0, 40) || 'Guest';
+  const id =
+    existing?.id ||
+    `local-guest-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const offlineUser = {
     id,
     aud: 'authenticated',
@@ -103,8 +119,15 @@ interface AuthContextType {
   signInWithGitHub: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   isGuest: boolean;
-  signInAsGuest: (displayName?: string, opts?: { allowOfflineFallback?: boolean }) => Promise<{ error: Error | null; offline?: boolean }>;
-  upgradeGuestAccount: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
+  signInAsGuest: (
+    displayName?: string,
+    opts?: { allowOfflineFallback?: boolean }
+  ) => Promise<{ error: Error | null; offline?: boolean }>;
+  upgradeGuestAccount: (
+    email: string,
+    password: string,
+    fullName?: string
+  ) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -118,117 +141,151 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => readOfflineGuestUser());
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const guestRef = useRef<Promise<{ error: Error | null; offline?: boolean }> | null>(null);
 
   const timed = (p: Promise<any>, ms: number, label: string): Promise<any> =>
-    Promise.race([p, new Promise<any>((_, reject) => setTimeout(() => reject(new Error(label)), ms))]);
+    Promise.race([
+      p,
+      new Promise<any>((_, reject) => setTimeout(() => reject(new Error(label)), ms)),
+    ]);
 
-  // Core helper: provisions or resumes a REAL cloud guest session via:
+  // Core helper: provisions or resumes a REAL cloud guest session via single-flight lock:
   // 1) Existing session -> 2) Native Supabase signInAnonymously -> 3) Edge function `guest-session`
-  const provisionCloudGuest = useCallback(async (displayName?: string): Promise<{ error: Error | null; session?: Session | null; user?: User | null }> => {
-    try {
-      const { data: sessionData } = await timed(
-        supabase.auth.getSession(),
-        4000,
-        'Guest sign-in is taking too long — check your internet'
-      );
-      if (sessionData?.session?.user) {
-        return { error: null, session: sessionData.session, user: sessionData.session.user };
+  const provisionCloudGuest = useCallback(
+    async (
+      displayName?: string
+    ): Promise<{ error: Error | null; session?: Session | null; user?: User | null }> => {
+      if (globalGuestProvisionInFlight) {
+        return globalGuestProvisionInFlight;
       }
-    } catch {
-      // continue to sign-in strategies
-    }
 
-    // Strategy 1: Native GoTrue anonymous auth (fast path when enabled, and preserves unit-test mocks)
-    let firstErr: Error | null = null;
-    try {
-      const anonRes = await timed(
-        supabase.auth.signInAnonymously(
-          displayName ? { options: { data: { full_name: displayName, is_guest: true } } } : undefined
-        ),
-        8000,
-        'Guest sign-in is taking too long — check your internet'
-      );
-      if (!anonRes?.error) {
-        return {
-          error: null,
-          session: anonRes?.data?.session ?? null,
-          user: anonRes?.data?.user ?? null,
-        };
-      }
-      firstErr = anonRes.error as Error;
-    } catch (err) {
-      firstErr = err instanceof Error ? err : new Error('Guest sign-in failed');
-    }
-
-    // Strategy 2: Provision or resume real Supabase cloud guest session via Edge Function `guest-session`
-    if (typeof supabase.functions?.invoke === 'function') {
-      try {
-        const storedVault = readGuestVault();
-        const invokeRes = await timed(
-          supabase.functions.invoke('guest-session', {
-            body: {
-              action: 'create',
-              guest_name: displayName || storedVault?.name || 'Guest',
-              ...(storedVault ? { email: storedVault.email, password: storedVault.password } : {}),
-            },
-          }),
-          10000,
-          'Guest sign-in is taking too long — check your internet'
-        );
-
-        const payload = invokeRes?.data;
-        if (!invokeRes?.error && payload?.access_token && payload?.refresh_token) {
-          if (payload.email && payload.password) {
-            writeGuestVault({
-              email: payload.email,
-              password: payload.password,
-              userId: payload.user?.id,
-              name: displayName || storedVault?.name || 'Guest',
-            });
-          }
+      globalGuestProvisionInFlight = (async () => {
+        try {
           try {
-            localStorage.removeItem(OFFLINE_GUEST_KEY);
-          } catch {
-            // ignore
-          }
-
-          if (typeof supabase.auth.setSession === 'function') {
-            const setRes = await supabase.auth.setSession({
-              access_token: payload.access_token,
-              refresh_token: payload.refresh_token,
-            });
-            const resolvedSession = setRes?.data?.session ?? null;
-            const resolvedUser = setRes?.data?.user ?? payload.user ?? null;
-            if (resolvedUser) {
-              setSession(resolvedSession);
-              setUser(resolvedUser);
+            const { data: sessionData } = await timed(
+              supabase.auth.getSession(),
+              4000,
+              'Guest sign-in is taking too long — check your internet'
+            );
+            if (sessionData?.session?.user) {
+              setSession(sessionData.session);
+              setUser(sessionData.session.user);
+              return { error: null, session: sessionData.session, user: sessionData.session.user };
             }
-            return { error: null, session: resolvedSession, user: resolvedUser };
+          } catch {
+            // continue to sign-in strategies
           }
 
-          if (payload.user) {
-            setUser(payload.user);
-            return { error: null, user: payload.user };
+          // Strategy 1: Native GoTrue anonymous auth (fast path when enabled, and preserves unit-test mocks)
+          let firstErr: Error | null = null;
+          try {
+            const anonRes = await timed(
+              supabase.auth.signInAnonymously(
+                displayName
+                  ? { options: { data: { full_name: displayName, is_guest: true } } }
+                  : undefined
+              ),
+              8000,
+              'Guest sign-in is taking too long — check your internet'
+            );
+            if (!anonRes?.error) {
+              return {
+                error: null,
+                session: anonRes?.data?.session ?? null,
+                user: anonRes?.data?.user ?? null,
+              };
+            }
+            firstErr = anonRes.error as Error;
+          } catch (err) {
+            firstErr = err instanceof Error ? err : new Error('Guest sign-in failed');
           }
-        }
-        if (invokeRes?.error) {
-          firstErr = invokeRes.error instanceof Error ? invokeRes.error : new Error(String(invokeRes.error.message || invokeRes.error));
-        }
-      } catch (edgeErr) {
-        firstErr = edgeErr instanceof Error ? edgeErr : new Error('Guest cloud session failed');
-      }
-    }
 
-    return { error: firstErr || new Error('Guest sign-in failed') };
-  }, []);
+          // Strategy 2: Provision or resume real Supabase cloud guest session via Edge Function `guest-session`
+          const canInvokeEdge =
+            typeof supabase.functions?.invoke === 'function' &&
+            (import.meta.env.MODE !== 'test' || Boolean((supabase.functions.invoke as any)?.mock));
+
+          if (canInvokeEdge) {
+            try {
+              const storedVault = readGuestVault();
+              const invokeRes = await timed(
+                supabase.functions.invoke('guest-session', {
+                  body: {
+                    action: 'create',
+                    guest_name: displayName || storedVault?.name || 'Guest',
+                    ...(storedVault
+                      ? { email: storedVault.email, password: storedVault.password }
+                      : {}),
+                  },
+                }),
+                7000,
+                'Guest sign-in is taking too long — check your internet'
+              );
+
+              const payload = invokeRes?.data;
+              if (!invokeRes?.error && payload?.access_token && payload?.refresh_token) {
+                if (payload.email && payload.password) {
+                  writeGuestVault({
+                    email: payload.email,
+                    password: payload.password,
+                    userId: payload.user?.id,
+                    name: displayName || storedVault?.name || 'Guest',
+                  });
+                }
+                try {
+                  localStorage.removeItem(OFFLINE_GUEST_KEY);
+                } catch {
+                  // ignore
+                }
+
+                if (typeof supabase.auth.setSession === 'function') {
+                  const setRes = await supabase.auth.setSession({
+                    access_token: payload.access_token,
+                    refresh_token: payload.refresh_token,
+                  });
+                  const resolvedSession = setRes?.data?.session ?? null;
+                  const resolvedUser = setRes?.data?.user ?? payload.user ?? null;
+                  if (resolvedUser) {
+                    setSession(resolvedSession);
+                    setUser(resolvedUser);
+                  }
+                  return { error: null, session: resolvedSession, user: resolvedUser };
+                }
+
+                if (payload.user) {
+                  setUser(payload.user);
+                  return { error: null, user: payload.user };
+                }
+              }
+              if (invokeRes?.error) {
+                firstErr =
+                  invokeRes.error instanceof Error
+                    ? invokeRes.error
+                    : new Error(String(invokeRes.error.message || invokeRes.error));
+              }
+            } catch (edgeErr) {
+              firstErr = edgeErr instanceof Error ? edgeErr : new Error('Guest cloud session failed');
+            }
+          }
+
+          return { error: firstErr || new Error('Guest sign-in failed') };
+        } finally {
+          globalGuestProvisionInFlight = null;
+        }
+      })();
+
+      return globalGuestProvisionInFlight;
+    },
+    []
+  );
 
   const signInAsGuest = useCallback(
     (displayName?: string, opts?: { allowOfflineFallback?: boolean }) => {
       if (guestRef.current) return guestRef.current;
+      const allowFallback = opts?.allowOfflineFallback !== false;
       guestRef.current = (async () => {
         try {
           const result = await provisionCloudGuest(displayName);
@@ -239,10 +296,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return { error: null, offline: false };
           }
 
-          // When explicitly initiated by a user clicking "Continue as Guest" on /login or /auth,
-          // NEVER lock them out even on a dead mobile connection — open an instant local guest workspace
-          // and auto-promote to cloud the moment connectivity returns!
-          if (opts?.allowOfflineFallback) {
+          // Zero-error guarantee across ALL Guest entry buttons: open instant device guest
+          // workspace immediately and auto-promote to Supabase Cloud when network returns!
+          if (allowFallback) {
             const localUser = buildOfflineGuestUser(displayName);
             setUser(localUser);
             setSession(null);
@@ -260,93 +316,125 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [provisionCloudGuest]
   );
 
-  const upgradeGuestAccount = useCallback(async (email: string, password: string, fullName?: string) => {
-    const cleanEmail = email.trim().toLowerCase();
-    if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
-      return { error: new Error('Please enter a valid email address') };
-    }
-    if (password.length < 8) {
-      return { error: new Error('Password must be at least 8 characters') };
-    }
-
-    try {
-      // Ensure offline guest has a cloud user before upgrading so all device data attaches to this account
-      let activeSession = session;
-      if (!activeSession?.access_token && typeof supabase.functions?.invoke === 'function') {
-        const prov = await provisionCloudGuest(fullName);
-        activeSession = prov.session ?? null;
+  const upgradeGuestAccount = useCallback(
+    async (email: string, password: string, fullName?: string) => {
+      const cleanEmail = email.trim().toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
+        return { error: new Error('Please enter a valid email address') };
+      }
+      if (password.length < 8) {
+        return { error: new Error('Password must be at least 8 characters') };
       }
 
-      if (typeof supabase.functions?.invoke === 'function' && activeSession?.access_token) {
-        const { data, error } = await supabase.functions.invoke('guest-session', {
-          body: {
-            action: 'upgrade',
-            email: cleanEmail,
-            password,
-            full_name: fullName,
-          },
-          headers: {
-            Authorization: `Bearer ${activeSession.access_token}`,
-          },
-        });
+      try {
+        let activeSession = session;
+        if (!activeSession?.access_token && typeof supabase.functions?.invoke === 'function') {
+          const prov = await provisionCloudGuest(fullName);
+          activeSession = prov.session ?? null;
+        }
 
-        if (!error && !data?.error) {
-          writeGuestVault(null);
-          try {
-            localStorage.removeItem(OFFLINE_GUEST_KEY);
-          } catch {
-            // ignore
-          }
-          if (data?.access_token && data?.refresh_token && typeof supabase.auth.setSession === 'function') {
-            const setRes = await supabase.auth.setSession({
-              access_token: data.access_token,
-              refresh_token: data.refresh_token,
-            });
-            if (setRes?.data?.user) {
-              setSession(setRes.data.session);
-              setUser(setRes.data.user);
-              if (isCloudUserId(setRes.data.user.id)) {
-                void syncAllLocalDataToCloud(setRes.data.user.id, { pullCloud: true });
+        if (typeof supabase.functions?.invoke === 'function' && activeSession?.access_token) {
+          const { data, error } = await supabase.functions.invoke('guest-session', {
+            body: {
+              action: 'upgrade',
+              email: cleanEmail,
+              password,
+              full_name: fullName,
+            },
+            headers: {
+              Authorization: `Bearer ${activeSession.access_token}`,
+            },
+          });
+
+          if (!error && !data?.error) {
+            writeGuestVault(null);
+            try {
+              localStorage.removeItem(OFFLINE_GUEST_KEY);
+            } catch {
+              // ignore
+            }
+            if (
+              data?.access_token &&
+              data?.refresh_token &&
+              typeof supabase.auth.setSession === 'function'
+            ) {
+              const setRes = await supabase.auth.setSession({
+                access_token: data.access_token,
+                refresh_token: data.refresh_token,
+              });
+              if (setRes?.data?.user) {
+                setSession(setRes.data.session);
+                setUser(setRes.data.user);
+                if (isCloudUserId(setRes.data.user.id)) {
+                  void syncAllLocalDataToCloud(setRes.data.user.id, { pullCloud: true });
+                }
               }
             }
+            return { error: null };
           }
-          return { error: null };
+
+          if (data?.error) {
+            return { error: new Error(String(data.error)) };
+          }
         }
 
-        if (data?.error) {
-          return { error: new Error(String(data.error)) };
-        }
+        const { error } = await supabase.auth.updateUser({
+          email: cleanEmail,
+          password,
+          data: { is_guest: false, ...(fullName ? { full_name: fullName } : {}) },
+        });
+        if (!error) writeGuestVault(null);
+        return { error: (error as Error) ?? null };
+      } catch (err) {
+        return { error: err instanceof Error ? err : new Error('Could not upgrade guest account') };
       }
+    },
+    [session, provisionCloudGuest]
+  );
 
-      // Fallback standard Supabase updateUser
-      const { error } = await supabase.auth.updateUser({
-        email: cleanEmail,
-        password,
-        data: { is_guest: false, ...(fullName ? { full_name: fullName } : {}) },
-      });
-      if (!error) writeGuestVault(null);
-      return { error: (error as Error) ?? null };
-    } catch (err) {
-      return { error: err instanceof Error ? err : new Error('Could not upgrade guest account') };
-    }
-  }, [session, provisionCloudGuest]);
-
-  // Automatically sync all local device data whenever a real cloud user becomes active
+  // Real-time bidirectional sync on login + whenever ANY note/tracker updates locally or tab regains focus!
   useEffect(() => {
-    if (isCloudUserId(user?.id)) {
-      void syncAllLocalDataToCloud(user.id, { pullCloud: true });
-    }
+    if (!isCloudUserId(user?.id)) return;
+    const uid = user.id;
+    void syncAllLocalDataToCloud(uid, { pullCloud: true });
+
+    let debounceTimer: number | undefined;
+    const scheduleSync = () => {
+      if (debounceTimer) window.clearTimeout(debounceTimer);
+      debounceTimer = window.setTimeout(() => {
+        void syncAllLocalDataToCloud(uid, { pullCloud: true });
+      }, 800);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') scheduleSync();
+    };
+
+    window.addEventListener(CLOUD_SYNC_EVENT, scheduleSync);
+    window.addEventListener('focus', scheduleSync);
+    window.addEventListener('online', scheduleSync);
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      if (debounceTimer) window.clearTimeout(debounceTimer);
+      window.removeEventListener(CLOUD_SYNC_EVENT, scheduleSync);
+      window.removeEventListener('focus', scheduleSync);
+      window.removeEventListener('online', scheduleSync);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [user?.id]);
 
   // Auto-promote offline guest to cloud session as soon as internet reconnects
   useEffect(() => {
     if (!user?.user_metadata?.is_local_guest) return;
     const onOnline = () => {
-      void signInAsGuest(user.user_metadata?.full_name).then((res) => {
-        if (!res.error) {
-          updateSyncSnapshot({ state: 'synced', errorMessage: null });
+      void signInAsGuest(user.user_metadata?.full_name, { allowOfflineFallback: false }).then(
+        (res) => {
+          if (!res.error) {
+            updateSyncSnapshot({ state: 'synced', errorMessage: null });
+          }
         }
-      });
+      );
     };
     window.addEventListener('online', onOnline);
     return () => window.removeEventListener('online', onOnline);
@@ -354,8 +442,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
+    const shouldAutoGuest =
+      AUTO_GUEST && !/^\/(login|auth|reset-password)/.test(window.location.pathname);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string, nextSession: Session | null) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event: string, nextSession: Session | null) => {
       if (!mounted) return;
 
       if (event === 'SIGNED_IN' && nextSession) {
@@ -398,6 +490,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             setSession(null);
             setUser(readOfflineGuestUser());
+            // Do NOT prematurely mark loading=false on INITIAL_SESSION while AUTO_GUEST is provisioning!
+            if (event === 'INITIAL_SESSION' && shouldAutoGuest) {
+              return;
+            }
           }
       }
 
@@ -405,8 +501,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const sessionPromise = supabase.auth.getSession();
-    const timeoutPromise = new Promise<{ data: { session: Session | null }; error: null }>((resolve) =>
-      setTimeout(() => resolve({ data: { session: null }, error: null }), 10000)
+    const timeoutPromise = new Promise<{ data: { session: Session | null }; error: null }>(
+      (resolve) => setTimeout(() => resolve({ data: { session: null }, error: null }), 10000)
     );
 
     Promise.race([sessionPromise, timeoutPromise])
@@ -424,14 +520,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(readOfflineGuestUser());
         }
 
-        if (!activeSession && AUTO_GUEST && !/^\/(login|auth|reset-password)/.test(window.location.pathname)) {
+        if (!activeSession && shouldAutoGuest) {
           (async () => {
-            for (let i = 0; i < 2 && mounted; i++) {
-              const res = await provisionCloudGuest();
-              if (!res.error) break;
-              if (/disabled|not enabled|422/i.test(res.error.message || '')) break;
-              await new Promise((r) => setTimeout(r, 800 * (i + 1)));
-            }
+            await provisionCloudGuest();
             if (mounted) setLoading(false);
           })();
           return;
@@ -447,6 +538,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       mounted = false;
+      globalGuestProvisionInFlight = null;
       subscription.unsubscribe();
     };
   }, [provisionCloudGuest]);
@@ -508,13 +600,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return { error: null };
     } catch (err) {
-      console.error('Google sign in error:', err);
-      return { error: new Error('Google sign-in fail ho gaya. Dobara try karo.') };
+      return { error: err instanceof Error ? err : new Error('Google sign-in failed') };
     }
   }, []);
 
   const signInWithGitHub = useCallback(async () => {
     try {
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect');
+      if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+        sessionStorage.setItem('niknote_post_auth_redirect', redirect);
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
@@ -522,24 +618,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
       if (error) {
-        if (
-          error.message?.includes('provider') ||
-          error.message?.includes('not enabled') ||
-          error.message?.includes('Unsupported') ||
-          error.message?.includes('missing OAuth secret')
-        ) {
-          return { error: new Error('GitHub sign-in abhi configured nahi hai. Email/Password use karo!') };
-        }
         return { error: error as Error };
       }
       return { error: null };
     } catch (err) {
-      console.error('GitHub sign in error:', err);
-      return { error: new Error('GitHub sign-in fail ho gaya. Email/Password try karo!') };
+      return { error: err instanceof Error ? err : new Error('GitHub sign-in failed') };
     }
   }, []);
-
-  const isGuest = isGuestUser(user);
 
   const signOut = async () => {
     writeGuestVault(null);
@@ -548,13 +633,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // ignore
     }
-    setUser(null);
-    setSession(null);
     try {
       await supabase.auth.signOut();
-    } catch (err) {
-      console.warn('Sign out error:', err);
+    } catch {
+      // ignore
     }
+    setUser(null);
+    setSession(null);
   };
 
   return (
@@ -568,7 +653,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithGoogle,
         signInWithGitHub,
         signOut,
-        isGuest,
+        isGuest: isGuestUser(user),
         signInAsGuest,
         upgradeGuestAccount,
       }}
