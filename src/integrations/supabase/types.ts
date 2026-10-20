@@ -114,30 +114,33 @@ export type Database = {
         Row: {
           category: string
           created_at: string
-          description: string
-          icon: string
+          description: string | null
+          icon: string | null
           id: string
           name: string
+          requirement: Json | null
           requirement_type: string
           requirement_value: number
         }
         Insert: {
           category?: string
           created_at?: string
-          description: string
-          icon?: string
+          description?: string | null
+          icon?: string | null
           id?: string
           name: string
-          requirement_type: string
+          requirement?: Json | null
+          requirement_type?: string
           requirement_value?: number
         }
         Update: {
           category?: string
           created_at?: string
-          description?: string
-          icon?: string
+          description?: string | null
+          icon?: string | null
           id?: string
           name?: string
+          requirement?: Json | null
           requirement_type?: string
           requirement_value?: number
         }
@@ -177,28 +180,37 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          currency: string
+          features: Json | null
           id: string
-          interval_count: number
-          interval_unit: string
-          price_inr: number
+          interval: string
+          is_active: boolean | null
+          name: string
+          price_cents: number
           updated_at: string
         }
         Insert: {
           code: string
           created_at?: string
+          currency?: string
+          features?: Json | null
           id?: string
-          interval_count?: number
-          interval_unit: string
-          price_inr: number
+          interval?: string
+          is_active?: boolean | null
+          name: string
+          price_cents?: number
           updated_at?: string
         }
         Update: {
           code?: string
           created_at?: string
+          currency?: string
+          features?: Json | null
           id?: string
-          interval_count?: number
-          interval_unit?: string
-          price_inr?: number
+          interval?: string
+          is_active?: boolean | null
+          name?: string
+          price_cents?: number
           updated_at?: string
         }
         Relationships: []
@@ -358,29 +370,65 @@ export type Database = {
       feature_usage: {
         Row: {
           created_at: string
+          feature: string
           feature_name: string
           id: string
           updated_at: string
           usage_count: number
           usage_month: string
+          used_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          feature?: string
           feature_name: string
           id?: string
           updated_at?: string
           usage_count?: number
           usage_month?: string
+          used_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          feature?: string
           feature_name?: string
           id?: string
           updated_at?: string
           usage_count?: number
           usage_month?: string
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      flashcard_reviews: {
+        Row: {
+          block_id: string
+          due_at: string
+          ease: number
+          interval_days: number
+          last_reviewed_at: string | null
+          reps: number
+          user_id: string
+        }
+        Insert: {
+          block_id: string
+          due_at?: string
+          ease?: number
+          interval_days?: number
+          last_reviewed_at?: string | null
+          reps?: number
+          user_id: string
+        }
+        Update: {
+          block_id?: string
+          due_at?: string
+          ease?: number
+          interval_days?: number
+          last_reviewed_at?: string | null
+          reps?: number
           user_id?: string
         }
         Relationships: []
@@ -534,6 +582,45 @@ export type Database = {
           updated_at?: string
           user_id?: string
           word_spacing?: number
+        }
+        Relationships: []
+      }
+      knowledge_documents: {
+        Row: {
+          content: string
+          created_at: string
+          document_type: string
+          embeddings: Json | null
+          id: string
+          metadata: Json
+          source: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          document_type?: string
+          embeddings?: Json | null
+          id: string
+          metadata?: Json
+          source?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          document_type?: string
+          embeddings?: Json | null
+          id?: string
+          metadata?: Json
+          source?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -702,6 +789,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           display_name: string | null
+          exam_board: string | null
           id: string
           onboarding_completed: boolean
           updated_at: string
@@ -712,6 +800,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          exam_board?: string | null
           id?: string
           onboarding_completed?: boolean
           updated_at?: string
@@ -722,6 +811,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          exam_board?: string | null
           id?: string
           onboarding_completed?: boolean
           updated_at?: string
@@ -760,30 +850,42 @@ export type Database = {
       referrals: {
         Row: {
           coins_awarded: number
-          created_at: string
+          created_at: string | null
           id: string
           premium_days_awarded: number
-          referred_user_id: string
+          referral_code: string
+          referred_email: string | null
+          referred_id: string | null
           referrer_id: string
+          reward_claimed: boolean | null
           reward_granted: boolean
+          status: string | null
         }
         Insert: {
           coins_awarded?: number
-          created_at?: string
+          created_at?: string | null
           id?: string
           premium_days_awarded?: number
-          referred_user_id: string
+          referral_code: string
+          referred_email?: string | null
+          referred_id?: string | null
           referrer_id: string
+          reward_claimed?: boolean | null
           reward_granted?: boolean
+          status?: string | null
         }
         Update: {
           coins_awarded?: number
-          created_at?: string
+          created_at?: string | null
           id?: string
           premium_days_awarded?: number
-          referred_user_id?: string
+          referral_code?: string
+          referred_email?: string | null
+          referred_id?: string | null
           referrer_id?: string
+          reward_claimed?: boolean | null
           reward_granted?: boolean
+          status?: string | null
         }
         Relationships: []
       }
@@ -958,8 +1060,11 @@ export type Database = {
         Row: {
           created_at: string
           current_period_end: string | null
+          current_period_start: string | null
           id: string
           plan_code: string
+          plan_id: string | null
+          razorpay_payment_id: string | null
           status: string
           updated_at: string
           user_id: string
@@ -967,8 +1072,11 @@ export type Database = {
         Insert: {
           created_at?: string
           current_period_end?: string | null
+          current_period_start?: string | null
           id?: string
           plan_code: string
+          plan_id?: string | null
+          razorpay_payment_id?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -976,8 +1084,11 @@ export type Database = {
         Update: {
           created_at?: string
           current_period_end?: string | null
+          current_period_start?: string | null
           id?: string
           plan_code?: string
+          plan_id?: string | null
+          razorpay_payment_id?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -1026,22 +1137,18 @@ export type Database = {
         }
         Returns: boolean
       }
-      claim_referral_bonus: {
-        Args: { p_referral_code: string; p_user_id: string }
-        Returns: Json
-      }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
+      award_badge: {
+        Args: { p_badge_id: string }
         Returns: boolean
       }
-      redeem_coins_for_premium: {
-        Args: { p_days?: number; p_user_id: string }
-        Returns: Json
+      get_or_create_referral_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
-      spin_daily_wheel: { Args: { p_user_id: string }; Returns: Json }
+      track_referral: {
+        Args: { p_referral_code: string }
+        Returns: boolean
+      }
       update_user_streak: { Args: { p_user_id: string }; Returns: Json }
     }
     Enums: {

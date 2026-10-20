@@ -68,7 +68,7 @@ export default function RoutineTracker() {
   const saveWellness = async (patch: Partial<Wellness>) => {
     const next = { ...w, ...patch };
     setWeek(p => ({ ...p, [today]: next }));
-    await db.from('daily_wellness').upsert({ user_id: user!.id, day: today, ...next });
+    await db.from('daily_wellness').upsert({ user_id: user!.id, day: today, ...next }, { onConflict: 'user_id,day' });
   };
 
   // Habits

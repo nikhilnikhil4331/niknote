@@ -5,6 +5,8 @@
 // Inspired by Dify's knowledge base + vector search
 // ============================================================
 
+import { supabase } from '@/integrations/supabase/client';
+
 export interface KnowledgeDocument {
   id: string;
   title: string;
@@ -406,20 +408,29 @@ export class KnowledgeEngine {
    */
   async saveToSupabase(userId: string): Promise<void> {
     try {
-      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || authData.user?.id !== userId) {
+        console.warn('Knowledge save skipped: the active account does not match the requested owner.');
+        return;
+      }
+
       const docs = Array.from(this.documents.values());
-      
       for (const doc of docs) {
         const { error } = await supabase
-          .from('notebook_pages')
+          .from('knowledge_documents')
           .upsert({
             id: doc.id,
-            notebook_id: `knowledge-${userId}`,
-            page_number: 0,
-            content: JSON.stringify(doc),
-            updated_at: new Date().toISOString(),
+            user_id: userId,
+            title: doc.title,
+            content: doc.content,
+            document_type: doc.type,
+            source: doc.source,
+            metadata: doc.metadata,
+            embeddings: doc.embeddings ?? null,
+            created_at: new Date(doc.createdAt || Date.now()).toISOString(),
+            updated_at: new Date(doc.updatedAt || Date.now()).toISOString(),
           }, { onConflict: 'id' });
-        
+
         if (error) console.warn('Knowledge save error:', error.message);
       }
     } catch (err) {
@@ -432,27 +443,44 @@ export class KnowledgeEngine {
    */
   async loadFromSupabase(userId: string): Promise<void> {
     try {
-      const { supabase } = await import('@/integrations/supabase/client');
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || authData.user?.id !== userId) {
+        console.warn('Knowledge load skipped: the active account does not match the requested owner.');
+        return;
+      }
+
       const { data, error } = await supabase
-        .from('notebook_pages')
-        .select('content')
-        .eq('notebook_id', `knowledge-${userId}`);
-      
-      if (error || !data) return;
-      
+        .from('knowledge_documents')
+        .select('id, title, content, document_type, source, metadata, embeddings, created_at, updated_at')
+        .eq('user_id', userId);
+
+      if (error || !data) {
+        if (error) console.warn('Knowledge Supabase load error:', error.message);
+        return;
+      }
+
       for (const row of data) {
         try {
-          const doc = JSON.parse(row.content) as KnowledgeDocument;
-          if (doc.id && doc.content) {
-            this.documents.set(doc.id, doc);
-          }
-        } catch { /* skip invalid */ }
+          const doc: KnowledgeDocument = {
+            id: row.id,
+            title: row.title,
+            content: row.content,
+            type: row.document_type,
+            source: row.source,
+            createdAt: Date.parse(row.created_at),
+            updatedAt: Date.parse(row.updated_at),
+            metadata: row.metadata as KnowledgeMetadata,
+            embeddings: row.embeddings ?? undefined,
+          };
+          if (doc.id && doc.content && doc.metadata) this.documents.set(doc.id, doc);
+        } catch {
+          // Ignore malformed rows without preventing the remaining documents from loading.
+        }
       }
-      
-      // Rebuild graph from loaded documents
-      for (const doc of this.documents.values()) {
-        this.updateKnowledgeGraph(doc);
-      }
+
+      // Rebuild the graph after merging loaded records to avoid duplicate nodes/edges.
+      this.graph = { nodes: [], edges: [] };
+      for (const doc of this.documents.values()) this.updateKnowledgeGraph(doc);
     } catch (err) {
       console.warn('Knowledge Supabase load failed:', err);
     }

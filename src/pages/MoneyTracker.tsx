@@ -64,7 +64,10 @@ export default function MoneyTracker() {
   }, [user, reload]);
 
   const saveSettings = async (patch: { currency?: string; monthly_budget?: number }) => {
-    await db.from('tracker_settings').upsert({ user_id: user!.id, currency, monthly_budget: budget, ...patch, updated_at: new Date().toISOString() });
+    await db.from('tracker_settings').upsert(
+      { user_id: user!.id, currency, monthly_budget: budget, ...patch, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' },
+    );
   };
 
   const addTx = async () => {

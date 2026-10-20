@@ -39,10 +39,10 @@ export function useBadges() {
         .eq('user_id', user.id);
 
       if (earned) {
-        setEarnedBadges(earned.map((e: any) => ({
-          ...e.badges,
-          earned_at: e.earned_at,
-        })));
+        const earnedRows = earned as Array<{ badges: Badge | null; earned_at: string }>;
+        setEarnedBadges(earnedRows.flatMap((entry) => entry.badges
+          ? [{ ...entry.badges, earned_at: entry.earned_at }]
+          : []));
       }
     }
 
@@ -56,15 +56,11 @@ export function useBadges() {
     const alreadyEarned = earnedBadges.find(b => b.id === badgeId);
     if (alreadyEarned) return false;
 
-    const { error } = await supabase
-      .from('user_badges')
-      .insert({ user_id: user.id, badge_id: badgeId });
+    const { data: awarded, error } = await supabase.rpc('award_badge', { p_badge_id: badgeId });
+    if (error || !awarded) return false;
 
-    if (!error) {
-      await fetchBadges();
-      return true;
-    }
-    return false;
+    await fetchBadges();
+    return true;
   }, [user, earnedBadges, fetchBadges]);
 
   const isBadgeEarned = useCallback((badgeId: string) => {

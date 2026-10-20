@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '@/integrations/supabase/client';
 
 interface FileUploadZoneProps {
   onContentExtracted: (content: string, fileName: string) => void;
@@ -50,11 +51,12 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
       }
 
       // Call OpenAI Vision for OCR with proper auth
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openai-brain`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/openai-brain`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           action: 'ocr_solve',

@@ -5,6 +5,8 @@
 // Architecture inspired by Dify's Beehive runtime
 // ============================================================
 
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, supabase } from '@/integrations/supabase/client';
+
 export type WorkflowNodeType =
   | 'start'           // Input node
   | 'end'             // Output node
@@ -376,12 +378,17 @@ export class WorkflowEngine {
     const prompt = this.interpolateTemplate(config.userPrompt || '', inputs);
     const systemPrompt = this.interpolateTemplate(config.systemPrompt || '', inputs);
 
-    // Call Supabase edge function or OpenAI API
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openai-brain`, {
+    // Send the signed-in user's JWT to the authenticated Supabase function.
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) throw new Error('Sign in to run AI workflow nodes');
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/openai-brain`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        Authorization: `Bearer ${accessToken}`,
+        apikey: SUPABASE_PUBLISHABLE_KEY,
       },
       body: JSON.stringify({
         messages: [

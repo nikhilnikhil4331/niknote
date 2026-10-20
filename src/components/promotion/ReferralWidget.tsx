@@ -1,14 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Gift, Copy, Check, MessageCircle, ExternalLink, X, Sparkles, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Gift, Copy, Check, MessageCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  getReferralStats,
-  getReferralWhatsAppMessage,
-  getReferralLink,
-  trackShare,
-} from '@/utils/referral';
 import { useAuth } from '@/contexts/AuthContext';
+import { useReferral } from '@/hooks/useReferral';
 import { toast } from 'sonner';
 
 export const ReferralWidget: React.FC<{ variant?: 'banner' | 'card' | 'compact' }> = ({
@@ -20,23 +15,30 @@ export const ReferralWidget: React.FC<{ variant?: 'banner' | 'card' | 'compact' 
     localStorage.getItem('niknote_referral_dismissed') === 'true'
   );
 
-  const userId = user?.id || 'guest';
-  const stats = getReferralStats(userId);
+  const { stats, shareViaWhatsApp, copyLink, loading } = useReferral();
 
   const handleCopyLink = async () => {
-    const link = getReferralLink(user?.id);
-    await navigator.clipboard.writeText(link);
+    if (!user || !stats.referralCode) {
+      toast.info('Sign in to get your personal referral code.');
+      return;
+    }
+    const copiedSuccessfully = await copyLink();
+    if (!copiedSuccessfully) {
+      toast.error('Could not copy your referral link.');
+      return;
+    }
     setCopied(true);
-    trackShare('copy');
     toast.success('Link copied! Ab share karo dosto ko 🎁');
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleWhatsApp = () => {
-    const msg = getReferralWhatsAppMessage(user?.id);
-    window.open(`https://wa.me/?text=${msg}`, '_blank');
-    trackShare('whatsapp');
-    toast.success('WhatsApp pe share karo! 3 dosto ke liye = Premium free 🎉');
+    if (!user || !stats.referralCode) {
+      toast.info('Sign in to get your personal referral code.');
+      return;
+    }
+    shareViaWhatsApp();
+    toast.success('Share your link to earn up to 7 Premium days per friend!');
   };
 
   const handleDismiss = () => {
@@ -52,22 +54,24 @@ export const ReferralWidget: React.FC<{ variant?: 'banner' | 'card' | 'compact' 
       <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-200/50">
         <div className="flex items-center gap-2 mb-2">
           <Gift className="w-4 h-4 text-purple-500" />
-          <span className="text-xs font-bold text-foreground">Invite & Earn Premium!</span>
+          <span className="text-xs font-bold text-foreground">Invite & Earn Premium Days!</span>
         </div>
         <p className="text-[10px] text-muted-foreground mb-2">
-          3 dosto ko bhejo = 1 month Premium free 🎁
+          Earn 7 days after each invited friend subscribes (up to 30 days/month).
         </p>
         <div className="flex gap-1.5">
           <button
             onClick={handleWhatsApp}
-            className="flex-1 py-1.5 rounded-lg bg-green-500 text-white text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-green-600 transition-colors"
+            disabled={!user || loading || !stats.referralCode}
+            className="flex-1 py-1.5 rounded-lg bg-green-500 text-white text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <MessageCircle className="w-3 h-3" />
             WhatsApp
           </button>
           <button
             onClick={handleCopyLink}
-            className="flex-1 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-gray-200 transition-colors"
+            disabled={!user || loading || !stats.referralCode}
+            className="flex-1 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
             {copied ? 'Copied!' : 'Copy Link'}
@@ -102,35 +106,33 @@ export const ReferralWidget: React.FC<{ variant?: 'banner' | 'card' | 'compact' 
             <Gift className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-foreground">Invite & Earn Premium! 🎁</h3>
-            <p className="text-sm text-muted-foreground">3 dosto ko batao = 1 month Premium FREE</p>
+            <h3 className="text-lg font-bold text-foreground">Invite friends, earn Premium days 🎁</h3>
+            <p className="text-sm text-muted-foreground">Earn up to 7 days for each friend after their first subscription (30 reward days/month max).</p>
           </div>
         </div>
 
-        {/* Progress */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-medium text-muted-foreground">
-              {stats.count} of {stats.count + stats.needed} friends invited
-            </span>
-            <span className="text-xs font-bold text-purple-600">
-              {stats.rewarded ? '🎉 Premium Unlocked!' : `${stats.needed} more to go`}
-            </span>
+        {/* Server-backed referral results */}
+        <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-muted/40 p-3">
+            <p className="text-xs text-muted-foreground">Friends referred</p>
+            <p className="text-lg font-bold text-foreground">{stats.totalReferrals}</p>
           </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.min((stats.count / 3) * 100, 100)}%` }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-            />
+          <div className="rounded-xl bg-muted/40 p-3">
+            <p className="text-xs text-muted-foreground">Premium days earned</p>
+            <p className="text-lg font-bold text-foreground">{stats.rewardDays}</p>
           </div>
+          {stats.pendingRewards > 0 && (
+            <p className="col-span-2 text-xs text-muted-foreground">
+              {stats.pendingRewards} referral{stats.pendingRewards === 1 ? '' : 's'} waiting for a first subscription.
+            </p>
+          )}
         </div>
 
         {/* Share Actions */}
         <div className="flex flex-col sm:flex-row gap-2">
           <Button
             onClick={handleWhatsApp}
+            disabled={!user || loading || !stats.referralCode}
             className="flex-1 h-11 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold gap-2"
           >
             <MessageCircle className="w-4 h-4" />
@@ -138,6 +140,7 @@ export const ReferralWidget: React.FC<{ variant?: 'banner' | 'card' | 'compact' 
           </Button>
           <Button
             onClick={handleCopyLink}
+            disabled={!user || loading || !stats.referralCode}
             variant="outline"
             className="flex-1 h-11 rounded-xl font-semibold gap-2"
           >
@@ -149,7 +152,7 @@ export const ReferralWidget: React.FC<{ variant?: 'banner' | 'card' | 'compact' 
         {/* Referral code */}
         <div className="mt-3 text-center">
           <span className="text-[11px] text-muted-foreground">
-            Your code: <span className="font-mono font-bold text-foreground">{stats.code}</span>
+            Your code: <span className="font-mono font-bold text-foreground">{loading ? 'Loading…' : stats.referralCode || 'Sign in to create a code'}</span>
           </span>
         </div>
       </div>

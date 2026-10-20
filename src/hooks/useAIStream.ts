@@ -1,9 +1,13 @@
 // ============================================================
-// useAIStream — client hook that streams text from the editor-ai edge function
-// Mobile-friendly: plain text stream, incremental updates, cancellable.
+// useAIStream — authenticated client for the Supabase editor-ai function.
+// The function streams plain text and keeps provider secrets server-side.
 // ============================================================
 import { useCallback, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  SUPABASE_PUBLISHABLE_KEY,
+  SUPABASE_URL,
+  supabase,
+} from "@/integrations/supabase/client";
 
 export type AIAction =
   | "improve" | "fix_grammar" | "shorten" | "lengthen"
@@ -23,16 +27,10 @@ export interface AIStreamState {
   error: string | null;
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const PUBLISHABLE_KEY = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  import.meta.env.VITE_SUPABASE_ANON_KEY) as string;
+const initialState: AIStreamState = { output: "", status: "idle", error: null };
 
 export function useAIStream() {
-  const [state, setState] = useState<AIStreamState>({
-    output: "",
-    status: "idle",
-    error: null,
-  });
+  const [state, setState] = useState<AIStreamState>(initialState);
   const abortRef = useRef<AbortController | null>(null);
 
   const cancel = useCallback(() => {
@@ -42,68 +40,74 @@ export function useAIStream() {
 
   const reset = useCallback(() => {
     cancel();
-    setState({ output: "", status: "idle", error: null });
+    setState(initialState);
   }, [cancel]);
 
-  const run = useCallback(async (req: AIStreamRequest) => {
+  const run = useCallback(async (request: AIStreamRequest) => {
     cancel();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
+    const controller = new AbortController();
+    abortRef.current = controller;
     setState({ output: "", status: "streaming", error: null });
 
     try {
-      // Attach the user's JWT if signed in; edge function will still work if unauthenticated.
-      const { data: sess } = await supabase.auth.getSession();
-      const token = sess?.session?.access_token || PUBLISHABLE_KEY;
+      const { data, error: sessionError } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+      if (sessionError || !accessToken) {
+        setState({ output: "", status: "error", error: "Please sign in to use AI writing." });
+        return;
+      }
 
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/editor-ai`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/editor-ai`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          apikey: PUBLISHABLE_KEY,
+          Authorization: `Bearer ${accessToken}`,
+          apikey: SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify(req),
-        signal: ctrl.signal,
+        body: JSON.stringify(request),
+        signal: controller.signal,
       });
 
-      if (!res.ok) {
-        let msg = `AI request failed (${res.status})`;
+      if (!response.ok) {
+        let message = `AI request failed (${response.status})`;
         try {
-          const j = await res.json();
-          if (j?.error) msg = j.error;
-        } catch {}
-        setState({ output: "", status: "error", error: msg });
+          const payload = await response.json();
+          if (typeof payload?.error === "string") message = payload.error;
+        } catch {
+          // The gateway may return a non-JSON error body.
+        }
+        setState({ output: "", status: "error", error: message });
         return;
       }
 
-      if (!res.body) {
-        setState({ output: "", status: "error", error: "No response body" });
+      if (!response.body) {
+        setState({ output: "", status: "error", error: "The AI service returned an empty response." });
         return;
       }
 
-      const reader = res.body.getReader();
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let acc = "";
+      let output = "";
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
-        acc += decoder.decode(value, { stream: true });
-        setState({ output: acc, status: "streaming", error: null });
+        output += decoder.decode(value, { stream: true });
+        setState({ output, status: "streaming", error: null });
       }
-      setState({ output: acc, status: "done", error: null });
-    } catch (err) {
-      if ((err as Error).name === "AbortError") {
-        setState((s) => ({ ...s, status: "idle" }));
+      output += decoder.decode();
+      setState({ output, status: "done", error: null });
+    } catch (error) {
+      if ((error as Error).name === "AbortError") {
+        setState((current) => ({ ...current, status: "idle" }));
         return;
       }
       setState({
         output: "",
         status: "error",
-        error: (err as Error).message || "Network error",
+        error: (error as Error).message || "Network error",
       });
     } finally {
-      abortRef.current = null;
+      if (abortRef.current === controller) abortRef.current = null;
     }
   }, [cancel]);
 

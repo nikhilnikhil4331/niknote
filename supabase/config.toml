@@ -1,4 +1,4 @@
-project_id = "ievggapvfidhygkhtkug"
+project_id = "atuxocibsmflgwlwuvmv"
 
 [functions]
   [functions.admin-auth]
@@ -18,4 +18,10 @@ project_id = "ievggapvfidhygkhtkug"
   [functions.record-payment]
     verify_jwt = false
   [functions.secure-image-upload]
+    verify_jwt = false
+  [functions.editor-ai]
+    verify_jwt = true
+  [functions.scan-receipt]
+    verify_jwt = true
+  [functions.admin-user-management]
     verify_jwt = false

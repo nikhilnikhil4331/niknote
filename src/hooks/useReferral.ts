@@ -7,6 +7,14 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+const REFERRAL_REWARD_DAYS = 7;
+const PENDING_REFERRAL_KEY = "niknote:pending_referral";
+
+type ReferralRow = {
+  status: string | null;
+  premium_days_awarded: number | null;
+};
+
 export interface ReferralStats {
   referralCode: string;
   totalReferrals: number;
@@ -14,9 +22,6 @@ export interface ReferralStats {
   rewardDays: number; // Premium days earned from referrals
   pendingRewards: number; // Referrals who signed up but haven't subscribed yet
 }
-
-const REFERRAL_REWARD_DAYS = 7; // 7 days premium per successful referral
-const MAX_FREE_DAYS_PER_MONTH = 30; // Cap at 1 month free per month
 
 export function useReferral() {
   const { user } = useAuth();
@@ -29,44 +34,30 @@ export function useReferral() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Generate referral code from user ID
-  const generateReferralCode = useCallback((userId: string): string => {
-    // Create a short, shareable code from user ID
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // No I, O, 0, 1 to avoid confusion
-    let code = "NIK";
-    for (let i = 0; i < 5; i++) {
-      code += chars.charAt(userId.charCodeAt(i % userId.length) % chars.length);
-    }
-    return code;
-  }, []);
-
   const fetchStats = useCallback(async () => {
     if (!user) {
+      setStats({ referralCode: "", totalReferrals: 0, successfulReferrals: 0, rewardDays: 0, pendingRewards: 0 });
       setLoading(false);
       return;
     }
 
     try {
-      const code = generateReferralCode(user.id);
+      const [{ data: code, error: codeError }, { data: referrals, error }] = await Promise.all([
+        supabase.rpc("get_or_create_referral_code"),
+        supabase.from("referrals").select("status, premium_days_awarded").eq("referrer_id", user.id),
+      ]);
 
-      // Get referrals from database
-      const { data: referrals, error } = await supabase
-        .from("referrals")
-        .select("*")
-        .eq("referrer_id", user.id);
+      if (codeError) console.error("Referral code fetch error:", codeError);
+      if (error) console.error("Referral fetch error:", error);
 
-      if (error) {
-        console.error("Referral fetch error:", error);
-      }
-
-      const totalReferrals = referrals?.length || 0;
-      const successfulReferrals = referrals?.filter(r => r.status === "completed")?.length || 0;
-      const rewardDays = successfulReferrals * REFERRAL_REWARD_DAYS;
-      const pendingRewards = referrals?.filter(r => r.status === "pending")?.length || 0;
+      const rows = (referrals ?? []) as ReferralRow[];
+      const successfulReferrals = rows.filter((referral) => referral.status === "completed").length;
+      const rewardDays = rows.reduce((sum, referral) => sum + Number(referral.premium_days_awarded || 0), 0);
+      const pendingRewards = rows.filter((referral) => referral.status === "pending").length;
 
       setStats({
-        referralCode: code,
-        totalReferrals,
+        referralCode: typeof code === "string" ? code : "",
+        totalReferrals: rows.length,
         successfulReferrals,
         rewardDays,
         pendingRewards,
@@ -76,59 +67,78 @@ export function useReferral() {
     } finally {
       setLoading(false);
     }
-  }, [user, generateReferralCode]);
+  }, [user]);
 
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
 
-  // Track a referral when someone signs up with a code
+  // Save referral links for guests, then attribute them after their first sign-in.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const url = new URL(window.location.href);
+    const referralFromUrl = url.searchParams.get("ref")?.trim();
+    if (referralFromUrl) {
+      try {
+        window.localStorage.setItem(PENDING_REFERRAL_KEY, referralFromUrl);
+        url.searchParams.delete("ref");
+        window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+      } catch (err) {
+        console.error("Could not save referral attribution:", err);
+      }
+    }
+
+    if (!user) return;
+    let active = true;
+    let pendingCode: string | null = null;
+    try {
+      pendingCode = window.localStorage.getItem(PENDING_REFERRAL_KEY);
+    } catch (err) {
+      console.error("Could not read referral attribution:", err);
+      return;
+    }
+    if (!pendingCode) return;
+
+    void (async () => {
+      try {
+        const { error } = await supabase.rpc("track_referral", { p_referral_code: pendingCode });
+        if (!active) return;
+        if (error) {
+          console.error("Referral attribution failed:", error);
+          return;
+        }
+        window.localStorage.removeItem(PENDING_REFERRAL_KEY);
+        await fetchStats();
+      } catch (err) {
+        console.error("Referral attribution failed:", err);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [user, fetchStats]);
+
+  // Track a referral through a database function; referral owners are not exposed to clients.
   const trackReferral = useCallback(async (referralCode: string) => {
-    if (!user) return false;
+    if (!user || !referralCode.trim()) return false;
 
     try {
-      // Look up who owns this referral code
-      const { data: allUsers, error: userError } = await supabase
-        .from("profiles")
-        .select("id");
-
-      if (userError || !allUsers) return false;
-
-      // Find the referrer by matching generated code
-      let referrerId: string | null = null;
-      for (const u of allUsers) {
-        if (generateReferralCode(u.id) === referralCode) {
-          referrerId = u.id;
-          break;
-        }
-      }
-
-      if (!referrerId || referrerId === user.id) return false; // Can't refer yourself
-
-      // Create referral record
-      const { error: insertError } = await supabase
-        .from("referrals")
-        .upsert({
-          referrer_id: referrerId,
-          referred_id: user.id,
-          referral_code: referralCode,
-          status: "pending",
-          created_at: new Date().toISOString(),
-        }, { onConflict: "referred_id" });
-
-      if (insertError) {
-        console.error("Referral insert error:", insertError);
+      const { data, error } = await supabase.rpc("track_referral", {
+        p_referral_code: referralCode.trim(),
+      });
+      if (error) {
+        console.error("Referral insert error:", error);
         return false;
       }
-
-      // Give referrer 7 days free premium when referred user subscribes
-      // (This is triggered in verify-razorpay-payment when a referred user pays)
-      return true;
+      await fetchStats();
+      return data === true;
     } catch (err) {
       console.error("Track referral error:", err);
       return false;
     }
-  }, [user, generateReferralCode]);
+  }, [user, fetchStats]);
 
   // Get shareable link
   const getShareLink = useCallback(() => {
