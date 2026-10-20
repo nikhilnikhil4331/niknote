@@ -1,41 +1,147 @@
-import { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+// ============================================================
+// NikNote 6.0 — Cookie Consent Banner (Mobile-Nav Safe)
+// Never blocks mobile bottom navigation bar or screen taps.
+// ============================================================
 
-const CONSENT_KEY = 'niknote_optional_analytics';
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { Cookie, X, Check, Shield } from "lucide-react";
 
-export function CookieConsent() {
+const COOKIE_CONSENT_KEY = "niknote_cookie_consent";
+
+interface CookieConsentState {
+  essential: boolean;
+  analytics: boolean;
+  marketing: boolean;
+  timestamp: string;
+}
+
+export const CookieConsent: React.FC = () => {
   const { pathname } = useLocation();
-  // On the habit app the floating nav owns the bottom edge — keep the sheet above it.
-  const habitRoute = pathname.startsWith('/habit');
-  const [choice, setChoice] = useState<string | null>(() => localStorage.getItem(CONSENT_KEY));
-  const [open, setOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [consent, setConsent] = useState<CookieConsentState>({
+    essential: true,
+    analytics: true,
+    marketing: false,
+    timestamp: "",
+  });
 
   useEffect(() => {
-    const showSettings = () => setOpen(true);
-    window.addEventListener('niknote:cookie-settings', showSettings);
-    return () => window.removeEventListener('niknote:cookie-settings', showSettings);
+    try {
+      const saved = localStorage.getItem(COOKIE_CONSENT_KEY);
+      if (!saved) {
+        const timer = setTimeout(() => setVisible(true), 1200);
+        return () => clearTimeout(timer);
+      }
+    } catch {
+      // storage blocked in strict private mode — stay quiet
+    }
   }, []);
 
-  const choose = (value: 'accepted' | 'declined') => {
-    localStorage.setItem(CONSENT_KEY, value);
-    if (value === 'declined') {
-      localStorage.removeItem('niknote_analytics');
-      localStorage.removeItem('niknote_last_session');
-      localStorage.removeItem('niknote_sessions');
+  const saveConsent = (state: CookieConsentState) => {
+    try {
+      localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify({ ...state, timestamp: new Date().toISOString() }));
+    } catch {
+      // ignore storage quota errors
     }
-    window.dispatchEvent(new Event('niknote:consent-changed'));
-    setChoice(value);
-    setOpen(false);
+    setVisible(false);
   };
 
-  if (choice && !open) return null;
+  const handleAcceptAll = () => {
+    saveConsent({ essential: true, analytics: true, marketing: true, timestamp: "" });
+  };
 
-  return <aside aria-label="Privacy choices" data-habit={habitRoute || undefined}
-    className="fixed inset-x-3 bottom-3 z-[100] mx-auto max-w-xl border border-border bg-background p-5 shadow-xl sm:bottom-6 sm:p-6"
-    style={habitRoute ? { bottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' } : undefined}>
-    <h2 className="text-lg font-semibold text-foreground">Your privacy choices</h2>
-    <p className="mt-2 text-sm leading-6 text-muted-foreground">Essential sign-in storage keeps NikNote working. Optional usage analytics help us improve the app and stay off unless you allow them. Read our <Link to="/privacy" className="underline text-primary">Privacy Policy</Link>.</p>
-    <div className="mt-4 flex flex-wrap gap-3"><Button onClick={() => choose('accepted')}>Allow analytics</Button><Button variant="outline" onClick={() => choose('declined')}>Essential only</Button></div>
-  </aside>;
-}
+  const handleRejectNonEssential = () => {
+    saveConsent({ essential: true, analytics: false, marketing: false, timestamp: "" });
+  };
+
+  const handleSavePreferences = () => {
+    saveConsent(consent);
+  };
+
+  // Never cover full-screen immersive workspaces (/habit, /board, /ai)
+  if (!visible || pathname === "/habit" || pathname === "/board" || pathname === "/ai") return null;
+
+  return (
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom,0px))] md:bottom-4 z-[95] px-3 sm:px-4"
+      role="region"
+      aria-label="Cookie preferences"
+    >
+      <div className="pointer-events-auto max-w-xl mx-auto rounded-2xl border border-border/80 bg-background/95 shadow-xl p-3.5 sm:p-4">
+        <div className="flex items-start justify-between gap-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <Cookie className="w-4 h-4 text-primary flex-shrink-0" />
+            <p className="text-xs text-muted-foreground leading-snug">
+              We use essential storage to keep your notes, chats &amp; preferences synced smoothly.{" "}
+              <a href="/privacy-policy" className="text-primary underline font-medium">Privacy</a>
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleRejectNonEssential}
+            className="min-w-[36px] min-h-[36px] -mr-1 -mt-1 grid place-items-center text-muted-foreground hover:text-foreground rounded-lg"
+            aria-label="Close cookie banner"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {showDetails && (
+          <div className="mt-2.5 p-2.5 rounded-xl bg-muted/50 space-y-2 text-xs">
+            <label className="flex items-center justify-between py-0.5">
+              <span><strong className="text-foreground">Essential</strong> · Always active</span>
+              <input type="checkbox" checked disabled className="rounded accent-primary w-4 h-4" />
+            </label>
+            <label className="flex items-center justify-between py-0.5 cursor-pointer">
+              <span><strong className="text-foreground">Analytics</strong> · Performance insights</span>
+              <input
+                type="checkbox"
+                checked={consent.analytics}
+                onChange={(e) => setConsent((p) => ({ ...p, analytics: e.target.checked }))}
+                className="rounded accent-primary w-4 h-4 cursor-pointer"
+              />
+            </label>
+          </div>
+        )}
+
+        <div className="mt-2.5 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleAcceptAll}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 min-h-[40px] px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold active:scale-[0.98]"
+          >
+            <Check className="w-3.5 h-3.5" />
+            Accept
+          </button>
+          {showDetails ? (
+            <button
+              type="button"
+              onClick={handleSavePreferences}
+              className="inline-flex items-center justify-center min-h-[40px] px-3.5 rounded-xl bg-secondary text-secondary-foreground text-xs font-medium"
+            >
+              Save
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowDetails(true)}
+              className="inline-flex items-center justify-center gap-1 min-h-[40px] px-3 rounded-xl text-muted-foreground hover:text-foreground text-xs"
+            >
+              <Shield className="w-3.5 h-3.5" />
+              Options
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleRejectNonEssential}
+            className="inline-flex items-center justify-center min-h-[40px] px-3 rounded-xl border border-border text-foreground text-xs font-medium ml-auto sm:ml-0"
+          >
+            Essential only
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

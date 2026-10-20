@@ -59,68 +59,32 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
       return;
     }
 
-    // Get the user's session token
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      toast.error('Please sign in to use AI features');
-      return;
-    }
-
     setIsLoading(true);
     setResult('');
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-writing-assist`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({
-          mode: selectedMode,
-          text: inputText,
-          systemPrompt: getSystemPrompt(selectedMode),
-        }),
+      const { streamAstaAI } = await import('@/lib/aiEngine');
+      const actionMap = {
+        expand: 'lengthen',
+        summarize: 'summarize',
+        improve: 'improve',
+        generate: 'custom',
+      } as const;
+
+      const response = await streamAstaAI({
+        messages: [
+          { role: 'system', content: getSystemPrompt(selectedMode) },
+          { role: 'user', content: inputText },
+        ],
+        mode: selectedMode === 'generate' ? 'notes' : 'write',
+        action: actionMap[selectedMode],
+        onToken: (_delta, fullText) => setResult(fullText),
       });
 
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || 'AI request failed');
+      if (response.content) {
+        setResult(response.content);
+        toast.success('AI content generated!');
       }
-
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response stream');
-
-      const decoder = new TextDecoder();
-      let fullText = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (data === '[DONE]') continue;
-
-          try {
-            const parsed = JSON.parse(data);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              fullText += content;
-              setResult(fullText);
-            }
-          } catch {
-            // Ignore parse errors for partial chunks
-          }
-        }
-      }
-
-      if (fullText) toast.success('AI content generated!');
     } catch (error) {
       console.error('AI assist error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to get AI assistance');

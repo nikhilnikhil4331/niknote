@@ -859,8 +859,10 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                 <div className="px-3 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider">{catInfo.emoji} {catInfo.label}</div>
                 {group.commands.map((cmd) => (
                   <button key={cmd.id}
-                    onMouseDown={(e) => { e.preventDefault(); handleSlashSelect(cmd.id); }}
-                    className="w-full flex items-center gap-3 px-3 py-1.5 text-left hover:bg-indigo-50 active:bg-indigo-100 transition-colors"
+                    type="button"
+                    onPointerDown={(e) => e.preventDefault()}
+                    onClick={() => handleSlashSelect(cmd.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-indigo-50 active:bg-indigo-100 transition-colors"
                     style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
                   >
                     <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 text-sm">{cmd.icon}</div>
@@ -897,7 +899,9 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
               <div className="px-3 py-1 text-[9px] font-bold text-violet-500 uppercase tracking-wider">✨ AI Actions</div>
               {filteredMentions.filter(i => i.category === 'ai').map(item => (
                 <button key={item.id}
-                  onMouseDown={(e) => { e.preventDefault(); handleMentionSelect(item.id); }}
+                  type="button"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => handleMentionSelect(item.id)}
                   className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-indigo-50 active:bg-indigo-100 transition-colors"
                   style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
                 >
@@ -914,7 +918,9 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
               <div className="px-3 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider">Quick Insert</div>
               {filteredMentions.filter(i => i.category === 'insert').map(item => (
                 <button key={item.id}
-                  onMouseDown={(e) => { e.preventDefault(); handleMentionSelect(item.id); }}
+                  type="button"
+                  onPointerDown={(e) => e.preventDefault()}
+                  onClick={() => handleMentionSelect(item.id)}
                   className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors"
                   style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
                 >
@@ -946,7 +952,9 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
           <div className="py-1">
             {filteredHashtags.map(item => (
               <button key={item.id}
-                onMouseDown={(e) => { e.preventDefault(); handleHashtagSelect(item.id); }}
+                type="button"
+                onPointerDown={(e) => e.preventDefault()}
+                onClick={() => handleHashtagSelect(item.id)}
                 className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-indigo-50 active:bg-indigo-100 transition-colors"
                 style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
               >

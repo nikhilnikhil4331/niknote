@@ -23,19 +23,39 @@ const MOODS = ['😄', '🙂', '😐', '😢', '😡'];
 const PRIORITY: Record<string, string> = { high: 'bg-rose-500', medium: 'bg-amber-500', low: 'bg-emerald-500' };
 
 type Habit = { id: string; name: string; emoji: string; block: string; days: number[]; archived: boolean };
-const WEEK = ['S','M','T','W','T','F','S'];
+const WEEK = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 type Todo = { id: string; title: string; priority: string; done: boolean; position: number };
 type Wellness = { water: number; sleep_hours: number; exercise_minutes: number; mood: string; pomodoros: number };
 
+const LOCAL_ROUTINE_KEY = 'niknote.routine.v1.local';
+const localRoutineId = () => `rt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+
+function readLocalRoutine(): { habits: Habit[]; checks: { habit_id: string; day: string }[]; todos: Todo[]; week: Record<string, Wellness>; waterGoal: number } {
+  try {
+    const raw = localStorage.getItem(LOCAL_ROUTINE_KEY);
+    if (!raw) return { habits: [], checks: [], todos: [], week: {}, waterGoal: 8 };
+    const parsed = JSON.parse(raw);
+    return {
+      habits: Array.isArray(parsed.habits) ? parsed.habits : [],
+      checks: Array.isArray(parsed.checks) ? parsed.checks : [],
+      todos: Array.isArray(parsed.todos) ? parsed.todos : [],
+      week: parsed.week && typeof parsed.week === 'object' ? parsed.week : {},
+      waterGoal: Number(parsed.waterGoal) || 8,
+    };
+  } catch {
+    return { habits: [], checks: [], todos: [], week: {}, waterGoal: 8 };
+  }
+}
+
 export default function RoutineTracker() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const today = toDay(new Date());
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [checks, setChecks] = useState<{ habit_id: string; day: string }[]>([]);
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [week, setWeek] = useState<Record<string, Wellness>>({});
-  const [waterGoal, setWaterGoal] = useState(8);
-  const [habitForm, setHabitForm] = useState({ name: '', emoji: '✅', block: 'morning', days: [0,1,2,3,4,5,6] as number[] });
+  const [habits, setHabits] = useState<Habit[]>(() => readLocalRoutine().habits);
+  const [checks, setChecks] = useState<{ habit_id: string; day: string }[]>(() => readLocalRoutine().checks);
+  const [todos, setTodos] = useState<Todo[]>(() => readLocalRoutine().todos);
+  const [week, setWeek] = useState<Record<string, Wellness>>(() => readLocalRoutine().week);
+  const [waterGoal, setWaterGoal] = useState(() => readLocalRoutine().waterGoal);
+  const [habitForm, setHabitForm] = useState({ name: '', emoji: '✅', block: 'morning', days: [0, 1, 2, 3, 4, 5, 6] as number[] });
   const [showArchived, setShowArchived] = useState(false);
   const [todoForm, setTodoForm] = useState({ title: '', priority: 'medium' });
   const [loadError, setLoadError] = useState(false);
@@ -44,9 +64,13 @@ export default function RoutineTracker() {
   const w: Wellness = week[today] ?? { water: 0, sleep_hours: 0, exercise_minutes: 0, mood: '', pomodoros: 0 };
 
   useEffect(() => {
+    if (authLoading || user) return;
+    try { localStorage.setItem(LOCAL_ROUTINE_KEY, JSON.stringify({ habits, checks, todos, week, waterGoal })); } catch { /* quota */ }
+  }, [habits, checks, todos, week, waterGoal, user, authLoading]);
+
+  useEffect(() => {
     if (!user) return;
     const from = new Date(); from.setDate(from.getDate() - 60);
-    // Flaky-network guard: hung fetch → visible retry banner instead of a frozen empty page.
     const loadTimer = window.setTimeout(() => setLoadError(true), 12000);
     (async () => {
       const [h, c, t, d, s] = await Promise.all([
@@ -68,13 +92,19 @@ export default function RoutineTracker() {
   const saveWellness = async (patch: Partial<Wellness>) => {
     const next = { ...w, ...patch };
     setWeek(p => ({ ...p, [today]: next }));
-    await db.from('daily_wellness').upsert({ user_id: user!.id, day: today, ...next });
+    if (user) await db.from('daily_wellness').upsert({ user_id: user.id, day: today, ...next });
   };
 
   // Habits
   const addHabit = async () => {
     if (!habitForm.name.trim()) return;
     if (!habitForm.days.length) return toast.error('Pick at least one day');
+    if (!user) {
+      haptic('light');
+      setHabits(p => [...p, { id: localRoutineId(), ...habitForm, name: habitForm.name.trim(), archived: false }]);
+      setHabitForm(f => ({ ...f, name: '' }));
+      return;
+    }
     const { data, error } = await db.from('habits').insert({ ...habitForm, name: habitForm.name.trim() }).select().single();
     if (error) return toast.error(error.message);
     haptic('light'); setHabits(p => [...p, data]); setHabitForm(f => ({ ...f, name: '' }));
@@ -84,34 +114,41 @@ export default function RoutineTracker() {
     if (done) {
       setChecks(p => p.filter(c => !(c.habit_id === h.id && c.day === today)));
       haptic('light');
-      await db.from('habit_checks').delete().eq('habit_id', h.id).eq('day', today);
+      if (user) await db.from('habit_checks').delete().eq('habit_id', h.id).eq('day', today);
     } else {
       setChecks(p => [...p, { habit_id: h.id, day: today }]);
       haptic('medium');
-      await db.from('habit_checks').insert({ habit_id: h.id, day: today });
+      if (user) await db.from('habit_checks').insert({ habit_id: h.id, day: today });
       const streak = scheduledStreak([...checks.filter(c => c.habit_id === h.id).map(c => c.day), today], h.days);
       if (streak > 0 && streak % 7 === 0) { haptic('success'); confetti({ particleCount: 120, spread: 80 }); toast.success(`${streak}-day streak on ${h.name}! 🔥`); }
     }
   };
-  const archiveHabit = async (h: Habit) => { haptic('light'); setHabits(p => p.map(x => x.id === h.id ? { ...x, archived: !h.archived } : x)); await db.from('habits').update({ archived: !h.archived }).eq('id', h.id); toast.success(h.archived ? 'Habit restored' : 'Habit archived — history kept'); };
-  const delHabit = async (id: string) => { if (!window.confirm('Delete this habit and all its history? Archive keeps history instead.')) return; haptic('heavy'); setHabits(p => p.filter(h => h.id !== id)); await db.from('habits').delete().eq('id', id); };
+  const archiveHabit = async (h: Habit) => { haptic('light'); setHabits(p => p.map(x => x.id === h.id ? { ...x, archived: !h.archived } : x)); if (user) await db.from('habits').update({ archived: !h.archived }).eq('id', h.id); toast.success(h.archived ? 'Habit restored' : 'Habit archived — history kept'); };
+  const delHabit = async (id: string) => { if (!window.confirm('Delete this habit and all its history? Archive keeps history instead.')) return; haptic('heavy'); setHabits(p => p.filter(h => h.id !== id)); if (user) await db.from('habits').delete().eq('id', id); };
 
   // Todos
   const addTodo = async () => {
     if (!todoForm.title.trim()) return;
+    if (!user) {
+      haptic('light');
+      setTodos(p => [...p, { id: localRoutineId(), title: todoForm.title.trim(), priority: todoForm.priority, done: false, position: p.length }]);
+      setTodoForm(f => ({ ...f, title: '' }));
+      return;
+    }
     const { data, error } = await db.from('todos').insert({ ...todoForm, title: todoForm.title.trim(), position: todos.length }).select().single();
     if (error) return toast.error(error.message);
     haptic('light'); setTodos(p => [...p, data]); setTodoForm(f => ({ ...f, title: '' }));
   };
   const toggleTodo = async (t: Todo) => {
     haptic(t.done ? 'light' : 'medium');
-    setTodos(p => p.map(x => x.id === t.id ? { ...x, done: !x.done } : x));
-    await db.from('todos').update({ done: !t.done }).eq('id', t.id);
+    setTodos(p => p.map(x => x.id === t.id ? { ...x, done: !t.done } : x));
+    if (user) await db.from('todos').update({ done: !t.done }).eq('id', t.id);
   };
-  const delTodo = async (id: string) => { haptic('heavy'); setTodos(p => p.filter(t => t.id !== id)); await db.from('todos').delete().eq('id', id); };
+  const delTodo = async (id: string) => { haptic('heavy'); setTodos(p => p.filter(t => t.id !== id)); if (user) await db.from('todos').delete().eq('id', id); };
   const reorderTimer = useRef<number>();
   const onReorder = (next: Todo[]) => {
     setTodos(next); haptic('selection');
+    if (!user) return;
     window.clearTimeout(reorderTimer.current);
     reorderTimer.current = window.setTimeout(() => {
       next.forEach((t, i) => db.from('todos').update({ position: i }).eq('id', t.id));
@@ -208,7 +245,7 @@ export default function RoutineTracker() {
               {BLOCKS.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
             </select>
             <div className="w-full flex items-center gap-1" role="group" aria-label="Repeat on days">
-              {WEEK.map((l, i) => { const on = habitForm.days.includes(i); return <button key={i} type="button" aria-pressed={on} aria-label={['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][i]} onClick={() => setHabitForm(f => ({ ...f, days: on ? f.days.filter(x => x !== i) : [...f.days, i].sort() }))} className={`h-9 flex-1 rounded-lg text-xs font-semibold ${on ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{l}</button>; })}
+              {WEEK.map((l, i) => { const on = habitForm.days.includes(i); return <button key={i} type="button" aria-pressed={on} aria-label={['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][i]} onClick={() => setHabitForm(f => ({ ...f, days: on ? f.days.filter(x => x !== i) : [...f.days, i].sort() }))} className={`h-9 flex-1 rounded-lg text-xs font-semibold ${on ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{l}</button>; })}
             </div>
             <button onClick={addHabit} className="h-10 w-10 shrink-0 rounded-xl bg-primary text-primary-foreground flex items-center justify-center active:scale-90" aria-label="Add habit"><Plus className="w-4 h-4" /></button>
           </div>
@@ -231,7 +268,7 @@ export default function RoutineTracker() {
                             <AnimatePresence>{done && <motion.span initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0 }}><Check className="w-4 h-4 text-white" strokeWidth={3} /></motion.span>}</AnimatePresence>
                           </motion.button>
                           <span className="text-lg">{h.emoji}</span>
-                          <span className={`flex-1 min-w-0 text-sm ${done ? 'line-through text-muted-foreground' : ''}`}><span className="block truncate">{h.name}</span><span className="block text-[11px] text-muted-foreground">{h.days?.length === 7 || !h.days?.length ? 'Every day' : h.days.map(d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(' · ')}{restDay && !done ? ' — rest day today' : ''}</span></span>
+                          <span className={`flex-1 min-w-0 text-sm ${done ? 'line-through text-muted-foreground' : ''}`}><span className="block truncate">{h.name}</span><span className="block text-[11px] text-muted-foreground">{h.days?.length === 7 || !h.days?.length ? 'Every day' : h.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(' · ')}{restDay && !done ? ' — rest day today' : ''}</span></span>
                           {streak > 0 && (
                             <motion.span animate={{ scale: [1, 1.15, 1] }} transition={{ repeat: Infinity, duration: 1.4 }} className="text-xs font-bold text-orange-600">🔥 {streak}</motion.span>
                           )}

@@ -1,28 +1,86 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
+function niknoteLocalAIPlugin(): Plugin {
+  const attach = (middlewares: any) => {
+    middlewares.use("/api/ai", async (req: any, res: any) => {
+      try {
+        const mod = await import("./api/ai");
+        const handler = mod.default;
+        const chunks: Buffer[] = [];
+        for await (const chunk of req) {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
+        const bodyBuf = Buffer.concat(chunks);
+        const url = `http://${req.headers.host || "localhost"}/api/ai`;
+        const headers = new Headers();
+        for (const [k, v] of Object.entries(req.headers)) {
+          if (typeof v === "string") headers.set(k, v);
+          else if (Array.isArray(v)) headers.set(k, v.join(", "));
+        }
+        const controller = new AbortController();
+        res.on("close", () => controller.abort());
+
+        const webReq = new Request(url, {
+          method: req.method || "GET",
+          headers,
+          body: req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS" ? undefined : bodyBuf,
+          signal: controller.signal,
+        });
+
+        const webRes = await handler(webReq);
+        res.statusCode = webRes.status;
+        webRes.headers.forEach((v, k) => res.setHeader(k, v));
+
+        if (!webRes.body) {
+          res.end();
+          return;
+        }
+        const reader = webRes.body.getReader();
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          res.write(Buffer.from(value));
+        }
+        res.end();
+      } catch (err: any) {
+        if (!res.headersSent) {
+          res.statusCode = 500;
+          res.setHeader("Content-Type", "application/json");
+        }
+        res.end(JSON.stringify({ error: err?.message || "Internal AI error" }));
+      }
+    });
+  };
+
+  return {
+    name: "niknote-local-ai-endpoint",
+    configureServer(server) {
+      attach(server.middlewares);
+    },
+    configurePreviewServer(server) {
+      attach(server.middlewares);
+    },
+  };
+}
+
 // https://vitejs.org/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(() => ({
   server: {
     host: "0.0.0.0",
     port: 8080,
     allowedHosts: true,
-    headers: {
-      "X-Frame-Options": "ALLOWALL",
-    },
     cors: true,
   },
   preview: {
     host: "0.0.0.0",
     port: 4173,
     allowedHosts: true as any,
-    headers: {
-      "X-Frame-Options": "ALLOWALL",
-    },
   },
   plugins: [
     react(),
+    niknoteLocalAIPlugin(),
   ],
   resolve: {
     alias: {

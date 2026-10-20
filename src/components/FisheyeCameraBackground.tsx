@@ -62,7 +62,7 @@ export const FisheyeCameraBackground: React.FC<FisheyeCameraBackgroundProps> = (
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6 }}
-          className="fixed inset-0 z-0 overflow-hidden"
+          className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
         >
           {/* SVG fisheye distortion filter */}
           <svg className="absolute w-0 h-0">

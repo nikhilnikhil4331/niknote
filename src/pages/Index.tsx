@@ -266,12 +266,60 @@ const Index = () => {
   const saveRef = useRef<() => void>();
   useEffect(() => { if (user && pendingGuestSave.current) { pendingGuestSave.current = false; window.setTimeout(() => saveRef.current?.(), 0); } }, [user]);
   const saveMobileNote = async () => {
-    if (!user) { const r = await signInAsGuest(); if (r.error) { toast.error('Guest mode unavailable. Please sign in.'); navigate('/login'); } else { pendingGuestSave.current = true; toast.success('Guest mode on — saving your note…'); } return; }
     if (savingNote) return;
     setSavingNote(true);
     try {
+      // Local-first device persistence whenever user is not signed in to cloud
+      if (!user) {
+        const localRaw = localStorage.getItem('niknote.mobile.notebooks.v1');
+        const list: any[] = localRaw ? JSON.parse(localRaw) : [];
+        const id = cloudNotebookId || `local-${Date.now()}`;
+        const now = new Date().toISOString();
+        const entry = {
+          id,
+          title: noteTitle || 'Untitled Note',
+          blocks: blockEditor.blocks,
+          page_style: settings.pageStyle,
+          tags: ['Notes'],
+          updated_at: now,
+        };
+        const idx = list.findIndex((item) => item.id === id);
+        const next = idx >= 0 ? list.map((item, i) => (i === idx ? entry : item)) : [entry, ...list];
+        localStorage.setItem('niknote.mobile.notebooks.v1', JSON.stringify(next));
+
+        // Also mirror into niknote.notes.v1 so Asta AI can attach any saved note
+        try {
+          const notesRaw = localStorage.getItem('niknote.notes.v1');
+          const notesList: any[] = notesRaw ? JSON.parse(notesRaw) : [];
+          const plain = blockEditor.blocks.map((b) => b.content).join('\n');
+          const mirror = {
+            id,
+            title: entry.title,
+            icon: '📝',
+            content: plain,
+            starred: false,
+            tags: ['Notes'],
+            parentId: null,
+            trashedAt: null,
+            createdAt: now,
+            updatedAt: now,
+          };
+          const mIdx = notesList.findIndex((n) => n.id === id);
+          localStorage.setItem(
+            'niknote.notes.v1',
+            JSON.stringify(mIdx >= 0 ? notesList.map((n, i) => (i === mIdx ? mirror : n)) : [mirror, ...notesList])
+          );
+        } catch {
+          // ignore mirror quota issue
+        }
+
+        setCloudNotebookId(id);
+        toast.success('Note saved on this device ✨');
+        return;
+      }
+
       let id = cloudNotebookId;
-      if (!id) {
+      if (!id || id.startsWith('local-')) {
         const notebook = await createNotebook({ title: noteTitle || 'Untitled Note', cover_color: '#9b85eb', tags: ['Notes'], page_style: settings.pageStyle, page_size: settings.pageSize });
         if (!notebook) return;
         id = notebook.id; setCloudNotebookId(id);
@@ -306,16 +354,29 @@ const Index = () => {
       toast.info('Block highlight toggled');
     }
     if (tool === 'voice') {
-      if (!premium.isPremium) { requirePremium('voice_to_notes'); return; }
       if (!quickDictation.isSupported) { toast.info('Voice is unavailable in this browser'); return; }
       if (quickDictation.isListening) quickDictation.stop(); else quickDictation.start();
     }
   };
 
   useEffect(() => {
-    if (!isMobile || !user || !new URLSearchParams(search).has('notebook')) return;
+    if (!isMobile || !new URLSearchParams(search).has('notebook')) return;
     const id = new URLSearchParams(search).get('notebook');
     if (!id) return;
+    if (id.startsWith('local-') || !user) {
+      try {
+        const localList: any[] = JSON.parse(localStorage.getItem('niknote.mobile.notebooks.v1') || '[]');
+        const found = localList.find((item) => item.id === id);
+        if (found) {
+          setNoteTitle(found.title || 'Untitled Note');
+          if (found.page_style) updateSettings({ pageStyle: found.page_style as PageStyle });
+          if (Array.isArray(found.blocks) && found.blocks.length) blockEditor.setBlocks(found.blocks);
+        }
+      } catch {
+        // ignore parse issues
+      }
+      return;
+    }
     let cancelled = false;
     (async () => {
       const [{ data: notebook }, { data: savedPages, error }] = await Promise.all([

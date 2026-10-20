@@ -4,23 +4,38 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, CalendarCheck, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { formatMoney, isScheduled, monthSummary, toDay } from '@/lib/trackers';
+import { formatMoney, isScheduled, monthSummary, toDay, TxRow } from '@/lib/trackers';
 import { readState } from '@/lib/routineStore';
 import { useHaptics } from '@/hooks/useHaptics';
 
+function readLocalMoneySummary(now = new Date()): { money: ReturnType<typeof monthSummary>; currency: string } {
+  try {
+    const raw = localStorage.getItem('niknote.money.v1.local');
+    if (!raw) return { money: monthSummary([], now), currency: 'INR' };
+    const parsed = JSON.parse(raw);
+    const rows: TxRow[] = Array.isArray(parsed?.rows) ? parsed.rows : [];
+    const currency = typeof parsed?.settings?.currency === 'string' ? parsed.settings.currency : 'INR';
+    return { money: monthSummary(rows, now), currency };
+  } catch {
+    return { money: monthSummary([], now), currency: 'INR' };
+  }
+}
+
 function useTrackerSummary(userId?: string) {
   return useQuery({
-    queryKey: ['mobile-tracker-summary', userId],
-    enabled: !!userId,
-    staleTime: 30_000,
+    queryKey: ['mobile-tracker-summary', userId || 'local-device'],
+    staleTime: 10_000,
     queryFn: async () => {
+      if (!userId) {
+        return readLocalMoneySummary(new Date());
+      }
       const now = new Date();
       const monthStart = toDay(new Date(now.getFullYear(), now.getMonth(), 1));
       const [tx, settings] = await Promise.all([
         supabase.from('money_transactions').select('kind,amount,occurred_on').gte('occurred_on', monthStart).limit(2000),
         supabase.from('tracker_settings').select('currency').maybeSingle(),
       ]);
-      if (tx.error) throw new Error('load');
+      if (tx.error) return readLocalMoneySummary(now);
       return {
         money: monthSummary(tx.data ?? [], now),
         currency: settings.data?.currency ?? 'INR',
@@ -49,23 +64,22 @@ export function MobileTrackerCards() {
   const reduced = useReducedMotion();
   const { triggerHaptic } = useHaptics();
   const q = useTrackerSummary(user?.id);
-  const d = q.data;
+  const d = q.data ?? (!user ? readLocalMoneySummary() : undefined);
   const habits = localHabitSummary(user?.id || 'anon');
   const pct = habits.habitsTotal ? Math.round((habits.habitsDone / habits.habitsTotal) * 100) : 0;
 
   const value = (ready: string, empty: string) =>
-    !user ? 'Sign in to start' : q.isLoading ? null : q.isError ? 'Tap to open' : d ? ready || empty : empty;
+    q.isLoading && !d ? null : d ? ready || empty : empty;
 
   const cards = [
     {
       to: '/money', label: 'Money Tracker', icon: Wallet, tone: 'money',
-      main: value(d && (d.money.spent || d.money.income) ? formatMoney(d.money.spent, d.currency) : '', 'No spends yet'),
-      sub: d && (d.money.spent || d.money.income) ? (d.money.income ? `spent this month · ${formatMoney(d.money.balance, d.currency)} left` : 'spent this month') : 'Track income & expenses',
+      main: value(d && (d.money.spent || d.money.income) ? formatMoney(d.money.spent, d.currency) : '', 'Track expenses'),
+      sub: d && (d.money.spent || d.money.income) ? (d.money.income ? `spent this month · ${formatMoney(d.money.balance, d.currency)} left` : 'spent this month') : 'Income, spends & budgets',
     },
     {
       to: '/habit', label: 'Daily Tracker', icon: CalendarCheck, tone: 'daily',
-      // habit stats are local, so they never depend on the money query's state
-      main: !user ? 'Sign in to start' : habits.habitsTotal ? `${habits.habitsDone}/${habits.habitsTotal} done` : 'Add a habit',
+      main: habits.habitsTotal ? `${habits.habitsDone}/${habits.habitsTotal} done` : 'Start habits',
       sub: habits.habitsTotal ? `${pct}% of today's habits` : 'Habits, tasks & wellness',
     },
   ];

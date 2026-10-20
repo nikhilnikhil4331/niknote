@@ -1,13 +1,16 @@
-// ============================================================
-// useAIStream — client hook that streams text from the editor-ai edge function
-// Mobile-friendly: plain text stream, incremental updates, cancellable.
-// ============================================================
-import { useCallback, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { streamAstaAI } from "@/lib/aiEngine";
 
 export type AIAction =
-  | "improve" | "fix_grammar" | "shorten" | "lengthen"
-  | "continue" | "translate" | "summarize" | "explain" | "custom";
+  | "improve"
+  | "fix_grammar"
+  | "shorten"
+  | "lengthen"
+  | "continue"
+  | "translate"
+  | "summarize"
+  | "explain"
+  | "custom";
 
 export interface AIStreamRequest {
   action: AIAction;
@@ -17,95 +20,86 @@ export interface AIStreamRequest {
   instruction?: string;
 }
 
-export interface AIStreamState {
-  output: string;
-  status: "idle" | "streaming" | "done" | "error";
-  error: string | null;
-}
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const PUBLISHABLE_KEY = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-  import.meta.env.VITE_SUPABASE_ANON_KEY) as string;
+export type AIStreamStatus = "idle" | "streaming" | "done" | "error";
 
 export function useAIStream() {
-  const [state, setState] = useState<AIStreamState>({
-    output: "",
-    status: "idle",
-    error: null,
-  });
-  const abortRef = useRef<AbortController | null>(null);
+  const [status, setStatus] = useState<AIStreamStatus>("idle");
+  const [output, setOutput] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const latestRef = useRef("");
+
+  const flush = useCallback(() => {
+    frameRef.current = null;
+    setOutput(latestRef.current);
+  }, []);
 
   const cancel = useCallback(() => {
-    abortRef.current?.abort();
-    abortRef.current = null;
+    controllerRef.current?.abort();
+    controllerRef.current = null;
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+    setStatus((current) => (current === "streaming" ? "idle" : current));
   }, []);
 
   const reset = useCallback(() => {
     cancel();
-    setState({ output: "", status: "idle", error: null });
+    latestRef.current = "";
+    setOutput("");
+    setError(null);
+    setStatus("idle");
   }, [cancel]);
 
-  const run = useCallback(async (req: AIStreamRequest) => {
+  useEffect(() => cancel, [cancel]);
+
+  const run = useCallback(async (request: AIStreamRequest) => {
     cancel();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-    setState({ output: "", status: "streaming", error: null });
+    latestRef.current = "";
+    setOutput("");
+    setError(null);
+    setStatus("streaming");
+
+    const controller = new AbortController();
+    controllerRef.current = controller;
 
     try {
-      // Attach the user's JWT if signed in; edge function will still work if unauthenticated.
-      const { data: sess } = await supabase.auth.getSession();
-      const token = sess?.session?.access_token || PUBLISHABLE_KEY;
-
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/editor-ai`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          apikey: PUBLISHABLE_KEY,
+      const mode = request.action === "explain" ? "teacher" : request.action === "custom" ? "auto" : "write";
+      const result = await streamAstaAI({
+        messages: [{ role: "user", content: request.text }],
+        mode,
+        noteContext: request.context,
+        action: request.action,
+        targetLanguage: request.targetLanguage,
+        instruction: request.instruction,
+        signal: controller.signal,
+        onToken: (_delta, fullText) => {
+          latestRef.current = fullText;
+          if (frameRef.current === null) {
+            frameRef.current = requestAnimationFrame(flush);
+          }
         },
-        body: JSON.stringify(req),
-        signal: ctrl.signal,
       });
 
-      if (!res.ok) {
-        let msg = `AI request failed (${res.status})`;
-        try {
-          const j = await res.json();
-          if (j?.error) msg = j.error;
-        } catch {}
-        setState({ output: "", status: "error", error: msg });
-        return;
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
       }
-
-      if (!res.body) {
-        setState({ output: "", status: "error", error: "No response body" });
-        return;
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let acc = "";
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        acc += decoder.decode(value, { stream: true });
-        setState({ output: acc, status: "streaming", error: null });
-      }
-      setState({ output: acc, status: "done", error: null });
-    } catch (err) {
-      if ((err as Error).name === "AbortError") {
-        setState((s) => ({ ...s, status: "idle" }));
-        return;
-      }
-      setState({
-        output: "",
-        status: "error",
-        error: (err as Error).message || "Network error",
-      });
+      latestRef.current = result.content;
+      setOutput(result.content);
+      setStatus("done");
+    } catch (caught: any) {
+      if (controller.signal.aborted || caught?.name === "AbortError") return;
+      setError(caught instanceof Error ? caught.message : "Could not reach AI. Please try again.");
+      setStatus("error");
     } finally {
-      abortRef.current = null;
+      if (controllerRef.current === controller) {
+        controllerRef.current = null;
+      }
     }
-  }, [cancel]);
+  }, [cancel, flush]);
 
-  return { ...state, run, cancel, reset };
+  return { status, output, error, run, cancel, reset };
 }
