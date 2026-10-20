@@ -39,7 +39,7 @@ import { shareAsImage, shareAsPDF } from '@/utils/share';
 const WorkspaceSidebar = lazy(() => import('@/components/workspace/WorkspaceSidebar').then(m => ({ default: m.WorkspaceSidebar })));
 import {
   Settings2, Edit3, FileDown, Palette, Crown, LogIn, Cloud, RefreshCw, CheckCircle2,
-  Gem, MoreVertical, Moon, Sun, RotateCcw, Share2, Image, FileText, Sparkles,
+  Gem, MoreVertical, Moon, Sun, RotateCcw, Share2, Image, FileText,
   LayoutGrid, Scan, Brain, PanelLeft, ChevronDown, MessageSquare, Zap, Undo2, Redo2, Save, Eye, PenLine, Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -1066,11 +1066,12 @@ const Index = () => {
               <>
                 <button
                   onClick={() => navigate('/ai')}
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-full text-[11px] font-semibold text-white bg-gradient-to-r from-violet-500 to-indigo-500 shadow-sm active:scale-95 transition-transform"
+                  data-testid="mobile-open-nikai-btn"
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-white border border-purple-200/90 shadow-[0_4px_14px_rgba(138,63,252,0.18)] active:scale-95 transition-transform"
                   style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', cursor: 'pointer' }}
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>AI</span>
+                  <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain select-none" />
+                  <span className="text-[11px] font-bold tracking-tight bg-gradient-to-r from-[#6D28D9] to-[#EC4899] bg-clip-text text-transparent">NikAI</span>
                 </button>
 
                 <DropdownMenu>
@@ -1328,7 +1329,7 @@ const Index = () => {
               <div className="nn-board-footer">
                 <Button variant="ghost" onClick={() => setShowMobileStyleSheet(true)}><Settings2 className="h-4 w-4" />Paper & pen</Button>
                 <Button variant="ghost" onClick={() => setShowImportPanel(true)} aria-label="Import document" title="Import document"><Upload className="h-4 w-4" /></Button>
-                <Button variant="ghost" onClick={() => navigate('/ai')} aria-label="NikAI" title="NikAI"><Sparkles className="h-4 w-4 text-purple-600" /></Button>
+                <Button variant="ghost" onClick={() => navigate('/ai')} aria-label="NikAI" title="NikAI"><img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain select-none" /></Button>
                 <Button onClick={handleExportPDF} disabled={isExporting}><FileDown className="h-4 w-4" />PDF</Button>
               </div>
 

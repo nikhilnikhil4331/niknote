@@ -2,10 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Loader2, Sparkles, Wand2, FileText, BookOpen, PenTool, X } from 'lucide-react';
+import { Loader2, Wand2, FileText, BookOpen, PenTool, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { NikAIMark } from './nikai/NikAIBrand';
 
 interface AIWritingAssistantProps {
   onInsertText: (text: string) => void;
@@ -118,7 +119,7 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
             onLockedTap?.();
           }}
         >
-          <Sparkles className="w-4 h-4 text-accent" />
+          <NikAIMark size={18} />
           <span className="sr-only">AI Writing Assistant</span>
         </Button>
       </DialogTrigger>
@@ -126,8 +127,8 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
-              <Sparkles className="h-4 w-4 text-primary" />
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#F4F1FC]">
+              <NikAIMark size={22} />
             </span>
             AI Writing Assistant
           </DialogTitle>

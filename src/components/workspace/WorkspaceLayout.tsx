@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   PanelLeft, PanelRight, Search, Bell, Plus,
-  Sparkles, Scan, Star, Clock, Settings
+  Scan, Star, Clock, Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { WorkspaceSidebar } from '@/components/workspace/WorkspaceSidebar';
@@ -127,7 +127,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             onClick={() => navigate('/ai')}
             className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold text-white bg-gradient-to-r from-purple-500 to-indigo-600 shadow-sm hover:shadow-md transition-shadow"
           >
-            <Sparkles className="w-3 h-3" />
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white/95">
+              <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-3 w-auto object-contain select-none" />
+            </span>
             {!isMobile && 'AI'}
           </button>
 

@@ -3,7 +3,7 @@
 // Use when lists/views have no data
 // ============================================================
 
-import { FileText, BookOpen, Search, Sparkles, Pen } from 'lucide-react';
+import { FileText, BookOpen, Search, Pen } from 'lucide-react';
 
 interface EmptyStateProps {
   icon?: React.ReactNode;
@@ -95,9 +95,16 @@ export function EmptySearchResult({ query }: { query: string }) {
 export function EmptyAI() {
   return (
     <EmptyState
-      icon={<Sparkles className="w-9 h-9 text-primary/60" />}
+      icon={
+        <img
+          src="/nikai-mark.png"
+          alt=""
+          aria-hidden="true"
+          className="h-12 w-auto object-contain select-none pointer-events-none"
+        />
+      }
       title="AI Writing Assistant"
-      description="Ask AI to help write, solve, or improve your notes. Type a question or paste content to get started!"
+      description="Ask NikAI to help write, solve, or improve your notes. Type a question or paste content to get started!"
     />
   );
 }

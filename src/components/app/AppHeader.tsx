@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, MoreVertical, Undo2, Redo2, Sparkles, Flame } from 'lucide-react';
+import { Download, MoreVertical, Undo2, Redo2, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AppHeaderProps {
@@ -115,7 +115,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   <MenuButton icon={<Undo2 className="w-4 h-4" />} label="Undo" onClick={() => setShowMenu(false)} />
                   <MenuButton icon={<Redo2 className="w-4 h-4" />} label="Redo" onClick={() => setShowMenu(false)} />
                   <div className="h-px bg-border/50 my-1 mx-3" />
-                  <MenuButton icon={<Sparkles className="w-4 h-4" />} label="AI Writing Help" onClick={() => setShowMenu(false)} />
+                  <MenuButton icon={<img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain" />} label="AI Writing Help" onClick={() => setShowMenu(false)} />
                 </motion.div>
               </>
             )}

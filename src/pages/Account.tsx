@@ -211,7 +211,7 @@ export default function AccountPage() {
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={() => navigate('/ai')} className="gap-2">
-              <Brain className="w-4 h-4 text-purple-600" />
+              <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain" />
               <span className="hidden sm:inline">NikAI</span>
             </Button>
           </div>

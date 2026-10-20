@@ -1,7 +1,7 @@
 import React, { useState, forwardRef, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, LogOut, Crown, History, ChevronDown, Brain, Shield } from 'lucide-react';
+import { User, LogOut, Crown, History, ChevronDown, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { usePremium } from '@/hooks/usePremium';
@@ -49,7 +49,7 @@ export const UserProfileDropdown = forwardRef<HTMLDivElement>((_, ref) => {
     'User';
 
   const menuItems = [
-    { label: 'NikAI', icon: Brain, onClick: () => navigate('/ai') },
+    { label: 'NikAI', icon: <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-6 w-auto object-contain" />, onClick: () => navigate('/ai') },
     { label: 'My History', icon: History, onClick: () => navigate('/history') },
     ...(isAdmin ? [{ label: 'Admin Panel', icon: Shield, onClick: () => navigate('/admin-panel-nikhil') }] : []),
     ...(isPremium ? [] : [{ label: 'Upgrade to Premium', icon: Crown, onClick: () => navigate('/payment'), highlight: true }]),
@@ -109,7 +109,7 @@ export const UserProfileDropdown = forwardRef<HTMLDivElement>((_, ref) => {
             `}
           >
             <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${item.highlight ? 'bg-accent/10' : 'bg-muted'}`}>
-              <item.icon className="w-4 h-4" />
+              {typeof item.icon === 'function' ? <item.icon className="w-4 h-4" /> : item.icon}
             </div>
             {item.label}
           </motion.button>
@@ -191,7 +191,7 @@ export const UserProfileDropdown = forwardRef<HTMLDivElement>((_, ref) => {
             `}
           >
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${item.highlight ? 'bg-accent/20' : 'bg-background'}`}>
-              <item.icon className="w-7 h-7" />
+              {typeof item.icon === 'function' ? <item.icon className="w-7 h-7" /> : item.icon}
             </div>
             <span className="flex-1 text-left">{item.label}</span>
             <ChevronDown className="w-5 h-5 -rotate-90 text-muted-foreground" />
