@@ -11,9 +11,17 @@ export function InstallBanner() {
   const { isInstallable, installApp, dismissInstall } = usePWAInstall();
   const { pathname } = useLocation();
 
-  // The habit app owns the bottom of the screen (floating capsule + FAB);
-  // a fixed install sheet there covers navigation. Offer install on other pages.
-  if (pathname.startsWith('/habit')) return null;
+  // The habit app and full-screen NikAI Studio own the bottom of the screen;
+  // never stack a floating install banner over them.
+  if (
+    pathname.startsWith('/habit') ||
+    pathname === '/ai' ||
+    pathname === '/nikai' ||
+    pathname === '/ai-workspace' ||
+    pathname === '/agents'
+  ) {
+    return null;
+  }
   if (!isInstallable) return null;
 
   return (

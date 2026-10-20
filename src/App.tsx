@@ -107,9 +107,21 @@ function LegacyEditorRedirect() {
   const { search } = useLocation();
   return <Navigate to={`/${search || '?editor=1'}`} replace />;
 }
+const NIKAI_FULLSCREEN_ROUTES = ['/ai', '/nikai', '/ai-workspace', '/agents'];
+
 function DesktopFloatingShare() {
   const mobile = useIsMobile();
-  return mobile ? null : <ShareButtons variant="floating" />;
+  const { pathname } = useLocation();
+  if (mobile || NIKAI_FULLSCREEN_ROUTES.includes(pathname) || pathname.startsWith('/habit')) {
+    return null;
+  }
+  return <ShareButtons variant="floating" />;
+}
+
+function GlobalCookieConsent() {
+  const { pathname } = useLocation();
+  if (NIKAI_FULLSCREEN_ROUTES.includes(pathname)) return null;
+  return <CookieConsent />;
 }
 
 function RouteAnalytics() {
@@ -128,7 +140,7 @@ const App = () => {
         if ('caches' in window) {
           caches.keys().then(names => {
             names.forEach(name => {
-              if (!name.includes('v6.0.0')) {
+              if (!name.includes('v8.0.0')) {
                 console.log('[App] Purging stale cache:', name);
                 caches.delete(name);
               }
@@ -211,16 +223,16 @@ const App = () => {
                       </Routes>
                     </RouteErrorBoundary>
                     <GlobalDock />
-                    <CookieConsent />
+                    <GlobalCookieConsent />
                     {/* InstallBanner calls useLocation(), so it MUST stay inside
                         the router. Mounting it outside threw "useLocation() may
                         be used only in the context of a <Router> component" on
                         every route and sent the whole app to the global error
                         screen. See src/lib/appShell.test.tsx. */}
                     <InstallBanner />
+                    <DesktopFloatingShare />
                   </Suspense>
                 </BrowserRouter>
-                <DesktopFloatingShare />
               </TooltipProvider>
             </HandwritingDNAProvider>
           </PremiumProvider>
