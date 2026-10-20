@@ -210,9 +210,9 @@ export default function AccountPage() {
                 <p className="text-xs text-muted-foreground">Manage your profile & history</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => navigate('/ai-solver')} className="gap-2">
-              <Brain className="w-4 h-4" />
-              <span className="hidden sm:inline">AI Solver</span>
+            <Button variant="outline" size="sm" onClick={() => navigate('/ai')} className="gap-2">
+              <Brain className="w-4 h-4 text-purple-600" />
+              <span className="hidden sm:inline">NikAI</span>
             </Button>
           </div>
         </div>

@@ -88,7 +88,7 @@ const DOCK_ROUTES = ["/notebooks","/flashcards","/history","/account","/achievem
 function GlobalDock() {
   const { pathname } = useLocation();
   const mobile = useIsMobile();
-  if (mobile && ['/', '/hub', '/notebooks', '/notes', '/ai', '/account', '/appearance', '/templates'].includes(pathname)) return null;
+  if (mobile && ['/', '/hub', '/notebooks', '/notes', '/ai', '/nikai', '/account', '/appearance', '/templates'].includes(pathname)) return null;
   if (!DOCK_ROUTES.includes(pathname)) return null;
   return <><div className="h-24 md:hidden" aria-hidden /><AppDock /></>;
 }
@@ -164,6 +164,7 @@ const App = () => {
                         <Route path="/app" element={<LegacyEditorRedirect />} />
                         <Route path="/account-details" element={<Account />} />
                         <Route path="/ai" element={<AstaAIWorkspace />} />
+                        <Route path="/nikai" element={<AstaAIWorkspace />} />
                         <Route path="/ai-workspace" element={<AstaAIWorkspace />} />
                         <Route path="/ai-classic" element={<AI4Page />} />
                         <Route path="/appearance" element={<MobileExperience />} />
@@ -195,7 +196,7 @@ const App = () => {
                         <Route path="/institutions" element={<Suspense fallback={<PageLoader />}><B2BPage /></Suspense>} />
                         <Route path="/feedback" element={<Suspense fallback={<PageLoader />}><FeedbackPage /></Suspense>} />
                         <Route path="/handbook" element={<HandbookPage />} />
-                        <Route path="/agents" element={<AgentConsolePage />} />
+                        <Route path="/agents" element={<AstaAIWorkspace />} />
                         <Route path="/audit" element={<AuditReportsPage />} />
                         <Route path="/flashcards" element={<FlashcardsPage />} />
                         <Route path="/hub" element={<ResponsivePage><HubPage /></ResponsivePage>} />

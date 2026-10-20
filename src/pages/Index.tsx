@@ -242,18 +242,22 @@ const Index = () => {
   }, [currentPageIndex]);
 
   useEffect(() => {
-    if (!isMobile) return;
-    setRealPenMode(mobileAppearance.appearance.realPen);
+    if (isMobile) setRealPenMode(mobileAppearance.appearance.realPen);
     const pending = sessionStorage.getItem('niknote-mobile-open');
     if (pending) {
       sessionStorage.removeItem('niknote-mobile-open');
       try {
         const note = JSON.parse(pending) as { title: string; blocks: Block[]; notebookId?: string; style?: PageStyle };
-        setNoteTitle(note.title); blockEditor.setBlocks(note.blocks.length ? note.blocks : [createBlock()]);
+        setNoteTitle(note.title);
+        const safeBlocks = note.blocks.length ? note.blocks : [createBlock()];
+        blockEditor.setBlocks(safeBlocks);
+        updateCurrentPageLines(
+          safeBlocks.map((b) => createLineWithVariation(b.content || '', (b.color as any) || 'blue'))
+        );
         setCloudNotebookId(note.notebookId || null);
         if (note.style) updateSettings({ pageStyle: note.style });
       } catch { toast.error('Could not open this note'); }
-    } else if (new URLSearchParams(search).has('new')) {
+    } else if (isMobile && new URLSearchParams(search).has('new')) {
       blockEditor.setBlocks([createBlock()]); setCloudNotebookId(null); setNoteTitle('Untitled Note');
       navigate('/?editor=1', { replace: true });
     }
@@ -922,15 +926,27 @@ const Index = () => {
               </>
             ) : (
               <>
-                {/* Desktop: AI Solver glow button */}
-                <motion.div whileTap={{ scale: 0.93 }} whileHover={{ scale: 1.04 }}>
+                {/* Single Unified NikAI Button in Authentic NikNote Logo Style */}
+                <motion.div whileTap={{ scale: 0.94 }} whileHover={{ scale: 1.04 }}>
                   <button
-                    onClick={() => navigate('/ai')}
-                    className="relative group flex items-center gap-2 h-9 px-5 rounded-full font-semibold text-xs text-white bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-600 shadow-[0_0_20px_rgba(127,90,240,0.4)] hover:shadow-[0_0_30px_rgba(127,90,240,0.6)] transition-all"
+                    onClick={() => setShowAIWorkspace(prev => !prev)}
+                    className="relative group flex items-center gap-2 h-9 px-5 rounded-full text-white shadow-[0_6px_22px_rgba(139,30,224,0.38)] hover:shadow-[0_8px_28px_rgba(219,39,119,0.52)] transition-all"
+                    style={{
+                      background: 'linear-gradient(100deg, #5B1BC9 0%, #8B1EE0 42%, #DB2777 80%, #F46B55 100%)',
+                    }}
                   >
-                    <span className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-600 opacity-0 group-hover:opacity-100 blur-md transition-opacity -z-10" />
-                    <Sparkles className="w-4 h-4 animate-pulse" />
-                    AI 4.0
+                    <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                    <span
+                      style={{
+                        fontFamily: "'Dancing Script', 'Caveat', cursive",
+                        fontWeight: 700,
+                        fontSize: 19,
+                        lineHeight: 1,
+                        letterSpacing: '-0.01em',
+                      }}
+                    >
+                      NikAI
+                    </span>
                   </button>
                 </motion.div>
 
@@ -942,17 +958,6 @@ const Index = () => {
                   >
                     <Scan className="w-4 h-4" />
                     DNA Scan
-                  </button>
-                </motion.div>
-
-                {/* AI Workspace button */}
-                <motion.div whileTap={{ scale: 0.93 }} whileHover={{ scale: 1.04 }}>
-                  <button
-                    onClick={() => setShowAIWorkspace(true)}
-                    className="flex items-center gap-2 h-9 px-4 rounded-full font-semibold text-xs text-white bg-gradient-to-r from-orange-500 to-red-500 shadow-[0_0_16px_rgba(249,115,22,0.3)] hover:shadow-[0_0_24px_rgba(249,115,22,0.5)] transition-all"
-                  >
-                    <Brain className="w-4 h-4" />
-                    Workspace
                   </button>
                 </motion.div>
 
@@ -1096,7 +1101,7 @@ const Index = () => {
               <div className="nn-board-footer">
                 <Button variant="ghost" onClick={() => setShowMobileStyleSheet(true)}><Settings2 className="h-4 w-4" />Paper & pen</Button>
                 <Button variant="ghost" onClick={() => setShowImportPanel(true)} aria-label="Import document" title="Import document"><Upload className="h-4 w-4" /></Button>
-                <Button variant="ghost" onClick={() => setShowAIWorkspace(true)} aria-label="AI Workspace" title="AI Workspace"><Sparkles className="h-4 w-4" /></Button>
+                <Button variant="ghost" onClick={() => setShowAIWorkspace(true)} aria-label="NikAI" title="NikAI"><Sparkles className="h-4 w-4 text-purple-600" /></Button>
                 <Button onClick={handleExportPDF} disabled={isExporting}><FileDown className="h-4 w-4" />PDF</Button>
               </div>
 
@@ -1259,8 +1264,8 @@ const Index = () => {
                   <div className="p-3 space-y-3">
                     {/* Quick tools */}
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <Button variant="ghost" size="sm" onClick={() => setShowAIWorkspace(true)} className="h-8 px-2.5 rounded-xl text-[10px] gap-1 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100">
-                        <Brain className="w-3 h-3 text-purple-500" /> AI Workspace
+                      <Button variant="ghost" size="sm" onClick={() => setShowAIWorkspace(true)} className="h-8 px-3 rounded-xl text-xs font-bold gap-1.5 bg-gradient-to-r from-purple-50 via-fuchsia-50 to-orange-50 border border-purple-200 text-purple-900">
+                        <Sparkles className="w-3.5 h-3.5 text-pink-600" /> NikAI
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => setShowScanPanel(true)} className="h-8 px-2.5 rounded-xl text-[10px] gap-1 bg-emerald-50 border border-emerald-100">
                         <Scan className="w-3 h-3 text-emerald-500" /> DNA Scan

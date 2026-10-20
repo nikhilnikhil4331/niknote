@@ -13,10 +13,9 @@ const GROUPS = [
     { to: '/documents', label: 'Documents', desc: 'Upload PDF & images', icon: FileText, hue: 210 },
     { to: '/history', label: 'History', desc: 'Recent work', icon: History, hue: 190 },
   ]},
-  { title: 'AI', items: [
-    { to: '/ai-solver', label: 'AI Solver', desc: 'Step-by-step answers', icon: Sparkles, hue: 285 },
-    { to: '/ai', label: 'AI Studio', desc: 'Notes, summaries, more', icon: Bot, hue: 250 },
-    { to: '/flashcards', label: 'Flashcards', desc: 'Smart revision', icon: Layers, hue: 20 },
+  { title: 'NikAI & Study', items: [
+    { to: '/ai', label: 'NikAI', desc: 'Astra Core · Memory · Smart Notes', icon: Sparkles, hue: 280 },
+    { to: '/flashcards', label: 'Flashcards', desc: 'Smart revision decks', icon: Layers, hue: 20 },
     { to: '/handbook', label: 'Study Handbook', desc: 'Exam prep guides', icon: GraduationCap, hue: 160 },
   ]},
   { title: 'Life', items: [

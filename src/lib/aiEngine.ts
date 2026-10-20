@@ -1,16 +1,11 @@
 // ============================================================
-// NikNote 6.0 — Unified Asta Ultra AI Engine
-// Powers Mobile /ai, Desktop /ai, Editor AI, @AI Mentions,
-// Homework Vision Solver, Notes Architect & Interactive Quizzes.
-//
-// 4-Tier Resilient Execution Chain:
-//   1. /api/ai (Vercel Serverless Edge Function — server-side SSE stream)
-//   2. Direct Cloud SSE Stream (Groq Llama 3.3 70B / GPT-OSS 120B + Gemini 2.5)
-//   3. Supabase Edge Function (openai-brain)
-//   4. Built-in Offline STEM / Study / Code / Writing Synthesis Engine
+// NikAI — Unified Astra Neural Core Engine
+// Powers NikAI (/ai), Inline Editor AI, @AI Mentions,
+// Persistent Session Memory, Smart Notes & Live Quizzes.
 // ============================================================
 
 import { supabase } from '@/integrations/supabase/client';
+import { buildNikAIMemoryPrompt } from '@/lib/nikaiMemory';
 
 export type AstaMode =
   | 'auto'
@@ -23,11 +18,11 @@ export type AstaMode =
   | 'write';
 
 export type AstaModelChoice =
-  | 'auto'
-  | 'llama-3.3-70b'
-  | 'gpt-oss-120b'
-  | 'gemini-2.5-pro'
-  | 'gemini-2.5-flash';
+  | 'astra-auto'
+  | 'astra-pro'
+  | 'astra-flash'
+  | 'astra-vision'
+  | 'astra-coder';
 
 export interface AstaImageAttachment {
   name?: string;
@@ -51,7 +46,9 @@ export interface AstaStreamOptions {
   messages: AstaChatTurn[];
   mode?: AstaMode;
   model?: AstaModelChoice;
+  threadId?: string;
   noteContext?: string;
+  memoryContext?: string;
   action?: string;
   targetLanguage?: string;
   instruction?: string;
@@ -112,17 +109,17 @@ function getEffectiveClientKeys(): { groq: string; gemini: string; openai: strin
 export async function probeAstaProviders(): Promise<{ cloudReady: boolean; providers: string[] }> {
   const localKeys = getEffectiveClientKeys();
   const active = new Set<string>();
-  if (localKeys.groq) active.add('Groq Llama 3.3 70B');
-  if (localKeys.gemini) active.add('Google Gemini 2.5');
-  if (localKeys.openai) active.add('OpenAI GPT-4o');
+  if (localKeys.openai) active.add('NikAI Astra OpenAI Core');
+  if (localKeys.groq) active.add('NikAI Astra Turbo 120B');
+  if (localKeys.gemini) active.add('NikAI Astra Vision 2.5');
 
   try {
     const res = await fetch('/api/ai', { method: 'GET' });
     if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
       const data = await res.json();
-      if (data?.providers?.groq) active.add('Groq Llama 3.3 70B');
-      if (data?.providers?.gemini) active.add('Google Gemini 2.5');
-      if (data?.providers?.openai) active.add('OpenAI GPT-4o');
+      if (data?.providers?.openai) active.add('NikAI Astra OpenAI Core');
+      if (data?.providers?.groq) active.add('NikAI Astra Turbo 120B');
+      if (data?.providers?.gemini) active.add('NikAI Astra Vision 2.5');
     }
   } catch {
     // ignore network check failure
@@ -135,14 +132,14 @@ export async function probeAstaProviders(): Promise<{ cloudReady: boolean; provi
 }
 
 const CLIENT_SYSTEM_PROMPTS: Record<AstaMode, string> = {
-  auto: `You are **NikNote Asta Ultra**, a ChatGPT-Ultra class AI assistant for studying, coding, problem-solving, and writing. Match the user's language naturally (English, Hinglish, or Hindi). Give complete, insightful, well-structured Markdown answers with clear headings, bold key concepts, tables, formulas, and fenced code blocks where helpful.`,
-  deep: `You are **NikNote Asta Deep Think** — reason step by step from first principles, verify every equation/edge case, and highlight the final conclusion clearly. Match user language (English / Hinglish / Hindi).`,
-  teacher: `You are **NikNote AI Master Teacher** — explain with: 1) 30-Second Intuition & real-life analogy, 2) Deep Step-by-Step Breakdown, 3) Key Formulas/Definitions, 4) Worked Example, 5) Exam Pro-Tip. Match user language.`,
-  solver: `You are **NikNote Exam & Homework Solver** — write Given -> Formula/Concept -> Step-by-Step Working -> Verification -> Final Highlighted Answer -> Shortcut Trick.`,
-  code: `You are **NikNote Principal Software Architect** — write clean, complete, production-ready fenced code blocks with clear explanations, edge cases, and Time/Space Complexity.`,
-  notes: `You are **NikNote Smart Notes Architect** — build revision-ready Markdown study notes with Overview, Bullet Points with **bold keywords**, Comparison Table, Formulas, Memory Mnemonic, and 3 Practice Questions.`,
-  quiz: `You are **NikNote Interactive Quiz Master** — generate 5 high-yield MCQs (Easy to Hard). Format each question strictly as:\n### Q1. [Question]\n- A) [Option]\n- B) [Option]\n- C) [Option]\n- D) [Option]\n**Answer:** [A/B/C/D]\n**Explanation:** [Why correct]`,
-  write: `You are **NikNote Writing Studio Pro** — craft clear, compelling, natural prose, summaries, grammar fixes, or translations matching the requested language and tone.`,
+  auto: `You are **NikAI** (powered by **Astra Neural Core**), NikNote's single unified AI intelligence. Match user language (English / Hinglish / Hindi). Give complete, crystal-clear structured Markdown answers with headings, **bold terms**, tables, code/formula blocks, and \`> 💡 Pro-Tips\` ready for 1-tap Handwriting conversion.`,
+  deep: `You are **NikAI Astra Pro** — reason step by step from first principles, check every equation and edge case, and highlight the final answer clearly.`,
+  teacher: `You are **NikAI Master Guru** — explain with: 1) Intuition & real-life analogy, 2) Step-by-Step Breakdown, 3) Formulas/Rules, 4) Worked Example, 5) > 💡 Exam Pro-Tip.`,
+  solver: `You are **NikAI Step-by-Step Solver** — present Given → Formula/Concept → Step-by-Step Working → Verification → ✅ Final Answer → ⚡ Shortcut Trick.`,
+  code: `You are **NikAI Astra Coder** — write clean, complete, production-ready fenced code blocks with explanations, edge cases, and Time/Space Complexity.`,
+  notes: `You are **NikAI Smart Notes Architect** — build complete exam-ready notebook pages with \`# Chapter Title\`, \`## Subheadings\`, bullet definitions (\`- **Term:** Meaning\`), callout tips (\`> 💡\`), comparison tables, and 3 self-check questions.`,
+  quiz: `You are **NikAI Live Quiz Master** — generate 5 high-yield MCQs (Easy to Tough). Format strictly:\n### Q1. [Question]\n- A) [Option]\n- B) [Option]\n- C) [Option]\n- D) [Option]\n**Answer:** [A/B/C/D]\n**Explanation:** [Why correct]`,
+  write: `You are **NikAI Writing Studio** — craft compelling, natural prose, summaries, grammar fixes, or translations matching the requested language.`,
 };
 
 export function generateFollowUpSuggestions(query: string, mode: AstaMode): string[] {
@@ -152,31 +149,34 @@ export function generateFollowUpSuggestions(query: string, mode: AstaMode): stri
 
   if (mode === 'quiz') {
     return hinglish
-      ? [`Aur 5 tough JEE/UPSC level MCQs banao`, `Is topic ke short revision notes banao`, `Weak concepts ko example se samjhao`]
-      : [`Give me 5 harder exam-level MCQs`, `Turn this into 1-page revision notes`, `Explain the trickiest concept with an example`];
+      ? [`Aur 5 tough exam-level MCQs banao 🔥`, `Is topic ke Handwriting Smart Notes banao ✍️`, `Sabse tricky concept example se samjhao 🧠`]
+      : [`Give me 5 tougher exam MCQs 🔥`, `Build Handwriting Smart Notes on this ✍️`, `Explain the trickiest concept step by step 🧠`];
   }
   if (mode === 'code') {
     return [
       `Add unit tests & edge cases for this code`,
-      `Can we optimize the time/space complexity further?`,
-      `Explain dry-run step by step with sample input`,
+      `Optimize time & space complexity further`,
+      `Walk through a line-by-line dry run`,
     ];
   }
   return hinglish
     ? [
-        `Is topic pe 5 MCQ quiz le lo 🎯`,
-        `Exam-ready short revision notes banao 📓`,
-        `Ek real-life solved numerical example dikhao 🧮`,
+        `Is topic pe 5 Live MCQ Quiz khilao 🎯`,
+        `Handwriting Notebook Notes ready karo ✍️`,
+        `Ek solved exam numerical step-by-step dikhao ⚡`,
       ]
     : [
-        `Quiz me with 5 interactive MCQs 🎯`,
-        `Create crisp revision notes on "${shortTopic}" 📓`,
-        `Walk through a solved example step by step 🧠`,
+        `Launch a 5-MCQ Live Quiz on "${shortTopic}" 🎯`,
+        `Build ready-to-write Smart Notes on "${shortTopic}" ✍️`,
+        `Solve a worked exam example step by step ⚡`,
       ];
 }
 
 // ── Tier 1: Same-origin /api/ai SSE stream ──
-async function tryServerlessStream(opts: AstaStreamOptions): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
+async function tryServerlessStream(
+  opts: AstaStreamOptions,
+  memoryContext: string
+): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
   const custom = readCustomAIKeys();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (custom.groqKey) headers['X-Groq-Key'] = custom.groqKey;
@@ -190,8 +190,9 @@ async function tryServerlessStream(opts: AstaStreamOptions): Promise<{ content: 
     body: JSON.stringify({
       messages: opts.messages,
       mode: opts.mode || 'auto',
-      model: opts.model || 'auto',
+      model: opts.model || 'astra-auto',
       noteContext: opts.noteContext,
+      memoryContext,
       action: opts.action,
       targetLanguage: opts.targetLanguage,
       instruction: opts.instruction,
@@ -208,7 +209,7 @@ async function tryServerlessStream(opts: AstaStreamOptions): Promise<{ content: 
   let buffer = '';
   let content = '';
   let thinking = '';
-  let model = 'asta-ultra';
+  let model = 'NikAI Astra Core';
   let provider = 'cloud';
 
   try {
@@ -250,37 +251,46 @@ async function tryServerlessStream(opts: AstaStreamOptions): Promise<{ content: 
   return content.trim() ? { content, thinking, model, provider } : null;
 }
 
-// ── Tier 2: Direct Browser Cloud Stream (Groq / Gemini / OpenAI) ──
-async function tryDirectCloudStream(opts: AstaStreamOptions): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
+// ── Tier 2: Direct Browser Cloud Stream (OpenAI / Groq / Gemini) ──
+async function tryDirectCloudStream(
+  opts: AstaStreamOptions,
+  memoryContext: string
+): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
   const keys = getEffectiveClientKeys();
   if (!keys.groq && !keys.gemini && !keys.openai) return null;
 
   const mode = opts.mode || 'auto';
   const sys = [
     CLIENT_SYSTEM_PROMPTS[mode] || CLIENT_SYSTEM_PROMPTS.auto,
+    memoryContext ? `\n\nActive User Memory & Previous Sessions:\n${memoryContext.slice(0, 5000)}` : '',
     opts.noteContext?.trim() ? `\n\nAttached Note Context:\n${opts.noteContext.slice(0, 12000)}` : '',
   ].join('');
 
   const turns = opts.messages.filter((m) => m.role !== 'system');
   const hasImages = turns.some((m) => m.images && m.images.length > 0);
+  const preferGemini = hasImages || opts.model === 'astra-vision' || (!keys.openai && !keys.groq && Boolean(keys.gemini));
 
-  // Try Gemini first when images exist or Gemini model requested, else Groq first for ~300 tok/s speed
-  const preferGemini = hasImages || opts.model?.startsWith('gemini') || (!keys.groq && Boolean(keys.gemini));
+  const tryOpenAIOrGroq = async (useOpenAI: boolean) => {
+    const key = useOpenAI ? keys.openai : keys.groq;
+    if (!key) return null;
+    const url = useOpenAI
+      ? 'https://api.openai.com/v1/chat/completions'
+      : 'https://api.groq.com/openai/v1/chat/completions';
+    const upstreamModel = useOpenAI
+      ? 'gpt-4o'
+      : hasImages
+        ? 'meta-llama/llama-4-scout-17b-16e-instruct'
+        : opts.model === 'astra-pro' || mode === 'deep'
+          ? 'openai/gpt-oss-120b'
+          : 'llama-3.3-70b-versatile';
+    const label = opts.model === 'astra-pro' || mode === 'deep' ? 'NikAI Astra Pro' : 'NikAI Astra Core';
 
-  const tryGroq = async () => {
-    if (!keys.groq) return null;
-    const model = hasImages
-      ? 'meta-llama/llama-4-scout-17b-16e-instruct'
-      : opts.model === 'gpt-oss-120b' || mode === 'deep'
-        ? 'openai/gpt-oss-120b'
-        : 'llama-3.3-70b-versatile';
-
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${keys.groq}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
       signal: opts.signal,
       body: JSON.stringify({
-        model,
+        model: upstreamModel,
         stream: true,
         temperature: 0.55,
         max_tokens: 4096,
@@ -301,7 +311,7 @@ async function tryDirectCloudStream(opts: AstaStreamOptions): Promise<{ content:
       }),
     });
     if (!res.ok || !res.body) return null;
-    opts.onMeta?.({ model, provider: 'groq' });
+    opts.onMeta?.({ model: label, provider: useOpenAI ? 'openai' : 'groq' });
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -330,12 +340,13 @@ async function tryDirectCloudStream(opts: AstaStreamOptions): Promise<{ content:
     } finally {
       reader.releaseLock();
     }
-    return content.trim() ? { content, thinking, model, provider: 'groq' } : null;
+    return content.trim() ? { content, thinking, model: label, provider: useOpenAI ? 'openai' : 'groq' } : null;
   };
 
   const tryGemini = async () => {
     if (!keys.gemini) return null;
-    const model = opts.model === 'gemini-2.5-pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+    const model = opts.model === 'astra-pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+    const label = opts.model === 'astra-pro' ? 'NikAI Astra Pro' : 'NikAI Astra Vision';
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${encodeURIComponent(keys.gemini)}`,
       {
@@ -361,7 +372,7 @@ async function tryDirectCloudStream(opts: AstaStreamOptions): Promise<{ content:
       }
     );
     if (!res.ok || !res.body) return null;
-    opts.onMeta?.({ model, provider: 'gemini' });
+    opts.onMeta?.({ model: label, provider: 'gemini' });
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -394,17 +405,28 @@ async function tryDirectCloudStream(opts: AstaStreamOptions): Promise<{ content:
     } finally {
       reader.releaseLock();
     }
-    return content.trim() ? { content, thinking, model, provider: 'gemini' } : null;
+    return content.trim() ? { content, thinking, model: label, provider: 'gemini' } : null;
   };
 
   if (preferGemini) {
-    return (await tryGemini().catch(() => null)) || (await tryGroq().catch(() => null));
+    return (
+      (await tryGemini().catch(() => null)) ||
+      (await tryOpenAIOrGroq(true).catch(() => null)) ||
+      (await tryOpenAIOrGroq(false).catch(() => null))
+    );
   }
-  return (await tryGroq().catch(() => null)) || (await tryGemini().catch(() => null));
+  return (
+    (await tryOpenAIOrGroq(true).catch(() => null)) ||
+    (await tryOpenAIOrGroq(false).catch(() => null)) ||
+    (await tryGemini().catch(() => null))
+  );
 }
 
 // ── Tier 3: Supabase Edge Function fallback ──
-async function trySupabaseEdge(opts: AstaStreamOptions): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
+async function trySupabaseEdge(
+  opts: AstaStreamOptions,
+  memoryContext: string
+): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
   try {
     const modeMap: Record<AstaMode, string> = {
       auto: 'teacher',
@@ -416,19 +438,20 @@ async function trySupabaseEdge(opts: AstaStreamOptions): Promise<{ content: stri
       quiz: 'quiz',
       write: 'notes',
     };
+    const combinedContext = [memoryContext, opts.noteContext].filter(Boolean).join('\n\n');
     const { data, error } = await supabase.functions.invoke('openai-brain', {
       body: {
         messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
         agentType: modeMap[opts.mode || 'auto'] || 'teacher',
-        noteContext: opts.noteContext,
+        noteContext: combinedContext,
       },
     });
     if (error || !data) return null;
     const text = (data.content || data.response || '').trim();
     if (!text) return null;
-    opts.onMeta?.({ model: data.model || 'edge-brain', provider: data.provider || 'supabase' });
+    opts.onMeta?.({ model: 'NikAI Astra Edge', provider: data.provider || 'supabase' });
     opts.onToken?.(text, text);
-    return { content: text, thinking: '', model: data.model || 'edge-brain', provider: data.provider || 'supabase' };
+    return { content: text, thinking: '', model: 'NikAI Astra Edge', provider: data.provider || 'supabase' };
   } catch {
     return null;
   }
@@ -436,7 +459,6 @@ async function trySupabaseEdge(opts: AstaStreamOptions): Promise<{ content: stri
 
 // ── Tier 4: Built-in Offline STEM / Code / Study / Math Engine ──
 function solveMathExpression(input: string): string | null {
-  // Quadratic solver: ax^2 + bx + c = 0
   const quad = input.replace(/\s+/g, '').match(/^([+-]?\d*\.?\d*)x(?:\^2|²)([+-]\d*\.?\d*)x([+-]\d+\.?\d*)=0$/i);
   if (quad) {
     const a = quad[1] === '' || quad[1] === '+' ? 1 : quad[1] === '-' ? -1 : Number(quad[1]);
@@ -451,7 +473,7 @@ function solveMathExpression(input: string): string | null {
 
 ### 1. Given Equation
 \`${a}x² ${b >= 0 ? '+' : '-'} ${Math.abs(b)}x ${c >= 0 ? '+' : '-'} ${Math.abs(c)} = 0\`
-- **a** = ${a}, **b** = ${b}, **c** = ${c}
+- **a:** ${a}, **b:** ${b}, **c:** ${c}
 
 ### 2. Discriminant Formula
 \`D = b² - 4ac = (${b})² - 4(${a})(${c}) = ${b * b} - (${4 * a * c}) = ${D}\`
@@ -464,7 +486,6 @@ function solveMathExpression(input: string): string | null {
     }
   }
 
-  // Safe arithmetic / scientific evaluator
   const cleaned = input
     .replace(/^(solve|calculate|what is|evaluate|compute|kitna hoga|value of)\s+/i, '')
     .replace(/\?+$/, '')
@@ -475,7 +496,6 @@ function solveMathExpression(input: string): string | null {
 
   if (/^[0-9+\-*/().%\s*]+$/.test(cleaned) && /[+\-*/%]/.test(cleaned) && /\d/.test(cleaned)) {
     try {
-      // Safe validated numeric expression only
       const value = Function(`"use strict"; return (${cleaned});`)();
       if (typeof value === 'number' && Number.isFinite(value)) {
         const formatted = Number.isInteger(value) ? String(value) : Number(value.toFixed(8)).toString();
@@ -488,19 +508,28 @@ function solveMathExpression(input: string): string | null {
   return null;
 }
 
-async function synthesizeOfflineAstaResponse(opts: AstaStreamOptions): Promise<{ content: string; thinking: string; model: string; provider: string }> {
+async function synthesizeOfflineAstaResponse(
+  opts: AstaStreamOptions,
+  memoryContext: string
+): Promise<{ content: string; thinking: string; model: string; provider: string }> {
   const lastUser = [...opts.messages].reverse().find((m) => m.role === 'user')?.content || '';
   const mathSolved = solveMathExpression(lastUser);
   if (mathSolved) {
-    opts.onMeta?.({ model: 'asta-symbolic-math', provider: 'local' });
+    opts.onMeta?.({ model: 'NikAI Astra Symbolic', provider: 'local' });
     opts.onToken?.(mathSolved, mathSolved);
-    return { content: mathSolved, thinking: '', model: 'asta-symbolic-math', provider: 'local' };
+    return { content: mathSolved, thinking: '', model: 'NikAI Astra Symbolic', provider: 'local' };
   }
 
-  // Delegate to enriched knowledge engine when available, with streamed chunk feel
   const { buildOfflineKnowledgeResponse } = await import('@/lib/astaOfflineBrain');
-  const full = buildOfflineKnowledgeResponse(lastUser, opts.mode || 'auto', opts.noteContext, opts.action, opts.targetLanguage);
-  opts.onMeta?.({ model: 'asta-local-core', provider: 'local' });
+  const full = buildOfflineKnowledgeResponse(
+    lastUser,
+    opts.mode || 'auto',
+    opts.noteContext,
+    opts.action,
+    opts.targetLanguage,
+    memoryContext
+  );
+  opts.onMeta?.({ model: 'NikAI Astra Local Core', provider: 'local' });
 
   const words = full.split(/(\s+)/);
   let built = '';
@@ -512,7 +541,7 @@ async function synthesizeOfflineAstaResponse(opts: AstaStreamOptions): Promise<{
     opts.onToken?.(chunk, built);
     await new Promise((r) => setTimeout(r, 8));
   }
-  return { content: built || full, thinking: '', model: 'asta-local-core', provider: 'local' };
+  return { content: built || full, thinking: '', model: 'NikAI Astra Local Core', provider: 'local' };
 }
 
 // ── Public Entry Points ──
@@ -520,18 +549,19 @@ export async function streamAstaAI(opts: AstaStreamOptions): Promise<AstaResult>
   const t0 = performance.now();
   const lastUser = [...opts.messages].reverse().find((m) => m.role === 'user')?.content || '';
   const mode = opts.mode || 'auto';
+  const memoryContext = opts.memoryContext ?? buildNikAIMemoryPrompt(opts.threadId);
 
   const result =
-    (await tryServerlessStream(opts).catch((err) => {
+    (await tryServerlessStream(opts, memoryContext).catch((err) => {
       if (err?.name === 'AbortError') throw err;
       return null;
     })) ||
-    (await tryDirectCloudStream(opts).catch((err) => {
+    (await tryDirectCloudStream(opts, memoryContext).catch((err) => {
       if (err?.name === 'AbortError') throw err;
       return null;
     })) ||
-    (await trySupabaseEdge(opts).catch(() => null)) ||
-    (await synthesizeOfflineAstaResponse(opts));
+    (await trySupabaseEdge(opts, memoryContext).catch(() => null)) ||
+    (await synthesizeOfflineAstaResponse(opts, memoryContext));
 
   return {
     ...result,
