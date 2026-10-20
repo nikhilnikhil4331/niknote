@@ -59,100 +59,45 @@ export const AISolverPage: React.FC = () => {
       return;
     }
 
-    if (!user || !session) {
-      toast.error('Please sign in to use AI features');
-      navigate('/login');
-      return;
-    }
-
     setIsProcessing(true);
     setOutputContent('');
 
     try {
-      // Use the new OpenAI brain endpoint
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openai-brain`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          action: processMode,
-          content: inputContent,
-          mode: userMode,
-          stream: true,
-        }),
+      const { streamAstaAI } = await import('@/lib/aiEngine');
+      const modeMap: Record<ProcessMode, import('@/lib/aiEngine').AstaMode> = {
+        solve: 'solver',
+        explain: 'teacher',
+        improve: 'write',
+        summarize: 'notes',
+        rewrite: 'write',
+        essay: 'write',
+        template: 'notes',
+        notes: 'notes',
+      };
+
+      const roleContext = `Audience level: ${userMode}. Task: ${processMode.toUpperCase()} the user's content thoroughly with clear Markdown formatting.`;
+      const res = await streamAstaAI({
+        messages: [
+          { role: 'system', content: roleContext },
+          { role: 'user', content: inputContent },
+        ],
+        mode: modeMap[processMode] || 'auto',
+        action: processMode === 'summarize' ? 'summarize' : processMode === 'improve' ? 'improve' : undefined,
+        onToken: (_delta, fullText) => setOutputContent(fullText),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 401) {
-          toast.error('Session expired. Please sign in again.');
-          navigate('/login');
-          return;
-        }
-        if (response.status === 429) {
-          toast.error('AI is busy right now. Please wait a moment and try again.', {
-            action: {
-              label: 'Retry',
-              onClick: () => handleProcess(),
-            },
-          });
-          return;
-        }
-        if (response.status === 402) {
-          toast.error('Daily AI limit reached. Upgrade for unlimited access.', {
-            action: {
-              label: 'Upgrade',
-              onClick: () => navigate('/payment'),
-            },
-          });
-          return;
-        }
-        throw new Error(errorData.error || 'Something went wrong. Please try again.');
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response stream');
-
-      const decoder = new TextDecoder();
-      let fullText = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6).trim();
-          if (data === '[DONE]') continue;
-
-          try {
-            const parsed = JSON.parse(data);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              fullText += content;
-              setOutputContent(fullText);
-            }
-          } catch {
-            // Ignore parse errors
-          }
-        }
-      }
-
-      if (fullText) {
+      if (res.content) {
+        setOutputContent(res.content);
         toast.success('Content processed successfully!');
-        // Log activity
-        await supabase.from('activity_logs').insert({
-          user_id: user.id,
-          action: 'ai_document_process',
-          category: 'ai',
-          details: { processMode, userMode, contentLength: inputContent.length },
-          page_url: '/ai-solver',
-        });
+        if (user?.id) {
+          await supabase.from('activity_logs').insert({
+            user_id: user.id,
+            action: 'ai_document_process',
+            category: 'ai',
+            details: { processMode, userMode, contentLength: inputContent.length, model: res.model },
+            page_url: '/ai-solver',
+          }).then(() => undefined, () => undefined);
+        }
       }
     } catch (err) {
       console.error('Processing error:', err);
@@ -166,7 +111,7 @@ export const AISolverPage: React.FC = () => {
     } finally {
       setIsProcessing(false);
     }
-  }, [inputContent, processMode, userMode, title, user, session, navigate]);
+  }, [inputContent, processMode, userMode, user]);
 
   const handleCopy = useCallback(async () => {
     if (!outputContent) return;

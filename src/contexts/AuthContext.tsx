@@ -113,11 +113,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!session && AUTO_GUEST && !/^\/(login|auth|reset-password)/.test(window.location.pathname)) {
           // One private anonymous identity per browser; listener sets user when ready.
           (async () => {
-            // Retry slow/flaky mobile networks a few times before giving up.
+            // Retry slow/flaky mobile networks, but never stall when server explicitly disables anon auth.
             for (let i = 0; i < 3 && mounted; i++) {
               try {
                 const { error } = await timed(supabase.auth.signInAnonymously(), 9000, 'Auto guest sign-in timed out');
                 if (!error) break;
+                if (/disabled|not enabled|422/i.test(error.message || '')) break;
               } catch { /* network timeout — retry with backoff */ }
               await new Promise(r => setTimeout(r, 800 * (i + 1)));
             }

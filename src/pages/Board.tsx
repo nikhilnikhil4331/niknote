@@ -109,9 +109,29 @@ export default function BoardScreen() {
   const [, force] = useState(0);
   const page = data.pages[Math.min(pageIdx, data.pages.length - 1)];
 
-  // ---------- load ----------
+  // ---------- load (cloud when signed in, local device storage when guest) ----------
+  const LOCAL_BOARDS_KEY = 'niknote.boards.v1.local';
+  const readLocalBoards = (): { id: string; title: string; updated_at: string; data: BoardData }[] => {
+    try { return JSON.parse(localStorage.getItem(LOCAL_BOARDS_KEY) || '[]'); } catch { return []; }
+  };
+  const writeLocalBoards = (list: { id: string; title: string; updated_at: string; data: BoardData }[]) => {
+    try { localStorage.setItem(LOCAL_BOARDS_KEY, JSON.stringify(list)); } catch { /* quota */ }
+  };
+
   useEffect(() => {
-    if (!user) return;
+    if (loading) return;
+    if (!user) {
+      const list = readLocalBoards();
+      if (!boardId) { setBoards(list); return; }
+      const row = list.find(b => b.id === boardId);
+      if (!row) { toast.error('Board not found'); setParams({}); return; }
+      const d = normalizeBoard(row.data);
+      setData(d); setTitle(row.title); setPageIdx(0); history.current = new History(); setReady(true); setSave('saved');
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        setZoom(Math.max(0.35, Math.min(1, +((window.innerWidth - 36) / d.pages[0].width).toFixed(2))));
+      }
+      return;
+    }
     if (!boardId) {
       supabase.from('boards').select('id,title,updated_at').order('updated_at', { ascending: false }).then(({ data: rows, error }: any) => {
         if (error) toast.error('Could not load boards'); setBoards(rows ?? []);
@@ -125,18 +145,30 @@ export default function BoardScreen() {
       let d = normalizeBoard(row.data);
       if (local) { try { const l = JSON.parse(local); if (l.at > new Date(row.updated_at).getTime()) { d = normalizeBoard(l.data); toast.info('Restored unsaved changes'); } } catch { /* ignore */ } }
       setData(d); setTitle(row.title); setPageIdx(0); history.current = new History(); setReady(true); setSave('saved');
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        setZoom(Math.max(0.35, Math.min(1, +((window.innerWidth - 36) / d.pages[0].width).toFixed(2))));
+      }
     });
-  }, [user, boardId, setParams]);
+  }, [user, loading, boardId, setParams]);
 
   // ---------- autosave ----------
   const dirty = useRef(false);
   const persist = useCallback(async () => {
     if (!boardId) return;
     setSave('saving');
+    if (!user) {
+      const list = readLocalBoards();
+      const idx = list.findIndex(b => b.id === boardId);
+      const entry = { id: boardId, title, updated_at: new Date().toISOString(), data };
+      if (idx >= 0) list[idx] = entry; else list.unshift(entry);
+      writeLocalBoards(list);
+      dirty.current = false; setSave('saved');
+      return;
+    }
     const { error } = await supabase.from('boards').update({ data, title }).eq('id', boardId);
     if (error) { setSave('error'); return; }
     dirty.current = false; localStorage.removeItem(`nn-board:${boardId}`); setSave('saved');
-  }, [boardId, data, title]);
+  }, [boardId, data, title, user]);
   useEffect(() => {
     if (!ready || !dirty.current) return;
     localStorage.setItem(`nn-board:${boardId}`, JSON.stringify({ at: Date.now(), data }));
@@ -339,17 +371,21 @@ export default function BoardScreen() {
 
   // ---------- board list / create ----------
   const createBoard = async () => {
-    const { data: row, error } = await supabase.from('boards').insert({ user_id: user!.id, title: 'Untitled board', data: emptyBoard() }).select('id').single();
+    if (!user) {
+      const id = `local_${uid()}`;
+      const list = readLocalBoards();
+      const entry = { id, title: 'Untitled board', updated_at: new Date().toISOString(), data: emptyBoard() };
+      writeLocalBoards([entry, ...list]);
+      setBoards([entry, ...list]);
+      setParams({ id });
+      return;
+    }
+    const { data: row, error } = await supabase.from('boards').insert({ user_id: user.id, title: 'Untitled board', data: emptyBoard() }).select('id').single();
     if (error) { toast.error('Could not create board'); return; }
     setParams({ id: row.id });
   };
 
   if (loading) return <div className="grid min-h-screen place-items-center"><Loader2 className="animate-spin motion-reduce:animate-none" /></div>;
-  if (!user) return (
-    <main className="grid min-h-screen place-items-center p-6 text-center">
-      <div className="space-y-3"><h1 className="text-2xl font-semibold">Sign in to use Boards</h1><p className="text-muted-foreground">Boards are saved to your account.</p><Button asChild><Link to="/login?redirect=/board">Sign in</Link></Button></div>
-    </main>
-  );
 
   if (!boardId) return (
     <main className="mx-auto max-w-3xl p-6 pb-28">
@@ -359,7 +395,7 @@ export default function BoardScreen() {
         : <ul className="grid gap-3">{boards.map(b => (
           <li key={b.id} className="flex items-center gap-2 rounded-xl border bg-card p-4 transition-shadow hover:shadow-md">
             <button className="flex-1 text-left" onClick={() => setParams({ id: b.id })}><p className="font-medium">{b.title}</p><p className="text-xs text-muted-foreground">Edited {new Date(b.updated_at).toLocaleString()}</p></button>
-            <Button variant="ghost" size="icon" aria-label="Delete board" onClick={async () => { if (!confirm(`Delete “${b.title}”?`)) return; const { error } = await supabase.from('boards').delete().eq('id', b.id); if (error) toast.error('Delete failed'); else setBoards(x => x!.filter(y => y.id !== b.id)); }}><Trash2 size={16} /></Button>
+            <Button variant="ghost" size="icon" aria-label="Delete board" onClick={async () => { if (!confirm(`Delete “${b.title}”?`)) return; if (!user) { const next = (boards || []).filter(y => y.id !== b.id) as any; writeLocalBoards(next); setBoards(next); return; } const { error } = await supabase.from('boards').delete().eq('id', b.id); if (error) toast.error('Delete failed'); else setBoards(x => x!.filter(y => y.id !== b.id)); }}><Trash2 size={16} /></Button>
           </li>))}</ul>}
     </main>
   );

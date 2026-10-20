@@ -19,13 +19,37 @@ type Bill = { id: string; name: string; amount: number; due_day: number; last_pa
 
 const catOf = (n: string) => EXPENSE_CATEGORIES.find(c => c.name === n) ?? EXPENSE_CATEGORIES[7];
 const db = supabase as any;
+const LOCAL_MONEY_KEY = 'niknote.money.v1.local';
+
+function readLocalMoney(): { txs: Tx[]; goals: Goal[]; bills: Bill[]; currency: string; budget: number } {
+  try {
+    const raw = localStorage.getItem(LOCAL_MONEY_KEY);
+    if (!raw) return { txs: [], goals: [], bills: [], currency: 'INR', budget: 0 };
+    const parsed = JSON.parse(raw);
+    return {
+      txs: Array.isArray(parsed.txs) ? parsed.txs : [],
+      goals: Array.isArray(parsed.goals) ? parsed.goals : [],
+      bills: Array.isArray(parsed.bills) ? parsed.bills : [],
+      currency: typeof parsed.currency === 'string' ? parsed.currency : 'INR',
+      budget: Number(parsed.budget) || 0,
+    };
+  } catch {
+    return { txs: [], goals: [], bills: [], currency: 'INR', budget: 0 };
+  }
+}
+
+function writeLocalMoney(state: { txs: Tx[]; goals: Goal[]; bills: Bill[]; currency: string; budget: number }) {
+  try { localStorage.setItem(LOCAL_MONEY_KEY, JSON.stringify(state)); } catch { /* quota */ }
+}
+
+const localId = () => `local_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
 export default function MoneyTracker() {
-  const { user } = useAuth();
-  const [txs, setTxs] = useState<Tx[]>([]);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [currency, setCurrency] = useState('INR');
-  const [budget, setBudget] = useState(0);
+  const { user, loading: authLoading } = useAuth();
+  const [txs, setTxs] = useState<Tx[]>(() => readLocalMoney().txs);
+  const [goals, setGoals] = useState<Goal[]>(() => readLocalMoney().goals);
+  const [currency, setCurrency] = useState(() => readLocalMoney().currency);
+  const [budget, setBudget] = useState(() => readLocalMoney().budget);
   const [range, setRange] = useState<Range>('month');
   const [form, setForm] = useState({ kind: 'expense', amount: '', category: 'Food', note: '', occurred_on: toDay(new Date()), account: 'Cash', to_account: 'Bank' });
   const [loadError, setLoadError] = useState(false);
@@ -33,8 +57,14 @@ export default function MoneyTracker() {
   const [goalForm, setGoalForm] = useState({ name: '', target: '' });
   const [split, setSplit] = useState({ total: '', people: '2' });
   const [scanning, setScanning] = useState(false);
-  const [bills, setBills] = useState<Bill[]>([]);
+  const [bills, setBills] = useState<Bill[]>(() => readLocalMoney().bills);
   const [billForm, setBillForm] = useState({ name: '', amount: '', due_day: '' });
+
+  // Always mirror device state cleanly when not signed in
+  useEffect(() => {
+    if (authLoading || user) return;
+    writeLocalMoney({ txs, goals, bills, currency, budget });
+  }, [txs, goals, bills, currency, budget, user, authLoading]);
 
   useEffect(() => {
     if (!user) return;
@@ -64,7 +94,8 @@ export default function MoneyTracker() {
   }, [user, reload]);
 
   const saveSettings = async (patch: { currency?: string; monthly_budget?: number }) => {
-    await db.from('tracker_settings').upsert({ user_id: user!.id, currency, monthly_budget: budget, ...patch, updated_at: new Date().toISOString() });
+    if (!user) return;
+    await db.from('tracker_settings').upsert({ user_id: user.id, currency, monthly_budget: budget, ...patch, updated_at: new Date().toISOString() });
   };
 
   const addTx = async () => {
@@ -74,6 +105,13 @@ export default function MoneyTracker() {
     if (form.kind === 'transfer' && form.account === form.to_account) { haptic('error'); return toast.error('Pick two different accounts'); }
     const row = { kind: form.kind, amount, note: form.note, occurred_on: form.occurred_on, account: form.account, to_account: form.kind === 'transfer' ? form.to_account : null,
       category: form.kind === 'income' ? 'Income' : form.kind === 'transfer' ? 'Transfer' : form.category };
+    if (!user) {
+      haptic('medium');
+      setTxs(p => [{ id: localId(), ...row }, ...p]);
+      setForm(f => ({ ...f, amount: '', note: '' }));
+      toast.success('Saved on device');
+      return;
+    }
     const { data, error } = await db.from('money_transactions').insert(row).select().single();
     if (error) { haptic('error'); return toast.error(error.message); }
     haptic('medium');
@@ -86,6 +124,7 @@ export default function MoneyTracker() {
     haptic('heavy');
     const prev = txs;
     setTxs(p => p.filter(t => t.id !== id));
+    if (!user) return;
     const { error } = await db.from('money_transactions').delete().eq('id', id);
     if (error) { setTxs(prev); toast.error('Could not delete. Try again.'); }
   };
@@ -94,8 +133,10 @@ export default function MoneyTracker() {
     const a = window.prompt('Amount', String(t.amount)); if (a === null) return;
     const amount = Number(a); if (!amount || amount <= 0) return toast.error('Enter a valid amount');
     const note = window.prompt('Note', t.note) ?? t.note;
-    const { error } = await db.from('money_transactions').update({ amount, note }).eq('id', t.id);
-    if (error) return toast.error('Could not save the change');
+    if (user) {
+      const { error } = await db.from('money_transactions').update({ amount, note }).eq('id', t.id);
+      if (error) return toast.error('Could not save the change');
+    }
     setTxs(p => p.map(x => x.id === t.id ? { ...x, amount, note } : x)); haptic('success');
   };
 
@@ -125,6 +166,12 @@ export default function MoneyTracker() {
   const addBill = async () => {
     const due_day = Number(billForm.due_day);
     if (!billForm.name.trim() || !(due_day >= 1 && due_day <= 31)) return toast.error('Add a bill name and due day (1-31)');
+    if (!user) {
+      haptic('light');
+      setBills(p => [...p, { id: localId(), name: billForm.name.trim(), amount: Number(billForm.amount) || 0, due_day, last_paid_month: null }].sort((a, b) => a.due_day - b.due_day));
+      setBillForm({ name: '', amount: '', due_day: '' });
+      return;
+    }
     const { data, error } = await db.from('bill_reminders').insert({ name: billForm.name.trim(), amount: Number(billForm.amount) || 0, due_day }).select().single();
     if (error) return toast.error(error.message);
     haptic('light');
@@ -135,6 +182,11 @@ export default function MoneyTracker() {
   const payBill = async (b: Bill) => {
     const month = toDay(new Date()).slice(0, 7);
     setBills(p => p.map(x => x.id === b.id ? { ...x, last_paid_month: month } : x));
+    if (!user) {
+      if (b.amount > 0) setTxs(p => [{ id: localId(), kind: 'expense', amount: b.amount, category: 'Bills', note: b.name, occurred_on: toDay(new Date()), account: 'Cash', to_account: null }, ...p]);
+      haptic('success'); toast.success(`${b.name} marked paid`);
+      return;
+    }
     await db.from('bill_reminders').update({ last_paid_month: month }).eq('id', b.id);
     if (b.amount > 0) {
       const { data } = await db.from('money_transactions').insert({ kind: 'expense', amount: b.amount, category: 'Bills', note: b.name }).select().single();
@@ -142,11 +194,17 @@ export default function MoneyTracker() {
     }
     haptic('success'); toast.success(`${b.name} marked paid`);
   };
-  const delBill = async (id: string) => { haptic('heavy'); setBills(p => p.filter(b => b.id !== id)); await db.from('bill_reminders').delete().eq('id', id); };
+  const delBill = async (id: string) => { haptic('heavy'); setBills(p => p.filter(b => b.id !== id)); if (user) await db.from('bill_reminders').delete().eq('id', id); };
 
   const addGoal = async () => {
     const target = Number(goalForm.target);
     if (!goalForm.name.trim() || !target) return toast.error('Add a name and target');
+    if (!user) {
+      haptic('light');
+      setGoals(p => [...p, { id: localId(), name: goalForm.name.trim(), target, saved: 0 }]);
+      setGoalForm({ name: '', target: '' });
+      return;
+    }
     const { data, error } = await db.from('money_goals').insert({ name: goalForm.name.trim(), target }).select().single();
     if (error) return toast.error(error.message);
     haptic('light');
@@ -157,7 +215,7 @@ export default function MoneyTracker() {
   const addToGoal = async (g: Goal, amt: number) => {
     const saved = Math.max(0, g.saved + amt);
     setGoals(p => p.map(x => x.id === g.id ? { ...x, saved } : x));
-    await db.from('money_goals').update({ saved }).eq('id', g.id);
+    if (user) await db.from('money_goals').update({ saved }).eq('id', g.id);
     if (g.saved < g.target && saved >= g.target) {
       haptic('success');
       confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 } });
@@ -168,7 +226,7 @@ export default function MoneyTracker() {
   const delGoal = async (id: string) => {
     haptic('heavy');
     setGoals(p => p.filter(g => g.id !== id));
-    await db.from('money_goals').delete().eq('id', id);
+    if (user) await db.from('money_goals').delete().eq('id', id);
   };
 
   const now = new Date();

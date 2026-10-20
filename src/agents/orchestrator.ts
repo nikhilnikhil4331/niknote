@@ -1360,52 +1360,64 @@ async function callAIBrain(
   const lastMessage = messages[messages.length - 1]?.content || '';
   const systemPrompt = AGENT_PROMPTS[agentType];
 
-  // 1. Check local knowledge base first (INSTANT)
+  const agentToMode: Record<string, import('@/lib/aiEngine').AstaMode> = {
+    teacher: 'teacher',
+    notes: 'notes',
+    doubt: 'deep',
+    research: 'deep',
+    diagram: 'teacher',
+    revision: 'notes',
+    quiz: 'quiz',
+    assignment: 'solver',
+    productivity: 'notes',
+    handwriting: 'write',
+    document: 'notes',
+  };
+
+  // 1. Try real streaming Cloud AI first (/api/ai -> Cloud SSE -> Supabase openai-brain)
+  try {
+    const { streamAstaAI } = await import('@/lib/aiEngine');
+    const cloud = await streamAstaAI({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+      ],
+      mode: agentToMode[agentType] || 'auto',
+      onToken: (_delta, fullText) => {
+        onChunk?.(fullText);
+      },
+    });
+    if (cloud.provider !== 'local' && cloud.content && cloud.content.trim().length > 20) {
+      return cloud.content;
+    }
+  } catch (err) {
+    console.warn('Cloud AI stream unavailable, falling back to local brain:', err);
+  }
+
+  // 2. Offline / Unconfigured fallback: Curated Knowledge Base
   const localMatch = findLocalKnowledge(lastMessage);
   if (localMatch) {
-    await new Promise(r => setTimeout(r, 200));
     let response = localMatch.answer;
-    
     if (localMatch.formulas && localMatch.formulas.length > 0 && agentType !== 'diagram') {
       response += `\n\n### 📐 All Related Formulas:\n`;
-      localMatch.formulas.forEach(f => { response += `- \`${f}\`\n`; });
+      localMatch.formulas.forEach((f) => { response += `- \`${f}\`\n`; });
     }
     if (localMatch.examTips && localMatch.examTips.length > 0) {
       response += `\n\n### 💡 Exam Tips:\n`;
-      localMatch.examTips.forEach(t => { response += `- ${t}\n`; });
+      localMatch.examTips.forEach((t) => { response += `- ${t}\n`; });
     }
     if (localMatch.commonMistakes && localMatch.commonMistakes.length > 0) {
       response += `\n\n### ⚠️ Common Mistakes:\n`;
-      localMatch.commonMistakes.forEach(m => { response += `- ${m}\n`; });
+      localMatch.commonMistakes.forEach((m) => { response += `- ${m}\n`; });
     }
+    onChunk?.(response);
     return response;
   }
 
-  // AI requests go through the authenticated server function; no provider keys in the browser.
-  const formattedMessages = [
-    { role: 'system' as const, content: systemPrompt },
-    ...messages.map(m => ({ role: m.role, content: m.content })),
-  ];
-
-  try {
-    const { data, error } = await supabase.functions.invoke('openai-brain', {
-      body: {
-        messages: formattedMessages,
-        model: 'gpt-4o-mini',
-        temperature: 0.7,
-        max_tokens: 4096,
-        stream: false,
-      },
-    });
-    if (error) throw error;
-    const content = data?.content || data?.text || (typeof data === 'string' ? data : JSON.stringify(data));
-    if (content && content.length > 50 && !content.includes('error')) return enhanceResponse(content, agentType);
-  } catch (err) {
-    console.warn(`Supabase AI error (will use local):`, err);
-  }
-
-  // 6. Dynamic response engine (always works, offline)
-  return composeDynamicResponse(lastMessage, agentType);
+  // 3. Dynamic offline synthesis fallback
+  const fallback = composeDynamicResponse(lastMessage, agentType);
+  onChunk?.(fallback);
+  return fallback;
 }
 
 // ============================================================

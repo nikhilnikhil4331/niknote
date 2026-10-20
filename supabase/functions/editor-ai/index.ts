@@ -1,155 +1,170 @@
-// ============================================================
-// Editor AI — streaming Lovable AI Gateway proxy for NikNote
-// Powers Improve / Fix / Shorten / Lengthen / Continue / Translate / Summarize / Explain / Custom
-// Emits raw text chunks over a plain text/plain stream (mobile-friendly, no SSE overhead).
-// ============================================================
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-groq-key, x-gemini-key, x-openai-key, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const NL = String.fromCharCode(10);
 
-type Action =
-  | "improve" | "fix_grammar" | "shorten" | "lengthen"
-  | "continue" | "translate" | "summarize" | "explain" | "custom";
-
-interface Body {
-  action: Action;
-  text: string;                 // primary text (selection or block content)
-  context?: string;             // surrounding block/page text (optional)
-  targetLanguage?: string;      // for translate
-  instruction?: string;         // for custom
-}
-
-const SYSTEM_BASE = `You are NikNote's inline writing assistant. You edit or produce text that will directly replace or extend the user's note.
-Rules:
-- Return ONLY the new text — no preamble, no quotes, no markdown fences, no "Here is…".
-- Preserve the user's language (Hindi, English, Hinglish) unless asked to translate.
-- Match the tone and register of the original.
-- Keep formatting minimal; no headings unless the input had them.`;
-
-function buildPrompt(b: Body): { system: string; user: string } {
-  const ctx = b.context ? `\n\nSurrounding context (for reference only, do not repeat):\n${b.context}` : "";
-  switch (b.action) {
-    case "improve":
-      return { system: SYSTEM_BASE, user: `Improve the clarity, flow and word choice of this text. Keep the meaning identical.\n\nText:\n${b.text}${ctx}` };
-    case "fix_grammar":
-      return { system: SYSTEM_BASE, user: `Fix grammar, spelling and punctuation. Do not change meaning or tone.\n\nText:\n${b.text}` };
-    case "shorten":
-      return { system: SYSTEM_BASE, user: `Rewrite this text to be significantly shorter while keeping every key point.\n\nText:\n${b.text}` };
-    case "lengthen":
-      return { system: SYSTEM_BASE, user: `Expand this text with more detail, examples and clarification. Keep the original voice.\n\nText:\n${b.text}${ctx}` };
-    case "continue":
-      return { system: SYSTEM_BASE, user: `Continue writing from where this text ends. Match the style and topic. Add 1-3 sentences.\n\nText so far:\n${b.text}${ctx}` };
-    case "translate":
-      return { system: SYSTEM_BASE, user: `Translate this text to ${b.targetLanguage || "English"}. Keep proper nouns.\n\nText:\n${b.text}` };
-    case "summarize":
-      return { system: SYSTEM_BASE, user: `Summarize this text in 1-3 concise sentences.\n\nText:\n${b.text}${ctx}` };
-    case "explain":
-      return { system: SYSTEM_BASE, user: `Explain this in simple terms suitable for a student. Be clear and concrete.\n\nText:\n${b.text}` };
-    case "custom":
-      return { system: SYSTEM_BASE, user: `${b.instruction || "Rewrite this text."}\n\nText:\n${b.text}${ctx}` };
+function buildPrompts(body: any): { system: string; user: string } {
+  const context = typeof body.context === "string" && body.context ? `${NL}${NL}Context:${NL}${body.context}` : "";
+  const text = String(body.text || "");
+  if (body.action === "explain" || body.action === "custom") {
+    return {
+      system: `You are NikNote Asta Ultra AI — answer thoroughly, clearly, and helpfully using clean formatting when useful. Match the user's language (English, Hinglish, or Hindi).`,
+      user: body.action === "explain"
+        ? `Explain clearly step-by-step with intuitive examples and key takeaways:${NL}${NL}${text}${context}`
+        : `${body.instruction ? String(body.instruction) + NL + NL : ""}${text}${context}`,
+    };
+  }
+  const inlineSystem = "You are NikNote's inline writing assistant. Return clean, natural text directly without unnecessary filler. Preserve the user's language unless asked to translate.";
+  switch (body.action) {
+    case "improve": return { system: inlineSystem, user: `Improve clarity, flow, and impact:${NL}${NL}${text}${context}` };
+    case "fix_grammar": return { system: inlineSystem, user: `Fix all grammar, spelling, and punctuation issues:${NL}${NL}${text}` };
+    case "shorten": return { system: inlineSystem, user: `Make this concise while preserving every key point:${NL}${NL}${text}` };
+    case "lengthen": return { system: inlineSystem, user: `Expand this thoughtfully with clear details and examples:${NL}${NL}${text}${context}` };
+    case "continue": return { system: inlineSystem, user: `Continue writing naturally from where this stops:${NL}${NL}${text}${context}` };
+    case "translate": return { system: inlineSystem, user: `Translate naturally into ${String(body.targetLanguage || "English")}:${NL}${NL}${text}` };
+    case "summarize": return { system: inlineSystem, user: `Summarize clearly into key bullet points:${NL}${NL}${text}${context}` };
+    default: return { system: inlineSystem, user: `${String(body.instruction || "Help with this text:")}${NL}${NL}${text}${context}` };
   }
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-
-  const key = Deno.env.get("LOVABLE_API_KEY");
-  if (!key) {
-    return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  if (req.method !== "POST") {
+    return Response.json({ error: "Method not allowed" }, { status: 405, headers: corsHeaders });
   }
 
-  let body: Body;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  let body: any;
+  try { body = await req.json(); } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400, headers: corsHeaders });
+  }
+  if (!body || typeof body.text !== "string" || !body.text.trim()) {
+    return Response.json({ error: "Text is required" }, { status: 400, headers: corsHeaders });
   }
 
-  if (!body.action || (!body.text && body.action !== "custom") ) {
-    return new Response(JSON.stringify({ error: "Missing action or text" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  const groqKey = req.headers.get("x-groq-key") || Deno.env.get("GROQ_API_KEY") || Deno.env.get("VITE_GROQ_KEY") || "";
+  const geminiKey = req.headers.get("x-gemini-key") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("VITE_GEMINI_KEY") || "";
+  const openaiKey = req.headers.get("x-openai-key") || Deno.env.get("OPENAI_API_KEY") || "";
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY") || "";
+
+  const { system, user } = buildPrompts(body);
+
+  let upstream: Response | null = null;
+  let isGemini = false;
+
+  if (groqKey) {
+    upstream = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${groqKey}` },
+      signal: req.signal,
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        stream: true,
+        messages: [{ role: "system", content: system }, { role: "user", content: user }],
+      }),
+    }).catch(() => null);
   }
 
-  const { system, user } = buildPrompt(body);
-
-  const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Lovable-API-Key": key,
-      "X-Lovable-AIG-SDK": "fetch",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-3.6-flash",
-      stream: true,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    }),
-  });
-
-  if (!upstream.ok || !upstream.body) {
-    const errText = await upstream.text().catch(() => "");
-    const status = upstream.status === 429 ? 429 : upstream.status === 402 ? 402 : 500;
-    const message =
-      status === 429 ? "Rate limit reached. Please wait a moment and try again."
-      : status === 402 ? "AI credits exhausted. Please add credits to continue."
-      : `AI gateway error: ${errText.slice(0, 200) || upstream.statusText}`;
-    return new Response(JSON.stringify({ error: message }), {
-      status, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  if ((!upstream || !upstream.ok) && geminiKey) {
+    isGemini = true;
+    upstream = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${encodeURIComponent(geminiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: req.signal,
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: system }] },
+          contents: [{ role: "user", parts: [{ text: user }] }],
+        }),
+      }
+    ).catch(() => null);
   }
 
-  // Transform OpenAI-compatible SSE stream into a plain text/plain stream of content deltas.
+  if ((!upstream || !upstream.ok) && (openaiKey || lovableKey)) {
+    isGemini = false;
+    const useLovable = Boolean(lovableKey);
+    upstream = await fetch(
+      useLovable ? "https://ai.gateway.lovable.dev/v1/chat/completions" : "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: useLovable
+          ? { "Content-Type": "application/json", "Lovable-API-Key": lovableKey, "X-Lovable-AIG-SDK": "fetch" }
+          : { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
+        signal: req.signal,
+        body: JSON.stringify({
+          model: useLovable ? "google/gemini-2.5-flash" : "gpt-4o-mini",
+          stream: true,
+          messages: [{ role: "system", content: system }, { role: "user", content: user }],
+        }),
+      }
+    ).catch(() => null);
+  }
+
+  if (!upstream || !upstream.ok || !upstream.body) {
+    return Response.json({ error: "AI provider not configured in Supabase secrets; client /api/ai fallback active." }, { status: 503, headers: corsHeaders });
+  }
+
+  const reader = upstream.body.getReader();
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
-  let buffered = "";
 
-  const outStream = new ReadableStream({
+  const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const reader = upstream.body!.getReader();
+      let buffer = "";
+      const extract = (raw: string) => {
+        const line = raw.trim();
+        if (!line.startsWith("data:")) return "";
+        const data = line.slice(5).trim();
+        if (!data || data === "[DONE]") return "";
+        try {
+          const parsed = JSON.parse(data);
+          if (isGemini) {
+            return (parsed?.candidates?.[0]?.content?.parts || []).filter((p: any) => !p.thought).map((p: any) => p.text || "").join("");
+          }
+          return parsed?.choices?.[0]?.delta?.content || "";
+        } catch {
+          return "";
+        }
+      };
       try {
         while (true) {
           const { value, done } = await reader.read();
           if (done) break;
-          buffered += decoder.decode(value, { stream: true });
-          const lines = buffered.split("\n");
-          buffered = lines.pop() || "";
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed.startsWith("data:")) continue;
-            const data = trimmed.slice(5).trim();
-            if (!data || data === "[DONE]") continue;
-            try {
-              const json = JSON.parse(data);
-              const delta = json?.choices?.[0]?.delta?.content;
-              if (typeof delta === "string" && delta.length > 0) {
-                controller.enqueue(encoder.encode(delta));
-              }
-            } catch {
-              // ignore parse errors on partial chunks
-            }
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split(NL);
+          buffer = lines.pop() || "";
+          for (const l of lines) {
+            const piece = extract(l);
+            if (piece) controller.enqueue(encoder.encode(piece));
           }
         }
+        buffer += decoder.decode();
+        if (buffer.trim()) {
+          const piece = extract(buffer);
+          if (piece) controller.enqueue(encoder.encode(piece));
+        }
+        controller.close();
       } catch (err) {
         controller.error(err);
-        return;
+      } finally {
+        reader.releaseLock();
       }
-      controller.close();
+    },
+    async cancel(reason) {
+      await reader.cancel(reason).catch(() => undefined);
     },
   });
 
-  return new Response(outStream, {
+  return new Response(stream, {
     headers: {
       ...corsHeaders,
       "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "no-cache",
-      "X-Content-Type-Options": "nosniff",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
     },
   });
 });
