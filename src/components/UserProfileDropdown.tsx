@@ -49,7 +49,7 @@ export const UserProfileDropdown = forwardRef<HTMLDivElement>((_, ref) => {
     'User';
 
   const menuItems = [
-    { label: 'AI Solver', icon: Brain, onClick: () => navigate('/ai-solver') },
+    { label: 'NikAI', icon: Brain, onClick: () => navigate('/ai') },
     { label: 'My History', icon: History, onClick: () => navigate('/history') },
     ...(isAdmin ? [{ label: 'Admin Panel', icon: Shield, onClick: () => navigate('/admin-panel-nikhil') }] : []),
     ...(isPremium ? [] : [{ label: 'Upgrade to Premium', icon: Crown, onClick: () => navigate('/payment'), highlight: true }]),

@@ -320,14 +320,14 @@ export function MobileExperience() {
                 <h2>
                   {user ? `Welcome back${firstName ? `, ${firstName}` : ''}` : <>Welcome to <img src="/niknote-logo.png" alt="Niknote" className="nn-welcome-logo" /></>}
                 </h2>
-                <p>Turn your ideas into beautiful notes + Asta Ultra AI</p>
+                <p>Turn your ideas into beautiful notes + NikAI</p>
                 <div className="nn-book-visual" aria-hidden="true"><BookOpen /><PenLine /><span>✦</span><span>✧</span></div>
               </section>
             )}
             <MobileTrackerCards />
             <div className="nn-quick-actions">
               {[
-                { label: 'Asta AI', icon: Sparkles, tone: 'purple', action: () => navigate('/ai') },
+                { label: 'NikAI', icon: Sparkles, tone: 'purple', action: () => navigate('/ai') },
                 { label: 'Write Note', icon: PenLine, tone: 'green', action: () => navigate('/?editor=1&new=1') },
                 { label: 'Templates', icon: LayoutGrid, tone: 'purple', action: () => navigate('/templates') },
                 { label: 'Draw Board', icon: ScanLine, tone: 'pink', action: () => navigate('/board') },
@@ -516,7 +516,7 @@ export function MobileExperience() {
             </div>
             <div className="nn-settings-group">
               {[
-                { label: 'Asta Ultra AI', icon: Sparkles, action: () => navigate('/ai') },
+                { label: 'NikAI', icon: Sparkles, action: () => navigate('/ai') },
                 { label: 'Account', icon: Settings, action: () => navigate('/account-details') },
                 { label: 'Appearance', icon: LayoutGrid, action: () => navigate('/appearance') },
                 {
@@ -582,7 +582,7 @@ export function MobileExperience() {
           <div className="nn-drawer-menu">
             {[
               { name: 'Home', icon: BookOpen, to: '/' },
-              { name: 'Asta Ultra AI', icon: Sparkles, to: '/ai' },
+              { name: 'NikAI', icon: Sparkles, to: '/ai' },
               { name: 'Notebook Studio', icon: PenLine, to: '/?editor=1' },
               { name: 'DNA Scanner', icon: ScanLine, to: '/?editor=1&panel=scan' },
               { name: 'Documents', icon: FileText, to: '/documents' },
@@ -597,7 +597,7 @@ export function MobileExperience() {
               >
                 <Icon />
                 <span>{name}</span>
-                {name === 'Asta Ultra AI' && <small>ULTRA</small>}
+                {name === 'NikAI' && <small>ASTRA</small>}
               </Button>
             ))}
             <div className="nn-divider" />

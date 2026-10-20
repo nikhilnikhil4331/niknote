@@ -149,10 +149,19 @@ export function buildOfflineKnowledgeResponse(
   mode: AstaMode,
   noteContext?: string,
   action?: string,
-  targetLanguage?: string
+  targetLanguage?: string,
+  memoryContext?: string
 ): string {
   const query = (rawQuery || '').trim();
   const hinglish = /\b(kya|kaise|kyu|samjhao|batao|likho|karo|hai|ke|ki|aur|mein|se|mujhe)\b/i.test(query);
+  const rememberedName = memoryContext?.match(/Student \/ User Name:\s*([^\n]+)/)?.[1]?.trim();
+
+  // Answer memory recall questions directly even offline!
+  if (/\b(what do you remember|kya yaad hai|mera naam kya|my memory|previous session|pichhle session)\b/i.test(query)) {
+    return memoryContext?.trim()
+      ? `## 🧠 NikAI Session Memory Vault\n\nMain aapke baare mein aur pichhle sessions se yeh sab yaad rakhe hue hoon:\n\n${memoryContext}\n\n> 💡 Aap upar **🧠 Memory** button daba kar kabhi bhi naye facts pin ya edit kar sakte ho!`
+      : `## 🧠 NikAI Session Memory\n\nAbhi naya session start hua hai! Apna naam, exam goal (e.g. *JEE / NEET / Class 12 / B.Tech*), ya koi bhi topic batao — **NikAI** har session mein automatically yaad rakhega!`;
+  }
 
   // Handle inline editor actions cleanly on user text
   if (action === 'summarize' || /^summarize\b/i.test(query)) {
@@ -184,9 +193,10 @@ export function buildOfflineKnowledgeResponse(
 
   // Greeting / conversational check
   if (/^(hi|hello|hey|namaste|hii+|yo|kem cho|kaise ho|how are you)\b/i.test(query) && query.length < 40) {
+    const hiName = rememberedName ? `, **${rememberedName}**` : '';
     return hinglish
-      ? `Namaste! Main **NikNote Asta Ultra AI** hoon ✨\n\nMain aapki poori help kar sakta hoon:\n- 🎓 **Concepts & Exam Prep** (Physics, Maths, Chemistry, Bio, Coding, UPSC/JEE/NEET)\n- 💻 **Clean Code & Debugging** (Python, JS/TS, React, C++, SQL, DSA)\n- 📓 **Smart Study Notes & Interactive MCQs** (1-tap **Save to Notes** ke saath!)\n- 📷 **Homework Photo Solver** (image attach karke step-by-step solution paao)\n\nApna sawaal type karo ya upar se koi bhi **Mode** chuno!`
-      : `Hello! I'm **NikNote Asta Ultra AI** ✨\n\nHere's what we can tackle right away:\n- 🧠 **Deep Reasoning & Math/Science Problem Solving**\n- 💻 **Production-Grade Coding, Architecture & Debugging**\n- 📓 **Structured Study Notes, Flashcards & Live Interactive Quizzes**\n- 📷 **Image / Homework / Note Analysis** (attach a photo or any saved note below)\n\nAsk anything — in English, Hinglish, or Hindi!`;
+      ? `Namaste${hiName}! Main **NikAI** *(Powered by Astra Neural Core)* hoon ✨\n\nMain aapke saare tools ka **ek single powerhouse AI** hoon:\n- 🧠 **Astra Reasoning & Personal Memory** — aapke sessions, topics aur goals hamesha yaad rakhta hoon\n- ✍️ **Direct Handwriting & Smart Notes Engine** — 1 tap mein multi-ink handwritten notebook aur flashcards ready!\n- 🎯 **Live Playable Quizzes & Homework Photo Vision**\n\nApna sawaal poochho ya niche koi bhi topic likho!`
+      : `Hello${hiName}! I'm **NikAI** *(Powered by Astra Neural Core)* ✨\n\nYour single all-in-one AI brain built right into **NikNote**:\n- 🧠 **Cross-Session Memory** that remembers your goals, style & past study sessions\n- ✍️ **1-Tap Handwriting & Smart Notes Engine** that builds multi-ink notebook pages + flashcards directly\n- 💻 **Deep Math, Science, Coding & Interactive Live Quizzes**\n\nAsk anything — in English, Hinglish, or Hindi!`;
   }
 
   // Match curated deep STEM/CS guide if applicable

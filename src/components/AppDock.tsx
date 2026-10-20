@@ -18,5 +18,5 @@ const ITEMS = [
 export function AppDock() {
   const { pathname } = useLocation();
   const { attributes } = useMobileAppearance();
-  return <div className="nn-mobile md:hidden" {...attributes} style={{ minHeight: 0 }}><MobileNavigation active={pathname === '/ai' ? 'ai' : pathname === '/account' ? 'profile' : pathname === '/notebooks' ? 'notes' : ''} /></div>;
+  return <div className="nn-mobile md:hidden" {...attributes} style={{ minHeight: 0 }}><MobileNavigation active={pathname === '/ai' || pathname === '/nikai' ? 'ai' : pathname === '/account' ? 'profile' : pathname === '/notebooks' ? 'notes' : ''} /></div>;
 }
