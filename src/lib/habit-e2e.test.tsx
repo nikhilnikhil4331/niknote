@@ -1308,15 +1308,30 @@ describe('Production build verification', () => {
     }
   });
 
-  it('prod build index.html contains /habit assets and Vercel rewrite ready', async () => {
+  it('vercel.json keeps the SPA rewrite and security headers', async () => {
+    const fs = await import('fs/promises');
+    const vercel = JSON.parse(await fs.readFile('vercel.json', 'utf-8'));
+    expect(vercel.rewrites[0].source).toBe('/(.*)');
+    expect(vercel.rewrites[0].destination).toBe('/index.html');
+    expect(vercel.headers).toBeDefined();
+  });
+
+  // Needs a production build. CI builds before running tests, so this runs there;
+  // a fresh clone running `npm run verify` without a build skips instead of failing.
+  const distIndex = (() => {
+    try {
+      return require('fs').existsSync('dist/index.html');
+    } catch {
+      return false;
+    }
+  })();
+
+  it.skipIf(!distIndex)('prod build index.html is a real entry document', async () => {
     const fs = await import('fs/promises');
     const path = await import('path');
     const html = await fs.readFile(path.resolve('dist/index.html'), 'utf-8');
     expect(html).toContain('<script');
     expect(html).toContain('assets/');
-    const vercel = JSON.parse(await fs.readFile('vercel.json', 'utf-8'));
-    expect(vercel.rewrites[0].source).toBe('/(.*)');
-    expect(vercel.rewrites[0].destination).toBe('/index.html');
-    expect(vercel.headers).toBeDefined();
+    expect(html).toContain('id="root"');
   });
 });
