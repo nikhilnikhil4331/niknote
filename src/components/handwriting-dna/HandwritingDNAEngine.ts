@@ -38,6 +38,8 @@ export interface HandwritingDNA {
   strokeThickness?: number;   // 0.5-2.5 multiplier
   strokeSpeed?: number;       // relative speed multiplier
   closestFont?: string;
+  /** Pen colour measured from the sample ink. */
+  inkColor?: 'black' | 'blue' | 'red' | 'green' | 'purple';
   confidence?: number;        // 0-1 match confidence
   characterSize?: number;
   sampleQuality?: number | string;

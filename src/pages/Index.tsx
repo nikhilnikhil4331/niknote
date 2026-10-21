@@ -878,8 +878,12 @@ const Index = () => {
   const applyHandwritingStyle = useCallback((dna: Parameters<typeof noteSettingsForDNA>[0]) => {
     dnaContext.updateDNA(dna);
     // Start from the user's current settings so unrelated choices (table,
-    // header/footer, diagrams) survive; the DNA decides face, size and leading.
-    updateSettings(noteSettingsForDNA(dna, settings));
+    // header/footer, diagrams) survive; the DNA decides face, size, leading
+    // and — when the scan measured it — the pen colour.
+    updateSettings(noteSettingsForDNA(dna, {
+      ...settings,
+      ...(dna.inkColor ? { inkColor: dna.inkColor as typeof settings.inkColor } : {}),
+    }));
     try { localStorage.setItem('niknote.handwriting.style', JSON.stringify(dna)); } catch { /* private mode */ }
     toast.success(`Handwriting applied — ${dna.styleName}`);
   }, [dnaContext, updateSettings, settings]);

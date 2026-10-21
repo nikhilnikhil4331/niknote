@@ -2,7 +2,7 @@ import React from 'react';
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { DNA_PRESETS } from '@/components/handwriting-dna/HandwritingDNAEngine';
-import { dnaFromMetrics, measureInkImage, type InkImage } from '@/lib/handwritingAnalysis';
+import { classifyInkColor, dnaFromMetrics, measureInkImage, type InkImage } from '@/lib/handwritingAnalysis';
 import {
   dnaPreviewCSS,
   dnaPresetMeta,
@@ -73,6 +73,14 @@ describe('handwriting analysis measures the ink, not the margins', () => {
     const metrics = measureInkImage(blank);
     expect(metrics.lines).toBe(0);
     expect(metrics.confidence).toBe(0);
+  });
+
+  it('reads the pen colour from the ink, not from a default', () => {
+    expect(classifyInkColor(30, 60, 190)).toBe('blue');
+    expect(classifyInkColor(28, 26, 30)).toBe('black');
+    expect(classifyInkColor(190, 40, 45)).toBe('red');
+    const dna = dnaFromMetrics(measureInkImage(syntheticSample()));
+    expect(dna.inkColor).toBe('blue');
   });
 
   it('fills the extended DNA fields the page renderer needs', () => {

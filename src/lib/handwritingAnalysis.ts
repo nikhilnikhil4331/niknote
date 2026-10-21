@@ -52,6 +52,19 @@ export interface InkMetrics {
   pressure: number;
   /** 0–1, how much we trust the numbers (enough ink, enough lines). */
   confidence: number;
+  /** Pen colour read off the ink pixels (blue, black, red, green). */
+  inkColor: InkColor;
+}
+
+export type InkColor = 'black' | 'blue' | 'red' | 'green' | 'purple';
+
+/** Classify the average ink colour; a phone photo of a blue pen is still blue. */
+export function classifyInkColor(r: number, g: number, b: number): InkColor {
+  if (b - r > 16 && b - g > 8) return 'blue';
+  if (r - b > 28 && r - g > 28) return 'red';
+  if (g - r > 14 && g - b > 10) return 'green';
+  if (r - g > 10 && b - g > 10) return 'purple';
+  return 'black';
 }
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -176,13 +189,13 @@ export function measureInkImage(image: InkImage): InkMetrics {
   const empty: InkMetrics = {
     inkRatio: inkCount / total, strokeWidth: 0, slant: 0, lines: 0, pitch: 0,
     xHeight: 0, wordGap: 0, baselineDrift: 0, connectedness: 0,
-    consistency: 0, pressure: 0, confidence: 0,
+    consistency: 0, pressure: 0, confidence: 0, inkColor: 'blue',
   };
   if (inkCount / total < 0.002 || inkCount < 200) return empty;
 
   // Ink bounding box — margins and shadows no longer skew the metrics.
   let x0 = width, y0 = height, x1 = 0, y1 = 0;
-  let lumaSum = 0;
+  let lumaSum = 0, rSum = 0, gSum = 0, bSum = 0;
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       if (!ink[y * width + x]) continue;
@@ -190,9 +203,15 @@ export function measureInkImage(image: InkImage): InkMetrics {
       if (x > x1) x1 = x;
       if (y < y0) y0 = y;
       if (y > y1) y1 = y;
-      lumaSum += luma[y * width + x];
+      const idx = y * width + x;
+      lumaSum += luma[idx];
+      rSum += data[idx * 4];
+      gSum += data[idx * 4 + 1];
+      bSum += data[idx * 4 + 2];
     }
   }
+
+  const inkColor = classifyInkColor(rSum / inkCount, gSum / inkCount, bSum / inkCount);
 
   const slant = estimateSlant(ink, width, height, { x0, y0, x1, y1 });
   const k = Math.tan((slant * Math.PI) / 180);
@@ -355,6 +374,7 @@ export function measureInkImage(image: InkImage): InkMetrics {
     consistency: round(consistency, 3),
     pressure: round(pressure, 3),
     confidence: round(confidence, 2),
+    inkColor,
   };
 }
 
@@ -435,6 +455,7 @@ export function dnaFromMetrics(metrics: InkMetrics): HandwritingDNA {
     characterSize: Math.round(metrics.xHeight),
     sampleQuality: metrics.confidence >= 0.7 ? 'good' : metrics.confidence >= 0.45 ? 'fair' : 'poor',
     confidence: metrics.confidence,
+    inkColor: metrics.inkColor,
     fontModifications: {},
   };
 

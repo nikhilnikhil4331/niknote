@@ -39,7 +39,7 @@ export interface HandwritingPageProps {
 export const HandwritingPage: React.FC<HandwritingPageProps> = ({
   dna,
   lines,
-  inkColor = 'blue',
+  inkColor: inkOverride,
   settingsOverride,
   pageHeight = 560,
   width = 430,
@@ -47,6 +47,9 @@ export const HandwritingPage: React.FC<HandwritingPageProps> = ({
   scale = 1,
   label,
 }) => {
+  // The pen colour measured from the sample wins unless the caller overrides it.
+  const inkColor = (inkOverride ?? dna.inkColor ?? 'blue') as InkColor;
+
   const settings = useMemo<NoteSettings>(() => {
     // Note settings come from the DNA, then any explicit studio override.
     return { ...noteSettingsForDNA(dna, { inkColor, pageStyle: 'ruled' }), ...settingsOverride, inkColor };

@@ -126,7 +126,8 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
   const [pdfName, setPdfName] = useState('');
   const [pdfError, setPdfError] = useState('');
   const [renderProfileId, setRenderProfileId] = useState<string>('current'); // 'current' = app style
-  const [renderInk, setRenderInk] = useState<InkColor>('blue');
+  // null = "whatever pen the scan measured"
+  const [renderInk, setRenderInk] = useState<InkColor | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [exportMount, setExportMount] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -137,9 +138,10 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
     ? null
     : profiles.find(p => p.id === renderProfileId) || null;
   const renderDNA = renderProfile?.dna || currentDNA || DNA_PRESETS.neat_student;
+  const effectiveInk = (renderInk ?? (renderDNA.inkColor as InkColor | undefined) ?? 'blue');
   const renderSettings = useMemo(
-    () => noteSettingsForDNA(renderDNA, { inkColor: renderInk, pageStyle: 'ruled' }),
-    [renderDNA, renderInk],
+    () => noteSettingsForDNA(renderDNA, { inkColor: effectiveInk, pageStyle: 'ruled' }),
+    [renderDNA, effectiveInk],
   );
 
   const totalPdfChars = pdfPages.reduce((t, p) => t + p.lines.join('').length, 0);
@@ -547,7 +549,7 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
                 <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   Ink
                   <select
-                    value={renderInk}
+                    value={effectiveInk}
                     onChange={e => setRenderInk(e.target.value as InkColor)}
                     className="h-8 rounded-lg border border-border bg-background px-2 text-[11px]"
                   >
@@ -576,7 +578,7 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
                           <HandwritingPage
                             dna={renderDNA}
                             lines={page}
-                            inkColor={renderInk}
+                            inkColor={effectiveInk}
                             pageHeight={A4_HEIGHT}
                             width={A4_WIDTH}
                             settingsOverride={{ lineSpacing: renderSettings.lineSpacing, fontSize: renderSettings.fontSize, pageStyle: 'ruled' }}
@@ -626,7 +628,7 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
               <HandwritingPage
                 dna={renderDNA}
                 lines={page}
-                inkColor={renderInk}
+                inkColor={effectiveInk}
                 pageHeight={A4_HEIGHT}
                 width={A4_WIDTH}
                 settingsOverride={{ lineSpacing: renderSettings.lineSpacing, fontSize: renderSettings.fontSize, pageStyle: 'ruled' }}
