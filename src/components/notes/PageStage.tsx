@@ -193,8 +193,26 @@ export const PageStage = forwardRef<PageStageHandle, PageStageProps>(({
     if (!enter || entered.current || disabled) return;
     entered.current = true;
     if (reduced) return;
-    controls.set({ opacity: 0.6, scale: lite.current ? 1 : 0.985, y: 6 });
-    void controls.start({ opacity: 1, scale: 1, y: 0, transition: { duration: 0.34, ease: [0.16, 1, 0.3, 1] } });
+    if (lite.current) {
+      controls.set({ opacity: 0.65, y: 6 });
+      void controls.start({ opacity: 1, y: 0, transition: { duration: 0.24, ease: 'easeOut' } });
+      return;
+    }
+    // Opening a note is the same gesture as opening a new page, just softer:
+    // the sheet is picked up at the top edge and settles flat.
+    controls.set({
+      rotateX: -22,
+      scaleY: 0.9,
+      opacity: 0.4,
+      transformOrigin: 'top center',
+      transformPerspective: 1500,
+    });
+    void controls.start({
+      rotateX: 0,
+      scaleY: 1,
+      opacity: 1,
+      transition: { duration: 0.46, ease: [0.16, 1, 0.3, 1] },
+    });
   }, [enter, controls, reduced, disabled]);
 
   // ---- gestures ---------------------------------------------------
