@@ -111,3 +111,32 @@ describe('PageStage', () => {
     expect(onTurn).not.toHaveBeenCalled();
   });
 });
+
+describe('PageStage unfold visuals', () => {
+  it('folds the fresh sheet before opening it, so the animation really plays', async () => {
+    const Harness = () => {
+      const ref = useRef<PageStageHandle>(null);
+      const [page, setPage] = useState(1);
+      return (
+        <PageStage ref={ref} onTurn={() => {}} keyboard={false}>
+          <button type="button" onClick={() => { void ref.current?.unfold(() => setPage(p => p + 1)); }}>new page</button>
+          <div data-testid="body">page {page}</div>
+        </PageStage>
+      );
+    };
+
+    render(<Harness />);
+    const sheet = document.querySelector('[data-page-sheet="true"]') as HTMLElement;
+
+    await act(async () => { fireEvent.click(screen.getByText('new page')); });
+
+    // The page exists immediately (never gated behind the animation)…
+    expect(screen.getByTestId('body').textContent).toBe('page 2');
+    // …and the sheet is already folded along its top edge when it appears.
+    expect(sheet.style.transform).toMatch(/rotateX/);
+
+    await act(async () => { await new Promise(r => setTimeout(r, 900)); });
+    // …then settles flat (no residual rotation, whatever else framer keeps).
+    expect(sheet.style.transform).not.toMatch(/rotateX/);
+  });
+});

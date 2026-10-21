@@ -34,8 +34,10 @@ export type PageTurnDirection = 'next' | 'prev';
 export interface PageStageHandle {
   /** Animate the current sheet out, commit the page change, then settle in. */
   turn: (direction: PageTurnDirection, commit: () => void) => Promise<void>;
-  /** Commit a brand new page, then unfold it into place. */
+  /** Commit a brand new page and unfold it into place. */
   unfold: (commit: () => void) => Promise<void>;
+  /** Unfold content that has already appeared (state committed by the caller). */
+  playUnfold: () => Promise<void>;
   isBusy: () => boolean;
 }
 
@@ -57,12 +59,26 @@ export interface PageStageProps {
 
 const nextFrame = () => new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
 
+/**
+ * An animation promise is a nicety, never a dependency: if the browser never
+ * finishes it (hidden tab, throttled frames, interrupted spring), we carry on
+ * instead of leaving the stage permanently "busy" and swallowing every tap.
+ */
+const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T | void> =>
+  Promise.race([promise, new Promise<void>(resolve => setTimeout(resolve, ms))]);
+
+/**
+ * Deliberately conservative. Most phones — and a lot of laptops — report
+ * hardwareConcurrency = 4, so treating that as "slow" silently downgraded the
+ * paper motion to a plain fade. Only genuinely constrained devices shorten it.
+ */
 function isLowPowerDevice() {
   if (typeof navigator === 'undefined') return false;
   const cores = navigator.hardwareConcurrency ?? 8;
   const memory = (navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 8;
   const slow = typeof window !== 'undefined' && window.matchMedia?.('(update: slow)').matches;
-  return !!slow || cores <= 4 || memory <= 2;
+  const saveData = (navigator as unknown as { connection?: { saveData?: boolean } }).connection?.saveData;
+  return !!slow || !!saveData || cores <= 2 || memory <= 1;
 }
 
 function isEditingTarget(target: EventTarget | null): boolean {
@@ -86,6 +102,7 @@ export const PageStage = forwardRef<PageStageHandle, PageStageProps>(({
   const busy = useRef(false);
   const queue = useRef<Promise<void>>(Promise.resolve());
   const entered = useRef(false);
+  const mounted = useRef(true);
   const lite = useRef(isLowPowerDevice());
 
   // Live swipe feedback without a React render per frame.
@@ -97,6 +114,24 @@ export const PageStage = forwardRef<PageStageHandle, PageStageProps>(({
     dragX.set(0);
   }, [dragX]);
 
+  useEffect(() => () => { mounted.current = false; }, []);
+
+  /**
+   * A motion that throws (unmounted mid-flight, interrupted animation) must
+   * never bubble out and must never leave the stage stuck in "busy".
+   */
+  const startSafely = useCallback(async (
+    target: Parameters<typeof controls.start>[0],
+    ms: number,
+  ): Promise<void> => {
+    if (!mounted.current) return;
+    try {
+      await withTimeout(controls.start(target), ms);
+    } catch {
+      /* element gone or animation interrupted — the content is already committed */
+    }
+  }, [controls]);
+
   const turn = useCallback((direction: PageTurnDirection, commit: () => void): Promise<void> => {
     const run = async () => {
       if (busy.current) { commit(); return; }
@@ -106,14 +141,24 @@ export const PageStage = forwardRef<PageStageHandle, PageStageProps>(({
         if (disabled || reduced) { commit(); return; }
         const dir = direction === 'next' ? -1 : 1;
         if (lite.current) {
-          await controls.start({ opacity: 0.35, x: dir * 16, transition: { duration: 0.12, ease: 'easeIn' } });
+          await startSafely({
+            rotateY: dir * 13,
+            x: dir * 14,
+            opacity: 0.55,
+            transition: { duration: 0.14, ease: [0.42, 0, 0.9, 0.62] },
+          }, 420);
           commit();
           await nextFrame();
-          controls.set({ opacity: 0.5, x: -dir * 12 });
-          await controls.start({ opacity: 1, x: 0, transition: { duration: 0.2, ease: 'easeOut' } });
+          controls.set({ rotateY: -dir * 8, x: -dir * 10, opacity: 0.7 });
+          await startSafely({
+            rotateY: 0,
+            x: 0,
+            opacity: 1,
+            transition: { duration: 0.26, ease: [0.16, 1, 0.3, 1] },
+          }, 520);
           return;
         }
-        await controls.start({
+        await startSafely({
           rotateY: dir * 23,
           x: dir * 26,
           z: -26,
@@ -122,19 +167,19 @@ export const PageStage = forwardRef<PageStageHandle, PageStageProps>(({
             ? '18px 22px 44px -18px rgba(23, 18, 44, 0.35)'
             : '-18px 22px 44px -18px rgba(23, 18, 44, 0.35)',
           transition: { duration: 0.17, ease: [0.42, 0, 0.9, 0.62] },
-        });
+        }, 520);
         commit();
         await nextFrame();
         await nextFrame();
         controls.set({ rotateY: -dir * 15, x: -dir * 16, z: -14, opacity: 0.55, boxShadow: '0 12px 30px -18px rgba(23, 18, 44, 0.3)' });
-        await controls.start({
+        await startSafely({
           rotateY: 0,
           x: 0,
           z: 0,
           opacity: 1,
           boxShadow: '0 0 0 rgba(0,0,0,0)',
           transition: { duration: 0.32, ease: [0.16, 1, 0.3, 1] },
-        });
+        }, 700);
       } finally {
         busy.current = false;
       }
@@ -142,51 +187,68 @@ export const PageStage = forwardRef<PageStageHandle, PageStageProps>(({
     // Never let two transitions fight: queue instead of dropping the tap.
     queue.current = queue.current.then(run).catch(() => {});
     return queue.current;
-  }, [controls, disabled, reduced, settle]);
+  }, [startSafely, disabled, reduced, settle]);
 
-  const unfold = useCallback((commit: () => void): Promise<void> => {
-    const run = async () => {
-      if (busy.current) { commit(); return; }
-      busy.current = true;
+  /**
+   * The Apple-ish "new sheet" motion: the fresh page arrives folded along its
+   * top edge and opens flat. The commit happens *first* and on the same tick as
+   * the fold, so the new content paints already folded — never a flat flash
+   * before the animation — and the page exists even if motion is disabled.
+   */
+  const playUnfold = useCallback((): Promise<void> => {
+    if (busy.current) return Promise.resolve();
+    busy.current = true;
+    settle();
+
+    if (disabled || reduced) {
+      controls.set({ rotateX: 0, scaleY: 1, y: 0, opacity: 1 });
+      busy.current = false;
+      return Promise.resolve();
+    }
+
+    const folded = {
+      rotateX: lite.current ? -30 : -48,
+      y: 2,
+      scaleY: lite.current ? 0.9 : 0.8,
+      opacity: lite.current ? 0.45 : 0.28,
+      transformOrigin: 'top center',
+      transformPerspective: 1400,
+    };
+    // Applied synchronously, before React paints the committed page.
+    controls.set(folded);
+
+    return (async () => {
       try {
-        settle();
-        commit();
-        if (disabled || reduced) return;
         await nextFrame();
-        if (lite.current) {
-          controls.set({ opacity: 0.4, scale: 0.985 });
-          await controls.start({ opacity: 1, scale: 1, transition: { duration: 0.22, ease: 'easeOut' } });
-          return;
-        }
-        controls.set({
-          rotateX: -58,
-          y: 4,
-          scaleY: 0.72,
-          opacity: 0.2,
-          transformOrigin: 'top center',
-          transformPerspective: 1500,
-        });
         await nextFrame();
-        await controls.start({
+        const open = {
           rotateX: 0,
           y: 0,
           scaleY: 1,
           opacity: 1,
-          transition: { duration: 0.52, ease: [0.16, 1, 0.3, 1] },
-        });
+          transition: {
+            duration: lite.current ? 0.4 : 0.62,
+            ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
+          },
+        };
+        await startSafely(open, 1100);
       } finally {
         busy.current = false;
       }
-    };
-    queue.current = queue.current.then(run).catch(() => {});
-    return queue.current;
-  }, [controls, disabled, reduced, settle]);
+    })();
+  }, [startSafely, disabled, reduced, settle]);
+
+  const unfold = useCallback((commit: () => void): Promise<void> => {
+    commit();
+    return playUnfold();
+  }, [playUnfold]);
 
   useImperativeHandle(ref, () => ({
     turn,
     unfold,
+    playUnfold,
     isBusy: () => busy.current,
-  }), [turn, unfold]);
+  }), [turn, unfold, playUnfold]);
 
   // Opening a document: settle the sheet into place once.
   useEffect(() => {
@@ -195,7 +257,7 @@ export const PageStage = forwardRef<PageStageHandle, PageStageProps>(({
     if (reduced) return;
     if (lite.current) {
       controls.set({ opacity: 0.65, y: 6 });
-      void controls.start({ opacity: 1, y: 0, transition: { duration: 0.24, ease: 'easeOut' } });
+      void startSafely({ opacity: 1, y: 0, transition: { duration: 0.24, ease: 'easeOut' } }, 500);
       return;
     }
     // Opening a note is the same gesture as opening a new page, just softer:
@@ -207,13 +269,13 @@ export const PageStage = forwardRef<PageStageHandle, PageStageProps>(({
       transformOrigin: 'top center',
       transformPerspective: 1500,
     });
-    void controls.start({
+    void startSafely({
       rotateX: 0,
       scaleY: 1,
       opacity: 1,
       transition: { duration: 0.46, ease: [0.16, 1, 0.3, 1] },
-    });
-  }, [enter, controls, reduced, disabled]);
+    }, 700);
+  }, [enter, startSafely, reduced, disabled, controls]);
 
   // ---- gestures ---------------------------------------------------
   const startGesture = (e: React.PointerEvent) => {

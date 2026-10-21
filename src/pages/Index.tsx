@@ -1418,44 +1418,52 @@ const Index = () => {
               </div>}
               <div className="nn-editor-helper"><span>{blockEditor.blocks.reduce((t, b) => t + b.content.trim().split(/\s+/).filter(Boolean).length, 0)} words</span><span>Local draft</span></div>
               {/* Mobile Notion Editor — Full width, clean */}
-              <div className="nn-editor-canvas" onFocusCapture={e => { const id = (e.target as HTMLElement).closest('[data-block-id]')?.getAttribute('data-block-id'); if (id) setFocusedBlockId(id); }} hidden={mobileView !== 'write'} data-paper={settings.pageStyle} style={{ '--nn-handwriting': settings.font === 'roman-regular' ? 'Inter, sans-serif' : settings.font === 'roman-serif' ? 'Georgia, serif' : settings.font === 'roman-mono' ? '"JetBrains Mono", monospace' : `"${settings.font.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}", cursive` } as React.CSSProperties}>
-                <NotionEditor
-                  blocks={blockEditor.blocks}
-                  onBlocksChange={blockEditor.setBlocks}
-                  currentColor={currentColor}
-                  onColorChange={handleColorChange}
-                  onAIAction={() => setShowAIWorkspace(true)}
-                  onOCRAction={() => setShowScanPanel(true)}
-                  onExport={handleExportPDF}
-                  dna={dnaContext.dna}
-                  settings={settings}
-                  pageNumber={currentPageIndex + 1}
-                  totalPages={totalPages}
-                />
+              {/* Page strip — always available, in Write and Preview alike, so a
+                  new sheet can be added without hunting for the preview tab. */}
+              <div className="nn-page-pager nn-page-pager--board" role="group" aria-label="Page controls">
+                <Button variant="ghost" size="sm" onClick={handlePrevPage} disabled={!canGoPrev} aria-label="Previous page">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span aria-live="polite">Page {currentPageIndex + 1} of {totalPages}</span>
+                <Button variant="ghost" size="sm" onClick={handleAddPage} aria-label="Add page">
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleNextPage} disabled={!canGoNext} aria-label="Next page">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
 
-              {mobileView === 'preview' && (
-                <div className="nn-board-preview">
-                  {/* One sheet at a time so a swipe can turn it like paper. */}
-                  <div className="nn-page-pager" role="group" aria-label="Page controls">
-                    <Button variant="ghost" size="sm" onClick={handlePrevPage} disabled={!canGoPrev} aria-label="Previous page">
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <span aria-live="polite">Page {currentPageIndex + 1} of {totalPages}</span>
-                    <Button variant="ghost" size="sm" onClick={handleAddPage} aria-label="Add page">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={handleNextPage} disabled={!canGoNext} aria-label="Next page">
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <PageStage
-                    ref={pageStageRef}
-                    enter
-                    swipe
-                    onTurn={onPageStageTurn}
-                    ariaLabel={`Note page ${currentPageIndex + 1} of ${totalPages}`}
-                  >
+              {/* Both views live inside one paper stage: the writer's canvas is
+                  never remounted, and a page turn/unfold animates in Write too. */}
+              <PageStage
+                ref={pageStageRef}
+                enter
+                swipe
+                keyboard={false}
+                disabled={isExporting}
+                onTurn={onPageStageTurn}
+                ariaLabel={`Note page ${currentPageIndex + 1} of ${totalPages}`}
+                className={mobileView === 'write' ? 'nn-page-stage--write' : ''}
+              >
+                              <div className="nn-editor-canvas" onFocusCapture={e => { const id = (e.target as HTMLElement).closest('[data-block-id]')?.getAttribute('data-block-id'); if (id) setFocusedBlockId(id); }} hidden={mobileView !== 'write'} data-paper={settings.pageStyle} style={{ '--nn-handwriting': settings.font === 'roman-regular' ? 'Inter, sans-serif' : settings.font === 'roman-serif' ? 'Georgia, serif' : settings.font === 'roman-mono' ? '"JetBrains Mono", monospace' : `"${settings.font.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}", cursive` } as React.CSSProperties}>
+                  <NotionEditor
+                    blocks={blockEditor.blocks}
+                    onBlocksChange={blockEditor.setBlocks}
+                    currentColor={currentColor}
+                    onColorChange={handleColorChange}
+                    onAIAction={() => setShowAIWorkspace(true)}
+                    onOCRAction={() => setShowScanPanel(true)}
+                    onExport={handleExportPDF}
+                    dna={dnaContext.dna}
+                    settings={settings}
+                    pageNumber={currentPageIndex + 1}
+                    totalPages={totalPages}
+                  />
+                </div>
+
+                {mobileView === 'preview' && (
+                  <div className="nn-board-preview">
+                    {/* One sheet at a time so a swipe can turn it like paper. */}
                     <NotebookPreview
                       ref={previewRef}
                       lines={previewLines}
@@ -1474,21 +1482,22 @@ const Index = () => {
                       onStroke={sketchStore.addStroke}
                       onEraseStroke={sketchStore.eraseAt}
                     />
-                  </PageStage>
-                  <div className="mt-2 flex justify-center">
-                    <SketchToolbar
-                      value={sketch}
-                      onChange={updateSketch}
-                      onUndo={sketchStore.undo}
-                      onRedo={sketchStore.redo}
-                      onClear={() => sketchStore.clearPage(currentPage.id)}
-                      canUndo={sketchStore.canUndo}
-                      canRedo={sketchStore.canRedo}
-                    />
+                    <div className="mt-2 flex justify-center">
+                      <SketchToolbar
+                        value={sketch}
+                        onChange={updateSketch}
+                        onUndo={sketchStore.undo}
+                        onRedo={sketchStore.redo}
+                        onClear={() => sketchStore.clearPage(currentPage.id)}
+                        canUndo={sketchStore.canUndo}
+                        canRedo={sketchStore.canRedo}
+                      />
+                    </div>
+                    <p className="nn-page-hint">Swipe left or right to turn the page</p>
                   </div>
-                  <p className="nn-page-hint">Swipe left or right to turn the page</p>
-                </div>
-              )}
+                )}
+              </PageStage>
+
               <div className="nn-board-footer">
                 <Button variant="ghost" onClick={() => setShowMobileStyleSheet(true)}><Settings2 className="h-4 w-4" />Paper & pen</Button>
                 <Button variant="ghost" onClick={() => setShowImportPanel(true)} aria-label="Import document" title="Import document"><Upload className="h-4 w-4" /></Button>

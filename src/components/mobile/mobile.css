@@ -124,5 +124,8 @@
 .nn-page-pager>button{height:32px!important;width:32px!important;padding:6px!important;min-height:0!important;color:var(--nn-muted)}
 .nn-page-pager>span{font-size:11px;font-weight:600;color:var(--nn-muted);min-width:92px;text-align:center;font-variant-numeric:tabular-nums}
 .nn-page-hint{margin:6px 0 0;text-align:center;font-size:10px;color:var(--nn-muted);opacity:.75}
+/* Page strip above the writing canvas: reachable without opening Preview. */
+.nn-page-pager--board{margin:0 0 6px;padding:2px 2px 6px}
+.nn-page-pager--board>button{height:30px!important;width:30px!important}
 .nn-board-preview .nn-page-stage{overflow:hidden;border-radius:7px}
 @media(prefers-reduced-motion:reduce){.nn-page-hint{display:none}}

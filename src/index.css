@@ -1581,10 +1581,20 @@
   /* Vertical scrolling stays native; horizontal gestures belong to a page turn. */
   touch-action: pan-y;
 }
+/* Writing mode keeps native touch behaviour (text selection inside the
+   editor); the page-turn gesture only claims horizontal drags. */
+.nn-page-stage--write {
+  touch-action: auto;
+}
 .nn-page-sheet {
   will-change: transform;
   transform: translateZ(0);
 }
 @media (prefers-reduced-motion: reduce) {
-  .nn-page-sheet { will-change: auto; }
+  /* Writing mode keeps native touch behaviour (text selection inside the
+   editor); the page-turn gesture only claims horizontal drags. */
+.nn-page-stage--write {
+  touch-action: auto;
+}
+.nn-page-sheet { will-change: auto; }
 }
