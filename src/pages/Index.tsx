@@ -90,6 +90,7 @@ import { SketchToolbar, type SketchSettings } from '@/components/notes/SketchToo
 import { usePageStrokes } from '@/hooks/usePageStrokes';
 import { noteSettingsForDNA } from '@/lib/handwritingStyle';
 import { composePdfNotes } from '@/lib/aiNotes';
+import { knowledgeDocFromPdf, registerKnowledgeDoc } from '@/lib/knowledgeIndex';
 import { SemiCircularDial } from '@/components/dial/SemiCircularDial';
 import { readPdf } from '@/lib/pdfText';
 const HandwritingStudio = lazy(() => import('@/components/handwriting-dna/HandwritingStudio').then(m => ({ default: m.HandwritingStudio })));
@@ -782,6 +783,11 @@ const Index = () => {
       // PDF typography → real notes (titles, sections, lists, equations), then
       // insert in whatever handwriting style is active.
       const composed = composePdfNotes(text, { fallbackTitle: file.name.replace(/\.pdf$/i, '') || 'Imported notes' });
+      // Keep the source document searchable so NikAI can quote it later with
+      // page-level citations (offline, on this device only).
+      registerKnowledgeDoc(
+        knowledgeDocFromPdf(file.name, pages.map(p => p.lines.join('\n')))
+      );
       handleAIInsertStructured(composed.lines);
       toast.success(`Imported ${pages.filter(p => p.lines.some(l => l.trim())).length} page(s) from “${file.name}” — in your handwriting`);
     } catch (e) {

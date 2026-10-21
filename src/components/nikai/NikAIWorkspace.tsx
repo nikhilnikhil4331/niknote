@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
+  BookOpen,
   BookmarkPlus,
   Brain,
   Check,
@@ -73,6 +74,19 @@ import {
   extractAndSaveFlashcardsFromMarkdown,
   implementNikAINote,
 } from '@/lib/nikaiNotesBridge';
+import { speakAloud, stopSpeaking } from '@/lib/speech';
+import { useSpeechDictation } from '@/hooks/useSpeechDictation';
+import {
+  buildGroundedContext,
+  collectLocalKnowledge,
+  groundingPrompt,
+  loadKnowledgeDocs,
+  removeKnowledgeDoc,
+  sourceLabel,
+  type GroundingConfidence,
+  type KnowledgeDoc,
+  type SourceRef,
+} from '@/lib/knowledgeIndex';
 import { NikAIBrand, NikAIStarConstellation } from './NikAIBrand';
 import { NikAIThinkingArena } from './NikAIThinkingArena';
 
@@ -87,6 +101,9 @@ export interface NikAIMessage {
   latencyMs?: number;
   followUps?: string[];
   savedNoteId?: string;
+  /** Passages from the user's own notes/PDFs used for this answer. */
+  sources?: SourceRef[];
+  grounding?: GroundingConfidence;
   createdAt: number;
 }
 
@@ -428,6 +445,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
 
   const [memoryState, setMemoryState] = useState<NikAIMemoryStore>(() => loadNikAIMemory());
   const [memoryOpen, setMemoryOpen] = useState(false);
+  const [searchableDocs, setSearchableDocs] = useState<KnowledgeDoc[]>([]);
   const [newMemoryFact, setNewMemoryFact] = useState('');
 
   const [notePickerOpen, setNotePickerOpen] = useState(false);
@@ -440,6 +458,17 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   const [liveModelName, setLiveModelName] = useState('NikAI');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
+
+  // Voice input for NikAI: same engine as the editor's dictation, so a
+  // spoken request follows exactly the same path as a typed one.
+  const nikaiDictation = useSpeechDictation({
+    lang:
+      typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('hi')
+        ? 'hi-IN'
+        : 'en-IN',
+    onFinalTranscript: (text) =>
+      setInput((prev) => `${prev}${prev && !/\s$/.test(prev) ? ' ' : ''}${text}`),
+  });
   const [listening, setListening] = useState(false);
   const [implementingId, setImplementingId] = useState<string | null>(null);
 
@@ -678,21 +707,19 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
         return;
       }
       if (speakingId === msg.id) {
-        window.speechSynthesis.cancel();
+        stopSpeaking();
         setSpeakingId(null);
         return;
       }
-      window.speechSynthesis.cancel();
-      const plain = msg.content
-        .replace(/```[\s\S]*?```/g, ' code block ')
-        .replace(/[#*_>`~|-]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-      const utter = new SpeechSynthesisUtterance(plain);
-      utter.onend = () => setSpeakingId(null);
-      utter.onerror = () => setSpeakingId(null);
+      // Strip markdown and pick an Indian voice when one is installed.
+      const started = speakAloud(msg.content, {
+        onEnd: () => setSpeakingId(null),
+      });
+      if (!started) {
+        toast.info('Nothing to read aloud in this answer');
+        return;
+      }
       setSpeakingId(msg.id);
-      window.speechSynthesis.speak(utter);
     },
     [speakingId]
   );
@@ -842,6 +869,24 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
           ? `Note Title: ${attachedNote.title}\n\n${attachedNote.preview}`
           : undefined;
 
+        // Retrieve from the user's own material (all local notes + imported
+        // PDFs) so answers can be grounded and cited. Retrieval is purely
+        // local: nothing is sent to a search service.
+        const attachedDocs: KnowledgeDoc[] = attachedNote
+          ? [{
+              id: `attached-${attachedNote.id}`,
+              title: attachedNote.title,
+              kind: 'note',
+              pages: [attachedNote.preview],
+              updatedAt: Date.now(),
+            }]
+          : [];
+        const localDocs = collectLocalKnowledge();
+        const grounded = buildGroundedContext(userMsg.content, localDocs, {
+          includeDocs: attachedDocs,
+          topK: 5,
+        });
+
         const result = await streamAstaAI({
           messages: historyForEngine.slice(-18).map((m) => ({
             role: m.role,
@@ -851,7 +896,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
           mode: effectiveMode,
           model: modelChoice,
           threadId: targetThreadId,
-          noteContext: noteCtx,
+          noteContext: [noteCtx, groundingPrompt(grounded)].filter(Boolean).join('\n\n'),
           memoryContext: freshMemoryPrompt,
           signal: controller.signal,
           onMeta: (meta) => {
@@ -920,6 +965,11 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                           provider: result.provider,
                           latencyMs: result.latencyMs,
                           followUps,
+                          sources: grounded.sources.length ? grounded.sources : undefined,
+                          grounding:
+                            localDocs.length || attachedDocs.length
+                              ? grounded.confidence
+                              : undefined,
                         }
                       : m
                   ),
@@ -1288,7 +1338,10 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
           <div className="flex items-center gap-2.5 shrink-0">
             <button
               type="button"
-              onClick={() => setMemoryOpen(true)}
+              onClick={() => {
+                setSearchableDocs(loadKnowledgeDocs());
+                setMemoryOpen(true);
+              }}
               data-testid="nikai-memory-btn"
               className="h-10 px-3.5 rounded-full bg-white/95 hover:bg-white border border-[#ECEAF6] shadow-[0_2px_12px_rgba(30,20,70,0.04)] flex items-center gap-2 transition-all"
             >
@@ -1634,6 +1687,38 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
 
                     {(msg.content || !isCurrentlyStreaming) && (
                       <div className="rounded-2xl bg-white/95 backdrop-blur-md border border-[#EAE6F7] px-4 sm:px-5 py-4 shadow-[0_8px_28px_rgba(40,22,90,0.06)]">
+                        {/* Where the answer came from — only real retrieved
+                            passages are ever listed here. */}
+                        {!isCurrentlyStreaming && msg.sources && msg.sources.length > 0 && (
+                          <div
+                            className="mb-3 flex flex-wrap items-center gap-1.5"
+                            data-testid="nikai-sources"
+                          >
+                            <span className="inline-flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wider text-[#8B7FB0]">
+                              <BookOpen className="w-3 h-3" />
+                              Sources
+                            </span>
+                            {msg.sources.map((source, i) => (
+                              <span
+                                key={`${source.docId}-${source.page}-${i}`}
+                                title={source.excerpt}
+                                className="rounded-full bg-[#F5F0FF] border border-[#E2D4FC] px-2 py-0.5 text-[10.5px] font-semibold text-[#5B21B6]"
+                              >
+                                [{i + 1}] {sourceLabel(source)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {!isCurrentlyStreaming &&
+                          msg.grounding === 'none' &&
+                          msg.content && (
+                            <p className="mb-3 rounded-lg bg-amber-50/80 border border-amber-200/70 px-2.5 py-1.5 text-[11px] font-medium text-amber-800">
+                              No matching passage in your notes or PDFs — this answer is from
+                              general knowledge, not your material.
+                            </p>
+                          )}
+
                         <AstaMarkdown
                           content={msg.content}
                           isStreaming={isCurrentlyStreaming}
@@ -1816,6 +1901,34 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             )}
 
             <div className="rounded-[26px] bg-white/95 backdrop-blur-md border border-[#EAE6F6] shadow-[0_14px_40px_rgba(49,28,99,0.10)] focus-within:border-[#C4B5FD] transition-all px-5 pt-3.5 pb-3">
+              {nikaiDictation.isListening && (
+                <div
+                  className="mb-1 flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-200 px-2.5 py-1.5 text-[11.5px] font-medium text-rose-700"
+                  data-testid="nikai-dictation-indicator"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                  <span className="font-bold">Listening…</span>
+                  <span className="truncate text-rose-600/90">
+                    {nikaiDictation.interimTranscript || 'boliye — aapki awaaz notes me jayegi'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={nikaiDictation.stop}
+                    className="ml-auto rounded-md px-1.5 py-0.5 text-[11px] font-bold text-rose-700 hover:bg-rose-100"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+
+              {nikaiDictation.errorMessage && (
+                <p className="mb-1 text-[11px] font-medium text-amber-700">
+                  {nikaiDictation.errorMessage}
+                </p>
+              )}
+
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -1848,6 +1961,31 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                       e.target.value = '';
                     }}
                   />
+
+                  {nikaiDictation.isSupported && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (nikaiDictation.isListening) nikaiDictation.stop();
+                        else void nikaiDictation.start();
+                      }}
+                      aria-pressed={nikaiDictation.isListening}
+                      aria-label={nikaiDictation.isListening ? 'Stop voice input' : 'Speak your request'}
+                      data-testid="nikai-mic-btn"
+                      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13.5px] font-medium transition-colors ${
+                        nikaiDictation.isListening
+                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                          : 'text-[#585275] hover:text-[#6D28D9] hover:bg-[#F6F3FD]'
+                      }`}
+                    >
+                      {nikaiDictation.isListening ? (
+                        <MicOff className="w-4 h-4" />
+                      ) : (
+                        <Mic className="w-4 h-4 text-[#7C7699]" />
+                      )}
+                      <span>{nikaiDictation.isListening ? 'Stop' : 'Voice'}</span>
+                    </button>
+                  )}
 
                   <div className="relative">
                     <button
@@ -2067,6 +2205,48 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     {memoryState.preferredLanguage || 'Auto-Adaptive'}
                   </div>
                 </div>
+              </div>
+
+              <div>
+                <div className="font-bold text-slate-700 mb-1.5">
+                  Searchable material ({searchableDocs.length})
+                </div>
+                <p className="mb-2 text-[11px] text-slate-500">
+                  Imported PDFs NikAI can quote, with page numbers. Your notes are searched
+                  automatically and never leave this device.
+                </p>
+                {searchableDocs.length === 0 ? (
+                  <p className="text-slate-400 italic">
+                    No imported documents yet — import a PDF from the editor to make it searchable.
+                  </p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {searchableDocs.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80"
+                      >
+                        <span className="truncate text-slate-800 font-medium">
+                          {doc.title}
+                          <span className="ml-1.5 text-[10.5px] font-semibold text-slate-400">
+                            {doc.pages.length} page{doc.pages.length === 1 ? '' : 's'}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={`Forget ${doc.title}`}
+                          onClick={() => {
+                            setSearchableDocs(removeKnowledgeDoc(doc.id));
+                            toast.success(`Forgot “${doc.title}”`);
+                          }}
+                          className="text-slate-400 hover:text-rose-600 shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div>

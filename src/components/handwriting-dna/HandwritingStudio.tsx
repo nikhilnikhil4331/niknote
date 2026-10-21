@@ -24,6 +24,7 @@ import { dnaPresetMeta, handwritingFontForDNA, noteSettingsForDNA, paginateStruc
 import { composePdfNotes } from '@/lib/aiNotes';
 import { type InkColor } from '@/types/notes';
 import { readPdf, type PdfPage } from '@/lib/pdfText';
+import { knowledgeDocFromPdf, registerKnowledgeDoc } from '@/lib/knowledgeIndex';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import type { StructuredLine } from '@/lib/noteStructure';
@@ -255,6 +256,10 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
       } else {
         setPdfPages(withText.slice(0, 8));
         setPdfName(file.name);
+        // Same document is now searchable from NikAI with page citations.
+        registerKnowledgeDoc(
+          knowledgeDocFromPdf(file.name, pages.map(p => p.lines.join('\n')))
+        );
         toast.success(`Read ${withText.length} page${withText.length > 1 ? 's' : ''} from “${file.name}”`);
       }
     } catch (e) {

@@ -1,14 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  isDictationSupported,
+  startDictation,
+  type DictationErrorCode,
+  type DictationHandle,
+} from '@/lib/speech';
 
-// The Web Speech API types are not always available in TS configs, so we keep them minimal.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SpeechRecognition = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SpeechRecognitionEvent = any;
-
-type SpeechRecognitionConstructor = new () => SpeechRecognition;
-
-type DictationStatus = "idle" | "listening" | "error";
+type DictationStatus = 'idle' | 'listening' | 'error';
 
 export interface UseSpeechDictationOptions {
   lang?: string;
@@ -29,112 +27,92 @@ export interface UseSpeechDictationReturn {
   reset: () => void;
 }
 
-function getSpeechRecognitionCtor(): SpeechRecognitionConstructor | null {
-  const w = window as unknown as {
-    SpeechRecognition?: SpeechRecognitionConstructor;
-    webkitSpeechRecognition?: SpeechRecognitionConstructor;
-  };
+const ERROR_MESSAGES: Record<DictationErrorCode, string> = {
+  unsupported: 'Speech recognition is not supported in this browser.',
+  'not-allowed': 'Microphone access is blocked. Allow it in your browser settings.',
+  'no-speech': 'No speech detected — try again a little closer to the mic.',
+  network: 'The speech service could not be reached.',
+  aborted: '',
+  unknown: 'Dictation error. Please try again.',
+};
 
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-
+/**
+ * Thin React wrapper over `startDictation` (src/lib/speech.ts).
+ *
+ * The platform plumbing lives in the lib so the same implementation is shared
+ * with NikAI's voice input; this hook only owns component state.
+ */
 export function useSpeechDictation(options: UseSpeechDictationOptions = {}): UseSpeechDictationReturn {
-  const {
-    lang = "en-US",
-    interimResults = true,
-    continuous = true,
-    onFinalTranscript,
-  } = options;
+  const { lang, onFinalTranscript } = options;
 
-  const recognitionCtor = useMemo(() => getSpeechRecognitionCtor(), []);
-  const isSupported = !!recognitionCtor;
+  const isSupported = isDictationSupported();
+  const handleRef = useRef<DictationHandle | null>(null);
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-
-  const [status, setStatus] = useState<DictationStatus>("idle");
-  const [interimTranscript, setInterimTranscript] = useState("");
+  const [status, setStatus] = useState<DictationStatus>('idle');
+  const [interimTranscript, setInterimTranscript] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const reset = useCallback(() => {
-    setInterimTranscript("");
+    setInterimTranscript('');
     setErrorMessage(null);
-    setStatus("idle");
+    setStatus('idle');
   }, []);
 
   const stop = useCallback(() => {
-    recognitionRef.current?.stop();
+    handleRef.current?.stop();
+    handleRef.current = null;
+    setInterimTranscript('');
+    setStatus('idle');
   }, []);
 
   const start = useCallback(async () => {
-    if (!recognitionCtor) {
-      setErrorMessage("Speech recognition is not supported in this browser.");
-      setStatus("error");
+    if (!isSupported) {
+      setErrorMessage(ERROR_MESSAGES.unsupported);
+      setStatus('error');
       return;
     }
 
     setErrorMessage(null);
-    setInterimTranscript("");
-    setStatus("listening");
+    setInterimTranscript('');
+    setStatus('listening');
 
-    // Create a new instance every time for more predictable state
-    const recognition = new recognitionCtor();
-    recognitionRef.current = recognition;
-
-    recognition.lang = lang;
-    recognition.interimResults = interimResults;
-    recognition.continuous = continuous;
-
-    recognition.onresult = (event) => {
-      let interim = "";
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        const text = result[0]?.transcript ?? "";
-
-        if (result.isFinal) {
-          const finalText = text.trim();
-          if (finalText) onFinalTranscript?.(finalText);
-          setInterimTranscript("");
+    const handle = startDictation({
+      lang,
+      onResult: (text, isFinal) => {
+        if (isFinal) {
+          setInterimTranscript('');
+          onFinalTranscript?.(text);
         } else {
-          interim += text;
+          setInterimTranscript(text);
         }
-      }
+      },
+      onError: (code) => {
+        const message = ERROR_MESSAGES[code];
+        if (!message) return;
+        setErrorMessage(message);
+        setStatus('error');
+      },
+      onEnd: () => {
+        handleRef.current = null;
+        setInterimTranscript('');
+        setStatus((prev) => (prev === 'error' ? 'error' : 'idle'));
+      },
+    });
 
-      if (interimResults) {
-        setInterimTranscript(interim.trim());
-      }
-    };
+    handleRef.current = handle;
+    if (!handle) setStatus('error');
+  }, [isSupported, lang, onFinalTranscript]);
 
-    recognition.onerror = (event) => {
-      // Keep it user-friendly; don't leak raw event objects
-      setErrorMessage(event.error === "not-allowed" ? "Microphone access is blocked." : "Dictation error. Please try again.");
-      setStatus("error");
-    };
-
-    recognition.onend = () => {
-      // If we ended without an explicit error, return to idle.
-      setStatus((prev) => (prev === "error" ? "error" : "idle"));
-    };
-
-    recognition.start();
-  }, [continuous, interimResults, lang, onFinalTranscript, recognitionCtor]);
-
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      try {
-        recognitionRef.current?.stop();
-      } catch {
-        // ignore
-      }
-      recognitionRef.current = null;
-    };
+  // Never leave the microphone open after the component goes away.
+  useEffect(() => () => {
+    handleRef.current?.stop();
+    handleRef.current = null;
   }, []);
 
   return {
     isSupported,
     status,
-    isListening: status === "listening",
+    isListening: status === 'listening',
     interimTranscript,
     errorMessage,
     start,
