@@ -80,7 +80,7 @@ Apne `.env` file mein Supabase credentials honi chahiye:
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_anon_key
 ```
-Ye Lovable project se mil jayengi — Supabase dashboard se copy karo.
+Ye the previous builder project se mil jayengi — Supabase dashboard se copy karo.
 
 ---
 
@@ -104,9 +104,9 @@ git push origin main
 
 ### Deploy Options:
 
-#### Option A: Lovable (easiest — auto-deploy)
-1. Lovable project still connected to GitHub
-2. Push karo → Lovable automatically deploy karega
+#### Option A: Auto-deploy via git
+1. GitHub repo still connected to the host
+2. Push karo → the host automatically deploy karega
 3. No credits used for deploy!
 
 #### Option B: Vercel (free, fast)
@@ -137,18 +137,18 @@ git push origin main
 
 ---
 
-## 🔧 Lovable Credits Bachane Ke Tips
+## 🔧 Builder Credits Bachane Ke Tips
 
-| Task | Lovable Use? | Alternative |
+| Task | Use it? | Alternative |
 |------|-------------|-------------|
-| UI Design | ✅ Lovable | — |
-| Code Generation | ✅ Lovable | Cursor AI (free) |
+| UI Design | ✅ the previous builder | — |
+| Code Generation | ✅ the previous builder | Cursor AI (free) |
 | Code Editing | ❌ Don't use | VS Code / Cursor |
 | Debugging | ❌ Don't use | VS Code terminal |
 | Deployment | ❌ Don't use | Vercel / Netlify |
 | Database | ❌ Don't use | Supabase dashboard |
 
-**Rule of thumb**: Lovable sirf NEW features banane ke liye use karo. Editing, debugging, deploying — sab VS Code mein karo!
+**Rule of thumb**: The builder sirf NEW features banane ke liye use karo. Editing, debugging, deploying — sab VS Code mein karo!
 
 ---
 

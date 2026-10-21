@@ -268,11 +268,6 @@
       "license": "MIT"
     },
     {
-      "name": "@lovable.dev/cloud-auth-js",
-      "version": "1.2.1",
-      "license": "MIT"
-    },
-    {
       "name": "@napi-rs/canvas",
       "version": "0.1.100",
       "license": "MIT"
@@ -3554,6 +3549,7 @@
     "(MIT AND Zlib)": 1,
     "MIT OR SEE LICENSE IN FEEL-FREE.md": 1,
     "0BSD": 1,
-    "MIT AND ISC": 1
+    "MIT AND ISC": 1,
+    "totalPackages": 706
   }
 }

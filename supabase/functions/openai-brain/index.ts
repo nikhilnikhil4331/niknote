@@ -38,7 +38,6 @@ serve(async (req) => {
     const groqKey = req.headers.get("x-groq-key") || Deno.env.get("GROQ_API_KEY") || "";
     const geminiKey = req.headers.get("x-gemini-key") || Deno.env.get("GEMINI_API_KEY") || "";
     const openaiKey = req.headers.get("x-openai-key") || Deno.env.get("OPENAI_API_KEY") || "";
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY") || "";
 
     const sys = [
       systemPrompt || AGENT_PROMPTS[agentType] || AGENT_PROMPTS.teacher,
@@ -113,21 +112,6 @@ serve(async (req) => {
         const d = await r.json();
         const content = d?.choices?.[0]?.message?.content || "";
         if (content) return Response.json({ content, response: content, model, provider: "openai" }, { headers: corsHeaders });
-      }
-    }
-
-    // 4. Try Lovable Gateway
-    if (lovableKey) {
-      const model = mode === "vision" ? "google/gemini-2.5-pro" : "google/gemini-2.5-flash";
-      const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableKey}` },
-        body: JSON.stringify({ model, messages: fullMessages }),
-      });
-      if (r.ok) {
-        const d = await r.json();
-        const content = d?.choices?.[0]?.message?.content || "";
-        if (content) return Response.json({ content, response: content, model, provider: "lovable" }, { headers: corsHeaders });
       }
     }
 

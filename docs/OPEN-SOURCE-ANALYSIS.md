@@ -145,7 +145,7 @@ taken is the negative lesson: do not ship generated media as if it were a user's
 
 | Signal | Value | Command |
 | --- | --- | --- |
-| Tests | 22 files / 244 tests passing | `npm test` |
+| Tests | 23 files / 247 tests passing | `npm test` |
 | Type check | clean | `npm run typecheck` |
 | Dead modules | **0** (69 orphans deleted, test-only helpers reported separately) | `npm run check:dead-code` |
 | Build | Vite build succeeds | `npm run build` |

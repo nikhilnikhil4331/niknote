@@ -21,7 +21,7 @@
 | Minor Bugs Found | 4 | ✅ ALL FIXED |
 | Deploy Status | LIVE | ✅ niknote.online |
 | PWA Icons | 8/8 | ✅ ALL PRESENT |
-| Lovable References | 0 | ✅ REMOVED |
+| Vendor References | 0 | ✅ REMOVED |
 | Security Issues | 0 Critical | ✅ PASS |
 
 ---
@@ -44,18 +44,18 @@
 - **Fix:** Generated all missing icons from the existing 512x512 source image using PIL/Pillow.  
 - **Verification:** All 8 icon sizes now present. ✅
 
-### BUG-003: Lovable Tagger in Production Build (MAJOR)
+### BUG-003: the previous builder Tagger in Production Build (MAJOR)
 - **Severity:** MAJOR  
 - **Module:** Build / Vite  
-- **Root Cause:** `vite.config.ts` imported `lovable-tagger` which is a dev tool that injects component IDs into HTML attributes. This bloats the build and potentially exposes component structure.  
+- **Root Cause:** `vite.config.ts` imported `the legacy builder tagger` which is a dev tool that injects component IDs into HTML attributes. This bloats the build and potentially exposes component structure.  
 - **Impact:** Increased bundle size, unnecessary dev tooling in production, security risk.  
-- **Fix:** Removed `componentTagger` from vite.config.ts and `lovable-tagger` from package.json.  
-- **Verification:** Clean build, no lovable references. ✅
+- **Fix:** Removed `componentTagger` from vite.config.ts and `the legacy builder tagger` from package.json.  
+- **Verification:** Clean build, no legacy builder references. ✅
 
-### BUG-004: @lovable.dev/cloud-auth-js Dependency (MAJOR)
+### BUG-004: an unused legacy auth package Dependency (MAJOR)
 - **Severity:** MAJOR  
 - **Module:** Dependencies  
-- **Root Cause:** Unused `@lovable.dev/cloud-auth-js` package was still in `package.json`. Integration stub existed but the package was never actually imported in any source file.  
+- **Root Cause:** Unused `an unused legacy auth package` package was still in `package.json`. Integration stub existed but the package was never actually imported in any source file.  
 - **Impact:** Unnecessary dependency, increased install size, potential security vulnerabilities.  
 - **Fix:** Removed from package.json.  
 - **Verification:** `npm install` succeeds without it. ✅
@@ -209,7 +209,7 @@ Total: ~2.8MB (gzipped: ~800KB)
 | Secrets in Code | ✅ | Only anon key in .env (safe for client) |
 | File Upload Validation | ✅ | Type + size checks in DocumentIntelligence |
 | Rate Limiting | ✅ | Premium feature limits via feature_usage table |
-| PWA Service Worker | ✅ | No lovable references, clean caching |
+| PWA Service Worker | ✅ | No vendor references, clean caching |
 
 ---
 

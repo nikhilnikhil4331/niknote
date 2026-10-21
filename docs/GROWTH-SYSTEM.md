@@ -311,8 +311,9 @@ and `drop table public.anon_ai_limits; drop function public.consume_anon_quota(t
 | `src/test/firstNoteGuide.test.tsx` | 3-step checklist ticks, opens style panel, hides when a note exists, stays dismissed |
 | `src/test/aiKeyHygiene.test.ts` | No `VITE_*` provider key anywhere in `src/`, proxy is the only key reader, CSP allows the Supabase origin, proxy flag stays opt-in |
 | `src/test/aiQuota.test.ts` | Quota payload parsing (both RPC shapes, malformed → fail open), header round-trip, anonymous bucket is a stable 32-char digest that hides the IP, honest 429 copy |
+| `src/test/repoHygiene.test.ts` | No builder/vendor name anywhere in the repo, root keeps only `README/AGENTS/THIRD_PARTY_NOTICES`, no committed `*.tsbuildinfo` |
 
-**Total: 244 tests across 22 files.** Run: `npm test`, `npm run verify` (typecheck + tests +
+**Total: 247 tests across 23 files.** Run: `npm test`, `npm run verify` (typecheck + tests +
 dead-code), CI mirror in `.github/workflows/ci.yml`.
 
 ---
@@ -349,9 +350,14 @@ no data migration is involved.
       flag ships off.
    4. Smoke test in production: ask NikAI one question and confirm the response headers include
       `x-niknote-quota: user` (signed in) or `x-niknote-quota: anon` (signed out).
-4. **Email** — no provider is required for the current flow: approved drafts open in the
-   operator's own mail app (`mailto:`), and "I sent it" only records a human confirmation. Choose a
-   provider only when volume makes that impractical (§17).
+4. **Email** — two separate paths:
+   - *Outreach* needs no provider: approved drafts open in the operator's own mail app (`mailto:`),
+     and "I sent it" only records a human confirmation (§7).
+   - *Auth emails* (`auth-email-hook`) now post to a transactional provider directly. Add
+     `RESEND_API_KEY` (or `EMAIL_API_KEY`) + `AUTH_EMAIL_HOOK_SECRET`, set the hook URL in
+     Supabase → Authentication → Hooks → Send Email, and verify the sender domain. Until then the
+     function answers `503 email_provider_not_configured` and Supabase's built-in sender stays in
+     charge. No reseller gateway is involved.
 5. **First outreach batch** — research by hand, review every draft, send manually, log the reply.
 6. **Growth Studio smoke test** — open `/admin` → Growth, confirm empty states read "no data yet".
 
@@ -363,7 +369,7 @@ no data migration is involved.
 | --- | --- | --- |
 | Vercel hosting | existing plan | traffic |
 | Supabase | existing plan | rows/storage |
-| Gemini / Groq | pay-per-use (keys are public → monitor) | every AI answer |
+| Gemini / Groq | pay-per-use, server-side keys + hourly quota (40 signed-in / 15 signed-out) | every AI answer |
 | Custom domain | already paid | annual |
 | Email | **₹0** today (mailto from the operator's inbox) | add a provider (~$0–20/mo) only when volume makes manual sending impractical |
 | Search Console / analytics | ₹0 | — |
@@ -376,13 +382,18 @@ recurring line items.
 
 ## 18. What is still incomplete (honest list)
 
-1. **`ai-proxy` (the Supabase edge function) still needs its secrets.** It is deployed with
+1. **The six Supabase AI functions need their own keys.** `editor-ai`, `openai-brain`,
+   `ai-writing-assist`, `process-document`, `extract-handwriting-text`, `analyze-handwriting` and
+   `scan-receipt` now call Groq/OpenAI directly (no reseller gateway) and return `503` until
+   `GROQ_API_KEY` or `OPENAI_API_KEY` is added to Supabase secrets. The app's main AI path (`/api/ai`)
+   is unaffected because it has its own keys.
+2. **`ai-proxy` (the Supabase edge function) still needs its secrets.** It is deployed with
    `verify_jwt` and a per-user quota, but until `GEMINI_API_KEY`/`GROQ_API_KEY` exist in Supabase it
    answers `503`, so `VITE_AI_PROXY` stays off. This is not a security hole: the path production
    actually uses, `/api/ai`, now meters every request server-side (signed-in per user, signed-out per
    salted device hash) and returns `429` with the real reset time. The remaining work is the env
    rename in §16 step 3, which needs a human because Vercel values are `sensitive`.
-2. **Quota is consumed before the provider call**, so a failed provider request still counts against
+3. **Quota is consumed before the provider call**, so a failed provider request still counts against
    the hour. Chosen on purpose (abuse guard); revisit if it annoys real users.
 3. **Unique actors is per day** in the server summary, so a person active across five days counts
    five times. Multi-day dedupe needs a `distinct user` rollup, which is a reporting change, not a

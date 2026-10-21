@@ -122,7 +122,7 @@ export const Scene5CTA: React.FC = () => {
           fontWeight: 700,
           letterSpacing: 2,
         }}>
-          homenik.lovable.app
+          niknote.online
         </div>
 
         {/* Logo */}

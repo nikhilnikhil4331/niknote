@@ -3,6 +3,34 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
 const CATEGORIES = ["Food", "Transport", "Shopping", "Bills", "Entertainment", "Education", "Health", "Other"];
+
+// Direct provider resolution — no reseller gateway in the path.
+// Groq is preferred (cheap + fast); OpenAI is the fallback. Both speak the
+// OpenAI chat-completions schema, so the request/response shapes stay identical.
+function resolveProvider() {
+  const groq = Deno.env.get("GROQ_API_KEY") || "";
+  const openai = Deno.env.get("OPENAI_API_KEY") || "";
+  if (groq) {
+    return {
+      url: "https://api.groq.com/openai/v1/chat/completions",
+      key: groq,
+      provider: "groq",
+      textModel: "llama-3.3-70b-versatile",
+      visionModel: "meta-llama/llama-4-scout-17b-16e-instruct",
+    };
+  }
+  if (openai) {
+    return {
+      url: "https://api.openai.com/v1/chat/completions",
+      key: openai,
+      provider: "openai",
+      textModel: "gpt-4o-mini",
+      visionModel: "gpt-4o",
+    };
+  }
+  return null;
+}
+
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
@@ -16,8 +44,8 @@ Deno.serve(async (req) => {
   const { data: { user } } = await supabase.auth.getUser(auth.replace("Bearer ", ""));
   if (!user) return json({ error: "Please sign in to scan receipts" }, 401);
 
-  const key = Deno.env.get("LOVABLE_API_KEY");
-  if (!key) return json({ error: "AI is not configured" }, 500);
+  const provider = resolveProvider();
+  if (!provider) return json({ error: "AI is not configured on the server yet" }, 503);
 
   let image: string;
   try {
@@ -27,11 +55,11 @@ Deno.serve(async (req) => {
   if (image.length > 7_000_000) return json({ error: "Photo is too large (max 5MB)" }, 400);
 
   const today = new Date().toISOString().slice(0, 10);
-  const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const upstream = await fetch(provider.url, {
     method: "POST",
-    headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${provider.key}` },
     body: JSON.stringify({
-      model: "google/gemini-3.8-flash",
+      model: provider.visionModel,
       stream: true,
       messages: [
         { role: "system", content: `You read shop receipts and bills. Reply with ONLY a JSON object: {"amount": number (final total paid), "category": one of ${JSON.stringify(CATEGORIES)}, "note": short merchant/item description (max 40 chars), "date": "YYYY-MM-DD" (receipt date, or ${today} if unreadable), "currency": ISO code}. If it is not a receipt, reply {"error":"not_a_receipt"}.` },

@@ -116,8 +116,8 @@ Total: ~2.8MB (gzipped: ~800KB)
 
 1. ✅ PremiumFeature type mismatch (CRITICAL)
 2. ✅ Missing PWA icons (5 sizes)
-3. ✅ Lovable tagger in production
-4. ✅ @lovable.dev/cloud-auth-js removed
+3. ✅ Legacy builder tagger in production
+4. ✅ an unused legacy auth package removed
 5. ✅ Wrong Supabase callback URL
 6. ✅ Textarea not auto-resizing
 7. ✅ PDF export aspect ratio distortion

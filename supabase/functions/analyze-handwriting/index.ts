@@ -117,10 +117,9 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-    if (!LOVABLE_API_KEY && !OPENAI_API_KEY) {
+    if (!OPENAI_API_KEY) {
       return new Response(
         JSON.stringify({ error: "Service configuration error" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -237,7 +236,7 @@ Respond ONLY with the raw JSON object. No markdown, no explanation, just JSON.`;
         if (response.ok) {
           usedProvider = 'openai';
         } else if (response.status === 429 || response.status === 402) {
-          console.log("OpenAI quota/rate limit, trying Lovable...");
+          console.log("OpenAI quota/rate limit reached");
           response = null;
         } else {
           const errText = await response.text();
@@ -250,46 +249,6 @@ Respond ONLY with the raw JSON object. No markdown, no explanation, just JSON.`;
       }
     }
 
-    // Fallback to Lovable
-    if (!response && LOVABLE_API_KEY) {
-      try {
-        console.log("Trying Lovable for handwriting analysis...");
-        response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              { role: "system", content: systemPrompt },
-              {
-                role: "user",
-                content: [
-                  {
-                    type: "text",
-                    text: "Analyze this handwriting sample with forensic precision for DNA v2. Return ONLY the JSON object with all 14 DNA parameters."
-                  },
-                  {
-                    type: "image_url",
-                    image_url: { url: imageBase64 }
-                  }
-                ]
-              }
-            ],
-            max_tokens: 2000,
-            temperature: 0.15,
-          }),
-        });
-        
-        if (response.ok) {
-          usedProvider = 'lovable';
-        }
-      } catch (err) {
-        console.error("Lovable request failed:", err);
-      }
-    }
 
     if (!response || !response.ok) {
       const status = response?.status || 500;

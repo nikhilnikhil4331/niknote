@@ -62,7 +62,7 @@ export const HANDBOOK: HandbookVolume[] = [
     subtitle: "Architecture, code, data, security.",
     icon: "🛠️",
     sections: [
-      { id: "arch", title: "Architecture", body: p(`React 18 + Vite + TS on the client. Supabase (Postgres + Auth + Edge Functions + Storage) on the server. Lovable AI Gateway for LLMs. No custom backend server.`) },
+      { id: "arch", title: "Architecture", body: p(`React 18 + Vite + TS on the client. Supabase (Postgres + Auth + Edge Functions + Storage) on the server. Server-side AI proxy for LLMs. No custom backend server.`) },
       { id: "folders", title: "Folder Structure", body: p(`src/components — UI. src/pages — routes. src/hooks — logic. src/services — domain engines. src/contexts — global state. supabase/functions — server logic.`) },
       { id: "code", title: "Code Standards", body: p(`Strict TS. No any without a comment. Small components (<300 lines). Semantic tokens only — no hardcoded colors. Named exports. Prefer composition over inheritance.`) },
       { id: "api", title: "API Standards", body: p(`All server calls via supabase.functions.invoke or typed client. No raw SQL from client. Errors return { error: string } with proper HTTP status.`) },
@@ -70,10 +70,10 @@ export const HANDBOOK: HandbookVolume[] = [
       { id: "auth", title: "Authentication", body: p(`Supabase Auth. Google + Email/Password + Apple. Session in httpOnly cookies where possible. Admin dual-auth (role + env creds).`) },
       { id: "payments", title: "Payments", body: p(`Razorpay live for India. Server-side HMAC verification. Idempotent order creation. Never trust client-side amount.`) },
       { id: "ocr", title: "OCR", body: p(`Gemini Pro Vision for handwriting. Adaptive thresholding pre-processing. Devanagari + Latin. Layout preservation.`) },
-      { id: "ai", title: "AI", body: p(`Lovable AI Gateway. Default google/gemini-3.6-flash. Stream responses. Rate limit per user/hour. Fallback model on 429.`) },
+      { id: "ai", title: "AI", body: p(`Server-side AI proxy (/api/ai + ai-proxy edge function). Gemini first, Groq fallback. Streamed responses, 40 requests per user per hour, 15 per signed-out device.`) },
       { id: "perf", title: "Performance", body: p(`Route-level code splitting. Virtualize long lists. Debounce autosave (500ms). Skeleton loaders everywhere.`) },
       { id: "security", title: "Security", body: p(`RLS, JWT verify in edge functions, magic-byte image validation, no SVG upload, rate limits, secrets never in VITE_ vars.`) },
-      { id: "devops", title: "DevOps", body: p(`Lovable-managed deploys. GitHub Actions for security scans on PR. Sentry-style error tracking via error_logs table.`) },
+      { id: "devops", title: "DevOps", body: p(`Vercel deploys from the app branch. GitHub Actions for typecheck, tests and security scans on PR. Sentry-style error tracking via error_logs table.`) },
     ],
   },
   {

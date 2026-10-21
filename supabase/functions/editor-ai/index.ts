@@ -48,7 +48,6 @@ Deno.serve(async (req) => {
   const groqKey = req.headers.get("x-groq-key") || Deno.env.get("GROQ_API_KEY") || "";
   const geminiKey = req.headers.get("x-gemini-key") || Deno.env.get("GEMINI_API_KEY") || "";
   const openaiKey = req.headers.get("x-openai-key") || Deno.env.get("OPENAI_API_KEY") || "";
-  const lovableKey = Deno.env.get("LOVABLE_API_KEY") || "";
 
   const { system, user } = buildPrompts(body);
 
@@ -84,24 +83,18 @@ Deno.serve(async (req) => {
     ).catch(() => null);
   }
 
-  if ((!upstream || !upstream.ok) && (openaiKey || lovableKey)) {
+  if ((!upstream || !upstream.ok) && openaiKey) {
     isGemini = false;
-    const useLovable = Boolean(lovableKey);
-    upstream = await fetch(
-      useLovable ? "https://ai.gateway.lovable.dev/v1/chat/completions" : "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: useLovable
-          ? { "Content-Type": "application/json", "Lovable-API-Key": lovableKey, "X-Lovable-AIG-SDK": "fetch" }
-          : { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
-        signal: req.signal,
-        body: JSON.stringify({
-          model: useLovable ? "google/gemini-2.5-flash" : "gpt-4o-mini",
-          stream: true,
-          messages: [{ role: "system", content: system }, { role: "user", content: user }],
-        }),
-      }
-    ).catch(() => null);
+    upstream = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${openaiKey}` },
+      signal: req.signal,
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        stream: true,
+        messages: [{ role: "system", content: system }, { role: "user", content: user }],
+      }),
+    }).catch(() => null);
   }
 
   if (!upstream || !upstream.ok || !upstream.body) {

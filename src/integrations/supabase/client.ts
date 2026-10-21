@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
-import { brokeredPreviewStorage } from './previewAuthStorage';
 
 const ACTIVE_SUPABASE_URL = 'https://atuxocibsmflgwlwuvmv.supabase.co';
 const ACTIVE_SUPABASE_ANON_KEY =
@@ -27,7 +26,6 @@ let supabaseClient: any;
 try {
   supabaseClient = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
-      storage: brokeredPreviewStorage(),
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,

@@ -87,7 +87,7 @@ Format as markdown.`,
 3. Missing safety rails.
 4. Rate-limiting review.
 Format as markdown.`,
-    seed: `AI is streamed via editor-ai edge function on Lovable AI Gateway using google/gemini-3.6-flash. 40+ agents defined in src/data/agents.ts. Free tier limits apply.`,
+    seed: `AI is streamed via the /api/ai edge endpoint (server-side keys, per-user hourly quota), with the editor-ai Supabase function as a fallback. 40+ agents defined in src/data/agents.ts.`,
   },
 };
 
