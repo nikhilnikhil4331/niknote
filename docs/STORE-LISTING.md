@@ -65,6 +65,9 @@ Orion has no upload form and no server: it is a **public JSON catalogue** that p
 
 ### Route A — pull request to the catalogue (most reliable)
 
+Copy-paste text for the PR lives in [`docs/ORION-PR.md`](ORION-PR.md).
+
+
 1. Fork [`RookieEnough/Orion-Data`](https://github.com/RookieEnough/Orion-Data).
 2. Append the object from [`store/orion-listing.json`](../store/orion-listing.json) to the end of
    `apps.json` (keep the array valid — comma before it, no trailing comma after it).
