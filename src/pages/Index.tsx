@@ -88,6 +88,8 @@ import { noteLinesToBlocks } from '@/lib/noteStructure';
 import { PageStage, type PageStageHandle } from '@/components/notes/PageStage';
 import { SketchToolbar, type SketchSettings } from '@/components/notes/SketchToolbar';
 import { usePageStrokes } from '@/hooks/usePageStrokes';
+import { noteSettingsForDNA } from '@/lib/handwritingStyle';
+import { composePdfNotes } from '@/lib/aiNotes';
 import { SemiCircularDial } from '@/components/dial/SemiCircularDial';
 import { readPdf } from '@/lib/pdfText';
 const HandwritingStudio = lazy(() => import('@/components/handwriting-dna/HandwritingStudio').then(m => ({ default: m.HandwritingStudio })));
@@ -777,13 +779,16 @@ const Index = () => {
       const { pages } = await readPdf(file, 12);
       const text = pages.map(p => p.lines.join('\n')).join('\n\n').trim();
       if (!text) { toast.error('No extractable text in this PDF (scanned PDFs need OCR)'); return; }
-      handleAIInsertMarkdown(text);
-      toast.success(`Imported ${pages.filter(p => p.lines.some(l => l.trim())).length} page(s) from “${file.name}”`);
+      // PDF typography → real notes (titles, sections, lists, equations), then
+      // insert in whatever handwriting style is active.
+      const composed = composePdfNotes(text, { fallbackTitle: file.name.replace(/\.pdf$/i, '') || 'Imported notes' });
+      handleAIInsertStructured(composed.lines);
+      toast.success(`Imported ${pages.filter(p => p.lines.some(l => l.trim())).length} page(s) from “${file.name}” — in your handwriting`);
     } catch (e) {
       console.error('pdf import failed', e);
       toast.error('Could not read that PDF');
     }
-  }, [handleAIInsertMarkdown]);
+  }, [handleAIInsertStructured]);
 
   useEffect(() => {
     if (isPastingRef.current) return;
@@ -864,6 +869,20 @@ const Index = () => {
     const commit = () => { setPageDirection(index > currentPageIndex ? 'right' : 'left'); goToPage(index); };
     if (pageStageRef.current) void pageStageRef.current.turn(direction, commit); else commit();
   }, [currentPageIndex, goToPage, triggerHaptic, playClick]);
+
+  /**
+   * Applying a handwriting style must change the *page*, not just a hidden
+   * DNA object: the face, glyph size, leading and pen pressure all come from
+   * the measured style, which is what makes notes look like that person's.
+   */
+  const applyHandwritingStyle = useCallback((dna: Parameters<typeof noteSettingsForDNA>[0]) => {
+    dnaContext.updateDNA(dna);
+    // Start from the user's current settings so unrelated choices (table,
+    // header/footer, diagrams) survive; the DNA decides face, size and leading.
+    updateSettings(noteSettingsForDNA(dna, settings));
+    try { localStorage.setItem('niknote.handwriting.style', JSON.stringify(dna)); } catch { /* private mode */ }
+    toast.success(`Handwriting applied — ${dna.styleName}`);
+  }, [dnaContext, updateSettings, settings]);
 
   const onPageStageTurn = useCallback((direction: 'next' | 'prev') => {
     if (direction === 'next') handleNextPage(); else handlePrevPage();
@@ -1226,6 +1245,8 @@ const Index = () => {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleReset}><RotateCcw className="w-4 h-4 mr-2" /> Reset</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate('/notebooks')}><FileText className="w-4 h-4 mr-2" /> My Notebooks</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowStudioPanel(true)}><PenLine className="w-4 h-4 mr-2" /> My handwriting ✍️</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowScanPanel(true)}><Scan className="w-4 h-4 mr-2" /> Scan handwriting DNA</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate('/feedback')}><MessageSquare className="w-4 h-4 mr-2" /> Feedback 💬</DropdownMenuItem>
                     {!premium.isPremium && <DropdownMenuItem onClick={() => navigate('/payment')}><Crown className="w-4 h-4 mr-2" /> Upgrade to Premium ✨</DropdownMenuItem>}
                     {!premium.isPremium && (() => {
@@ -1299,6 +1320,18 @@ const Index = () => {
                     <span className="font-bold text-[14px] tracking-tight bg-gradient-to-r from-[#241A5E] via-[#6D28D9] to-[#EC4899] bg-clip-text text-transparent">
                       NikAI
                     </span>
+                  </button>
+                </motion.div>
+
+                {/* Handwriting — styles + PDF → your hand. Front and centre. */}
+                <motion.div whileTap={{ scale: 0.93 }} whileHover={{ scale: 1.04 }}>
+                  <button
+                    onClick={() => setShowStudioPanel(true)}
+                    data-testid="pc-open-handwriting-btn"
+                    className="flex items-center gap-2 h-9 px-3.5 rounded-full font-semibold text-xs text-[#3f2a63] bg-white border border-violet-200/90 shadow-[0_4px_16px_rgba(124,58,237,0.16)] hover:bg-violet-50 transition-all"
+                  >
+                    <PenLine className="w-4 h-4 text-violet-600" />
+                    My handwriting
                   </button>
                 </motion.div>
 
@@ -1499,6 +1532,7 @@ const Index = () => {
               </PageStage>
 
               <div className="nn-board-footer">
+                <Button variant="ghost" onClick={() => setShowStudioPanel(true)} aria-label="My handwriting" title="My handwriting"><PenLine className="h-4 w-4" />My hand</Button>
                 <Button variant="ghost" onClick={() => setShowMobileStyleSheet(true)}><Settings2 className="h-4 w-4" />Paper & pen</Button>
                 <Button variant="ghost" onClick={() => setShowImportPanel(true)} aria-label="Import document" title="Import document"><Upload className="h-4 w-4" /></Button>
                 <Button variant="ghost" onClick={() => navigate('/ai')} aria-label="NikAI" title="NikAI"><img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain select-none" /></Button>
@@ -1776,9 +1810,8 @@ const Index = () => {
         <React.Suspense fallback={<div className="p-6 text-center text-sm text-muted-foreground">Loading Scanner...</div>}>
           <HandwritingScanner
             onDNAExtracted={(dna) => {
-              dnaContext.updateDNA(dna);
+              applyHandwritingStyle(dna);
               setShowScanPanel(false);
-              toast.success(`✅ ${dna.styleName} DNA applied!`);
             }}
             onClose={() => setShowScanPanel(false)}
           />
@@ -1791,6 +1824,7 @@ const Index = () => {
           <HandwritingStudio
             onInsertStructured={handleAIInsertStructured}
             onUpdateDNA={(dna) => dnaContext.updateDNA(dna)}
+            onApplyStyle={applyHandwritingStyle}
             currentDNA={dnaContext.dna}
           />
         </React.Suspense>
@@ -1834,7 +1868,16 @@ const Index = () => {
         const reader = new FileReader(); reader.onload = () => { const b = createBlock('image'); b.url = String(reader.result); blockEditor.setBlocks([...blockEditor.blocks, b]); }; reader.readAsDataURL(file); e.target.value = '';
       }} />
       <SlidePanel isOpen={showImportPanel} onClose={() => setShowImportPanel(false)} title="Import a document" icon={<FileText className="w-4 h-4" />} side="right">
-        <HandwritingTextImporter onImportText={text => { blockEditor.setBlocks(text.map(t => createBlock('text', t))); setShowImportPanel(false); }} />
+        <HandwritingTextImporter
+          onImportText={text => {
+            // OCR/PDF import becomes real notes (titles, lists, equations), not
+            // a wall of plain paragraphs.
+            const composed = composePdfNotes(text.join('\n'), { fallbackTitle: 'Imported notes', maxLineChars: 70 });
+            blockEditor.setBlocks(structuredToBlocks(composed.lines));
+            setShowImportPanel(false);
+            toast.success(`Imported as notes${composed.headings.length ? ` · ${composed.headings.length} heading${composed.headings.length === 1 ? '' : 's'}` : ''}`);
+          }}
+        />
       </SlidePanel>
 
       {/* Offscreen export DOM */}

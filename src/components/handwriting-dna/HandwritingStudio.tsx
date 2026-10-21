@@ -19,8 +19,10 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { analyzeHandwriting, DNA_PRESETS, findClosestPreset, type HandwritingDNA } from './HandwritingDNAEngine';
-import { HandwrittenText } from '@/components/HandwrittenText';
-import { DEFAULT_SETTINGS, type NoteSettings, type HandwritingFont, type InkColor } from '@/types/notes';
+import { DnaSamplePreview, HandwritingPage } from './HandwritingPage';
+import { dnaPresetMeta, handwritingFontForDNA, noteSettingsForDNA, paginateStructured } from '@/lib/handwritingStyle';
+import { composePdfNotes } from '@/lib/aiNotes';
+import { type InkColor } from '@/types/notes';
 import { readPdf, type PdfPage } from '@/lib/pdfText';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -60,43 +62,13 @@ function saveProfiles(list: DNAProfile[]) {
   }
 }
 
-// ── DNA → renderer mapping ────────────────────────────────
-
-function fontForDna(dna: HandwritingDNA): HandwritingFont {
-  if (dna.connectedness >= 75) return 'dancing-script';
-  if (dna.loopiness >= 60 && dna.size <= 55) return 'indie-flower';
-  if (dna.consistency >= 80 && dna.size <= 55) return 'kalam';
-  if (dna.roundedness >= 65) return 'patrick-hand';
-  if (dna.size >= 65) return 'architects-daughter';
-  return 'caveat';
-}
-
-function settingsForDna(dna: HandwritingDNA): NoteSettings {
-  const size = 16 + (dna.size / 100) * 14; // 16–30px
-  const spacing = 2 + (dna.spacing / 100) * 6;
-  const lineHeight = 24 + (dna.lineHeight / 100) * 18;
-  return {
-    ...DEFAULT_SETTINGS,
-    font: fontForDna(dna),
-    fontSize: Math.round(size),
-    lineSpacing: Math.round(lineHeight),
-    wordSpacing: Math.round(spacing),
-    pageStyle: 'plain',
-    inkColor: 'blue' as InkColor,
-    baselineJitter: dna.consistency < 60,
-    strokeRandomness: true,
-  };
-}
-
-function dnaWordProps(dna: HandwritingDNA) {
-  return {
-    slant: dna.slant,
-    penPressure: dna.penPressure ?? dna.pressure / 100,
-    strokeThickness: dna.strokeThickness ?? 0.8 + dna.strokeWidth / 60,
-    baselineJitterAmount: 1 + (100 - dna.consistency) / 40,
-    letterSpacingVariation: (100 - dna.consistency) / 34 + Math.abs(dna.spacing - 50) / 60,
-  };
-}
+// A4 at 430 CSS px wide keeps the on-screen preview and the exported PDF at
+// the same proportion, so "what I saw" is "what I downloaded".
+const A4_WIDTH = 430;
+const A4_HEIGHT = Math.round((A4_WIDTH * 297) / 210); // 608
+const PREVIEW_SCALE = 0.6;
+const PREVIEW_WIDTH = Math.round(A4_WIDTH * PREVIEW_SCALE);
+const PREVIEW_HEIGHT = Math.round(A4_HEIGHT * PREVIEW_SCALE);
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -128,12 +100,14 @@ async function makeThumb(dataUrl: string): Promise<string> {
 interface HandwritingStudioProps {
   onInsertStructured?: (lines: StructuredLine[]) => void;
   onUpdateDNA?: (dna: HandwritingDNA) => void;
+  /** Applies the full style — face, size, leading — to the open note. */
+  onApplyStyle?: (dna: HandwritingDNA) => void;
   currentDNA?: HandwritingDNA;
 }
 
 type StudioTab = 'styles' | 'convert';
 
-export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertStructured, onUpdateDNA, currentDNA }) => {
+export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertStructured, onUpdateDNA, onApplyStyle, currentDNA }) => {
   const [tab, setTab] = useState<StudioTab>('styles');
 
   // ── Tab 1: styles ──
@@ -154,6 +128,7 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
   const [renderProfileId, setRenderProfileId] = useState<string>('current'); // 'current' = app style
   const [renderInk, setRenderInk] = useState<InkColor>('blue');
   const [downloading, setDownloading] = useState(false);
+  const [exportMount, setExportMount] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const exportRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -162,13 +137,33 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
     ? null
     : profiles.find(p => p.id === renderProfileId) || null;
   const renderDNA = renderProfile?.dna || currentDNA || DNA_PRESETS.neat_student;
-  const renderSettings = useMemo<NoteSettings>(() => {
-    const s = settingsForDna(renderDNA);
-    return { ...s, inkColor: renderInk, pageStyle: 'ruled' };
-  }, [renderDNA, renderInk]);
-  const renderWordProps = useMemo(() => dnaWordProps(renderDNA), [renderDNA]);
+  const renderSettings = useMemo(
+    () => noteSettingsForDNA(renderDNA, { inkColor: renderInk, pageStyle: 'ruled' }),
+    [renderDNA, renderInk],
+  );
 
   const totalPdfChars = pdfPages.reduce((t, p) => t + p.lines.join('').length, 0);
+
+  // PDF text → proper notes (headings, bullets, equations, fitted lines), then
+  // split into pages. Nothing is invented: only structure, spacing and trim.
+  const composed = useMemo(() => {
+    const raw = pdfPages.map(p => p.lines.join('\n')).join('\n\n').trim();
+    if (!raw) return null;
+    return composePdfNotes(raw, {
+      fallbackTitle: pdfName.replace(/\.pdf$/i, '') || 'Study Notes',
+      maxLineChars: 66,
+    });
+  }, [pdfPages, pdfName]);
+
+  const linesPerPage = useMemo(
+    () => Math.max(8, Math.floor((A4_HEIGHT - 70) / Math.max(22, renderSettings.lineSpacing))),
+    [renderSettings.lineSpacing],
+  );
+
+  const notePages = useMemo(
+    () => (composed ? paginateStructured(composed.lines, linesPerPage) : []),
+    [composed, linesPerPage],
+  );
 
   // ── Style actions ──
 
@@ -230,6 +225,7 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
     setActiveProfileId(p.id);
     setRenderProfileId(p.id);
     onUpdateDNA?.(p.dna);
+    onApplyStyle?.(p.dna);
     toast.success(`Notes now use “${p.name}” style`);
   };
 
@@ -270,25 +266,24 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
   const handleInsertToNotes = () => {
     if (!pdfPages.length) return;
     if (!onInsertStructured) { toast.error('Note editor is not ready'); return; }
-    const structured: StructuredLine[] = pdfPages.flatMap(p =>
-      p.lines
-        .map(l => l.trim())
-        .filter(Boolean)
-        .map(text => ({ text, blockType: 'text' as const, color: 'blue' as const, indent: 0 }))
-    );
+    const structured = composed?.lines ?? [];
     if (!structured.length) return;
     onInsertStructured(structured);
-    toast.success(`${structured.length} lines inserted into your notes`);
+    toast.success(`Notes inserted — ${structured.length} lines in “${renderProfile?.name ?? 'your'}” handwriting`);
   };
 
   const handleDownloadPdf = async () => {
-    if (!pdfPages.length) return;
+    if (!notePages.length) return;
     setDownloading(true);
     try {
-      // Wait for handwriting webfonts before snapshotting
+      // Snapshot full-size sheets, never the scaled on-screen thumbnails.
+      setExportMount(true);
       try { await document.fonts.ready; } catch { /* continue */ }
+      for (let i = 0; i < 40 && !exportRefs.current.slice(0, notePages.length).every(Boolean); i++) {
+        await new Promise(r => setTimeout(r, 50));
+      }
       const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-      for (let i = 0; i < pdfPages.length; i++) {
+      for (let i = 0; i < notePages.length; i++) {
         const el = exportRefs.current[i];
         if (!el) continue;
         const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false });
@@ -303,6 +298,7 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
       console.error('pdf export failed', e);
       toast.error('PDF export failed — try again');
     } finally {
+      setExportMount(false);
       setDownloading(false);
     }
   };
@@ -365,6 +361,30 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
               )}
             </div>
 
+            {/* Start from a preset if you have no photo handy */}
+            <details className="rounded-xl border border-border/60 bg-white/50 p-3">
+              <summary className="cursor-pointer text-xs font-semibold text-foreground">No photo? Start from a preset</summary>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {Object.keys(DNA_PRESETS).map(key => {
+                  const meta = dnaPresetMeta(key);
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        const next = { ...DNA_PRESETS[key], closestFont: handwritingFontForDNA(DNA_PRESETS[key]), confidence: 0, sampleQuality: 'preset' };
+                        setAnalysis(next);
+                        setProfileName(meta.label);
+                      }}
+                      className="rounded-lg border border-border/50 p-2 text-left hover:border-primary/40"
+                    >
+                      <span className="block text-[11px] font-semibold text-foreground">{meta.emoji} {meta.label}</span>
+                      <span className="block text-[10px] text-muted-foreground leading-snug">{meta.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </details>
+
             {/* Consent */}
             <label className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-white/50 p-3 cursor-pointer">
               <input
@@ -398,6 +418,22 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
                     </span>
                   )}
                 </div>
+
+                {/* What you wrote vs. what your notes will look like */}
+                <div className="grid gap-2 sm:grid-cols-2 items-start">
+                  {sampleUrl && (
+                    <div className="rounded-lg border border-border/50 bg-white p-1.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Your sample</p>
+                      <img src={sampleUrl} alt="Your handwriting sample" className="w-full max-h-32 rounded object-contain" />
+                    </div>
+                  )}
+                  <div className="rounded-lg border border-emerald-200 bg-white p-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 mb-1">Your notes</p>
+                    <div className="origin-top-left scale-[0.72] -mb-[78px]">
+                      <DnaSamplePreview dna={{ ...analysis, closestFont: handwritingFontForDNA(analysis) }} inkColor="blue" />
+                    </div>
+                  </div>
+                </div>
                 <div className="grid grid-cols-4 gap-2">
                   {[
                     ['Slant', Math.abs(analysis.slant)],
@@ -426,8 +462,9 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
                 </div>
                 <p className="text-[10px] leading-snug text-muted-foreground flex items-start gap-1.5">
                   <Info className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                  This captures the general character of the sample — slant, pressure, size and rhythm — with a
-                  matching typeface. It is a close stylistic match, not a forensic replica of the person's writing.
+                  Measured from your ink: slant, stroke weight, letter size, word gaps, line pitch and baseline
+                  drift. The preview above is drawn by the same renderer as your notebook pages, so this is exactly
+                  what your notes will look like. Closest typeface: <strong className="text-foreground">{handwritingFontForDNA(analysis)}</strong>.
                 </p>
               </motion.div>
             )}
@@ -522,31 +559,46 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
               </div>
             )}
 
-            {/* A4 previews */}
-            {pdfPages.length > 0 && (
+            {/* A4 pages — real notes (headings, bullets, equations) in the chosen hand */}
+            {notePages.length > 0 && (
               <div className="space-y-3">
-                <h4 className="text-xs font-semibold text-foreground">2 · Handwritten A4 preview</h4>
-                {pdfPages.map((page, i) => (
-                  <div key={i} className="mx-auto max-w-[240px]">
-                    <div ref={el => { exportRefs.current[i] = el; }} className="w-full">
-                      <HandwrittenText
-                        text={page.lines.join('\n')}
-                        settings={renderSettings}
-                        slant={renderWordProps.slant}
-                        penPressure={renderWordProps.penPressure}
-                        strokeThickness={renderWordProps.strokeThickness}
-                        baselineJitterAmount={renderWordProps.baselineJitterAmount}
-                        letterSpacingVariation={renderWordProps.letterSpacingVariation}
-                      />
+                <div className="flex items-baseline justify-between gap-2">
+                  <h4 className="text-xs font-semibold text-foreground">2 · Your notes, handwritten</h4>
+                  <span className="text-[10px] text-muted-foreground">
+                    {notePages.length} A4 page{notePages.length !== 1 && 's'} · {composed?.headings.length ?? 0} heading{(composed?.headings.length ?? 0) === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+                  {notePages.map((page, i) => (
+                    <div key={i} className="flex-shrink-0">
+                      <div className="overflow-hidden rounded-[10px] shadow-sm" style={{ width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT }}>
+                        <div className="origin-top-left" style={{ transform: `scale(${PREVIEW_SCALE})`, width: A4_WIDTH }}>
+                          <HandwritingPage
+                            dna={renderDNA}
+                            lines={page}
+                            inkColor={renderInk}
+                            pageHeight={A4_HEIGHT}
+                            width={A4_WIDTH}
+                            settingsOverride={{ lineSpacing: renderSettings.lineSpacing, fontSize: renderSettings.fontSize, pageStyle: 'ruled' }}
+                            label={`Handwritten page ${i + 1}`}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-center text-[10px] text-muted-foreground mt-1">Page {i + 1}</p>
                     </div>
-                    <p className="text-center text-[10px] text-muted-foreground mt-1">Page {i + 1}</p>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                {composed && composed.headings.length > 0 && (
+                  <p className="text-[10px] text-muted-foreground leading-snug">
+                    Structure kept from the PDF: {composed.headings.slice(0, 4).join(' · ')}
+                    {composed.headings.length > 4 ? ' …' : ''}
+                  </p>
+                )}
               </div>
             )}
 
             {/* Actions */}
-            {pdfPages.length > 0 && (
+            {notePages.length > 0 && (
               <div className="grid grid-cols-2 gap-2">
                 <Button size="sm" onClick={handleInsertToNotes} className="gap-1.5" disabled={!onInsertStructured}>
                   <NotebookPen className="w-3.5 h-3.5" /> Insert into notes
@@ -565,6 +617,25 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Offscreen full-size sheets: what the PDF is made from. */}
+      {exportMount && (
+        <div className="fixed left-[-10000px] top-0 pointer-events-none" aria-hidden="true">
+          {notePages.map((page, i) => (
+            <div key={i} ref={el => { exportRefs.current[i] = el; }} style={{ width: A4_WIDTH }}>
+              <HandwritingPage
+                dna={renderDNA}
+                lines={page}
+                inkColor={renderInk}
+                pageHeight={A4_HEIGHT}
+                width={A4_WIDTH}
+                settingsOverride={{ lineSpacing: renderSettings.lineSpacing, fontSize: renderSettings.fontSize, pageStyle: 'ruled' }}
+                label={`Export page ${i + 1}`}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

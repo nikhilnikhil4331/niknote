@@ -2,7 +2,10 @@ import React, { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Camera, Scan, Check, X, Sparkles, RotateCcw, Download, Sliders, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { HandwritingDNA, DNA_PRESETS, analyzeHandwritingImage, findClosestPreset, dnaToCSS } from './HandwritingDNAEngine';
+import { HandwritingDNA, DNA_PRESETS, analyzeHandwritingImage, findClosestPreset } from './HandwritingDNAEngine';
+import { dnaPresetMeta, dnaTraits, handwritingClassForDNA } from '@/lib/handwritingStyle';
+import { DnaSamplePreview } from './HandwritingPage';
+
 
 interface HandwritingScannerProps {
   onDNAExtracted?: (dna: HandwritingDNA) => void;
@@ -15,7 +18,7 @@ export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExt
   const [dna, setDNA] = useState<HandwritingDNA | null>(null);
   const [selectedPreset, setSelectedPreset] = useState<string>('neat_student');
   const [adjustments, setAdjustments] = useState<Partial<HandwritingDNA>>({});
-  const [sampleText] = useState('The quick brown fox jumps over the lazy dog. Hindi: भारत मेरा देश है।');
+  const [sampleText, setSampleText] = useState('The quick brown fox jumps over 42 lazy dogs.');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -99,7 +102,6 @@ export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExt
   }, [dna]);
 
   const currentDNA = dna || DNA_PRESETS[selectedPreset];
-  const dnaCSS = dnaToCSS(currentDNA);
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -160,21 +162,25 @@ export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExt
             {/* Or choose preset */}
             <div className="border-t pt-4 mt-4">
               <p className="text-sm font-medium text-muted-foreground mb-3">Ya preset choose karo:</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {Object.entries(DNA_PRESETS).map(([key, preset]) => (
-                  <button
-                    key={key}
-                    onClick={() => { applyPreset(key); setStep('results'); }}
-                    className={`p-3 rounded-xl border text-left transition-all ${
-                      selectedPreset === key
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border/50 hover:border-primary/30'
-                    }`}
-                  >
-                    <span className="text-sm font-medium">{preset.styleName}</span>
-                    <span className="text-[10px] text-muted-foreground block mt-0.5">{preset.styleDescription.slice(0, 40)}...</span>
-                  </button>
-                ))}
+              <div className="grid grid-cols-2 gap-2" data-testid="dna-preset-grid">
+                {Object.keys(DNA_PRESETS).map(key => {
+                  const meta = dnaPresetMeta(key);
+                  const preset = DNA_PRESETS[key];
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => { applyPreset(key); setStep('results'); }}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        selectedPreset === key ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-primary/30'
+                      }`}
+                    >
+                      <span className={`block truncate text-sm text-foreground ${handwritingClassForDNA({ ...preset, closestFont: undefined })}`}>
+                        {meta.label}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground block mt-0.5 leading-snug">{meta.description}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </motion.div>
@@ -239,40 +245,47 @@ export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExt
               <p className="text-muted-foreground">{dna.styleDescription}</p>
             </div>
 
-            {/* Preview */}
-            <div className="p-6 rounded-2xl bg-amber-50 border border-amber-200">
-              <p className="text-xs text-amber-600 font-medium mb-2">Preview:</p>
-              <div style={dnaCSS} className="font-handwriting-1 text-gray-800 whitespace-pre-wrap">
-                {sampleText}
+            {/* Preview — same renderer as the notebook, side by side with the photo */}
+            <div className="grid gap-3 sm:grid-cols-2 items-start">
+              {imagePreview && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700 mb-1.5">Your sample</p>
+                  <img src={imagePreview} alt="Uploaded handwriting sample" className="w-full max-h-40 rounded-lg object-contain bg-white" />
+                </div>
+              )}
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 mb-1.5">Your notes in this style</p>
+                <div className="scale-[0.86] origin-top-left">
+                  <DnaSamplePreview dna={currentDNA} text={sampleText} />
+                </div>
               </div>
             </div>
 
             {/* DNA Parameters */}
             <div className="grid grid-cols-2 gap-3">
-              {[
-                { key: 'slant', label: 'Slant', icon: '↗️' },
-                { key: 'pressure', label: 'Pressure', icon: '✍️' },
-                { key: 'size', label: 'Size', icon: '📏' },
-                { key: 'spacing', label: 'Spacing', icon: '↔️' },
-                { key: 'connectedness', label: 'Cursive', icon: '🔗' },
-                { key: 'consistency', label: 'Consistency', icon: '🎯' },
-              ].map(({ key, label, icon }) => (
-                <div key={key} className="p-3 rounded-xl bg-muted/30">
+              {dnaTraits(currentDNA).map(({ label, value }) => (
+                <div key={label} className="p-3 rounded-xl bg-muted/30">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium">{icon} {label}</span>
-                    <span className="text-xs font-bold">{Math.round(currentDNA[key as keyof HandwritingDNA] as number)}</span>
+                    <span className="text-xs font-medium">{label}</span>
+                    <span className="text-xs font-bold tabular-nums">{value}</span>
                   </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden" role="presentation">
                     <motion.div
                       className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
                       initial={{ width: 0 }}
-                      animate={{ width: `${currentDNA[key as keyof HandwritingDNA] as number}%` }}
+                      animate={{ width: `${value}%` }}
                       transition={{ duration: 0.5, delay: 0.2 }}
                     />
                   </div>
                 </div>
               ))}
             </div>
+            {currentDNA.confidence != null && (
+              <p className="text-[11px] text-muted-foreground text-center">
+                Sample quality: <strong>{String(currentDNA.sampleQuality ?? '—')}</strong> · {Math.round(currentDNA.confidence * 100)}% confidence
+                {currentDNA.confidence < 0.5 && ' — a straight, well-lit photo of 3+ lines gives a much closer match.'}
+              </p>
+            )}
 
             {/* Actions */}
             <div className="flex gap-3">
@@ -303,12 +316,19 @@ export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExt
             <h2 className="text-xl font-bold">Fine-tune DNA 🔧</h2>
             
             {/* Live Preview */}
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200">
-              <p className="text-xs text-amber-600 font-medium mb-1">Live Preview:</p>
-              <div style={dnaToCSS(currentDNA)} className="font-handwriting-1 text-gray-800">
-                {sampleText}
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700 mb-1.5">Live preview</p>
+              <div className="scale-[0.9] origin-top-left">
+                <DnaSamplePreview dna={currentDNA} text={sampleText} />
               </div>
             </div>
+            <input
+              value={sampleText}
+              onChange={e => setSampleText(e.target.value)}
+              aria-label="Preview text"
+              className="w-full h-9 rounded-lg border border-border bg-background px-2.5 text-xs"
+              placeholder="Type your own line to preview"
+            />
 
             {/* Sliders */}
             <div className="space-y-4">

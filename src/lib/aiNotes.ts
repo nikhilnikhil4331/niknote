@@ -275,3 +275,73 @@ export function inspectNoteDocument(
     suggestedTitle: untitled && wordCount > 0 ? inferNoteTitle(text) : null,
   };
 }
+
+// ============================================================
+// PDF → notes
+//
+// A PDF has no markdown. Its structure lives in typography: uppercase lines
+// are titles, a short line ending in ":" is a section lead-in, dashes and
+// numbers are lists. Without this step "import a PDF" produced a wall of text
+// on the page — the complaint behind "proper notes me aana chahiye".
+// ============================================================
+
+const BULLET_LINE = /^([•·▪▸*\-–—]|\u2022)\s+/;
+const NUMBERED_LINE = /^(\d{1,2}[.)]|[ivx]{1,4}[.)])\s+/i;
+const EQUATION_LINE = /(?:[=±≤≥→]|\b(?:sin|cos|tan|log|lim|∑|∫)\b|\d\s*[+\-*/^]\s*\d|[A-Za-z]\s*=\s*[A-Za-z0-9])/;
+const PAGE_FURNITURE = /^(page\s*\d+(\s*of\s*\d+)?|\d{1,3})$/i;
+
+function isTitleCaseHeading(line: string): boolean {
+  const words = line.split(/\s+/).filter(Boolean);
+  if (!words.length || words.length > 9) return false;
+  if (/[.!?;]$/.test(line)) return false;
+  const capitalised = words.filter(w => /^[A-Z]/.test(w)).length;
+  return capitalised >= Math.max(2, Math.ceil(words.length * 0.6));
+}
+
+/** Rewrite plain PDF text as lightweight markdown so the composer can structure it. */
+export function plainTextToMarkdown(text: string): string {
+  const lines = String(text || '').replace(/\r/g, '').split('\n');
+  const out: string[] = [];
+
+  for (const raw of lines) {
+    const line = raw.replace(/\s+/g, ' ').trim();
+    if (!line) { out.push(''); continue; }
+    if (PAGE_FURNITURE.test(line)) continue;
+
+    const letters = line.replace(/[^A-Za-z]/g, '');
+    const isUpper = letters.length >= 4 && line === line.toUpperCase() && letters.length >= line.length * 0.5;
+
+    if (BULLET_LINE.test(line)) {
+      out.push(`- ${line.replace(BULLET_LINE, '').trim()}`);
+      continue;
+    }
+    if (NUMBERED_LINE.test(line) && line.length < 90) {
+      out.push(line.replace(/^(\d{1,2})[.)]\s*/, '$1. '));
+      continue;
+    }
+    if (isUpper && line.length <= 70) {
+      out.push(`## ${line.charAt(0) + line.slice(1).toLowerCase()}`);
+      continue;
+    }
+    if (line.length <= 52 && line.endsWith(':') && !EQUATION_LINE.test(line.replace(/:$/, ''))) {
+      out.push(`### ${line.replace(/:$/, '')}`);
+      continue;
+    }
+    if (line.length <= 60 && isTitleCaseHeading(line) && !/[.!?]$/.test(line)) {
+      out.push(`### ${line}`);
+      continue;
+    }
+    if (EQUATION_LINE.test(line) && !/[.!?]\s+\S/.test(line) && line.length <= 90) {
+      out.push(`$$${line}$$`);
+      continue;
+    }
+    out.push(line);
+  }
+
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+/** Compose imported PDF text into structured study notes (same pipeline as AI answers). */
+export function composePdfNotes(text: string, options: ComposeOptions = {}): ComposedNote {
+  return composeStudyNotes(plainTextToMarkdown(text), options);
+}

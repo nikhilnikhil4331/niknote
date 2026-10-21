@@ -1,6 +1,11 @@
 import React, { useMemo, memo } from 'react';
 import { NoteSettings, FONT_OPTIONS, DiagramImage } from '@/types/notes';
-import { generateJitter, generateRotation, getRandomOpacity } from '@/utils/handwriting';
+// Deterministic pencil noise: the same word must not jump every re-render.
+function noise(seed: number): number {
+  let x = Math.imul(seed ^ 0x9e3779b9, 2654435761);
+  x = Math.imul(x ^ (x >>> 15), 1274126177);
+  return ((x ^ (x >>> 16)) >>> 0) / 4294967295;
+}
 
 interface HandwrittenTextProps {
   text: string;
@@ -23,11 +28,12 @@ const HandwrittenWord = memo(({
   word: string; settings: NoteSettings; index: number; letterSpacingVariation?: number;
 }) => {
   const style = useMemo(() => {
-    const jitterX = generateJitter(settings.baselineJitter, 1);
-    const jitterY = generateJitter(settings.baselineJitter, 2);
-    const rotation = generateRotation(settings.strokeRandomness, 0.5);
-    const opacity = getRandomOpacity(settings.strokeRandomness);
-    const extraSpacing = settings.strokeRandomness ? (Math.random() - 0.5) * 3 : 0;
+    const seed = (index + 1) * 7919 + word.length * 104729;
+    const jitterX = settings.baselineJitter ? (noise(seed) - 0.5) : 0;
+    const jitterY = settings.baselineJitter ? (noise(seed + 1) - 0.5) * 2 : 0;
+    const rotation = settings.strokeRandomness ? (noise(seed + 2) - 0.5) * 0.5 : 0;
+    const opacity = settings.strokeRandomness ? 1 - noise(seed + 3) * 0.08 : 1;
+    const extraSpacing = settings.strokeRandomness ? (noise(seed + 4) - 0.5) * 3 : 0;
     const letterSpace = letterSpacingVariation > 0 
       ? `${(Math.sin(index * 5.3) * letterSpacingVariation).toFixed(2)}px` 
       : undefined;
@@ -53,7 +59,7 @@ const HandwrittenLine = memo(({
   slant?: number; penPressure?: number; strokeThickness?: number; letterSpacingVariation?: number;
 }) => {
   const words = line.split(' ');
-  const lineJitter = generateJitter(settings.baselineJitter, 1);
+  const lineJitter = settings.baselineJitter ? (noise(lineIndex * 104729 + 13) - 0.5) * 2 : 0;
   
   const skewDeg = slant ? -slant * 0.5 : 0;
   const pressureWeight = Math.round(300 + penPressure * 400);

@@ -4,6 +4,9 @@
 // Analyzes: slant, pressure, size, spacing, loops, connections, etc.
 // ============================================================
 
+import { dnaFromInkImage } from '@/lib/handwritingAnalysis';
+import { dnaPreviewCSS, handwritingFontForDNA, noteSettingsForDNA } from '@/lib/handwritingStyle';
+
 export interface HandwritingDNA {
   // Core parameters (0-100 scale)
   slant: number;           // -50 (left) to 50 (right), 0 = upright
@@ -101,208 +104,21 @@ export const DNA_PRESETS: Record<string, HandwritingDNA> = {
   },
 };
 
-// Analyze a handwriting image and extract DNA
+/**
+ * Analyse a handwriting photo.
+ *
+ * The measurement work lives in `@/lib/handwritingAnalysis` (Otsu ink mask,
+ * shear-based slant, line bands, stroke widths, word gaps, baseline drift) and
+ * the face/leading mapping lives in `@/lib/handwritingStyle`, so the DNA
+ * preview, the notes and the studio all render from one description.
+ */
 export function analyzeHandwritingImage(imageData: ImageData): HandwritingDNA {
-  const { data, width, height } = imageData;
-  
-  // --- Analysis algorithms ---
-  
-  // 1. SLANT: Measure average angle of vertical strokes
-  let totalSlant = 0;
-  let slantCount = 0;
-  
-  // Scan columns to find ink positions
-  const columnCenters: number[] = [];
-  for (let x = 0; x < width; x += Math.max(1, Math.floor(width / 50))) {
-    let sumY = 0;
-    let count = 0;
-    for (let y = 0; y < height; y += 2) {
-      const idx = (y * width + x) * 4;
-      const brightness = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
-      const alpha = data[idx + 3];
-      if (alpha > 128 && brightness < 128) { // Dark ink pixel
-        sumY += y;
-        count++;
-      }
-    }
-    if (count > 0) columnCenters.push(sumY / count);
-  }
-  
-  // Calculate slant from center positions
-  if (columnCenters.length > 2) {
-    const topAvg = columnCenters.slice(0, Math.floor(columnCenters.length * 0.3)).reduce((a, b) => a + b, 0) / Math.floor(columnCenters.length * 0.3);
-    const bottomAvg = columnCenters.slice(Math.floor(columnCenters.length * 0.7)).reduce((a, b) => a + b, 0) / (columnCenters.length - Math.floor(columnCenters.length * 0.7));
-    totalSlant = ((bottomAvg - topAvg) / height) * 100;
-    slantCount = 1;
-  }
-  
-  // 2. PRESSURE: Average darkness of ink pixels
-  let totalBrightness = 0;
-  let inkPixels = 0;
-  for (let i = 0; i < data.length; i += 4) {
-    const alpha = data[i + 3];
-    if (alpha > 128) {
-      const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
-      totalBrightness += brightness;
-      inkPixels++;
-    }
-  }
-  const avgPressure = inkPixels > 0 ? (1 - totalBrightness / (inkPixels * 255)) * 100 : 50;
-  
-  // 3. SIZE: Ratio of ink pixels to total
-  const inkRatio = inkPixels / (width * height);
-  const sizeScore = Math.min(100, Math.max(0, inkRatio * 500));
-  
-  // 4. SPACING: Measure horizontal gaps between ink clusters
-  let totalGaps = 0;
-  let gapCount = 0;
-  let lastInkX = -1;
-  for (let x = 0; x < width; x += 3) {
-    let hasInk = false;
-    for (let y = 0; y < height; y += 3) {
-      const idx = (y * width + x) * 4;
-      if (data[idx + 3] > 128) { hasInk = true; break; }
-    }
-    if (hasInk && lastInkX >= 0) {
-      const gap = x - lastInkX;
-      if (gap > 5) { // Significant gap
-        totalGaps += gap;
-        gapCount++;
-      }
-      lastInkX = x;
-    } else if (hasInk) {
-      lastInkX = x;
-    }
-  }
-  const avgSpacing = gapCount > 0 ? (totalGaps / gapCount) / (width / 100) : 50;
-  
-  // 5. CONNECTEDNESS: Measure horizontal continuity
-  let connectedStrokes = 0;
-  let totalStrokes = 0;
-  for (let y = 0; y < height; y += 4) {
-    let inStroke = false;
-    for (let x = 0; x < width; x += 2) {
-      const idx = (y * width + x) * 4;
-      const isInk = data[idx + 3] > 128;
-      if (isInk && !inStroke) { totalStrokes++; inStroke = true; }
-      if (isInk) connectedStrokes++;
-      if (!isInk) inStroke = false;
-    }
-  }
-  const connectednessScore = totalStrokes > 0 ? Math.min(100, (connectedStrokes / (totalStrokes * 20)) * 100) : 50;
-  
-  // 6. CONSISTENCY: Measure variance in stroke patterns
-  const rowInkCounts: number[] = [];
-  for (let y = 0; y < height; y += 4) {
-    let count = 0;
-    for (let x = 0; x < width; x += 2) {
-      const idx = (y * width + x) * 4;
-      if (data[idx + 3] > 128) count++;
-    }
-    rowInkCounts.push(count);
-  }
-  const meanInk = rowInkCounts.reduce((a, b) => a + b, 0) / rowInkCounts.length;
-  const variance = rowInkCounts.reduce((a, b) => a + (b - meanInk) ** 2, 0) / rowInkCounts.length;
-  const consistencyScore = Math.min(100, Math.max(0, 100 - (Math.sqrt(variance) / (meanInk || 1)) * 50));
-  
-  // 7. BASELINE: Measure if writing goes up or down
-  let baselineScore = 0;
-  if (columnCenters.length > 4) {
-    const firstThird = columnCenters.slice(0, Math.floor(columnCenters.length / 3));
-    const lastThird = columnCenters.slice(-Math.floor(columnCenters.length / 3));
-    const avgFirst = firstThird.reduce((a, b) => a + b, 0) / firstThird.length;
-    const avgLast = lastThird.reduce((a, b) => a + b, 0) / lastThird.length;
-    baselineScore = ((avgLast - avgFirst) / height) * 200;
-  }
-  
-  // Build DNA result
-  const slant = Math.max(-50, Math.min(50, totalSlant));
-  const pressure = Math.max(0, Math.min(100, avgPressure));
-  const size = Math.max(0, Math.min(100, sizeScore));
-  const spacing = Math.max(0, Math.min(100, avgSpacing));
-  const lineHeight = Math.max(0, Math.min(100, size * 0.8 + 20));
-  const connectedness = Math.max(0, Math.min(100, connectednessScore));
-  const loopiness = Math.max(0, Math.min(100, connectedness * 0.7 + 15));
-  const roundedness = Math.max(0, Math.min(100, 100 - Math.abs(slant) - variance * 0.01));
-  const baseline = Math.max(-50, Math.min(50, baselineScore));
-  const consistency = Math.max(0, Math.min(100, consistencyScore));
-  const strokeWidth = Math.max(0, Math.min(100, pressure * 0.8));
-  const inkFlow = Math.max(0, Math.min(100, pressure * 0.6 + connectedness * 0.3));
-  
-  // Determine style name based on DNA
-  const styleName = determineStyleName(slant, pressure, size, connectedness, consistency);
-  const styleDescription = generateStyleDescription(slant, pressure, size, connectedness, consistency, baseline);
-  
-  return {
-    slant, pressure, size, spacing, lineHeight,
-    connectedness, loopiness, roundedness, baseline,
-    consistency, strokeWidth, inkFlow,
-    styleName, styleDescription,
-  };
-}
-
-function determineStyleName(slant: number, pressure: number, size: number, connectedness: number, consistency: number): string {
-  if (consistency > 75 && pressure > 55) return 'Neat Formal';
-  if (consistency > 75 && pressure <= 55) return 'Neat Light';
-  if (connectedness > 65 && slant > 10) return 'Flowing Cursive';
-  if (connectedness > 65 && slant <= 10) return 'Connected Print';
-  if (consistency < 35 && size > 55) return 'Bold Expressive';
-  if (consistency < 35 && size <= 55) return 'Quick Scrawl';
-  if (slant < -10) return 'Left-Slant Writer';
-  if (pressure > 70) return 'Heavy Pressured';
-  if (size > 70) return 'Large & Clear';
-  if (size < 35) return 'Tiny & Compact';
-  return 'Natural Mixed';
-}
-
-function generateStyleDescription(slant: number, pressure: number, size: number, connectedness: number, consistency: number, baseline: number): string {
-  const traits: string[] = [];
-  
-  if (slant > 15) traits.push('right-leaning');
-  else if (slant < -15) traits.push('left-leaning');
-  else traits.push('upright');
-  
-  if (pressure > 65) traits.push('heavy pressure');
-  else if (pressure < 35) traits.push('light touch');
-  
-  if (connectedness > 60) traits.push('connected/cursive style');
-  else if (connectedness < 30) traits.push('printed/separate letters');
-  
-  if (consistency > 70) traits.push('very consistent');
-  else if (consistency < 30) traits.push('variable/expressive');
-  
-  if (baseline > 10) traits.push('ascending baseline');
-  else if (baseline < -10) traits.push('descending baseline');
-  
-  return `A ${traits.join(', ')} handwriting style`;
+  return dnaFromInkImage(imageData);
 }
 
 // Generate CSS for DNA profile (applied to handwriting text)
 export function dnaToCSS(dna: HandwritingDNA): React.CSSProperties {
-  return {
-    // Font size based on DNA size
-    fontSize: `${Math.max(12, Math.min(24, dna.size * 0.2 + 10))}px`,
-    
-    // Letter spacing based on DNA spacing
-    letterSpacing: `${Math.max(-0.5, dna.spacing * 0.03 - 1)}px`,
-    
-    // Line height based on DNA lineHeight
-    lineHeight: `${Math.max(1.2, dna.lineHeight * 0.02 + 1)}px`,
-    
-    // Transform for slant
-    transform: `skewX(${dna.slant * 0.2}deg)`,
-    
-    // Text shadow for pressure
-    textShadow: dna.pressure > 50 
-      ? `0 0 ${dna.pressure * 0.02}px rgba(0,0,0,${dna.pressure * 0.003})` 
-      : 'none',
-    
-    // Opacity for ink flow
-    opacity: Math.max(0.7, dna.inkFlow * 0.005 + 0.5),
-    
-    // Font weight for stroke width
-    fontWeight: Math.max(300, Math.min(700, dna.strokeWidth * 4 + 300)),
-  };
+  return dnaPreviewCSS(dna);
 }
 
 // Merge DNA with modifications (for user adjustments)
@@ -348,7 +164,7 @@ export const DNA_PROFILES = DNA_PRESETS;
 
 // Default DNA profile
 export function getDefaultDNA(): HandwritingDNA {
-  return {
+  const base: HandwritingDNA = {
     ...DNA_PRESETS.neat_student,
     letterSpacing: 0.5,
     wordSpacing: 6,
@@ -361,6 +177,13 @@ export function getDefaultDNA(): HandwritingDNA {
     characterSize: 16,
     fontModifications: {},
   };
+  base.closestFont = base.closestFont ?? handwritingFontForDNA(base);
+  return base;
+}
+
+/** Note settings (face, size, leading) implied by a DNA profile. */
+export function noteSettingsForDNAExport(dna: HandwritingDNA) {
+  return noteSettingsForDNA(dna);
 }
 
 // Legacy analyzeHandwriting function (for HandwritingAnalyzer.tsx)

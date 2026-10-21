@@ -132,6 +132,8 @@ interface AnimatedWordProps {
   inkOpacity: number;
   bold?: boolean;
   baseWeight: number;
+  /** 0 at the start of the line, 1 at the end. */
+  lineProgress: number;
 }
 
 const AnimatedWord = memo<AnimatedWordProps>(({
@@ -149,6 +151,7 @@ const AnimatedWord = memo<AnimatedWordProps>(({
   inkOpacity,
   bold,
   baseWeight,
+  lineProgress,
 }) => {
   const reduced = !!useReducedMotion();
 
@@ -161,21 +164,25 @@ const AnimatedWord = memo<AnimatedWordProps>(({
     const n4 = noise(lineIndex, wordIndex, 4);
     const n5 = centered(noise(lineIndex, wordIndex, 5));
     const n6 = centered(noise(lineIndex, wordIndex, 6));
+    // A hand accelerates along a line: letters get slightly smaller, tighter
+    // and climb a hair towards the right margin. This is the single biggest
+    // "it was typed, not written" tell, so it is applied to every word.
+    const drift = (lineProgress - 0.5) * 2; // -1 .. 1
     return {
-      y: n1 * baselineVariation + n2 * 0.6,
+      y: n1 * baselineVariation + n2 * 0.6 - drift * 0.55,
       x: n3 * 0.5,
       rotate: n1 * rotationAmount * calm,
       scaleY: 1 + n2 * 0.035 * calm + (verticalScale - 1),
       // Words are never the same width or size twice: a pen speeds up and
       // slows down, so the size breathes by a couple of percent.
-      scaleX: 1 + n3 * 0.022 * calm,
-      fontSize: 1 + n5 * 0.018 * calm,
+      scaleX: 1 + n3 * 0.022 * calm - drift * 0.012,
+      fontSize: 1 + n5 * 0.018 * calm - drift * 0.016,
       // Pressure, not weight: a little more ink on one word than the next.
       weight: Math.round(n6 * 46 * calm),
       letterSpacing: letterSpacingVariation > 0 ? n4 * letterSpacingVariation : 0,
       opacity: Math.max(0.82, Math.min(1, inkOpacity - n2 * 0.05 * calm)),
     };
-  }, [lineIndex, wordIndex, baselineVariation, rotationAmount, verticalScale, letterSpacingVariation, inkOpacity, consistency]);
+  }, [lineIndex, wordIndex, baselineVariation, rotationAmount, verticalScale, letterSpacingVariation, inkOpacity, consistency, lineProgress]);
 
   const style: React.CSSProperties = {
     marginRight: `${wordSpacing}px`,
@@ -446,6 +453,7 @@ export const HandwritingLine = memo(forwardRef<HTMLDivElement, HandwritingLinePr
                     <AnimatedWord
                       bold={styled[wordIndex]?.bold}
                       baseWeight={baseWeight}
+                      lineProgress={lineWords.length > 1 ? wordIndex / (lineWords.length - 1) : 0}
                       word={word}
                       wordIndex={wordIndex}
                       lineIndex={lineIndex}
@@ -463,8 +471,14 @@ export const HandwritingLine = memo(forwardRef<HTMLDivElement, HandwritingLinePr
                     {wordIndex < lineWords.length - 1 && (
                       <span
                         style={{
-                          // Word gaps breathe a little instead of being uniform.
-                          marginRight: `${((dna ? dna.wordSpacing : settings.wordSpacing) || 4) + centered(noise(lineIndex, wordIndex, 21)) * 0.9}px`,
+                          // Word gaps breathe a little instead of being uniform,
+                          // and close up slightly as the writer speeds towards
+                          // the right margin.
+                          marginRight: `${
+                            (((dna ? dna.wordSpacing : settings.wordSpacing) || 4)
+                              + centered(noise(lineIndex, wordIndex, 21)) * 0.9)
+                            * (1.06 - (wordIndex / Math.max(1, lineWords.length - 1)) * 0.14)
+                          }px`,
                         }}
                       >
                         {' '}
