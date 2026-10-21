@@ -239,6 +239,17 @@ The remaining readers are server-side only: `/api/ai` (Vercel edge, server env) 
 fallback lines in `api/ai.ts`. The values cannot be read back through the Vercel API
 (`type: sensitive`), so this rename is a human step.
 
+Server-side quota knobs for the `/api/ai` Vercel function (set in Vercel, never bundled):
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `AI_HOURLY_LIMIT` | signed-in requests per user per hour | `40` |
+| `AI_ANON_HOURLY_LIMIT` | signed-out requests per device hash per hour | `15` |
+| `ANON_QUOTA_SALT` | extra salt for the anonymous device hash | built-in default |
+
+`/api/ai` reads `SUPABASE_URL` / `SUPABASE_ANON_KEY` (falling back to the existing
+`VITE_SUPABASE_*` names, server-side only) to call the quota RPCs.
+
 Supabase → Edge Functions → Secrets (server-side only, never shipped):
 
 | Secret | Purpose | Default |
@@ -267,8 +278,22 @@ One additive migration, already applied to the live project:
 | `public.growth_event_summary(int)` | Admin-only aggregate (day, event, events, unique actors) |
 | `rate_limits` unique index + `consume_ai_quota(int,int)` | Atomic per-user hourly quota, reusing the existing `rate_limits` table |
 
+A second additive migration meters signed-out traffic:
+`supabase/migrations/20261021182525_anon_ai_quota.sql` (applied as `20261021182525`)
+
+| Object | What it does |
+| --- | --- |
+| `public.anon_ai_limits` | `(bucket, window_start) -> request_count`; RLS on with **no** policies and no grants, so only the definer function touches it |
+| `anon_ai_limits_bucket_shape` check | bucket must be 16–64 hex chars (the salted SHA-256 digest) |
+| `public.consume_anon_quota(text,int,int)` | atomic per-bucket hourly counter, prunes windows older than 2 days on the way through |
+
+Privacy: the bucket is `sha256(salt | ip | user-agent)` truncated to 32 hex chars and computed
+inside the edge function. No IP, user agent or user id is stored — only a digest that cannot be
+reversed into a person.
+
 No destructive change, no data mutation, no change to notes/documents tables. Rollback is
-`drop table growth_events; drop function consume_ai_quota(int,int); drop function is_admin(uuid);`.
+`drop table growth_events; drop function consume_ai_quota(int,int); drop function is_admin(uuid);`
+and `drop table public.anon_ai_limits; drop function public.consume_anon_quota(text,int,int);`.
 
 ---
 
@@ -285,8 +310,9 @@ No destructive change, no data mutation, no change to notes/documents tables. Ro
 | `src/test/growthEmail.test.ts` | Draft identity/opt-out rules, mailto truncation, approval gate, manual-send confirmation |
 | `src/test/firstNoteGuide.test.tsx` | 3-step checklist ticks, opens style panel, hides when a note exists, stays dismissed |
 | `src/test/aiKeyHygiene.test.ts` | No `VITE_*` provider key anywhere in `src/`, proxy is the only key reader, CSP allows the Supabase origin, proxy flag stays opt-in |
+| `src/test/aiQuota.test.ts` | Quota payload parsing (both RPC shapes, malformed → fail open), header round-trip, anonymous bucket is a stable 32-char digest that hides the IP, honest 429 copy |
 
-**Total: 234 tests across 21 files.** Run: `npm test`, `npm run verify` (typecheck + tests +
+**Total: 244 tests across 22 files.** Run: `npm test`, `npm run verify` (typecheck + tests +
 dead-code), CI mirror in `.github/workflows/ci.yml`.
 
 ---
@@ -310,14 +336,19 @@ no data migration is involved.
 1. **Vercel env vars** — confirm all five `VITE_*` values exist for Production (§12).
 2. **Search Console** — submit `https://www.niknote.online/sitemap.xml`; request indexing for the
    marketing routes only.
-3. **Finish the AI cutover** (the proxy is deployed, the keys are not yet moved):
-   1. Supabase → Edge Functions → Secrets: add `GEMINI_API_KEY` (and `GROQ_API_KEY` if used).
-      Until then `ai-proxy` answers `503 provider_not_configured` and the app keeps using the old path.
-   2. Vercel → Environment Variables: add `VITE_AI_PROXY=1`.
-   3. Smoke test in production: ask NikAI one question, then check `rate_limits` has an
-      `ai-proxy` row for your user and the answer still arrives.
-   4. Delete `VITE_GEMINI_KEY` / `VITE_GROQ_KEY` from Vercel and redeploy. The browser bundle no
-      longer contains a provider key; AI keeps working through the proxy.
+3. **Rename the AI keys (cosmetic, not urgent).** Rate limiting is already live on the path the app
+   actually uses (`/api/ai`, §12). What is left is the env-var rename, and Vercel will not hand a
+   `sensitive` value back through its API, so it needs the dashboard:
+   1. Vercel → Environment Variables: add `GROQ_API_KEY` and `GEMINI_API_KEY` with the same values as
+      the legacy `VITE_GROQ_KEY` / `VITE_GEMINI_KEY`.
+   2. Delete the two legacy `VITE_*` names and redeploy. Then delete the two legacy fallback lines in
+      `api/ai.ts` (they are commented as such) so the rename cannot rot.
+   3. Optional: add `GEMINI_API_KEY` / `GROQ_API_KEY` to Supabase → Edge Functions → Secrets and set
+      `VITE_AI_PROXY=1` to route signed-in traffic through `ai-proxy` instead of `/api/ai`. Until the
+      Supabase secrets exist that function answers `503 provider_not_configured`, which is why the
+      flag ships off.
+   4. Smoke test in production: ask NikAI one question and confirm the response headers include
+      `x-niknote-quota: user` (signed in) or `x-niknote-quota: anon` (signed out).
 4. **Email** — no provider is required for the current flow: approved drafts open in the
    operator's own mail app (`mailto:`), and "I sent it" only records a human confirmation. Choose a
    provider only when volume makes that impractical (§17).
@@ -345,9 +376,12 @@ recurring line items.
 
 ## 18. What is still incomplete (honest list)
 
-1. **AI proxy needs its secrets.** The function, quota and client wiring are live, but until
-   `GEMINI_API_KEY` is added and `VITE_AI_PROXY=1` is set, the app still uses the legacy direct-key
-   path (§16 step 3).
+1. **`ai-proxy` (the Supabase edge function) still needs its secrets.** It is deployed with
+   `verify_jwt` and a per-user quota, but until `GEMINI_API_KEY`/`GROQ_API_KEY` exist in Supabase it
+   answers `503`, so `VITE_AI_PROXY` stays off. This is not a security hole: the path production
+   actually uses, `/api/ai`, now meters every request server-side (signed-in per user, signed-out per
+   salted device hash) and returns `429` with the real reset time. The remaining work is the env
+   rename in §16 step 3, which needs a human because Vercel values are `sensitive`.
 2. **Quota is consumed before the provider call**, so a failed provider request still counts against
    the hour. Chosen on purpose (abuse guard); revisit if it annoys real users.
 3. **Unique actors is per day** in the server summary, so a person active across five days counts

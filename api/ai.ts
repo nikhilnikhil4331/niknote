@@ -3,6 +3,8 @@
 // Endpoint: /api/ai (GET health probe, POST SSE/JSON chat + vision + memory)
 // ============================================================================
 
+import { anonQuotaBucket, parseQuotaPayload, quotaHeaders, type AiQuotaScope, type AiQuotaSnapshot } from '../src/lib/aiQuota';
+
 export const config = {
   runtime: 'edge',
 };
@@ -12,6 +14,65 @@ const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Groq-Key, X-Gemini-Key, X-OpenAI-Key',
 };
+
+// ── Server-side AI quota ───────────────────────────────────────────────────
+// Every request that is about to spend provider credit is metered in Postgres:
+//   signed-in  -> consume_ai_quota()    keyed on the JWT's auth.uid()
+//   signed-out -> consume_anon_quota()  keyed on a salted SHA-256 of IP+UA
+// Both are SECURITY DEFINER functions; the browser never touches the tables.
+// Any failure while metering fails OPEN (a quota bug must never take AI down).
+const AI_HOURLY_LIMIT = Math.max(1, Number(getEnv('AI_HOURLY_LIMIT')) || 40);
+const AI_ANON_HOURLY_LIMIT = Math.max(1, Number(getEnv('AI_ANON_HOURLY_LIMIT')) || 15);
+const AI_QUOTA_WINDOW_SECONDS = 3600;
+
+interface QuotaDecision {
+  scope: AiQuotaScope;
+  snapshot: AiQuotaSnapshot | null;
+}
+
+function clientFingerprint(req: Request): string {
+  const forwarded = req.headers.get('x-forwarded-for') || '';
+  const ip = forwarded.split(',')[0].trim() || req.headers.get('x-real-ip') || 'unknown-ip';
+  const agent = req.headers.get('user-agent') || 'unknown-agent';
+  return `${ip}|${agent}`;
+}
+
+async function enforceAiQuota(req: Request): Promise<QuotaDecision> {
+  const supabaseUrl = (getEnv('SUPABASE_URL') || getEnv('VITE_SUPABASE_URL')).replace(/\/+$/, '');
+  const anonKey =
+    getEnv('SUPABASE_ANON_KEY') || getEnv('SUPABASE_PUBLISHABLE_KEY') || getEnv('VITE_SUPABASE_PUBLISHABLE_KEY');
+  const bearer = /^Bearer\s+(.+)$/i.exec(req.headers.get('authorization') || '')?.[1]?.trim() || '';
+  const scope: AiQuotaScope = bearer ? 'user' : 'anon';
+
+  if (!supabaseUrl || !anonKey) return { scope: 'unknown', snapshot: null };
+
+  try {
+    const rpc = bearer ? 'consume_ai_quota' : 'consume_anon_quota';
+    const body: Record<string, unknown> = bearer
+      ? { p_limit: AI_HOURLY_LIMIT, p_window_seconds: AI_QUOTA_WINDOW_SECONDS }
+      : {
+          p_bucket: await anonQuotaBucket(clientFingerprint(req), getEnv('ANON_QUOTA_SALT') || undefined),
+          p_limit: AI_ANON_HOURLY_LIMIT,
+          p_window_seconds: AI_QUOTA_WINDOW_SECONDS,
+        };
+
+    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/${rpc}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: anonKey,
+        Authorization: `Bearer ${bearer || anonKey}`,
+      },
+      body: JSON.stringify(body),
+      signal: req.signal,
+    });
+
+    if (!res.ok) return { scope, snapshot: null };
+    return { scope, snapshot: parseQuotaPayload(await res.json().catch(() => null)) };
+  } catch {
+    return { scope, snapshot: null };
+  }
+}
 
 interface IncomingImage {
   mimeType?: string;
@@ -259,6 +320,24 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
+  const quota = await enforceAiQuota(req);
+  const quotaHdrs = quotaHeaders(quota.snapshot, quota.scope);
+  if (quota.snapshot && !quota.snapshot.allowed) {
+    const resetMs = quota.snapshot.resetAt ? new Date(quota.snapshot.resetAt).getTime() : NaN;
+    const retryAfter = Number.isNaN(resetMs) ? AI_QUOTA_WINDOW_SECONDS : Math.max(1, Math.ceil((resetMs - Date.now()) / 1000));
+    return new Response(
+      JSON.stringify({
+        error: 'quota_exceeded',
+        message: 'Hourly AI limit reached. Please try again after the window resets.',
+        quota: quota.snapshot,
+      }),
+      {
+        status: 429,
+        headers: { ...CORS_HEADERS, ...quotaHdrs, 'Content-Type': 'application/json', 'Retry-After': String(retryAfter) },
+      }
+    );
+  }
+
   const hasImages = conversation.some((m) => Array.isArray(m.images) && m.images.length > 0);
   const requestedModel = (body.model || 'astra-auto').toLowerCase();
 
@@ -367,7 +446,7 @@ export default async function handler(req: Request): Promise<Response> {
           const content = json?.choices?.[0]?.message?.content ?? '';
           return new Response(
             JSON.stringify({ content, model: candidate.label, provider: candidate.provider }),
-            { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+            { status: 200, headers: { ...CORS_HEADERS, ...quotaHdrs, 'Content-Type': 'application/json' } }
           );
         }
 
@@ -378,6 +457,7 @@ export default async function handler(req: Request): Promise<Response> {
             status: 200,
             headers: {
               ...CORS_HEADERS,
+              ...quotaHdrs,
               'Content-Type': 'text/event-stream; charset=utf-8',
               'Cache-Control': 'no-cache, no-transform',
               'X-Accel-Buffering': 'no',
@@ -436,7 +516,7 @@ export default async function handler(req: Request): Promise<Response> {
               ?.join('') ?? '';
           return new Response(
             JSON.stringify({ content, model: candidate.label, provider: 'gemini' }),
-            { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+            { status: 200, headers: { ...CORS_HEADERS, ...quotaHdrs, 'Content-Type': 'application/json' } }
           );
         }
 
@@ -447,6 +527,7 @@ export default async function handler(req: Request): Promise<Response> {
             status: 200,
             headers: {
               ...CORS_HEADERS,
+              ...quotaHdrs,
               'Content-Type': 'text/event-stream; charset=utf-8',
               'Cache-Control': 'no-cache, no-transform',
               'X-Accel-Buffering': 'no',

@@ -6,6 +6,7 @@
 
 import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '@/integrations/supabase/client';
 import { buildNikAIMemoryPrompt } from '@/lib/nikaiMemory';
+import { parseQuotaPayload, quotaExceededMessage, readQuotaHeaders, type AiQuotaSnapshot } from '@/lib/aiQuota';
 
 export type AstaMode =
   | 'auto'
@@ -62,6 +63,8 @@ export interface AstaStreamOptions {
   instruction?: string;
   signal?: AbortSignal;
   onMeta?: (meta: { model: string; provider: string }) => void;
+  /** Server-reported AI quota for this hour (null when the server did not meter). */
+  onQuota?: (quota: { scope: 'user' | 'anon' | 'unknown'; snapshot: AiQuotaSnapshot | null }) => void;
   onThinking?: (delta: string, fullThinking: string) => void;
   onToken?: (delta: string, fullText: string) => void;
 }
@@ -197,6 +200,16 @@ async function tryServerlessStream(
   if (custom.geminiKey) headers['X-Gemini-Key'] = custom.geminiKey;
   if (custom.openaiKey) headers['X-OpenAI-Key'] = custom.openaiKey;
 
+  // The server meters the request per user (signed-in) or per device hash
+  // (signed-out), so it needs to know who is asking.
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (token) headers.Authorization = `Bearer ${token}`;
+  } catch {
+    // stay anonymous; the server falls back to its device-hash bucket
+  }
+
   const res = await fetch('/api/ai', {
     method: 'POST',
     headers,
@@ -214,7 +227,39 @@ async function tryServerlessStream(
     }),
   });
 
+  const quotaScope = readQuotaHeaders(res.headers);
+
+  if (res.status === 429) {
+    const payload = await res.json().catch(() => null);
+    const snapshot = parseQuotaPayload((payload as { quota?: unknown } | null)?.quota ?? null);
+    const message = [
+      '## Hourly AI limit reached',
+      '',
+      quotaExceededMessage(snapshot),
+      '',
+      'Notes, PDF import and handwriting export keep working without AI.',
+    ].join('\n');
+    opts.onQuota?.({ scope: quotaScope.scope, snapshot });
+    opts.onMeta?.({ model: 'NikAI quota', provider: 'quota' });
+    opts.onToken?.(message, message);
+    return { content: message, thinking: '', model: 'NikAI quota', provider: 'quota' };
+  }
+
   if (!res.ok || !res.body) return null;
+  if (quotaScope.scope !== 'unknown' || quotaScope.remaining !== null) {
+    opts.onQuota?.({
+      scope: quotaScope.scope,
+      snapshot:
+        quotaScope.remaining === null
+          ? null
+          : {
+              allowed: true,
+              used: 0,
+              remaining: quotaScope.remaining,
+              resetAt: quotaScope.resetAt,
+            },
+    });
+  }
   const ct = res.headers.get('content-type') || '';
   if (!ct.includes('text/event-stream')) return null;
 
