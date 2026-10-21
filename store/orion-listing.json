@@ -1,0 +1,22 @@
+{
+  "id": "niknote",
+  "name": "NikNote",
+  "description": "Write study notes that look handwritten. NikNote turns any text, PDF page or lecture transcript into a real-looking notebook page — ruled, grid, Cornell or spiral, with your own ink colour, pen type and page texture. NikAI (the built-in assistant) explains topics, builds revision notes and quizzes you, and a study planner turns deadlines into sessions you can export to your calendar. Notes stay on your device; sync is opt-in. No ads, no trackers.",
+  "icon": "https://raw.githubusercontent.com/nikhilnikhil4331/niknote/main/public/niknote-logo-512.png",
+  "version": "1.0.0",
+  "latestVersion": "Latest",
+  "downloadUrl": "#",
+  "repoUrl": "https://github.com/nikhilnikhil4331/niknote",
+  "githubRepo": "nikhilnikhil4331/niknote",
+  "releaseKeyword": "apk",
+  "packageName": "online.niknote.app",
+  "category": "Education",
+  "platform": "Android",
+  "size": "Varies",
+  "author": "Nikhil (nikhilnikhil4331)",
+  "screenshots": [
+    "https://raw.githubusercontent.com/nikhilnikhil4331/niknote/main/public/promo/feature-handwriting.jpg",
+    "https://raw.githubusercontent.com/nikhilnikhil4331/niknote/main/public/promo/feature-ai-teacher.jpg",
+    "https://raw.githubusercontent.com/nikhilnikhil4331/niknote/main/public/promo/exam-packs.jpg"
+  ]
+}

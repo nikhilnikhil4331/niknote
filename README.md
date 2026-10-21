@@ -63,6 +63,21 @@ Server-only secrets (Vercel env / Supabase secrets, never in the bundle):
 > No provider key ever reaches the browser. `src/test/aiKeyHygiene.test.ts` fails the build if a
 > `VITE_*_KEY` slips back into `src/`.
 
+## Android app
+
+The same codebase ships as an Android app (Capacitor, package `online.niknote.app`) — the APK bundles
+the web build, so notes work offline.
+
+```bash
+npm run build && npx cap sync android
+cd android && ./gradlew assembleRelease   # needs JDK 21 + Android SDK
+```
+
+CI does it for you: **Actions → Android release → Run workflow** produces `niknote-v<version>.apk`
+and `.aab`. Signing keys, Orion Store submission and the Play Store checklist are documented in
+[`docs/STORE-LISTING.md`](docs/STORE-LISTING.md); the ready-to-paste catalogue entry lives in
+[`store/orion-listing.json`](store/orion-listing.json).
+
 ## Repository layout
 
 ```
@@ -76,6 +91,8 @@ supabase/
   functions/         edge functions (ai-proxy, editor-ai, auth-email-hook, …)
   migrations/        additive SQL migrations (live parity documented in docs/)
 scripts/             sitemap generator, dead-code check
+android/             Capacitor Android project (built by CI, not by Vite)
+store/               store catalogue metadata (Orion entry, ready to paste)
 docs/                growth system, open-source analysis, licence inventory
 docs/archive/        older audits, OAuth runbooks and launch notes (kept for history)
 ```

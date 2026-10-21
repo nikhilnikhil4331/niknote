@@ -27,3 +27,12 @@ dist-ssr
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Android (Capacitor) build output — never commit
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/app/release/
+android/.idea/
+android/capacitor-cordova-android-plugins/
