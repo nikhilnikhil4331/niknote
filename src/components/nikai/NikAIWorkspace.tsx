@@ -75,6 +75,7 @@ import {
   implementNikAINote,
 } from '@/lib/nikaiNotesBridge';
 import { speakAloud, stopSpeaking } from '@/lib/speech';
+import { track } from '@/lib/growth/funnel';
 import { useSpeechDictation } from '@/hooks/useSpeechDictation';
 import {
   buildGroundedContext,
@@ -948,6 +949,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
         });
 
         const finalText = result.content;
+        track('ai_used', { feature: 'nikai', method: result.provider });
         const followUps = buildFollowUps(finalText, effectiveMode);
 
         setThreads((prev) =>

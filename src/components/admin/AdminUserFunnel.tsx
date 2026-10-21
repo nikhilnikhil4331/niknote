@@ -58,6 +58,27 @@ export const AdminUserFunnel: React.FC<AdminUserFunnelProps> = ({ data, loading 
     );
   }
 
+  const hasData = steps.some(step => step.count > 0);
+
+  if (!hasData) {
+    return (
+      <Card className="rounded-xl">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <TrendingDown className="w-4 h-4 text-primary" />
+            User Conversion Funnel
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            No funnel data yet. Instrumentation writes to <code>activity_logs</code>; until rows
+            exist every stage stays at zero — nothing here is estimated.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="rounded-xl">
       <CardHeader className="pb-2">

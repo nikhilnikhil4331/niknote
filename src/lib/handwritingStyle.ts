@@ -219,7 +219,9 @@ export function paginateStructured(lines: StructuredLine[], perPage: number): St
 
   for (const line of lines) {
     const isHeading = line.blockType === 'h1' || line.blockType === 'h2' || line.blockType === 'h3';
-    if (current.length >= capacity) {
+    const roomLeft = capacity - current.length;
+
+    if (roomLeft <= 0) {
       if (isHeading) {
         flush();
       } else {
@@ -228,9 +230,53 @@ export function paginateStructured(lines: StructuredLine[], perPage: number): St
         flush();
         if (carry) current.push(carry);
       }
+    } else if (isHeading && roomLeft === 1) {
+      // A heading alone on the last rule of a sheet is a widow; the writer
+      // would start the section on the next page instead.
+      flush();
     }
+
     current.push(line);
   }
   flush();
   return pages.length ? pages : [[]];
+}
+
+// ============================================================
+// Per-word lean
+//
+// A real hand does not hold one angle: the pen leans a little differently on
+// every word, and each line drifts. A single global skew (what we had) reads
+// as a font that was italicised. This is deterministic — the same word in the
+// same position always gets the same lean, so nothing flickers on re-render.
+// ============================================================
+
+function hash01(a: number, b: number, salt = 1): number {
+  let h = Math.imul(a + salt * 374761393, 668265263) ^ Math.imul(b + 7, 2246822519);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+}
+
+const centered = (v: number) => v - 0.5;
+
+/** Lean for one line, in degrees (deviation from the writer's mean). */
+export function lineSlantDeviation(consistency: number, lineIndex: number): number {
+  const calm = Math.max(0.2, Math.min(1, 1 - consistency / 140));
+  return centered(hash01(lineIndex, 0, 31)) * 1.1 * calm;
+}
+
+/**
+ * Lean for a single word in degrees: mean lean + line drift + word wobble.
+ * Bounded so text never becomes unreadable.
+ */
+export function wordSlant(
+  baseSlant: number,
+  lineIndex: number,
+  wordIndex: number,
+  consistency = 70,
+): number {
+  const calm = Math.max(0.2, Math.min(1, 1 - consistency / 140));
+  const wobble = centered(hash01(lineIndex, wordIndex, 17)) * 2.4 * calm;
+  const value = baseSlant + lineSlantDeviation(consistency, lineIndex) + wobble;
+  return Math.round(Math.max(-18, Math.min(18, value)) * 100) / 100;
 }

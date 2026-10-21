@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import { track } from '@/lib/growth/funnel';
 import { useHaptics } from '@/hooks/useHaptics';
 import { NiknoteLoader } from '@/components/motion/NiknoteLoader';
 import { supabase } from '@/integrations/supabase/client';
@@ -93,6 +94,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
     setError('');
     submitting.current = true;
     setBusy(true);
+    if (isSignup) track('signup_started', { method: 'password' });
     try {
       const result = isSignup
         ? await signUp(email.trim(), password, name.trim())
@@ -101,6 +103,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
         setError(result.error.message);
         triggerHaptic('error');
       } else {
+        if (isSignup) track('signup_completed', { method: 'password' });
         setSuccess(true);
         triggerHaptic('success');
         setPassword('');

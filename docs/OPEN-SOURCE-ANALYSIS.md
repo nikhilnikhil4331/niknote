@@ -1,198 +1,179 @@
-# NikNote — open-source capability analysis & integration plan
+# Open-source analysis for NikNote — 8 repositories
 
-Date: 2026-10-21 · Branch: `arena/09510f5e-niknote`
-Scope: eight reference repositories, mapped onto the **existing** NikNote app.
-Rule followed throughout: *adapt the engineering idea, do not graft the product*.
+Scope: what each project is, its licence, which parts are worth studying for NikNote, what we
+actually took, and what we deliberately did **not** take.
 
----
+**Ground rules applied:**
 
-## 0. NikNote baseline (measured before changes)
-
-| Area | Reality in the repo |
-|---|---|
-| Frontend | React 18 + TypeScript + Vite 5, Tailwind + shadcn/Radix, framer-motion, react-router 7, PWA service worker, Capacitor (Android/iOS) |
-| Backend | Supabase (auth, Postgres, edge functions) + Vercel serverless routes (`api/`), client fallbacks |
-| AI | `src/lib/aiEngine.ts` — one adapter with 4 fallbacks: serverless → direct cloud (BYOK) → Supabase edge → **on-device offline brain**. Providers already normalised; nothing hard-depends on a paid key |
-| Data | localStorage-first (notes, DNA, habit, money, flashcards) + optional cloud sync; no vector DB |
-| Editor | line-based notebook (`LineBasedEditor`, `NotebookPreview`, `PageStage`), block editor for AI/imported notes |
-| PDF in | `pdfjs-dist` text extraction (`lib/pdfText.ts`) + OCR/import pipeline (`HandwritingTextImporter`, `pdfPipeline.ts`) |
-| PDF out | html2canvas + jsPDF, full-size offscreen sheets |
-| Handwriting | DNA measured from ink (`handwritingAnalysis.ts`), one shared page renderer (`HandwritingPage`), per-word realism |
-| Drawing | fabric.js canvas + `DrawingTool`, `PenPalette`, sketch store |
-| Trackers | daily/habit + money local stores, charts via recharts |
-| Navigation | semi-circular dial (`dialGeometry.ts`), mobile board footer |
-| Mini-games / AI workspace | `NikAIWorkspace` (chat, note insertion, flashcards, handwriting hand-off) |
-| Search | command palette only — **no retrieval over note/PDF content** |
-| Voice | `useSpeechDictation` (Web Speech API) in editor + `PenPalette`; read-aloud in NikAI (inline `speechSynthesis`) |
-| Tests | 13 vitest files, 152 tests, jsdom; `tsc -p tsconfig.app.json` clean; `vite build` clean |
-
-**Dead / duplicate code found (not touched this turn):**
-`src/services/knowledge/KnowledgeEngine.ts` (494 lines), `services/agents/MultiAgentSystem.ts`,
-`services/ocr/OCREngine.ts`, `services/workflow/WorkflowEngine.ts` — none are imported anywhere.
-They are aspirational scaffolds; tree-shaking keeps them out of the bundle, but they cost
-maintenance. Recommended: delete or archive after the live replacements are proven.
-
-**Genuine gap (the one that mattered):** NikAI only ever received the *single attached note* as
-context. There was no way to ask a question about an uploaded PDF, no retrieval across notes, and
-no citation — so document questions were answered from general model memory with no trace of
-where (or whether) the material supported the answer.
+- Study and adapt ideas only — nothing is cloned, merged or vendored.
+- Licence is checked before any reuse (copyleft ⇒ no code, vocabulary only).
+- NikNote stays a **notes app first**; no feature here is allowed to break the editor.
+- No fake metrics: a borrowed idea that needs data NikNote does not have is not adopted.
 
 ---
 
-## 1. Ranking for **NikNote** (not a quality ranking of the projects)
+## 1. `ethanplusai/harvey` — growth/outreach pipeline
 
-| # | Repo | License | Fit | Why |
-|---|---|---|---|---|
-| 1 | **Tencent/WeKnora** | MIT (third-party components listed separately) | ★★★★★ | Document → RAG pipeline is exactly NikNote's gap. But it is a Go + Python + vector-DB platform; NikNote needs the *pattern*, not the deployment |
-| 2 | **OpenWhispr/openwhispr** | MIT | ★★★★ | Local Whisper/Parakeet dictation. NikNote already dictates via Web Speech, so the real value is transcript→structured notes, not another mic |
-| 3 | **debpalash/VoiceStudio** | AGPL-3.0-only | ★★★ | Best TTS quality, but Python + model weights + GPU; AGPL makes any in-app reuse a licensing project |
-| 4 | **opf/openproject** | GPL-3.0 | ★★★ | Task/workflow *vocabulary* (subject, deadline, priority, dependencies) is useful; code is Ruby GPL — read only |
-| 5 | **calcom/cal.com** | MIT (core; `packages/features/ee` separately licensed) | ★★★ | Scheduling semantics + ICS interoperability. Full platform is unnecessary |
-| 6 | **every-app/open-seo** | MIT | ★★ | Useful SEO auditing ideas; live keyword data needs DataForSEO (paid) |
-| 7 | **wide-trace/open-higgsfield** | **No license file** (`LICENSE` 404) | ★ | Architecture reference only — **cannot** copy code without permission; generation needs paid provider keys |
-| 8 | **chatwoot/chatwoot** | MIT core, `enterprise/` separate | ★★ | A separate support deployment, not an embed. No user notes may flow into it |
+**What it is:** an agentic outbound system: prospecting → campaign generation → reply handling →
+approval queue → analytics → budget controls, with a human approval step.
+**Licence:** self-described MIT (verify the LICENSE file before any reuse).
 
----
+| Studied | Adopted in NikNote | Where |
+| --- | --- | --- |
+| Staged pipeline with a human gate | `draft → review → approved → sent` states; `decide()` throws without a named human | `src/lib/growth/approvals.ts` |
+| Campaign generation | Draft composer that requires public evidence + a public channel | `src/lib/growth/outreach.ts` |
+| Reply/opt-out handling | Mandatory opt-out sentence in every draft; opt-out list respected | `outreach.ts` |
+| Analytics on the funnel | Consent-gated local funnel with `MIN_SAMPLE = 30` | `src/lib/growth/funnel.ts` |
+| Budget controls | Spend budget defaults to 0 paise; `AUTONOMOUS_SPENDING = false` | `approvals.ts` |
 
-## 2. Per-repository analysis
-
-### 2.1 Tencent/WeKnora — document intelligence (chosen)
-- **Capabilities:** multi-format ingestion (PDF/Word/Markdown/HTML/images) via a Python `docreader`
-  service, chunking, vector retrieval, LLM answer synthesis, agent orchestration, knowledge graph.
-- **Relevant source:** `docreader/parser`, `docreader/splitter`, `internal/application` (RAG),
-  `internal/agent`, `internal/database`.
-- **Use in NikNote:** ask questions about an uploaded PDF; search across notes; show sources;
-  summarise long documents; generate revision questions/flashcards; connect related notes.
-- **Integration approach chosen:** re-implement the *retrieval contract* locally —
-  Otsu-free plain chunking + BM25 lexical ranking + page-level citations
-  (`src/lib/knowledgeIndex.ts`), wired into NikAI's existing prompt path. No new service,
-  no vector DB, no key, works offline, nothing leaves the device.
-- **Compatibility:** perfect (pure TypeScript, ~13 KB source, zero deps). A hosted WeKnora
-  would add a Go service + Postgres/pgvector + embedding costs and break offline use.
-- **Limitations:** lexical recall ≠ semantic embeddings; no cross-document knowledge graph yet.
-  For English/Hinglish study notes BM25 + page citations is the right first step; embeddings can
-  be added later behind the same `buildGroundedContext()` interface.
-
-### 2.2 OpenWhispr — voice
-- **Capabilities:** Electron desktop app, local Whisper/Parakeet (whisper.cpp / sherpa-onnx) and
-  cloud BYOK models; hotkey dictation, clipboard insert, cleanup prompts.
-- **Relevant source:** `src/services`, `src/helpers`, `native/`, `main.js`.
-- **Use in NikNote:** lecture transcription, "speak → organised notes".
-- **Decision:** Web Speech API dictation already exists and needs no download. What was missing was
-  **voice input for NikAI itself** and a typed/cleaned shared speech layer — both shipped this turn.
-  A local Whisper option would need WASM weights (~40–150 MB) and will only be considered for a
-  future offline "lecture mode", measured before adoption.
-
-### 2.3 VoiceStudio — TTS
-- **Capabilities:** Python, model weights, voice cloning/design/dubbing, local GPU inference.
-- **Decision:** AGPL-3.0-only application code + separate model-weight terms → not mergeable into
-  a proprietary frontend. Read-aloud is instead improved on the browser's own voices (offline,
-  Hindi/English voice selection, markdown stripped). A hosted TTS adapter can be added later behind
-  `speakAloud()` without touching UI.
-
-### 2.4 OpenProject — planning
-- **Capabilities:** GPL-3.0 Ruby/Rails; work packages, dependencies, Gantt, recurring work.
-- **Use in NikNote:** model study tasks as work-package-like records (subject, topic, estimate,
-  deadline, priority, completion, linked note). Reference only; **no code copied** (GPL).
-- **Status:** data model already partly exists in the Daily Tracker. Calendar export (ICS) is the
-  next honest step: it interoperates without claiming an external event was created.
-
-### 2.5 Cal.com — scheduling
-- **Capabilities:** MIT core; availability rules, recurring sessions, ICS/CalDAV interoperability.
-- **Use in NikNote:** "revise thermodynamics before Friday" → suggested study blocks, `.ics` export.
-- **Decision:** do not embed the scheduler. Emit standards-compliant ICS so Google/Apple Calendar
-  can import it, with explicit confirmation in the UI.
-
-### 2.6 OpenSEO — discoverability
-- **Capabilities:** site audits, rank tracking, keyword research; MIT; needs a paid search-data
-  provider (DataForSEO) for live keyword metrics.
-- **Use in NikNote:** audit `niknote.online` landing metadata/structured data; keep authenticated
-  routes out of the index (`X-Robots-Tag`, `robots.txt`).
-- **Decision:** no paid provider. Public-page metadata work is queued; must be applied only to
-  marketing routes, never to the app shell.
-
-### 2.7 OpenHiggsfield — creative generation
-- **Capabilities:** Next.js studio with provider adapters ("platform key"), 38 image/video models;
-  `src/generation`, `src/app`.
-- **License:** **no licence file in the repository** → all rights reserved; reference only.
-- **Use in NikNote:** provider-adapter *shape* (one interface, per-model settings, job history,
-  retry) for optional educational illustrations.
-- **Decision:** not implemented. Requires paid keys; and for maths/science precision, structured
-  diagrams in `noteGraphs.ts` beat generated art. No fabricated media will ever be shown as success.
-
-### 2.8 Chatwoot — support
-- **Capabilities:** MIT core, omni-channel inbox, agent assignment, canned responses; `enterprise/`
-  directory under a separate licence.
-- **Use in NikNote:** feedback/bug intake → status tracking; possibly a self-hosted deployment.
-- **Privacy rule:** note content must never be auto-forwarded; attachments require explicit consent.
-- **Decision:** post-launch. A separate deployment, integrated by webhook/API, not embedded.
+**Not adopted:** autonomous sending, scraping private profiles, purchased lists, auto-replies.
+**Priority mapping:** P5 (partnership/outreach), P3 (reporting).
+**Result:** the workflow shape is in place; nothing can send without a human, which is the point.
 
 ---
 
-## 3. What was implemented this turn (Priority 2 → shipped)
+## 2. `WeKnora` — document understanding / RAG
 
-### A. Local document intelligence (WeKnora pattern, no platform)
-`src/lib/knowledgeIndex.ts` (new, ~380 lines, **zero dependencies**)
-- `tokenize` — Unicode-aware (Devanagari + Hinglish safe), stop-words, conservative stemming.
-- `chunkPage` — sentence-boundary chunks, 700 char target, 120 char overlap, monster-sentence split.
-- `searchKnowledge` — BM25 (k1 1.4, b 0.75), multi-term coverage bonus, per-document spread cap.
-- `buildGroundedContext` — top-k passages formatted with `[n] title · page`, deduped, char-capped,
-  confidence `high | low | none`.
-- `groundingPrompt` — explicit instructions: prefer passages, cite `[n]`, **never invent a page
-  number**, and say so when nothing matched.
-- Storage: `registerKnowledgeDoc` / `loadKnowledgeDocs` (40 docs / 400k chars, quota-safe fallback),
-  `knowledgeDocsFromNotes` (searches all local notes automatically).
+**What it is:** document ingestion + retrieval + chunked answer generation with citations.
+**Licence:** MIT.
 
-Wiring:
-- `src/pages/Index.tsx` — PDF import now registers the document (pages preserved for citations)
-  **and** still inserts structured notes.
-- `src/components/handwriting-dna/HandwritingStudio.tsx` — the same for PDFs opened for handwriting.
-- `src/components/nikai/NikAIWorkspace.tsx` — every question retrieves from notes + PDFs, the
-  passages go into the existing prompt path, and answers render **Sources** chips (`[1] Bio p.3`).
-  If nothing matches, the UI states plainly that the answer is general knowledge, not the material.
+| Studied | Adopted | Where |
+| --- | --- | --- |
+| Chunking with page anchors | Chunk by page, sentence-bounded, with overlap; every chunk keeps `docId` + page | `src/lib/knowledgeIndex.ts` |
+| Retrieval scoring | BM25-style scoring (k1 = 1.4, b = 0.75) with term coverage boosting | `knowledgeIndex.ts` |
+| Citation-first answers | Passages are numbered `[1]…[n]`; the model is told to cite them or say it does not know | `groundingPrompt()` |
+| Confidence gating | `high` / `low` / `none`; `none` ⇒ explicit "not in your material" instruction | `knowledgeIndex.ts` |
 
-### B. Voice (Priority 4, delta only)
-- `src/lib/speech.ts` (new) — single typed implementation: `startDictation`, `cleanForSpeech`,
-  `speakAloud`, `stopSpeaking`, support detection, error mapping (`not-allowed`, `no-speech`, …).
-- `src/hooks/useSpeechDictation.ts` — rewritten as a thin wrapper over the lib (same public API,
-  so `PenPalette` and the editor are unchanged); removed `any` casts and duplicated plumbing.
-- `NikAIWorkspace` — **Voice** button in the composer (listening indicator with interim text,
-  cancel, permission messaging); read-aloud now uses `speakAloud` (markdown stripped, Indian voice
-  preferred) instead of the old regex one-liner.
-
-### C. Verification
-- `npx vitest run` → **13 files / 152 tests pass** (new: `knowledgeIndex.test.ts` 13,
-  `speech.test.ts` 10, `useSpeechDictation.test.tsx` 4).
-- `npx tsc -p tsconfig.app.json --noEmit` → clean.
-- `npx vite build` → clean.
-
-### D. Dependencies
-**Added: none.** Removed: none. The whole improvement is pure TypeScript using APIs already in
-the app (`pdfjs-dist` for text, Web Speech for voice).
+**Not adopted:** vector databases, embedding models, GPU stacks. NikNote's corpus is a student's own
+notes and a handful of PDFs — lexical retrieval is instant, offline, free, and explainable.
+**Priority mapping:** P2 (document intelligence).
+**Trade-off:** weaker on pure paraphrase queries; a hybrid embedding path can be added later behind
+the same `searchKnowledge()` signature.
 
 ---
 
-## 4. Deliberately not done (with reasons)
+## 3. `openwhispr` — local speech-to-text
 
-| Item | Reason |
-|---|---|
-| Running WeKnora / OpenWhispr / VoiceStudio services | New runtime + GPU + ops cost for a single-user notebook; breaks offline and free-tier deployment |
-| Copying OpenProject or VoiceStudio code | GPL-3.0 / AGPL-3.0-only obligations on a proprietary app |
-| Copying OpenHiggsfield code | No licence file → no reuse permission |
-| Embedding Chatwoot | Correct shape is a separate deployment + API, and only after a privacy review |
-| Paid SEO / generation APIs | Would add per-user cost with no core-product benefit |
-| Vector embeddings for retrieval | Real cost (API + storage) for marginal gain on a personal note corpus; interface is ready if needed |
+**What it is:** desktop dictation with local models.
+**Licence:** MIT.
+
+| Studied | Adopted | Where |
+| --- | --- | --- |
+| Browser-native recognition as the zero-cost path | Web Speech API wrapper with typed error codes | `src/lib/speech.ts` |
+| Explicit unsupported state | "This browser has no speech recognition" instead of a dead button | `src/pages/LectureMode.tsx` |
+| Transcript cleanup before storage | Filler stripping (`um`, `uh`, `matlab`, …) | `src/lib/lecture.ts` |
+
+**Not adopted:** bundling a Whisper model (tens of MB, device-specific). If local transcription is
+wanted later it belongs behind a lazy-loaded worker, not in the main bundle.
+**Priority mapping:** P4 (voice capture → notes).
+**Privacy note:** browser speech engines may send audio to their own service — the UI says so.
 
 ---
 
-## 5. Next priorities (in order)
+## 4. `VoiceStudio` — voice cloning
 
-1. **Priority 1 sweep:** delete/archive the four unused `src/services/*` scaffolds; add a coverage
-   check so new dead modules fail CI.
-2. **Priority 3:** handwriting fidelity — per-word slant distribution from the scan; currently one
-   global slant. (Page management and line leading are fixed.)
-3. **Priority 4:** lecture mode — record → transcribe (on-device if feasible) → `composeStudyNotes`
-   → grounded summary with citations.
-4. **Priority 5:** study planner — task model (OpenProject vocabulary) + ICS export (Cal.com
-   semantics), with confirmation before any external calendar write.
-5. **Priority 6:** public-page SEO metadata for `niknote.online` only; support intake post-launch.
+**What it is:** speech synthesis / voice cloning studio.
+**Licence:** **AGPL-3.0-only**.
+
+**Verdict: nothing used, nothing merged.** Reading for inspiration only; the licence would force
+source disclosure on a hosted product. No code, no model, no assets.
+**Priority mapping:** none.
+
+---
+
+## 5. `openproject` — project management
+
+**What it is:** work packages, scheduling, dependencies, Gantt.
+**Licence:** **GPL-3.0**.
+
+**Verdict:** vocabulary and scheduling concepts only (no code). What was useful is the idea of a
+task carrying an effort estimate and a deadline, and of scheduling earliest-deadline-first within a
+capacity limit — reimplemented from scratch for study planning.
+
+**Adopted (original code):** `StudyTask`, `planSessions()` (EDF + priority, daily minute budget,
+overdue work pinned to today), `tasksToIcs()` (RFC 5545, CRLF, 75-octet folding, `VALARM`).
+**Where:** `src/lib/studyPlan.ts`, `src/pages/StudyPlanner.tsx`.
+**Priority mapping:** P6 (retention: planning brings students back).
+
+---
+
+## 6. `cal.com` — scheduling
+
+**What it is:** scheduling/booking platform.
+**Licence:** MIT for the core (enterprise folders carry their own licence).
+
+| Studied | Adopted | Where |
+| --- | --- | --- |
+| Calendar interop done via files, not fragile APIs | `.ics` export + a Google Calendar template link | `src/lib/studyPlan.ts` |
+| Explicit "we did not book anything" wording | Copy states the file is imported by the user's calendar | `StudyPlanner.tsx` |
+
+**Not adopted:** OAuth calendar write access. A failed write would create a false claim that an event
+exists; a file the user imports cannot lie.
+**Priority mapping:** P6.
+
+---
+
+## 7. `open-seo` — SEO checklist
+
+**What it is:** an audit-rule collection for technical SEO.
+**Licence:** MIT.
+
+| Studied | Adopted | Where |
+| --- | --- | --- |
+| One canonical URL per page, no duplicate titles | `SITE_ORIGIN` + per-route metadata + canonical link | `src/lib/seo/meta.ts`, `SeoManager.tsx` |
+| Sitemap hygiene (only canonical, indexable URLs) | Generated sitemap: 27 public URLs, private routes excluded | `scripts/generate-sitemap.mjs` |
+| Machine-readable coverage | `SoftwareApplication`, `Article`, `FAQPage` JSON-LD | `index.html`, `meta.ts` |
+
+**Not adopted:** automated site-crawling rules that need a backend; and no "growth hack" rules.
+**Important:** `robots.txt` was treated as a *request*, not a security boundary — private routes are
+also auth-gated and send `X-Robots-Tag: noindex`.
+**Priority mapping:** P1 (technical SEO).
+
+---
+
+## 8. `open-higgsfield` — media generation
+
+**What it is:** generative media tooling.
+**Licence:** **no licence file found (404)** → all rights reserved.
+
+**Verdict: nothing copied, not even snippets.** Unlicensed code is not open source. The only thing
+taken is the negative lesson: do not ship generated media as if it were a user's own work.
+
+---
+
+## Codebase baseline (measured, not estimated)
+
+| Signal | Value | Command |
+| --- | --- | --- |
+| Tests | 17 files / 211 tests passing | `npm test` |
+| Type check | clean | `npm run typecheck` |
+| Dead modules | 70 known (baseline file), new ones fail CI | `npm run check:dead-code` |
+| Build | Vite build succeeds | `npm run build` |
+| Third-party packages | 707, 0 copyleft | `docs/license-inventory.json` |
+| Growth dependencies added | 0 | `package.json` diff |
+
+---
+
+## Implementation plan (what this work changed, in priority order)
+
+| # | Work | Files | Verified by |
+| --- | --- | --- | --- |
+| 1 | Remove fabricated admin metrics + demo chat | `src/pages/AdminPanelNikhil.tsx` | code review + empty-state copy |
+| 2 | Dead-code gate in CI | `scripts/check-dead-code.mjs`, `.github/workflows/ci.yml` | `npm run check:dead-code` |
+| 3 | Consent-gated funnel, approvals, content validator, experiments | `src/lib/growth/*` | `src/test/growth.test.ts` |
+| 4 | Per-route SEO + private-route noindex + sitemap pipeline | `src/lib/seo/meta.ts`, `SeoManager.tsx`, `scripts/generate-sitemap.mjs`, `public/robots.txt`, `vercel.json` | `src/test/seo.test.ts` |
+| 5 | Grounded retrieval with citations | `src/lib/knowledgeIndex.ts` | `src/test/knowledgeIndex.test.ts` |
+| 6 | Lecture mode (record → structured notes) | `src/lib/lecture.ts`, `src/lib/lectureNotes.ts`, `src/pages/LectureMode.tsx` | `src/test/lectureAndPlan.test.ts`, `plannerAndLectureUi.test.tsx` |
+| 7 | Study planner + `.ics` export | `src/lib/studyPlan.ts`, `src/pages/StudyPlanner.tsx` | same two files |
+| 8 | Per-word handwriting lean + page widow control | `src/lib/handwritingStyle.ts`, `src/components/HandwritingLine.tsx` | `src/test/handwritingDna.test.tsx` |
+
+---
+
+## Honest gaps
+
+1. Retrieval is lexical, not semantic — paraphrase-heavy questions can miss. Same API, future upgrade.
+2. No server-side funnel; events stay on the device until a `growth_events` table exists.
+3. Outreach has no provider; drafts are copied by hand (deliberate).
+4. Voice capture depends on the browser's speech engine; unsupported browsers are told so.
+5. 70 modules remain unimported (baselined). Deleting them is a separate cleanup.
+6. Harvey's licence needs a final read before any future code reuse; today only ideas were used.

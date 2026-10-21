@@ -7,6 +7,24 @@
   ],
   "headers": [
     {
+      "source": "/admin(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    },
+    {
+      "source": "/(account|account-details|notebooks|notes|history|flashcards|upgrade|payment|donate|auth|login|signup|hub|board|money|routine|habit|ai|nikai|ai-workspace|ai-classic|ai-solver|agents|documents|studio|templates|appearance|onboarding|feedback|qa|audit|lecture|planner)(/.*)?",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         {

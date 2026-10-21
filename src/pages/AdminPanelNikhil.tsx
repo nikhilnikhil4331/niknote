@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, ShieldCheck, LogOut, RefreshCw, Lock, Menu, X,
   LayoutDashboard, Users, Activity, Bug, Settings,
-  BarChart3, Download, Radio, MessageCircle
+  BarChart3, Download, Radio, MessageCircle, TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,7 @@ import { AdminCSVExport } from '@/components/admin/AdminCSVExport';
 import { AdminFeatureHeatmap } from '@/components/admin/AdminFeatureHeatmap';
 import { AdminUserDrawer } from '@/components/admin/AdminUserDrawer';
 import { AdminCommandCenter } from '@/components/admin/AdminCommandCenter';
+import { GrowthStudio } from '@/components/growth/GrowthStudio';
 
 interface UserData {
   id: string;
@@ -165,7 +166,7 @@ const AdminPanelNikhil: React.FC = () => {
     monthly_price: 99,
   });
 
-  // KPI Data - Demo stats for 176K+ Indian users
+  // KPI Data — real counts loaded from the database (no demo numbers).
   const [kpiData, setKpiData] = useState({
     totalUsers: 0,
     todayUsers: 0,
@@ -181,134 +182,52 @@ const AdminPanelNikhil: React.FC = () => {
     totalUploads: 0,
   });
 
-  // Generate demo chart data for 30 days
-  const generateDemoChartData = () => {
-    const data = [];
+  /**
+   * Chart Data — starts empty (30 zeroed days, no invented numbers) and is
+   * replaced by `loadChartData()` with real `activity_logs` rows. A chart with
+   * no data says so instead of drawing a plausible-looking line.
+   */
+  const emptyDaily = () => {
+    const days: { date: string; visitors: number; signups: number; pages: number; exports: number; attempts: number; success: number }[] = [];
     for (let i = 29; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      data.push({
-        date: dateStr,
-        visitors: Math.floor(4100 + Math.random() * 3100),
-        signups: Math.floor(615 + Math.random() * 410),
-      });
+      days.push({ date: date.toISOString().split('T')[0], visitors: 0, signups: 0, pages: 0, exports: 0, attempts: 0, success: 0 });
     }
-    return data;
+    return days;
   };
 
-  const generateDemoPageCreations = () => {
-    const data = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      data.push({
-        date: date.toISOString().split('T')[0],
-        pages: Math.floor(900 + Math.random() * 400),
-      });
-    }
-    return data;
-  };
-
-  const generateDemoExports = () => {
-    const data = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      data.push({
-        date: date.toISOString().split('T')[0],
-        exports: Math.floor(400 + Math.random() * 300),
-      });
-    }
-    return data;
-  };
-
-  const generateDemoPayments = () => {
-    const data = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      data.push({
-        date: date.toISOString().split('T')[0],
-        attempts: Math.floor(80 + Math.random() * 60),
-        success: Math.floor(40 + Math.random() * 35),
-      });
-    }
-    return data;
-  };
-
-  const generateDemoPremiumTrend = () => {
-    const data = [];
-    let premium = 800;
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      premium += Math.floor(Math.random() * 20);
-      data.push({
-        date: date.toISOString().split('T')[0],
-        premium: premium,
-        free: 42000 - premium,
-      });
-    }
-    return data;
-  };
-
-  // Chart Data with demo values
-  const [chartData, setChartData] = useState({
-    dailyVisitors: generateDemoChartData(),
-    pageCreations: generateDemoPageCreations(),
-    exports: generateDemoExports(),
-    payments: generateDemoPayments(),
-    deviceUsage: [
-      { name: 'Mobile', value: 31500, color: 'hsl(var(--primary))' },
-      { name: 'Desktop', value: 10500, color: 'hsl(var(--muted-foreground))' },
-    ],
-    premiumTrend: generateDemoPremiumTrend(),
+  const [chartData, setChartData] = useState(() => {
+    const empty = emptyDaily();
+    return {
+      dailyVisitors: empty.map(d => ({ date: d.date, visitors: d.visitors, signups: d.signups })),
+      pageCreations: empty.map(d => ({ date: d.date, pages: d.pages })),
+      exports: empty.map(d => ({ date: d.date, exports: d.exports })),
+      payments: empty.map(d => ({ date: d.date, attempts: d.attempts, success: d.success })),
+      deviceUsage: [
+        { name: 'Mobile', value: 0, color: 'hsl(var(--primary))' },
+        { name: 'Desktop', value: 0, color: 'hsl(var(--muted-foreground))' },
+      ],
+      premiumTrend: empty.map(d => ({ date: d.date, premium: 0, free: 0 })),
+    };
   });
 
-  // Funnel Data - realistic for 42K users
+  // Funnel Data — real counts only; every stage starts at zero.
   const [funnelData, setFunnelData] = useState({
-    visits: 156000,
-    signups: 42000,
-    firstPage: 38500,
-    firstExport: 18542,
-    premium: 1284,
+    visits: 0,
+    signups: 0,
+    firstPage: 0,
+    firstExport: 0,
+    premium: 0,
   });
 
-  // Heatmap Data with Indian user patterns
+  // Heatmap Data — filled by `loadHeatmapData()`; no placeholder users/moods.
   const [heatmapData, setHeatmapData] = useState({
-    features: [
-      { name: 'Text Editor', count: 38200, percentage: 91 },
-      { name: 'PDF Export', count: 18542, percentage: 44 },
-      { name: 'Handwriting Style', count: 15680, percentage: 37 },
-      { name: 'AI Assistant', count: 12890, percentage: 31 },
-      { name: 'Image Upload', count: 8456, percentage: 20 },
-      { name: 'Multiple Pages', count: 7840, percentage: 19 },
-    ],
-    peakHours: [
-      { hour: 0, count: 420 }, { hour: 1, count: 180 }, { hour: 2, count: 95 },
-      { hour: 3, count: 65 }, { hour: 4, count: 120 }, { hour: 5, count: 340 },
-      { hour: 6, count: 890 }, { hour: 7, count: 1450 }, { hour: 8, count: 2100 },
-      { hour: 9, count: 2800 }, { hour: 10, count: 3200 }, { hour: 11, count: 3500 },
-      { hour: 12, count: 2900 }, { hour: 13, count: 3100 }, { hour: 14, count: 3400 },
-      { hour: 15, count: 3600 }, { hour: 16, count: 3800 }, { hour: 17, count: 4200 },
-      { hour: 18, count: 4500 }, { hour: 19, count: 4800 }, { hour: 20, count: 5200 },
-      { hour: 21, count: 4600 }, { hour: 22, count: 3200 }, { hour: 23, count: 1800 },
-    ],
-    topExporters: [
-      { name: 'Rahul Sharma', exports: 156 },
-      { name: 'Priya Singh', exports: 142 },
-      { name: 'Amit Kumar', exports: 128 },
-      { name: 'Sneha Patel', exports: 115 },
-      { name: 'Vikram Reddy', exports: 98 },
-    ],
-    commonMoods: [
-      { mood: 'focused', count: 15800 },
-      { mood: 'creative', count: 12400 },
-      { mood: 'relaxed', count: 8900 },
-      { mood: 'professional', count: 4900 },
-    ],
-    avgSessionDuration: '14m',
+    features: [] as { name: string; count: number; percentage: number }[],
+    peakHours: Array.from({ length: 24 }, (_, hour) => ({ hour, count: 0 })),
+    topExporters: [] as { name: string; exports: number }[],
+    commonMoods: [] as { mood: string; count: number }[],
+    avgSessionDuration: '—',
   });
 
   // Check admin status - supports both database roles AND session token
@@ -634,7 +553,9 @@ const AdminPanelNikhil: React.FC = () => {
       totalRevenue,
       premiumUsers,
       conversionRate,
-      avgSessionDuration: '12m', // Would need more complex calculation
+      // No session-tracking table exists yet, so we say "unknown" rather
+      // than displaying a made-up average.
+      avgSessionDuration: '—', // Would need more complex calculation
       totalNotebooks: totalNotebooks || 0,
       aiRequests,
       totalUploads,
@@ -785,7 +706,9 @@ const AdminPanelNikhil: React.FC = () => {
       commonMoods: Array.from(moodMap.entries())
         .map(([mood, count]) => ({ mood, count }))
         .sort((a, b) => b.count - a.count),
-      avgSessionDuration: '12m',
+      // No session-tracking table exists yet, so we say "unknown" rather
+      // than displaying a made-up average.
+      avgSessionDuration: '—',
     });
   };
 
@@ -955,6 +878,7 @@ const AdminPanelNikhil: React.FC = () => {
     { id: 'errors', label: 'Errors', icon: Bug },
     { id: 'reports', label: 'Reports', icon: Download },
     { id: 'controls', label: 'Controls', icon: Settings },
+    { id: 'growth', label: 'Growth', icon: TrendingUp },
   ];
 
   return (
@@ -1139,6 +1063,10 @@ const AdminPanelNikhil: React.FC = () => {
           </TabsContent>
 
           {/* Controls Tab */}
+          <TabsContent value="growth" className="mt-4">
+            <GrowthStudio />
+          </TabsContent>
+
           <TabsContent value="controls" className="mt-4">
             <AdminControls
               settings={settings}
@@ -1172,7 +1100,7 @@ const AdminPanelNikhil: React.FC = () => {
 const AdminChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{ id: string; role: 'admin' | 'system'; text: string; time: string }>>([
-    { id: '1', role: 'system', text: '👋 Welcome to NikNote Admin! Yahan se live updates dekh sakte ho.', time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) },
+    { id: '1', role: 'system', text: '👋 NikNote Admin help. Poochho: growth, users, errors, deploy. Main sirf guide karta hoon — real numbers tabs me hain.', time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) },
   ]);
   const [input, setInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -1183,32 +1111,39 @@ const AdminChatWidget: React.FC = () => {
 
   const handleSend = () => {
     if (!input.trim()) return;
+    const sent = input.trim();
     const userMsg = {
       id: `m-${Date.now()}`,
       role: 'admin' as const,
-      text: input.trim(),
+      text: sent,
       time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
     };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
 
-    // Simulated system responses
-    setTimeout(() => {
-      const responses = [
-        '✅ Noted! Main dekh raha hoon.',
-        '📊 Abhi 0 active users hain — site fresh hai!',
-        '🔄 System check complete — sab theek chal raha hai.',
-        '🚀 Deployment successful! niknote.online pe live hai.',
-        '📝 Next: AI agents ko powerful banao — OpenAI API key add karo.',
-      ];
-      const sysMsg = {
+    // Honest helper: the widget used to invent "system responses" (fake active
+    // user counts, fake deployment confirmations). It now answers with real
+    // navigation help, picked by keyword — no random text, no fake status.
+    const question = input.trim().toLowerCase();
+    const reply =
+      /(funnel|growth|trend|conversion)/.test(question)
+        ? '📈 Growth tab kholo: funnel, campaigns, approvals — sab wahin hai. Numbers tab hi dikhte hain jab data aa jaye.'
+        : /(user|signup)/.test(question)
+          ? '👥 Users tab me real `profiles` rows hain. Koi count nahi hai to matlab koi row nahi hai — numbers yahan database se aate hain.'
+          : /(deploy|release|live)/.test(question)
+            ? '🚀 Deploy status Vercel dashboard me dekho. Ye panel deploy ko trigger ya confirm nahi karta.'
+            : /(error|bug|fail)/.test(question)
+              ? '🛠️ Errors tab me `error_logs` ki real entries hain (realtime). Wahan se stack trace copy karke fix karo.'
+              : 'ℹ️ Ye ek help widget hai, monitoring nahi. Real data tabs: Users, Growth, Errors, Reports. Kuch bhi status ke baare me poochho.';
+    setMessages(prev => [
+      ...prev,
+      {
         id: `s-${Date.now()}`,
         role: 'system' as const,
-        text: responses[Math.floor(Math.random() * responses.length)],
+        text: reply,
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages(prev => [...prev, sysMsg]);
-    }, 800 + Math.random() * 1200);
+      },
+    ]);
   };
 
   return (
@@ -1237,7 +1172,7 @@ const AdminChatWidget: React.FC = () => {
                 <MessageCircle className="w-4 h-4" />
                 <span className="text-sm font-bold">Admin Chat</span>
               </div>
-              <p className="text-[10px] text-white/70 mt-0.5">Quick updates & commands</p>
+              <p className="text-[10px] text-white/70 mt-0.5">Navigation help (no live monitoring)</p>
             </div>
 
             {/* Messages */}

@@ -1,21 +1,48 @@
 User-agent: *
 Allow: /
-Disallow: /admin-panel-nikhil
-Disallow: /admin-login
+
+# Private application surfaces. robots.txt is a crawl hint, not access
+# control: the real protection is authentication plus the noindex tag that
+# SeoManager sets at runtime and the X-Robots-Tag header in vercel.json.
 Disallow: /admin
+Disallow: /admin-login
+Disallow: /admin-panel-nikhil
+Disallow: /admin/growth
+Disallow: /account
+Disallow: /account-details
+Disallow: /notebooks
+Disallow: /notes
+Disallow: /history
+Disallow: /flashcards
+Disallow: /upgrade
 Disallow: /payment
+Disallow: /donate
 Disallow: /auth
 Disallow: /login
 Disallow: /signup
-Disallow: /account
-Disallow: /notebooks
+Disallow: /hub
+Disallow: /board
+Disallow: /money
+Disallow: /routine
+Disallow: /habit
+Disallow: /ai
+Disallow: /nikai
+Disallow: /ai-workspace
+Disallow: /ai-classic
+Disallow: /ai-solver
+Disallow: /agents
+Disallow: /documents
+Disallow: /studio
+Disallow: /templates
+Disallow: /appearance
+Disallow: /onboarding
 Disallow: /feedback
-Disallow: /history
 Disallow: /qa
+Disallow: /audit
+Disallow: /lecture
+Disallow: /planner
 
 Sitemap: https://www.niknote.online/sitemap.xml
 
-# NikNote — AI-Powered Learning & Handwriting Platform
-# Made for Indian Students 🇮🇳
-# Founded by Nikhil Jatav
+# NikNote — AI study notes, handwriting pages and PDF-to-notes
 # https://www.niknote.online

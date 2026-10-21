@@ -7,6 +7,7 @@ import {
   HandwritingDNA,
   getDefaultDNA,
 } from '@/components/handwriting-dna/HandwritingDNAEngine';
+import { lineSlantDeviation, wordSlant } from '@/lib/handwritingStyle';
 
 // ============================================================
 // HandwritingLine — one written line of a paper page.
@@ -134,6 +135,8 @@ interface AnimatedWordProps {
   baseWeight: number;
   /** 0 at the start of the line, 1 at the end. */
   lineProgress: number;
+  /** Word-level deviation from the line's lean, in degrees. */
+  slantDeviation: number;
 }
 
 const AnimatedWord = memo<AnimatedWordProps>(({
@@ -152,6 +155,7 @@ const AnimatedWord = memo<AnimatedWordProps>(({
   bold,
   baseWeight,
   lineProgress,
+  slantDeviation,
 }) => {
   const reduced = !!useReducedMotion();
 
@@ -182,7 +186,7 @@ const AnimatedWord = memo<AnimatedWordProps>(({
       letterSpacing: letterSpacingVariation > 0 ? n4 * letterSpacingVariation : 0,
       opacity: Math.max(0.82, Math.min(1, inkOpacity - n2 * 0.05 * calm)),
     };
-  }, [lineIndex, wordIndex, baselineVariation, rotationAmount, verticalScale, letterSpacingVariation, inkOpacity, consistency, lineProgress]);
+  }, [lineIndex, wordIndex, baselineVariation, rotationAmount, verticalScale, letterSpacingVariation, inkOpacity, consistency, lineProgress, slantDeviation]);
 
   const style: React.CSSProperties = {
     marginRight: `${wordSpacing}px`,
@@ -190,7 +194,9 @@ const AnimatedWord = memo<AnimatedWordProps>(({
     position: 'relative',
     top: `${variation.y.toFixed(2)}px`,
     left: `${variation.x.toFixed(2)}px`,
-    transform: `rotate(${variation.rotate.toFixed(3)}deg) scale(${variation.scaleX.toFixed(4)}, ${variation.scaleY.toFixed(4)})`,
+    // Word-level lean on top of the line's overall skew: this is what stops a
+    // page from looking like one italic font.
+    transform: `skewX(${(-slantDeviation * 0.42).toFixed(2)}deg) rotate(${variation.rotate.toFixed(3)}deg) scale(${variation.scaleX.toFixed(4)}, ${variation.scaleY.toFixed(4)})`,
     transformOrigin: 'center bottom',
     letterSpacing: variation.letterSpacing ? `${variation.letterSpacing.toFixed(2)}px` : undefined,
     fontSize: `${variation.fontSize.toFixed(4)}em`,
@@ -284,8 +290,17 @@ export const HandwritingLine = memo(forwardRef<HTMLDivElement, HandwritingLinePr
     baseline: centered(noise(lineIndex, 0, 12)) * (baselineJitterAmount * 0.45),
   }), [lineIndex, baselineJitterAmount]);
 
+  // The writer's mean lean for this line: DNA if we have it, else the prop.
+  const lineSlantBody = typeof dna?.slant === 'number' ? dna.slant : (typeof slant === 'number' ? slant : 0);
+
   const lineStyle = useMemo<React.CSSProperties>(() => {
-    const skewDeg = slant ? -slant * 0.5 : 0;
+    const baseSlant = lineSlantBody;
+    // Half the lean on the line, the rest per word (below) — a page written by
+    // a person is consistent on average, not on every single word.
+    const consistencyForLine = dna?.consistency ?? 70;
+    const skewDeg = baseSlant
+      ? -(baseSlant * 0.5 + lineSlantDeviation(consistencyForLine, lineIndex) * 0.5)
+      : 0;
     const pressureWeight = Math.round(300 + penPressure * 400);
     const textStrokeWidth = strokeThickness > 1.5 ? `${(strokeThickness - 1) * 0.3}px` : undefined;
 
@@ -305,7 +320,7 @@ export const HandwritingLine = memo(forwardRef<HTMLDivElement, HandwritingLinePr
       // A hair of ink spread — restrained, never a glow.
       textShadow: realPenMode ? '0 0 0.35px currentColor' : undefined,
     };
-  }, [realPenMode, h, s, l, baseHsl, variation, slant, penPressure, strokeThickness, lineNoise, presentation?.fontWeight]);
+  }, [realPenMode, h, s, l, baseHsl, variation, lineSlantBody, penPressure, strokeThickness, lineNoise, presentation?.fontWeight]);
 
   const visualLines = useMemo(() => String(line.text ?? '').split(/\r?\n/), [line.text]);
 
@@ -367,7 +382,7 @@ export const HandwritingLine = memo(forwardRef<HTMLDivElement, HandwritingLinePr
   // ---- non-prose document elements --------------------------------
   if (block === 'divider') {
     return (
-      <div ref={ref} className={fontClass} style={{ minHeight: `${lineHeightPx}px`, display: 'flex', alignItems: 'center' }}>
+      <div ref={ref} className={fontClass} style={{ minHeight: `${lineHeightPx}px`, display: 'flex', alignItems: 'center' }} data-note-line="true" data-block="divider">
         <span
           aria-hidden="true"
           style={{
@@ -384,7 +399,7 @@ export const HandwritingLine = memo(forwardRef<HTMLDivElement, HandwritingLinePr
 
   if (line.text === '') {
     return (
-      <div ref={ref} className={fontClass} style={{ ...wrapperStyle, ...visualLineStyle }}>
+      <div ref={ref} className={fontClass} style={{ ...wrapperStyle, ...visualLineStyle }} data-note-line="true" data-block="blank">
         <span className="opacity-0 select-none">&nbsp;</span>
       </div>
     );
@@ -393,7 +408,7 @@ export const HandwritingLine = memo(forwardRef<HTMLDivElement, HandwritingLinePr
   // Code is not handwritten on real notes — keep it legible.
   if (block === 'code') {
     return (
-      <div ref={ref} className={fontClass} style={{ ...wrapperStyle, minHeight: `${lineHeightPx}px` }}>
+      <div ref={ref} className={fontClass} style={{ ...wrapperStyle, minHeight: `${lineHeightPx}px` }} data-note-line="true" data-block="code">
         <pre style={{ margin: 0, fontFamily: MONO, fontSize: `${settings.fontSize * 0.7}px`, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
           {line.text}
         </pre>
@@ -404,7 +419,7 @@ export const HandwritingLine = memo(forwardRef<HTMLDivElement, HandwritingLinePr
   const words = visualLines[0] ? styledWords(visualLines[0]) : [];
 
   return (
-    <div ref={ref} className={fontClass} style={wrapperStyle}>
+    <div ref={ref} className={fontClass} style={wrapperStyle} data-note-line="true" data-block={block}>
       {visualLines.map((textLine, vIndex) => {
         const styled = vIndex === 0 ? words : styledWords(textLine);
         const lineWords = styled.map(w => w.text);
@@ -454,6 +469,11 @@ export const HandwritingLine = memo(forwardRef<HTMLDivElement, HandwritingLinePr
                       bold={styled[wordIndex]?.bold}
                       baseWeight={baseWeight}
                       lineProgress={lineWords.length > 1 ? wordIndex / (lineWords.length - 1) : 0}
+                      slantDeviation={
+                        lineSlantBody
+                          ? wordSlant(lineSlantBody, lineIndex, wordIndex, dna?.consistency ?? 70) - lineSlantBody
+                          : 0
+                      }
                       word={word}
                       wordIndex={wordIndex}
                       lineIndex={lineIndex}

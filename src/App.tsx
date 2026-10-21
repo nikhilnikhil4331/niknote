@@ -42,6 +42,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileExperience } from '@/components/mobile/MobileExperience';
 import '@/components/mobile/mobile.css';
 import { NiknoteLoader } from '@/components/motion/NiknoteLoader';
+import { SeoManager } from '@/components/SeoManager';
 
 // Lazy load heavy pages — keeps initial mobile bundle snappy
 const AstaAIWorkspace = lazy(() => import("@/components/asta/AstaAIWorkspace"));
@@ -75,12 +76,15 @@ const MoneyTrackerPage = lazy(() => import("@/pages/MoneyTracker"));
 const BoardPageRoute = lazy(() => import("@/pages/Board"));
 const RoutineTrackerPage = lazy(() => import("@/pages/RoutineTracker"));
 const NikHabitPage = lazy(() => import("@/pages/RoutineApp"));
+const LectureModePage = lazy(() => import("@/pages/LectureMode"));
+const StudyPlannerPage = lazy(() => import("@/pages/StudyPlanner"));
 
 const PageLoader = () => <NiknoteLoader />;
 
 import { registerServiceWorker } from "@/hooks/useServiceWorkerRegistration";
 import { checkReferral } from "@/utils/referral";
 import { trackPageView } from "@/utils/analytics";
+import { track, startSession } from "@/lib/growth/funnel";
 
 const queryClient = new QueryClient();
 
@@ -126,7 +130,13 @@ function GlobalCookieConsent() {
 
 function RouteAnalytics() {
   const { pathname } = useLocation();
-  useEffect(() => { trackPageView(pathname); }, [pathname]);
+  useEffect(() => {
+    trackPageView(pathname);
+    // Growth funnel: one visitor session per page load, consent-gated inside
+    // `track`. No note text, titles or user identifiers are ever recorded.
+    startSession();
+    track('visitor_landing', { page: pathname === '/' ? 'home' : pathname, source: 'router' });
+  }, [pathname]);
   return null;
 }
 
@@ -167,6 +177,7 @@ const App = () => {
                 <BrowserRouter>
                   <TouchHealthGuard />
                   <RouteAnalytics />
+                  <SeoManager />
                   <Suspense fallback={<PageLoader />}>
                     <RouteErrorBoundary>
                       <Routes>
@@ -212,6 +223,8 @@ const App = () => {
                         <Route path="/audit" element={<AuditReportsPage />} />
                         <Route path="/flashcards" element={<FlashcardsPage />} />
                         <Route path="/hub" element={<ResponsivePage><HubPage /></ResponsivePage>} />
+                        <Route path="/lecture" element={<LectureModePage />} />
+                        <Route path="/planner" element={<StudyPlannerPage />} />
                         <Route path="/board" element={<Suspense fallback={<PageLoader />}><BoardPageRoute /></Suspense>} />
                         <Route path="/money" element={<MoneyTrackerPage />} />
                         <Route path="/routine" element={<RoutineTrackerPage />} />

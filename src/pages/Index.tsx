@@ -91,6 +91,7 @@ import { usePageStrokes } from '@/hooks/usePageStrokes';
 import { noteSettingsForDNA } from '@/lib/handwritingStyle';
 import { composePdfNotes } from '@/lib/aiNotes';
 import { knowledgeDocFromPdf, registerKnowledgeDoc } from '@/lib/knowledgeIndex';
+import { track } from '@/lib/growth/funnel';
 import { SemiCircularDial } from '@/components/dial/SemiCircularDial';
 import { readPdf } from '@/lib/pdfText';
 const HandwritingStudio = lazy(() => import('@/components/handwriting-dna/HandwritingStudio').then(m => ({ default: m.HandwritingStudio })));
@@ -527,6 +528,7 @@ const Index = () => {
 
         setCloudNotebookId(id);
         notifyLocalDataChanged();
+        track('note_created', { feature: 'editor' });
         toast.success('Note saved on this device ✨');
         return;
       }
@@ -891,6 +893,7 @@ const Index = () => {
       ...(dna.inkColor ? { inkColor: dna.inkColor as typeof settings.inkColor } : {}),
     }));
     try { localStorage.setItem('niknote.handwriting.style', JSON.stringify(dna)); } catch { /* private mode */ }
+    track('handwriting_used', { feature: 'handwriting_dna' });
     toast.success(`Handwriting applied — ${dna.styleName}`);
   }, [dnaContext, updateSettings, settings]);
 

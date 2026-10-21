@@ -10,7 +10,12 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run --reporter=verbose",
-    "test:watch": "vitest --reporter=verbose"
+    "test:watch": "vitest --reporter=verbose",
+    "sitemap": "node scripts/generate-sitemap.mjs",
+    "prebuild": "node scripts/generate-sitemap.mjs",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
+    "check:dead-code": "node scripts/check-dead-code.mjs",
+    "verify": "npm run typecheck && npm run test && npm run check:dead-code"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",
