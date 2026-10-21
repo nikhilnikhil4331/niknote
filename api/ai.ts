@@ -184,6 +184,11 @@ export default async function handler(req: Request): Promise<Response> {
     return new Response('ok', { status: 200, headers: CORS_HEADERS });
   }
 
+  // Server-side only: these run inside the Vercel edge function, never in the browser bundle.
+  // `VITE_*` names are read here purely because that is how the legacy keys are stored in
+  // Vercel today; nothing in src/ references them any more, so they cannot be inlined into
+  // the shipped JS. Rename them to GROQ_API_KEY / GEMINI_API_KEY and delete the legacy
+  // fallbacks once the values are re-entered in the Vercel dashboard.
   const groqKey = (req.headers.get('x-groq-key') || '').trim() || getEnv('GROQ_API_KEY') || getEnv('VITE_GROQ_KEY');
   const geminiKey = (req.headers.get('x-gemini-key') || '').trim() || getEnv('GEMINI_API_KEY') || getEnv('VITE_GEMINI_KEY');
   const openaiKey = (req.headers.get('x-openai-key') || '').trim() || getEnv('OPENAI_API_KEY') || getEnv('VITE_OPENAI_KEY');

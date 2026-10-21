@@ -228,9 +228,16 @@ Build-time (Vercel → Project → Settings → Environment Variables, Productio
 | `VITE_SUPABASE_URL` | Supabase project URL | public |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | anon/publishable key | public; RLS must do the work |
 | `VITE_SUPABASE_PROJECT_ID` | project ref | public |
-| `VITE_GEMINI_KEY` | AI provider (legacy direct path) | **ships in the bundle** — remove once the proxy is live |
-| `VITE_GROQ_KEY` | AI provider fallback (legacy) | same |
-| `VITE_AI_PROXY` | `1` = route AI through the `ai-proxy` function | add after the secrets below exist |
+| `VITE_AI_PROXY` | `1` = route AI through the `ai-proxy` function | off by default; a 503 falls through to `/api/ai` |
+
+**Provider keys are no longer read from `src/`.** `VITE_GEMINI_KEY` / `VITE_GROQ_KEY` still exist in
+the Vercel dashboard under their old names, but nothing under `src/` references them any more, so Vite
+cannot inline them into the bundle (`src/test/aiKeyHygiene.test.ts` fails the build if that changes).
+The remaining readers are server-side only: `/api/ai` (Vercel edge, server env) keeps a documented
+`VITE_*` fallback purely so the current deployment keeps working. When the values are re-entered as
+`GROQ_API_KEY` / `GEMINI_API_KEY` in the Vercel dashboard, delete the legacy names and drop the
+fallback lines in `api/ai.ts`. The values cannot be read back through the Vercel API
+(`type: sensitive`), so this rename is a human step.
 
 Supabase → Edge Functions → Secrets (server-side only, never shipped):
 
@@ -248,7 +255,8 @@ Local: `.env.local` with the same keys. Never commit it.
 ## 13. Migrations
 
 One additive migration, already applied to the live project:
-`supabase/migrations/20261021180000_growth_events_and_ai_quota.sql`
+`supabase/migrations/20261021180815_growth_events_and_ai_quota.sql`
+(applied version `20261021180815`, matching `supabase_migrations.schema_migrations`)
 
 | Object | What it does |
 | --- | --- |
@@ -276,8 +284,9 @@ No destructive change, no data mutation, no change to notes/documents tables. Ro
 | `src/test/growthSync.test.ts` | Server sync: consent gate, idempotent ids, retry on failure, signed-out filtering, no note text in payload |
 | `src/test/growthEmail.test.ts` | Draft identity/opt-out rules, mailto truncation, approval gate, manual-send confirmation |
 | `src/test/firstNoteGuide.test.tsx` | 3-step checklist ticks, opens style panel, hides when a note exists, stays dismissed |
+| `src/test/aiKeyHygiene.test.ts` | No `VITE_*` provider key anywhere in `src/`, proxy is the only key reader, CSP allows the Supabase origin, proxy flag stays opt-in |
 
-**Total: 230 tests across 20 files.** Run: `npm test`, `npm run verify` (typecheck + tests +
+**Total: 234 tests across 21 files.** Run: `npm test`, `npm run verify` (typecheck + tests +
 dead-code), CI mirror in `.github/workflows/ci.yml`.
 
 ---

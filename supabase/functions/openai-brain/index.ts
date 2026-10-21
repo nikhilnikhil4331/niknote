@@ -35,8 +35,8 @@ serve(async (req) => {
       noteContext,
     } = body || {};
 
-    const groqKey = req.headers.get("x-groq-key") || Deno.env.get("GROQ_API_KEY") || Deno.env.get("VITE_GROQ_KEY") || "";
-    const geminiKey = req.headers.get("x-gemini-key") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("VITE_GEMINI_KEY") || "";
+    const groqKey = req.headers.get("x-groq-key") || Deno.env.get("GROQ_API_KEY") || "";
+    const geminiKey = req.headers.get("x-gemini-key") || Deno.env.get("GEMINI_API_KEY") || "";
     const openaiKey = req.headers.get("x-openai-key") || Deno.env.get("OPENAI_API_KEY") || "";
     const lovableKey = Deno.env.get("LOVABLE_API_KEY") || "";
 

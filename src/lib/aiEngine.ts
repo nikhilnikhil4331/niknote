@@ -104,13 +104,16 @@ export function saveCustomAIKeys(keys: AstaCustomKeys): void {
   }
 }
 
+// Only keys the user pasted themselves in Settings -> AI keys live here.
+// Build-time VITE_* provider keys were removed on purpose: anything prefixed with
+// VITE_ is inlined into the public JS bundle, so those secrets now live in the
+// ai-proxy / editor-ai edge functions and in /api/ai (GROQ_API_KEY, GEMINI_API_KEY).
 function getEffectiveClientKeys(): { groq: string; gemini: string; openai: string } {
   const custom = readCustomAIKeys();
-  const env = (import.meta as any)?.env || {};
   return {
-    groq: (custom.groqKey || env.VITE_GROQ_KEY || '').trim(),
-    gemini: (custom.geminiKey || env.VITE_GEMINI_KEY || '').trim(),
-    openai: (custom.openaiKey || env.VITE_OPENAI_KEY || '').trim(),
+    groq: (custom.groqKey || '').trim(),
+    gemini: (custom.geminiKey || '').trim(),
+    openai: (custom.openaiKey || '').trim(),
   };
 }
 

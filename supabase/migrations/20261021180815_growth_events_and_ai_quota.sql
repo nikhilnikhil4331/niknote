@@ -11,7 +11,8 @@
 --   * growth_events stores a closed set of event names and a props object
 --     whose keys are re-checked here (a trigger rejects note text, titles,
 --     emails, prompts, document text, tokens and similar keys);
---   * ai_usage only counts requests per user per window.
+--   * the quota half only counts requests per user per hour window (it reuses
+--     the existing generic `rate_limits` table, no new usage table).
 --
 -- Nothing here touches notes, documents or existing tables.
 -- ============================================================
