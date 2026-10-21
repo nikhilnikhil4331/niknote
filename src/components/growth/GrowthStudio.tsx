@@ -5,9 +5,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  AUTONOMOUS_SENDING, canExecute, createApproval, decide, hasDuplicate, isPaused,
-  remainingBudget, setPaused, submitForReview, totalSpent, type ApprovalItem,
+  AUTONOMOUS_SENDING, canExecute, confirmManualSend, createApproval, decide, hasDuplicate,
+  isPaused, manualSendReady, remainingBudget, setPaused, submitForReview, totalSpent,
+  type ApprovalItem,
 } from '@/lib/growth/approvals';
+import { buildDraft, draftToPlainText, mailtoLink } from '@/lib/growth/email';
 import {
   buildFunnelReport, clearGrowthEvents, funnelToCsv, track,
 } from '@/lib/growth/funnel';
@@ -20,6 +22,7 @@ import {
 import {
   loadApprovals, loadBudgetMinor, loadProspects, saveApprovals, saveProspects,
 } from '@/lib/growth/store';
+import { fetchServerFunnel, syncGrowthEvents, unsyncedGrowthEventCount, type ServerFunnelRow } from '@/lib/growth/sync';
 
 type Tab = 'funnel' | 'prospects' | 'approvals' | 'content' | 'experiments';
 
@@ -61,6 +64,10 @@ export const GrowthStudio: React.FC = () => {
   const [form, setForm] = useState(emptyProspect);
   const [report, setReport] = useState(() => buildFunnelReport());
   const [version, setVersion] = useState(0);
+  const [serverRows, setServerRows] = useState<ServerFunnelRow[]>([]);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [serverBusy, setServerBusy] = useState(false);
+  const [pendingSync, setPendingSync] = useState(0);
 
   useEffect(() => {
     setPausedState(isPaused());
@@ -68,7 +75,26 @@ export const GrowthStudio: React.FC = () => {
     setApprovals(loadApprovals());
     setBudget(loadBudgetMinor());
     setReport(buildFunnelReport());
+    setPendingSync(unsyncedGrowthEventCount());
   }, [version]);
+
+  const refreshServerFunnel = async () => {
+    setServerBusy(true);
+    const sync = await syncGrowthEvents();
+    const result = await fetchServerFunnel(30);
+    setServerRows(result.rows);
+    setServerError(result.error ?? null);
+    setPendingSync(unsyncedGrowthEventCount());
+    setServerBusy(false);
+    if (sync.error && sync.error !== 'no-consent') {
+      setServerError(prev => prev ?? `Upload failed: ${sync.error}`);
+    }
+  };
+
+  useEffect(() => {
+    void refreshServerFunnel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const spent = totalSpent(approvals);
 
@@ -121,6 +147,7 @@ export const GrowthStudio: React.FC = () => {
         summary: draft.rationale.join(' '),
         body: `Subject: ${draft.subject}\n\n${draft.body}`,
         dedupeKey: key,
+        contactEmail: prospect.publicContact,
       }),
     );
     setApprovals(saveApprovals([...approvals, item]));
@@ -140,19 +167,53 @@ export const GrowthStudio: React.FC = () => {
     }
   };
 
-  const markExecuted = (item: ApprovalItem) => {
-    const check = canExecute(item, {
-      spentMinor: spent,
-      budgetMinor: budget,
-      // No email/social provider is wired up on purpose: draft-only mode.
-      channelConfigured: false,
-    });
-    if (!check.allowed) {
-      toast.error(check.reasons[0]);
+  const openInMailApp = (item: ApprovalItem) => {
+    const gate = manualSendReady(item);
+    if (!gate.allowed) {
+      toast.error(gate.reasons[0]);
       return;
     }
-    const updated: ApprovalItem = { ...item, status: 'executed', executedAt: Date.now() };
-    setApprovals(saveApprovals(approvals.map(a => (a.id === item.id ? updated : a))));
+    const subjectLine = (item.body || '').split('\n').find(line => /^Subject:\s*/i.test(line));
+    const subject = subjectLine ? subjectLine.replace(/^Subject:\s*/i, '') : item.title;
+    const body = (item.body || '').replace(/^Subject:.*\n+/i, '');
+    const built = buildDraft({
+      to: item.contactEmail || '',
+      subject,
+      body,
+      senderName: decisionName.trim() || 'NikNote',
+      senderEmail: item.contactEmail || '',
+    });
+    if ('error' in built) {
+      toast.error(built.error);
+      return;
+    }
+    const { href, tooLong } = mailtoLink(built.draft);
+    if (tooLong) {
+      void navigator.clipboard.writeText(draftToPlainText(built.draft));
+      toast.warning('Message is long for a mail link — copied to the clipboard instead.');
+      return;
+    }
+    window.location.href = href;
+  };
+
+  const confirmSend = (item: ApprovalItem) => {
+    if (!decisionName.trim()) {
+      toast.error('Type your name first — a send needs a named human.');
+      return;
+    }
+    const gate = manualSendReady(item);
+    if (!gate.allowed) {
+      toast.error(gate.reasons[0]);
+      return;
+    }
+    if (!window.confirm('Only confirm after you actually sent it from your mail app. Continue?')) return;
+    try {
+      const executed = confirmManualSend(item, decisionName.trim());
+      setApprovals(saveApprovals(approvals.map(a => (a.id === item.id ? executed : a))));
+      toast.success('Recorded as sent by you — NikNote did not send any email.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not record the send.');
+    }
   };
 
   const copy = async (text: string) => {
@@ -272,6 +333,77 @@ export const GrowthStudio: React.FC = () => {
               </div>
             ))}
           </div>
+          <div className="rounded-xl border bg-white p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="text-xs font-bold uppercase text-slate-500">Server funnel (last 30 days)</div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Aggregated counts from <code>growth_events</code>. This is what crosses devices.
+                  {pendingSync > 0 ? ` ${pendingSync} event(s) on this device are not uploaded yet.` : ' Everything on this device is uploaded.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { void refreshServerFunnel(); }}
+                disabled={serverBusy}
+                className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                {serverBusy ? 'Refreshing…' : 'Sync + refresh'}
+              </button>
+            </div>
+
+            {serverError && (
+              <p className="mt-2 rounded-lg bg-amber-50 px-2.5 py-2 text-[11px] text-amber-800">
+                Could not read the server funnel: {serverError}. Nothing is estimated below.
+              </p>
+            )}
+
+            {serverRows.length === 0 ? (
+              <p className="mt-2 text-[11px] text-slate-500">
+                No server-side events yet. With consent, events upload in small batches and appear here
+                once they land.
+              </p>
+            ) : (
+              <div className="mt-2 overflow-x-auto">
+                <table className="w-full text-left text-[11px]">
+                  <thead className="text-slate-500">
+                    <tr>
+                      <th className="py-1 pr-3 font-semibold">Event</th>
+                      <th className="py-1 pr-3 font-semibold">Events</th>
+                      <th className="py-1 pr-3 font-semibold">Unique actors</th>
+                      <th className="py-1 font-semibold">Latest day</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(
+                      serverRows.reduce<Record<string, { events: number; actors: number; day: string }>>((acc, row) => {
+                        const current = acc[row.name] ?? { events: 0, actors: 0, day: row.day };
+                        acc[row.name] = {
+                          events: current.events + Number(row.events),
+                          actors: current.actors + Number(row.unique_actors),
+                          day: row.day > current.day ? row.day : current.day,
+                        };
+                        return acc;
+                      }, {}),
+                    )
+                      .sort((a, b) => b[1].events - a[1].events)
+                      .map(([name, value]) => (
+                        <tr key={name} className="border-t border-slate-100">
+                          <td className="py-1 pr-3 font-medium text-slate-800">{name}</td>
+                          <td className="py-1 pr-3 tabular-nums text-slate-700">{value.events}</td>
+                          <td className="py-1 pr-3 tabular-nums text-slate-700">{value.actors}</td>
+                          <td className="py-1 tabular-nums text-slate-500">{value.day}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+                <p className="mt-1 text-[10.5px] text-slate-400">
+                  Unique actors per day sum; a person active on several days counts once per day.
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="rounded-xl border bg-white p-3">
             <div className="text-xs font-bold uppercase text-slate-500">Feature adoption</div>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -452,7 +584,7 @@ export const GrowthStudio: React.FC = () => {
               placeholder="Your name"
               className="rounded-lg border px-2.5 py-1.5 text-xs"
             />
-            <Badge tone="slate">Draft-only: no provider connected</Badge>
+            <Badge tone="slate">Draft-only · you send from your own mail app</Badge>
           </div>
 
           {approvals.length === 0 && (
@@ -491,13 +623,23 @@ export const GrowthStudio: React.FC = () => {
                     </>
                   )}
                   {item.status === 'approved' && (
-                    <button
-                      type="button"
-                      onClick={() => markExecuted(item)}
-                      className="rounded-lg border px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50"
-                    >
-                      Mark sent
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => openInMailApp(item)}
+                        className="rounded-lg border px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50"
+                        title={manualSendReady(item).allowed ? 'Opens your mail app with the draft' : manualSendReady(item).reasons.join(' ')}
+                      >
+                        Open in mail app
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => confirmSend(item)}
+                        className="rounded-lg bg-slate-900 px-2 py-1 text-[11px] font-bold text-white hover:bg-slate-800"
+                      >
+                        I sent it
+                      </button>
+                    </>
                   )}
                 </div>
               </div>

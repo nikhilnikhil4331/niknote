@@ -4,7 +4,7 @@
 // ============================================================
 
 import { toast } from 'sonner';
-import { track } from '@/lib/growth/funnel';
+import { track, trackFirstNote } from '@/lib/growth/funnel';
 
 export function saveLectureNote(title: string, lines: { text: string; blockType: string }[]): string {
   const id = `lecture-${Date.now().toString(36)}`;
@@ -38,6 +38,7 @@ export function saveLectureNote(title: string, lines: { text: string; blockType:
     ];
     localStorage.setItem('niknote.notes.v1', JSON.stringify(next.slice(0, 200)));
     track('note_created', { feature: 'lecture_mode' });
+    trackFirstNote('lecture_mode');
   } catch {
     toast.error('Could not save the note on this device (storage full).');
   }

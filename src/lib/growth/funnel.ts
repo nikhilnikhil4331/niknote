@@ -13,6 +13,7 @@
 // ============================================================
 
 export const GROWTH_EVENTS_KEY = 'niknote.growth.events.v1';
+export const DEVICE_KEY = 'niknote.growth.device.v1';
 export const SESSION_KEY = 'niknote.growth.session.v1';
 const CONSENT_KEY = 'niknote_optional_analytics';
 const MAX_EVENTS = 2000;
@@ -46,10 +47,14 @@ const FORBIDDEN_KEY = /(note|content|text|title|body|email|password|token|key|pr
 const MAX_VALUE_LENGTH = 48;
 
 export interface GrowthEvent {
+  /** Stable id so a retried upload cannot double-count an event. */
+  id: string;
   name: GrowthEventName;
   at: number;
   session: string;
   props?: Record<string, string | number | boolean>;
+  /** Set once the event has reached the server. */
+  synced?: boolean;
 }
 
 export function analyticsAllowed(): boolean {
@@ -57,7 +62,7 @@ export function analyticsAllowed(): boolean {
   return localStorage.getItem(CONSENT_KEY) === 'accepted';
 }
 
-function readEvents(): GrowthEvent[] {
+export function readEvents(): GrowthEvent[] {
   if (typeof localStorage === 'undefined') return [];
   try {
     const parsed = JSON.parse(localStorage.getItem(GROWTH_EVENTS_KEY) || '[]');
@@ -67,10 +72,32 @@ function readEvents(): GrowthEvent[] {
   }
 }
 
-function writeEvents(events: GrowthEvent[]) {
+export function writeEvents(events: GrowthEvent[]) {
   try {
     localStorage.setItem(GROWTH_EVENTS_KEY, JSON.stringify(events.slice(-MAX_EVENTS)));
   } catch { /* quota or private mode — analytics must never break the app */ }
+}
+
+function newId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `g-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/**
+ * Stable, random device id for events fired before login. It is not a
+ * fingerprint: it is generated once, stored locally, and can be cleared with
+ * the rest of the analytics data.
+ */
+export function deviceId(): string {
+  if (typeof localStorage === 'undefined') return 'device-none';
+  let id = localStorage.getItem(DEVICE_KEY);
+  if (!id) {
+    id = `d-${newId()}`;
+    try { localStorage.setItem(DEVICE_KEY, id); } catch { /* ignore */ }
+  }
+  return id;
 }
 
 export function currentSessionId(): string {
@@ -111,11 +138,34 @@ export function sanitizeProps(
   return Object.keys(clean).length ? clean : undefined;
 }
 
+const FIRST_NOTE_KEY = 'niknote.growth.firstNote.v1';
+
+/**
+ * Fire `first_note_created` at most once per device, from whichever save path
+ * actually happens first (local mirror or cloud save). The flag is only set
+ * when the event was really recorded, so a visitor who grants consent later
+ * still reports their first note.
+ */
+export function trackFirstNote(source: string): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    if (localStorage.getItem(FIRST_NOTE_KEY)) return;
+  } catch { /* ignore */ }
+  if (!track('first_note_created', { feature: 'editor', source })) return;
+  try { localStorage.setItem(FIRST_NOTE_KEY, new Date().toISOString()); } catch { /* ignore */ }
+}
+
 /** Record an event. No-ops (silently) without consent. */
 export function track(name: GrowthEventName, props?: Record<string, unknown>): boolean {
   if (!analyticsAllowed()) return false;
   const events = readEvents();
-  events.push({ name, at: Date.now(), session: currentSessionId(), props: sanitizeProps(props) });
+  events.push({
+    id: newId(),
+    name,
+    at: Date.now(),
+    session: currentSessionId(),
+    props: sanitizeProps(props),
+  });
   writeEvents(events);
   return true;
 }

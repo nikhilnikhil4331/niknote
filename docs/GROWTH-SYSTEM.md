@@ -13,7 +13,7 @@ Last updated: 2026-10-21 · Branch: `arena/09510f5e-niknote`
 
 | Area | Before | Now |
 | --- | --- | --- |
-| Dead code | `src/services/{agents,knowledge,ocr,workflow}` — 4 modules, zero importers, still type-checked and shipped in the graph | Deleted. `scripts/check-dead-code.mjs` walks the real import graph from `src/main.tsx` + `src/App.tsx` and fails CI on new orphans |
+| Dead code | 70 modules with no importer (including `src/services/{agents,knowledge,ocr,workflow}`), still type-checked and shipped in the graph | **69 deleted**, graph rebuilt clean. `scripts/check-dead-code.mjs` walks the real import graph from `src/main.tsx` + `src/App.tsx` and fails CI on new orphans; the baseline file is now empty |
 | Admin metrics | `AdminPanelNikhil.tsx` seeded 30 days of `Math.random()` traffic, a 42K-user funnel, invented top exporters ("Rahul Sharma, 156 exports") and a hardcoded `avgSessionDuration: '12m'` | Real zero-state, real `activity_logs` loaders only, explicit "No funnel data yet — nothing here is estimated" |
 | Admin "chat" | A floating widget that fabricated status messages ("Abhi 0 active users hain", "Deployment successful!") after a random delay | Deterministic navigation help; it says plainly that it is not monitoring |
 | Analytics | `src/utils/analytics.ts` (event names ad hoc, props unvalidated) | `src/lib/growth/funnel.ts`: closed event vocabulary, allowlisted prop keys, consent-gated, `MIN_SAMPLE = 30` |
@@ -140,14 +140,33 @@ reply handling → approval queue → analytics → budget controls). **No code 
 4. Sending is done by a human, outside the app. Opt-outs are recorded and respected.
 5. Budget controls default to `0` paise — no spend path exists without explicit approval.
 
+**Send path (decided):** no provider. An approved partnership message opens in the operator's own
+mail client through an RFC 6068 `mailto:` link (`src/lib/growth/email.ts`). Consequences:
+
+- no API key exists to leak, and no prospect address is uploaded by NikNote;
+- a cron job or an "agent" cannot send anything at 3am;
+- "I sent it" is a human confirmation that only records `executedBy` / `executedAt` — it does not
+  send. If a link would exceed ~1900 characters the UI copies the text instead of truncating it.
+- Every draft carries `— <sender name>`, a sender address and a "reply no" opt-out line; a draft
+  without them cannot be built.
+
 **Not done, deliberately:** no LinkedIn automation, no purchased lists, no profile scraping, no
-auto-replies, no send API.
+auto-replies, no provider API.
 
 ---
 
 ## 9. Analytics + dashboard
 
-- **Store:** `localStorage` key `niknote.growth.events.v1` (`src/lib/growth/store.ts`).
+- **Device store:** `localStorage` key `niknote.growth.events.v1` (`src/lib/growth/funnel.ts`).
+- **Server store:** `public.growth_events` (migration `20261021180000_growth_events_and_ai_quota.sql`).
+  Pending events upload in batches of 40 through `src/lib/growth/sync.ts`; each event carries a
+  client-generated UUID, so a retry cannot double-count. Signed-out devices may only upload
+  `visitor_landing` / `signup_started`, with a random device id — not a fingerprint.
+- **Server-side guard:** a database trigger rejects any props key matching
+  `note|content|text|title|body|email|password|token|secret|key|prompt|query|document|file|url`, so
+  the privacy rule survives a client bug. Verified with a live insert (rejected, error 22023).
+- **Admin read path:** `growth_event_summary(days)` returns day/event/count/unique-actors only for
+  users with the `admin` role; the Growth Studio shows it in the "Server funnel" card.
 - **Events (closed set, unknown names are dropped):** `visitor_landing`, `signup_started`,
   `signup_completed`, `note_created`, `first_note_created`, `ai_used`, `pdf_imported`,
   `handwriting_used`, `premium_viewed`, `subscription_completed`, `account_deleted`.
@@ -209,8 +228,18 @@ Build-time (Vercel → Project → Settings → Environment Variables, Productio
 | `VITE_SUPABASE_URL` | Supabase project URL | public |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | anon/publishable key | public; RLS must do the work |
 | `VITE_SUPABASE_PROJECT_ID` | project ref | public |
-| `VITE_GEMINI_KEY` | AI provider | **ships in the bundle** — restrict + quota (§18) |
-| `VITE_GROQ_KEY` | AI provider fallback | same |
+| `VITE_GEMINI_KEY` | AI provider (legacy direct path) | **ships in the bundle** — remove once the proxy is live |
+| `VITE_GROQ_KEY` | AI provider fallback (legacy) | same |
+| `VITE_AI_PROXY` | `1` = route AI through the `ai-proxy` function | add after the secrets below exist |
+
+Supabase → Edge Functions → Secrets (server-side only, never shipped):
+
+| Secret | Purpose | Default |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | provider key for `ai-proxy` | — (503 until set) |
+| `GROQ_API_KEY` | fallback provider key | — |
+| `AI_HOURLY_LIMIT` | requests per user per hour | `40` |
+| `GEMINI_MODEL` / `GROQ_MODEL` | model ids | `gemini-2.0-flash` / `llama-3.3-70b-versatile` |
 
 Local: `.env.local` with the same keys. Never commit it.
 
@@ -218,14 +247,20 @@ Local: `.env.local` with the same keys. Never commit it.
 
 ## 13. Migrations
 
-**None added.** Every growth/lecture/planner feature ships against `localStorage` and existing
-tables (`activity_logs`, `profiles`, `pages`, `user_subscriptions`). No destructive migration, no
-schema change, no production data mutation.
+One additive migration, already applied to the live project:
+`supabase/migrations/20261021180000_growth_events_and_ai_quota.sql`
 
-If the funnel should leave the device later, the smallest safe next step is one append-only table
-(`growth_events`: `id`, `user_id`, `name`, `props jsonb`, `created_at`) with RLS `insert` for the
-authenticated user and `select` for admins only. That is a deliberate product decision, not
-something this change assumes.
+| Object | What it does |
+| --- | --- |
+| `public.is_admin(uuid)` | Role check over the existing `user_roles` table (the live DB had no `has_role`) |
+| `public.growth_events` | Append-only funnel rows: `id`, `user_id`, `anonymous_id`, closed-set `name`, `props`, `occurred_at` |
+| `growth_events_guard()` trigger | Rejects content-like props keys and future timestamps |
+| RLS policies | Users insert only their own rows; anon inserts only the two pre-login events; admins read |
+| `public.growth_event_summary(int)` | Admin-only aggregate (day, event, events, unique actors) |
+| `rate_limits` unique index + `consume_ai_quota(int,int)` | Atomic per-user hourly quota, reusing the existing `rate_limits` table |
+
+No destructive change, no data mutation, no change to notes/documents tables. Rollback is
+`drop table growth_events; drop function consume_ai_quota(int,int); drop function is_admin(uuid);`.
 
 ---
 
@@ -238,8 +273,11 @@ something this change assumes.
 | `src/test/lectureAndPlan.test.ts` | Filler stripping, cue→markdown, ICS folding/CRLF/UID, EDF planning |
 | `src/test/handwritingDna.test.tsx` | Ink measurement, DNA→settings, per-word lean, page render, PDF→notes, widow control |
 | `src/test/plannerAndLectureUi.test.tsx` | Lecture screen builds and saves a real note; planner schedules + exports `.ics` without claiming events |
+| `src/test/growthSync.test.ts` | Server sync: consent gate, idempotent ids, retry on failure, signed-out filtering, no note text in payload |
+| `src/test/growthEmail.test.ts` | Draft identity/opt-out rules, mailto truncation, approval gate, manual-send confirmation |
+| `src/test/firstNoteGuide.test.tsx` | 3-step checklist ticks, opens style panel, hides when a note exists, stays dismissed |
 
-**Total: 211 tests across 17 files.** Run: `npm test`, `npm run verify` (typecheck + tests +
+**Total: 230 tests across 20 files.** Run: `npm test`, `npm run verify` (typecheck + tests +
 dead-code), CI mirror in `.github/workflows/ci.yml`.
 
 ---
@@ -263,11 +301,18 @@ no data migration is involved.
 1. **Vercel env vars** — confirm all five `VITE_*` values exist for Production (§12).
 2. **Search Console** — submit `https://www.niknote.online/sitemap.xml`; request indexing for the
    marketing routes only.
-3. **AI key hygiene** — restrict `VITE_GEMINI_KEY` / `VITE_GROQ_KEY` by quota and (if supported)
-   HTTP referrer; they are visible to anyone who opens dev tools.
-4. **Email provider decision** before any outreach (§17) — plus a real sender identity and an
-   unsubscribe path.
-5. **First outreach batch** — research by hand, review every draft, send manually.
+3. **Finish the AI cutover** (the proxy is deployed, the keys are not yet moved):
+   1. Supabase → Edge Functions → Secrets: add `GEMINI_API_KEY` (and `GROQ_API_KEY` if used).
+      Until then `ai-proxy` answers `503 provider_not_configured` and the app keeps using the old path.
+   2. Vercel → Environment Variables: add `VITE_AI_PROXY=1`.
+   3. Smoke test in production: ask NikAI one question, then check `rate_limits` has an
+      `ai-proxy` row for your user and the answer still arrives.
+   4. Delete `VITE_GEMINI_KEY` / `VITE_GROQ_KEY` from Vercel and redeploy. The browser bundle no
+      longer contains a provider key; AI keeps working through the proxy.
+4. **Email** — no provider is required for the current flow: approved drafts open in the
+   operator's own mail app (`mailto:`), and "I sent it" only records a human confirmation. Choose a
+   provider only when volume makes that impractical (§17).
+5. **First outreach batch** — research by hand, review every draft, send manually, log the reply.
 6. **Growth Studio smoke test** — open `/admin` → Growth, confirm empty states read "no data yet".
 
 ---
@@ -280,7 +325,7 @@ no data migration is involved.
 | Supabase | existing plan | rows/storage |
 | Gemini / Groq | pay-per-use (keys are public → monitor) | every AI answer |
 | Custom domain | already paid | annual |
-| **Email provider** (not chosen) | ~$0–20/mo at low volume (e.g. a transactional tier) | first outreach |
+| Email | **₹0** today (mailto from the operator's inbox) | add a provider (~$0–20/mo) only when volume makes manual sending impractical |
 | Search Console / analytics | ₹0 | — |
 | Paid acquisition | **₹0, blocked** until the funnel is measurable end-to-end | P7 |
 
@@ -291,14 +336,18 @@ recurring line items.
 
 ## 18. What is still incomplete (honest list)
 
-1. **No server-side funnel.** Events live on the device; cross-device attribution needs the table in §13.
-2. **First-note onboarding** — instrumentation exists, the guided step does not.
-3. **Public AI key exposure** — the app works, but a determined user can drain quota. Needs a proxy
-   function with its own rate limit (a real server change, deliberately out of scope here).
-4. **No email/outreach provider wired** — deliberate, pending a decision.
-5. **70 baselined orphan modules** (`scripts/dead-code-baseline.json`) — dead but not deleted;
-   deleting them is a separate, reviewable cleanup.
-6. **`avgSessionDuration` shows "—"** — no session-tracking table exists; a fake number was removed
-   instead of invented.
-7. **Per-route OG tags for non-JS crawlers** require SSR; current mitigation is sitemap + JSON-LD.
-8. **Experiments** have statistics helpers but no running experiment; P6 has not started.
+1. **AI proxy needs its secrets.** The function, quota and client wiring are live, but until
+   `GEMINI_API_KEY` is added and `VITE_AI_PROXY=1` is set, the app still uses the legacy direct-key
+   path (§16 step 3).
+2. **Quota is consumed before the provider call**, so a failed provider request still counts against
+   the hour. Chosen on purpose (abuse guard); revisit if it annoys real users.
+3. **Unique actors is per day** in the server summary, so a person active across five days counts
+   five times. Multi-day dedupe needs a `distinct user` rollup, which is a reporting change, not a
+   data change.
+4. **No bulk email provider** — deliberate; manual mailto only.
+5. **No automated tests for the edge functions themselves.** They are covered by: SQL verification
+   for the migration, unit tests for the client sync + email gate, and the documented smoke test in
+   §16. A Deno test harness is the next step if the functions grow.
+6. **Per-route OG tags for non-JS crawlers** still require SSR; mitigation is sitemap + JSON-LD.
+7. **Experiments** have statistics helpers but no running experiment.
+8. **`avgSessionDuration` shows "—"** — there is no session-tracking table, and a fake number was removed.

@@ -4,7 +4,7 @@
 // Persistent Session Memory, Smart Notes & Live Quizzes.
 // ============================================================
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '@/integrations/supabase/client';
 import { buildNikAIMemoryPrompt } from '@/lib/nikaiMemory';
 
 export type AstaMode =
@@ -433,6 +433,81 @@ async function tryDirectCloudStream(
   );
 }
 
+// ── Tier 0: server-side proxy (keys never reach the browser) ──
+/** Enabled by `VITE_AI_PROXY=1` once `ai-proxy` has its provider secrets. */
+export function aiProxyEnabled(): boolean {
+  const flag = String(import.meta.env.VITE_AI_PROXY ?? '').toLowerCase();
+  return flag === '1' || flag === 'true' || flag === 'on';
+}
+
+const AI_PROXY_URL = `${SUPABASE_URL}/functions/v1/ai-proxy`;
+
+/**
+ * Ask our own edge function instead of calling Gemini/Groq with a public key.
+ * The function enforces a per-user hourly quota and returns 429 with the reset
+ * time, which we surface honestly instead of silently retrying elsewhere.
+ */
+async function tryAiProxy(
+  opts: AstaStreamOptions,
+  memoryContext: string
+): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
+  if (!aiProxyEnabled()) return null;
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (!token) return null;
+
+    const system = [memoryContext, opts.noteContext].filter(Boolean).join('\n\n');
+    const res = await fetch(AI_PROXY_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
+        system: system || undefined,
+      }),
+      signal: opts.signal,
+    });
+
+    if (res.status === 429) {
+      const body = await res.json().catch(() => ({}));
+      const resetAt = typeof body?.resetAt === 'string' ? new Date(body.resetAt) : null;
+      const when = resetAt && !Number.isNaN(resetAt.getTime())
+        ? resetAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : 'in a little while';
+      const message = [
+        '## Hourly AI limit reached',
+        '',
+        `You have used the free AI requests for this hour. The limit resets at **${when}**.`,
+        '',
+        'Notes, PDF import and handwriting export keep working without AI.',
+      ].join('\n');
+      opts.onMeta?.({ model: 'NikAI quota', provider: 'quota' });
+      opts.onToken?.(message, message);
+      return { content: message, thinking: '', model: 'NikAI quota', provider: 'quota' };
+    }
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    const content = typeof data?.content === 'string' ? data.content.trim() : '';
+    if (!content) return null;
+
+    opts.onMeta?.({ model: data.model || 'NikAI proxy', provider: data.provider || 'proxy' });
+    opts.onToken?.(content, content);
+    return {
+      content,
+      thinking: '',
+      model: data.model || 'NikAI proxy',
+      provider: data.provider || 'proxy',
+    };
+  } catch {
+    return null;
+  }
+}
+
 // ── Tier 3: Supabase Edge Function fallback ──
 async function trySupabaseEdge(
   opts: AstaStreamOptions,
@@ -566,6 +641,10 @@ export async function streamAstaAI(opts: AstaStreamOptions): Promise<AstaResult>
   const memoryContext = opts.memoryContext ?? buildNikAIMemoryPrompt(opts.threadId);
 
   const result =
+    (await tryAiProxy(opts, memoryContext).catch((err) => {
+      if (err?.name === 'AbortError') throw err;
+      return null;
+    })) ||
     (await tryServerlessStream(opts, memoryContext).catch((err) => {
       if (err?.name === 'AbortError') throw err;
       return null;

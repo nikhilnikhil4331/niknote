@@ -85,6 +85,7 @@ import { registerServiceWorker } from "@/hooks/useServiceWorkerRegistration";
 import { checkReferral } from "@/utils/referral";
 import { trackPageView } from "@/utils/analytics";
 import { track, startSession } from "@/lib/growth/funnel";
+import { syncGrowthEvents } from "@/lib/growth/sync";
 
 const queryClient = new QueryClient();
 
@@ -136,6 +137,9 @@ function RouteAnalytics() {
     // `track`. No note text, titles or user identifiers are ever recorded.
     startSession();
     track('visitor_landing', { page: pathname === '/' ? 'home' : pathname, source: 'router' });
+    // Push anything queued on the device (consent-gated, idempotent per event).
+    // Deliberately not awaited: analytics must never delay the first paint.
+    void syncGrowthEvents();
   }, [pathname]);
   return null;
 }

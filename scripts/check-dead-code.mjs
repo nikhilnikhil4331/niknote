@@ -166,14 +166,15 @@ const dead = files
 
 const listOnly = process.argv.includes('--list');
 const updateBaseline = process.argv.includes('--update-baseline');
-const testOnly = dead.filter(rel => {
-  const file = join(ROOT, rel);
-  return fromTests.has(file);
-});
+// A module reached from a test file is covered by the test graph: it is not
+// shipped dead weight, it is a helper under test. Reported, never failed.
+const testOnly = dead.filter(rel => fromTests.has(join(ROOT, rel)));
+const testOnlySet = new Set(testOnly);
+const realDead = dead.filter(rel => !testOnlySet.has(rel));
 
 if (updateBaseline) {
-  writeFileSync(BASELINE_FILE, `${JSON.stringify(dead, null, 2)}\n`);
-  console.log(`✔ Baseline written: ${dead.length} known dead module(s) → scripts/dead-code-baseline.json`);
+  writeFileSync(BASELINE_FILE, `${JSON.stringify(realDead, null, 2)}\n`);
+  console.log(`✔ Baseline written: ${realDead.length} known dead module(s) → scripts/dead-code-baseline.json`);
   process.exit(0);
 }
 
@@ -188,20 +189,20 @@ if (existsSync(BASELINE_FILE)) {
   }
 }
 const baselineSet = new Set(baseline);
-const added = dead.filter(rel => !baselineSet.has(rel));
-const fixed = baseline.filter(rel => !dead.includes(rel));
+const added = realDead.filter(rel => !baselineSet.has(rel));
+const fixed = baseline.filter(rel => !realDead.includes(rel));
 
 if (testOnly.length) {
   console.log(`ℹ ${testOnly.length} module(s) are imported only by tests (fine, but not shipped logic):`);
   for (const rel of testOnly) console.log(`  - ${rel}`);
 }
 
-if (dead.length === 0) {
+if (realDead.length === 0) {
   console.log(`✔ No dead modules (${files.length} source files reachable from ${ENTRY_POINTS.length} entry points).`);
   process.exit(0);
 }
 
-console.log(`ℹ ${dead.length} module(s) unreachable from the app; ${baseline.length} were already known.`);
+console.log(`ℹ ${realDead.length} module(s) unreachable from the app; ${baseline.length} were already known.`);
 
 if (fixed.length) {
   console.log(`✔ ${fixed.length} baseline entry/entries are now reachable — run --update-baseline to shrink the list:`);

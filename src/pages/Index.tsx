@@ -21,6 +21,7 @@ const ControlPanel = lazy(() => import('@/components/ControlPanel').then(m => ({
 import { PageBar } from '@/components/PageBar';
 import { MoodSelector } from '@/components/MoodSelector';
 import { SlidePanel } from '@/components/SlidePanel';
+import { FirstNoteGuide } from '@/components/onboarding/FirstNoteGuide';
 import { MobileBottomNav, MobileTab } from '@/components/MobileBottomNav';
 const MobileStyleSheet = lazy(() => import('@/components/MobileStyleSheet').then(m => ({ default: m.MobileStyleSheet })));
 import { QuickStylesBar } from '@/components/QuickStylesBar';
@@ -91,7 +92,7 @@ import { usePageStrokes } from '@/hooks/usePageStrokes';
 import { noteSettingsForDNA } from '@/lib/handwritingStyle';
 import { composePdfNotes } from '@/lib/aiNotes';
 import { knowledgeDocFromPdf, registerKnowledgeDoc } from '@/lib/knowledgeIndex';
-import { track } from '@/lib/growth/funnel';
+import { track, trackFirstNote } from '@/lib/growth/funnel';
 import { SemiCircularDial } from '@/components/dial/SemiCircularDial';
 import { readPdf } from '@/lib/pdfText';
 const HandwritingStudio = lazy(() => import('@/components/handwriting-dna/HandwritingStudio').then(m => ({ default: m.HandwritingStudio })));
@@ -501,9 +502,11 @@ const Index = () => {
         localStorage.setItem('niknote.mobile.notebooks.v1', JSON.stringify(next));
 
         // Also mirror into niknote.notes.v1 so Asta AI can attach any saved note
+        let isFirstNote = false;
         try {
           const notesRaw = localStorage.getItem('niknote.notes.v1');
           const notesList: any[] = notesRaw ? JSON.parse(notesRaw) : [];
+          isFirstNote = !Array.isArray(notesList) || notesList.length === 0;
           const plain = blockEditor.blocks.map((b) => b.content).join('\n');
           const mirror = {
             id,
@@ -529,6 +532,7 @@ const Index = () => {
         setCloudNotebookId(id);
         notifyLocalDataChanged();
         track('note_created', { feature: 'editor' });
+        if (isFirstNote) trackFirstNote('local');
         toast.success('Note saved on this device ✨');
         return;
       }
@@ -545,6 +549,7 @@ const Index = () => {
         ? await supabase.from('pages').update({ content: blockEditor.blocks as any, title: noteTitle }).eq('id', existing[0].id)
         : await supabase.from('pages').insert({ notebook_id: id, user_id: user.id, page_number: 1, title: noteTitle, content: blockEditor.blocks as any });
       if (result.error) throw result.error;
+      trackFirstNote('cloud');
       toast.success('Note saved to your notebooks');
     } catch { toast.error('Could not save note. Your local draft is still available.'); }
     finally { setSavingNote(false); }
@@ -1873,6 +1878,11 @@ const Index = () => {
         />
       </React.Suspense>
 
+      {/* First-note checklist — a guide, never a gate */}
+      <FirstNoteGuide
+        hasContent={blockEditor.blocks.some(b => b.type !== 'divider' && Boolean((b.content || '').trim()))}
+        onOpenStyle={() => { if (isMobile) setShowMobileStyleSheet(true); else setShowStylePanel(true); }}
+      />
       {/* Mobile Bottom Nav */}
       {isMobile && <MobileEditorToolbar active={editorTool} onTool={selectEditorTool} listening={quickDictation.isListening} />}
       <input ref={imageInputRef} type="file" accept="image/*" hidden onChange={e => {

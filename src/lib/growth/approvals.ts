@@ -51,9 +51,13 @@ export interface ApprovalItem {
   dedupeKey: string;
   /** Cost in minor units (paise), 0 when free. */
   costMinor?: number;
+  /** Public business email the human will send this to (never scraped). */
+  contactEmail?: string;
   decidedBy?: string;
   decidedAt?: number;
   executedAt?: number;
+  /** Only set after a named human confirms they sent it from their own client. */
+  executedBy?: string;
   rejectionReason?: string;
 }
 
@@ -79,6 +83,14 @@ export interface CreateApprovalInput {
   dedupeKey: string;
   costMinor?: number;
   requestedBy?: 'agent' | 'human';
+  contactEmail?: string;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+export function normalizeEmail(value?: string): string | undefined {
+  const email = (value || '').trim().toLowerCase();
+  return EMAIL_RE.test(email) ? email : undefined;
 }
 
 /** Always creates a draft. Approval is a separate, human action. */
@@ -95,6 +107,7 @@ export function createApproval(input: CreateApprovalInput): ApprovalItem {
     status: 'draft',
     dedupeKey: input.dedupeKey,
     costMinor: input.costMinor ?? 0,
+    contactEmail: normalizeEmail(input.contactEmail),
   };
 }
 
@@ -119,6 +132,28 @@ export function decide(
     decidedAt: Date.now(),
     rejectionReason: decision === 'rejected' ? reason : undefined,
   };
+}
+
+/**
+ * Whether a human can send this from their own mail client. NikNote has no
+ * provider, so "executing" means: approved + a public email on file. The send
+ * itself still happens outside the app.
+ */
+export function manualSendReady(item: ApprovalItem): ExecuteCheck {
+  const reasons: string[] = [];
+  if (item.status !== 'approved') reasons.push('Item is not approved by a human.');
+  if (!item.decidedBy) reasons.push('No human decision recorded.');
+  if (!normalizeEmail(item.contactEmail)) reasons.push('No public contact email recorded.');
+  return { allowed: reasons.length === 0, reasons };
+}
+
+/** Records a send the human confirmed. Throws if the gates are not met. */
+export function confirmManualSend(item: ApprovalItem, human: string): ApprovalItem {
+  const who = human.trim();
+  if (!who) throw new Error('A named person must confirm the send.');
+  const check = manualSendReady(item);
+  if (!check.allowed) throw new Error(check.reasons.join(' '));
+  return { ...item, status: 'executed', executedAt: Date.now(), executedBy: who };
 }
 
 export interface ExecuteCheck {

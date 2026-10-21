@@ -85,11 +85,11 @@ describe('funnel report', () => {
   const day = 86_400_000;
   const now = Date.now();
   const events: GrowthEvent[] = [
-    { name: 'visitor_landing', at: now - 10 * day, session: 'a' },
-    { name: 'signup_completed', at: now - 10 * day, session: 'a' },
-    { name: 'first_note_created', at: now - 9 * day, session: 'a' },
-    { name: 'visitor_landing', at: now - 8 * day, session: 'b' },
-    { name: 'signup_completed', at: now - 8 * day, session: 'b' },
+    { id: 'e1', name: 'visitor_landing', at: now - 10 * day, session: 'a' },
+    { id: 'e2', name: 'signup_completed', at: now - 10 * day, session: 'a' },
+    { id: 'e3', name: 'first_note_created', at: now - 9 * day, session: 'a' },
+    { id: 'e4', name: 'visitor_landing', at: now - 8 * day, session: 'b' },
+    { id: 'e5', name: 'signup_completed', at: now - 8 * day, session: 'b' },
   ];
 
   it('computes stages from unique sessions, not raw events', () => {

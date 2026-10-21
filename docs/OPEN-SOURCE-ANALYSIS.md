@@ -145,9 +145,9 @@ taken is the negative lesson: do not ship generated media as if it were a user's
 
 | Signal | Value | Command |
 | --- | --- | --- |
-| Tests | 17 files / 211 tests passing | `npm test` |
+| Tests | 20 files / 230 tests passing | `npm test` |
 | Type check | clean | `npm run typecheck` |
-| Dead modules | 70 known (baseline file), new ones fail CI | `npm run check:dead-code` |
+| Dead modules | **0** (69 orphans deleted, test-only helpers reported separately) | `npm run check:dead-code` |
 | Build | Vite build succeeds | `npm run build` |
 | Third-party packages | 707, 0 copyleft | `docs/license-inventory.json` |
 | Growth dependencies added | 0 | `package.json` diff |
@@ -159,7 +159,7 @@ taken is the negative lesson: do not ship generated media as if it were a user's
 | # | Work | Files | Verified by |
 | --- | --- | --- | --- |
 | 1 | Remove fabricated admin metrics + demo chat | `src/pages/AdminPanelNikhil.tsx` | code review + empty-state copy |
-| 2 | Dead-code gate in CI | `scripts/check-dead-code.mjs`, `.github/workflows/ci.yml` | `npm run check:dead-code` |
+| 2 | Dead-code gate in CI + 69 orphan modules deleted | `scripts/check-dead-code.mjs`, `.github/workflows/ci.yml` | `npm run check:dead-code` |
 | 3 | Consent-gated funnel, approvals, content validator, experiments | `src/lib/growth/*` | `src/test/growth.test.ts` |
 | 4 | Per-route SEO + private-route noindex + sitemap pipeline | `src/lib/seo/meta.ts`, `SeoManager.tsx`, `scripts/generate-sitemap.mjs`, `public/robots.txt`, `vercel.json` | `src/test/seo.test.ts` |
 | 5 | Grounded retrieval with citations | `src/lib/knowledgeIndex.ts` | `src/test/knowledgeIndex.test.ts` |
@@ -172,8 +172,9 @@ taken is the negative lesson: do not ship generated media as if it were a user's
 ## Honest gaps
 
 1. Retrieval is lexical, not semantic — paraphrase-heavy questions can miss. Same API, future upgrade.
-2. No server-side funnel; events stay on the device until a `growth_events` table exists.
-3. Outreach has no provider; drafts are copied by hand (deliberate).
+2. The AI proxy is deployed, but its provider secrets are not set yet, so the app still uses the legacy
+   direct-key path until §16 step 3 is done.
+3. Outreach has no provider; approved drafts open in the operator's mail app (deliberate).
 4. Voice capture depends on the browser's speech engine; unsupported browsers are told so.
-5. 70 modules remain unimported (baselined). Deleting them is a separate cleanup.
+5. Edge functions have no automated test harness yet (migration is SQL-verified, client logic is unit-tested).
 6. Harvey's licence needs a final read before any future code reuse; today only ideas were used.
