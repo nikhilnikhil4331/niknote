@@ -13,6 +13,7 @@
 import { NoteLine, LineInkColor, generateLineId } from '@/types/noteLine';
 import { Block, createBlock, BlockType } from '@/types/block';
 import { decodeGraphSpec, graphToSVG } from '@/lib/noteGraphs';
+import { latexToText } from '@/lib/mathText';
 
 /**
  * Convert structured lines to BlockEditor blocks (home note canvas).
@@ -77,6 +78,9 @@ export function cleanInline(raw: string): string {
     .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1$2')
     .replace(/_{1,2}(.+?)_{1,2}/g, '$1')
     .replace(/`([^`]+)`/g, '$1')
+    .replace(/\$\$([^$]+)\$\$/g, (_m, math: string) => ` ${latexToText(math)} `)
+    .replace(/(?<!\\)\$([^$\n]+)(?<!\\)\$/g, (_m, math: string) => ` ${latexToText(math)} `)
+    .replace(/\\\((.+?)\\\)/g, (_m, math: string) => ` ${latexToText(math)} `)
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // [label](url) -> label
     .replace(/\s+/g, ' ')
     .trim();
@@ -124,7 +128,7 @@ function flushCode(st: ParseState) {
 
 function flushMath(st: ParseState) {
   if (st.mathBuf.length) {
-    st.out.push({ text: st.mathBuf.join(' ').replace(/\s+/g, ' ').trim(), blockType: 'equation', color: 'blue', indent: 0 });
+    st.out.push({ text: latexToText(st.mathBuf.join(' ').replace(/\s+/g, ' ').trim()), blockType: 'equation', color: 'blue', indent: 0 });
     st.mathBuf = [];
   }
 }
@@ -171,7 +175,7 @@ export function markdownToStructuredLines(markdown: string): StructuredLine[] {
     // ---- block math: $$ ... $$ ---------------------------------------
     if (trimmed.startsWith('$$') && trimmed.endsWith('$$') && trimmed.length > 4) {
       // single-line block math: $$E = mc^2$$
-      push(st, { text: trimmed.slice(2, -2).trim(), blockType: 'equation', color: 'blue' });
+      push(st, { text: latexToText(trimmed.slice(2, -2).trim()), blockType: 'equation', color: 'blue' });
       st.numCounter = 0;
       continue;
     }
@@ -251,7 +255,7 @@ export function markdownToStructuredLines(markdown: string): StructuredLine[] {
 
     // ---- inline math on a single line: $E = mc^2$ ----------
     if (trimmed.startsWith('$') && trimmed.endsWith('$') && !trimmed.startsWith('$$') && trimmed.length > 3) {
-      push(st, { text: trimmed.slice(1, -1).trim(), blockType: 'equation', color: 'blue' });
+      push(st, { text: latexToText(trimmed.slice(1, -1).trim()), blockType: 'equation', color: 'blue' });
       st.numCounter = 0;
       continue;
     }
@@ -264,6 +268,14 @@ export function markdownToStructuredLines(markdown: string): StructuredLine[] {
       if (cells.length) {
         push(st, { text: cells.join('   ·   '), blockType: 'text', color: 'navy' });
       }
+      st.numCounter = 0;
+      continue;
+    }
+
+    // ---- a fully bold short line is a heading, not a paragraph -------------
+    const boldHeading = trimmed.match(/^\*\*([^*]{2,80})\*\*:?$/);
+    if (boldHeading) {
+      push(st, { text: cleanInline(boldHeading[1]), blockType: 'h3', color: HEADING_COLORS.h3 });
       st.numCounter = 0;
       continue;
     }
@@ -297,4 +309,46 @@ export function structuredToNoteLines(structured: StructuredLine[], baseColor?: 
     blockType: s.blockType,
     indent: s.indent,
   }));
+}
+
+/** Map a NoteLine block type onto the block editor vocabulary. */
+const LINE_TO_BLOCK: Record<string, BlockType> = {
+  h1: 'heading1',
+  h2: 'heading2',
+  h3: 'heading3',
+  bullet: 'bullet',
+  numbered: 'numbered',
+  todo: 'todo',
+  callout: 'callout',
+  code: 'code',
+  equation: 'equation',
+  divider: 'divider',
+};
+
+/**
+ * Lines → editor blocks **without losing structure**.
+ * Without this, switching pages flattened every AI heading, list and
+ * equation back into plain paragraphs (and duplicated list numbers).
+ */
+export function noteLinesToBlocks(lines: NoteLine[]): Block[] {
+  const blocks: Block[] = [];
+  for (const line of lines) {
+    const type = LINE_TO_BLOCK[line.blockType ?? ''] ?? 'text';
+    if (type === 'divider') {
+      blocks.push({ ...createBlock('divider', ''), color: line.color });
+      continue;
+    }
+    if (!line.text.trim()) continue;
+    if (type === 'numbered') {
+      blocks.push({ ...createBlock('numbered', line.text.replace(/^\d+[.)]\s+/, '')), color: line.color });
+      continue;
+    }
+    if (type === 'todo') {
+      const checked = line.text.trim().startsWith('☑');
+      blocks.push({ ...createBlock('todo', line.text.replace(/^[☐☑]\s+/, '')), checked, color: line.color });
+      continue;
+    }
+    blocks.push({ ...createBlock(type, line.text), color: line.color, indent: line.indent });
+  }
+  return blocks.length ? blocks : [createBlock('text', '')];
 }

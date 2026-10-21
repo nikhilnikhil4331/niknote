@@ -6,8 +6,10 @@
 // ============================================================
 
 import { supabase } from '@/integrations/supabase/client';
-import { Block, BlockType, createBlock } from '@/types/block';
+import { Block, createBlock } from '@/types/block';
 import { isCloudUserId, notifyLocalDataChanged } from '@/lib/cloudSyncEngine';
+import { composeStudyNotes } from '@/lib/aiNotes';
+import { structuredToBlocks } from '@/lib/noteStructure';
 
 export interface SavedNikNoteResult {
   notebookId: string;
@@ -24,119 +26,18 @@ function cleanInlineMarkdown(raw: string): string {
 }
 
 /**
- * Converts a full NikAI Markdown answer into structured, multi-ink NikNote `Block[]`
- * so headings are dark/purple ink, subheadings are royal blue ink, key tips are callouts,
- * checklists are interactive todo blocks, and code/formulas keep crisp block formatting!
+ * Converts a full NikAI answer into a real study document (Block[]).
+ *
+ * The heavy lifting lives in `composeStudyNotes`: preamble/closing chatter
+ * is removed, duplicate headings and repeated paragraphs are dropped,
+ * equations are normalised, and paragraphs are fitted to writable lines.
+ * Ink stays restrained (dark + navy) instead of a rainbow of colours.
  */
 export function markdownToRichNikNoteBlocks(markdown: string): Block[] {
-  const lines = markdown.replace(/\r/g, '').split('\n');
-  const blocks: Block[] = [];
-  let inCodeFence = false;
-  let codeLines: string[] = [];
-
-  const push = (type: BlockType, content: string, color: 'black' | 'blue' | 'red' | 'green' | 'purple' = 'blue') => {
-    const b = createBlock(type, content);
-    b.color = color;
-    blocks.push(b);
-  };
-
-  for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i];
-    const trimmed = raw.trim();
-
-    if (trimmed.startsWith('```')) {
-      if (!inCodeFence) {
-        inCodeFence = true;
-        codeLines = [];
-      } else {
-        inCodeFence = false;
-        if (codeLines.length > 0) {
-          push('code', codeLines.join('\n'), 'purple');
-        }
-        codeLines = [];
-      }
-      continue;
-    }
-
-    if (inCodeFence) {
-      codeLines.push(raw);
-      continue;
-    }
-
-    if (!trimmed) continue;
-
-    // Horizontal divider
-    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
-      push('divider', '', 'blue');
-      continue;
-    }
-
-    // Markdown Table separator skip, table row format cleanly
-    if (/^\|[\s:-]+\|$/.test(trimmed)) continue;
-    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
-      const cells = trimmed
-        .slice(1, -1)
-        .split('|')
-        .map((c) => cleanInlineMarkdown(c))
-        .filter(Boolean);
-      if (cells.length > 0) {
-        push('bullet', cells.join('  —  '), 'blue');
-      }
-      continue;
-    }
-
-    // Headings with signature NikNote multi-color ink!
-    if (trimmed.startsWith('# ')) {
-      push('heading1', cleanInlineMarkdown(trimmed.slice(2)), 'purple');
-      continue;
-    }
-    if (trimmed.startsWith('## ')) {
-      push('heading2', cleanInlineMarkdown(trimmed.slice(3)), 'black');
-      continue;
-    }
-    if (trimmed.startsWith('### ')) {
-      push('heading3', cleanInlineMarkdown(trimmed.slice(4)), 'red');
-      continue;
-    }
-
-    // Callouts / Blockquotes / Pro-Tips
-    if (trimmed.startsWith('>')) {
-      push('callout', cleanInlineMarkdown(trimmed.replace(/^>\s*/, '')), 'green');
-      continue;
-    }
-
-    // Interactive Checklists
-    const todoMatch = trimmed.match(/^[-*]\s*\[( |x|X)\]\s+(.+)$/);
-    if (todoMatch) {
-      const b = createBlock('todo', cleanInlineMarkdown(todoMatch[2]));
-      b.color = 'blue';
-      b.checked = todoMatch[1].toLowerCase() === 'x';
-      blocks.push(b);
-      continue;
-    }
-
-    // Bullet lists
-    const bulletMatch = trimmed.match(/^[-*•]\s+(.+)$/);
-    if (bulletMatch) {
-      push('bullet', cleanInlineMarkdown(bulletMatch[1]), 'blue');
-      continue;
-    }
-
-    // Numbered steps
-    const numMatch = trimmed.match(/^\d+[.)]\s+(.+)$/);
-    if (numMatch) {
-      push('numbered', cleanInlineMarkdown(numMatch[1]), 'blue');
-      continue;
-    }
-
-    push('text', cleanInlineMarkdown(trimmed), 'blue');
-  }
-
-  if (inCodeFence && codeLines.length > 0) {
-    push('code', codeLines.join('\n'), 'purple');
-  }
-
-  return blocks.length > 0 ? blocks : [createBlock('text', markdown.trim(), 'blue')];
+  const composed = composeStudyNotes(markdown, { fallbackTitle: 'NikAI Smart Notes' });
+  const blocks = structuredToBlocks(composed.lines);
+  if (blocks.length === 0) return [createBlock('text', '')];
+  return blocks;
 }
 
 /**
@@ -203,8 +104,10 @@ export async function implementNikAINote(params: {
   pageStyle?: string;
   prepareEditorOpen?: boolean;
 }): Promise<SavedNikNoteResult> {
-  const heading = params.markdown.match(/^##?\s+([^\n#*]+)$/m)?.[1]?.trim();
-  const title = (heading || params.fallbackTitle || 'NikAI Smart Study Notes').slice(0, 80);
+  const composed = composeStudyNotes(params.markdown, {
+    fallbackTitle: params.fallbackTitle || 'NikAI Smart Study Notes',
+  });
+  const title = composed.title.slice(0, 80);
   const blocks = markdownToRichNikNoteBlocks(params.markdown);
   const now = new Date().toISOString();
   let notebookId = `local-${Date.now()}`;

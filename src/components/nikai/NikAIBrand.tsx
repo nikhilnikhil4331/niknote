@@ -42,7 +42,7 @@ const STACKED_LOGO_WIDTH: Record<NonNullable<NikAIBrandProps['size']>, number> =
 };
 
 /**
- * 3-Star Sparkling Constellation matching the official NikAI Astra palette
+ * 3-Star Sparkling Constellation matching the official NikAI palette
  */
 export const NikAIStarConstellation: React.FC<{
   size?: number;
@@ -253,7 +253,7 @@ export const NikAILoader: React.FC<{ label?: string }> = ({
         </div>
       </div>
 
-      <NikAIBrand size="md" badge="ASTRA" />
+      <NikAIBrand size="md" />
 
       <div className="w-40 h-1.5 rounded-full overflow-hidden bg-purple-100">
         <motion.div

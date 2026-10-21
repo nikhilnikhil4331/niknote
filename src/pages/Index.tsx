@@ -41,7 +41,7 @@ import {
   Settings2, Edit3, FileDown, Palette, Crown, LogIn, Cloud, RefreshCw, CheckCircle2,
   Gem, MoreVertical, Moon, Sun, RotateCcw, Share2, Image, FileText,
   LayoutGrid, Scan, Brain, PanelLeft, ChevronDown, MessageSquare, Zap, Undo2, Redo2, Save, Eye, PenLine, Upload,
-  Calculator, ListChecks, FileUp, Sparkles
+  Calculator, ListChecks, FileUp, Sparkles, ChevronLeft, ChevronRight, Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -83,6 +83,11 @@ import {
   structuredToNoteLines,
   type StructuredLine,
 } from '@/lib/noteStructure';
+import { composeStudyNotes } from '@/lib/aiNotes';
+import { noteLinesToBlocks } from '@/lib/noteStructure';
+import { PageStage, type PageStageHandle } from '@/components/notes/PageStage';
+import { SketchToolbar, type SketchSettings } from '@/components/notes/SketchToolbar';
+import { usePageStrokes } from '@/hooks/usePageStrokes';
 import { SemiCircularDial } from '@/components/dial/SemiCircularDial';
 import { readPdf } from '@/lib/pdfText';
 const HandwritingStudio = lazy(() => import('@/components/handwriting-dna/HandwritingStudio').then(m => ({ default: m.HandwritingStudio })));
@@ -160,6 +165,10 @@ const Index = () => {
   const { content: inlineContent, addImage, addDiagram: addInlineDiagram, updateContent, removeContent } = useInlineContent();
   const { mood, changeMood, styles: moodStyles } = useMood();
   const previewRef = useRef<NotebookPreviewHandle>(null);
+  const pageStageRef = useRef<PageStageHandle>(null);
+  const sketchStore = usePageStrokes();
+  const [sketch, setSketch] = useState<SketchSettings>({ enabled: false, tool: 'pen', color: '#1e2a78', width: 2.6 });
+  const updateSketch = useCallback((patch: Partial<SketchSettings>) => setSketch(prev => ({ ...prev, ...patch })), []);
   const isPastingRef = useRef(false);
   const exportContainerRef = useRef<HTMLDivElement>(null);
   const [exportMount, setExportMount] = useState(false);
@@ -188,6 +197,7 @@ const Index = () => {
   const [realPenMode, setRealPenMode] = useState(false);
   const [lineHistories, setLineHistories] = useState<Map<string, LineHistory>>(new Map());
   const lines = currentPage.lines;
+  const currentStrokes = sketchStore.strokesFor(currentPage.id);
 
   const blockEditor = useBlockEditor();
   useEffect(() => {
@@ -427,18 +437,8 @@ const Index = () => {
   useEffect(() => {
     if (initialPageRef.current) { initialPageRef.current = false; if (isMobile) return; }
     const currentPageContent = currentPage.lines;
-    if (currentPageContent.length > 0 && currentPageContent.some(l => l.text.trim())) {
-      // Page has content — convert lines to blocks
-      const newBlocks = currentPageContent.filter(l => l.text.trim()).map(l => {
-        const block = createBlock('text', l.text);
-        block.color = l.color;
-        return block;
-      });
-      blockEditor.setBlocks(newBlocks.length > 0 ? newBlocks : [createBlock('text', '')]);
-    } else {
-      // Empty page — reset to single empty block
-      blockEditor.setBlocks([createBlock('text', '')]);
-    }
+    // Preserve headings / lists / equations when a page becomes active again.
+    blockEditor.setBlocks(noteLinesToBlocks(currentPageContent));
   }, [currentPageIndex]);
 
   useEffect(() => {
@@ -452,10 +452,11 @@ const Index = () => {
         const safeBlocks = note.blocks.length ? note.blocks : [createBlock()];
         blockEditor.setBlocks(safeBlocks);
         updateCurrentPageLines(
-          safeBlocks.map((b) => ({
+          safeBlocks.map((b, index) => ({
             id: generateLineId(),
             text: b.content || '',
             color: (b.color as LineInkColor) || 'blue',
+            timestamp: Date.now() + index,
           }))
         );
         setCloudNotebookId(note.notebookId || null);
@@ -685,9 +686,10 @@ const Index = () => {
   const autoPagination = useAutoPagination({ settings, lines, updateLines: updateCurrentPageLines, addNewPage, totalPages, currentPageIndex, goToPage });
 
   /** Shared low-level insert into the lines model (batches + auto-flow pages). */
-  const insertNoteLinesAt = useCallback((newLinesData: NoteLine[], atLineId?: string) => {
+  const insertNoteLinesAt = useCallback((newLinesData: NoteLine[], atLineId?: string, atIndex?: number) => {
     if (!newLinesData.length) return;
-    const insertIndex = atLineId ? lines.findIndex(l => l.id === atLineId) : lines.length - 1;
+    const requested = atIndex !== undefined ? Math.max(0, Math.min(atIndex, lines.length - 1)) : -1;
+    const insertIndex = requested >= 0 ? requested : atLineId ? lines.findIndex(l => l.id === atLineId) : lines.length - 1;
     if (insertIndex === -1) return;
     const currentLine = lines[insertIndex];
     const baseBefore = (currentLine?.text ?? '') === '' ? lines.slice(0, insertIndex) : lines.slice(0, insertIndex + 1);
@@ -727,25 +729,41 @@ const Index = () => {
    * the pages model (preview/pagination), so ### / $$ / /// never
    * appear as raw artifacts.
    */
-  const handleAIInsertStructured = useCallback((structured: StructuredLine[]) => {
+  const handleAIInsertStructured = useCallback((structured: StructuredLine[], options?: { atCursor?: boolean }) => {
     if (!structured.length) return;
     const newBlocks = structuredToBlocks(structured);
     const blocks = blockEditor.blocks;
-    const last = blocks[blocks.length - 1];
-    // Don't leave a dangling empty line above the inserted content
-    const nextBlocks = last && last.type === 'text' && !last.content.trim()
-      ? [...blocks.slice(0, -1), ...newBlocks]
-      : [...blocks, ...newBlocks];
-    blockEditor.setBlocks(nextBlocks);
-    insertNoteLinesAt(structuredToNoteLines(structured));
-    toast.success('Added to your notes — organised ✦');
-  }, [blockEditor, insertNoteLinesAt]);
 
-  /** Markdown string → structured insert (used by AI + PDF import). */
-  const handleAIInsertMarkdown = useCallback((markdown: string) => {
-    const structured = markdownToStructuredLines(markdown);
-    handleAIInsertStructured(structured);
-  }, [handleAIInsertStructured]);
+    // Insert where the writer is, not on top of their page. Falls back to
+    // appending when the cursor is not inside the note canvas.
+    const focusIndex = options?.atCursor === false ? -1 : blocks.findIndex(b => b.id === focusedBlockId);
+    const lineIndexHint = options?.atCursor === false ? undefined : textSelectionRef.current?.index;
+
+    let nextBlocks: typeof blocks;
+    if (focusIndex >= 0) {
+      nextBlocks = [...blocks.slice(0, focusIndex + 1), ...newBlocks, ...blocks.slice(focusIndex + 1)];
+    } else {
+      const last = blocks[blocks.length - 1];
+      // Don't leave a dangling empty line above the inserted content
+      nextBlocks = last && last.type === 'text' && !last.content.trim()
+        ? [...blocks.slice(0, -1), ...newBlocks]
+        : [...blocks, ...newBlocks];
+    }
+    blockEditor.setBlocks(nextBlocks);
+    insertNoteLinesAt(structuredToNoteLines(structured), undefined, lineIndexHint);
+    toast.success('Added to your notes — organised ✦');
+  }, [blockEditor, insertNoteLinesAt, focusedBlockId]);
+
+  /**
+   * Markdown → document model → notes. The composer strips assistant
+   * chatter, de-duplicates sections, normalises equations and fits prose
+   * to written lines, so the paper reads like a real study document.
+   */
+  const handleAIInsertMarkdown = useCallback((markdown: string, options?: { atCursor?: boolean }) => {
+    const composed = composeStudyNotes(markdown, { fallbackTitle: noteTitle });
+    handleAIInsertStructured(composed.lines, options);
+    if (composed.title && /^untitled/i.test(noteTitle.trim())) setNoteTitle(composed.title);
+  }, [handleAIInsertStructured, noteTitle]);
 
   /** PDF → structured note insert (offline, read locally). */
   const handleHomePdfImport = useCallback(async (file: File | undefined) => {
@@ -819,12 +837,37 @@ const Index = () => {
 
   const firstSelectedLineId = selectedLines.size > 0 ? Array.from(selectedLines)[0] : null;
 
-  // Page navigation
-  const handleNextPage = useCallback(() => { if (canGoNext) { setPageDirection('right'); triggerHaptic('light'); playClick(); nextPage(); } }, [canGoNext, nextPage, triggerHaptic, playClick]);
-  const handlePrevPage = useCallback(() => { if (canGoPrev) { setPageDirection('left'); triggerHaptic('light'); playClick(); prevPage(); } }, [canGoPrev, prevPage, triggerHaptic, playClick]);
-  const handleAddPage = useCallback(() => { setPageDirection('right'); triggerHaptic('medium'); playSuccess(); addNewPage(); toast.success('New page added!'); }, [addNewPage, triggerHaptic, playSuccess]);
+  // Page navigation — every move goes through the page stage so the sheet
+  // turns (existing pages) or unfolds (a new page) instead of snapping.
+  const handleNextPage = useCallback(() => {
+    if (!canGoNext) return;
+    triggerHaptic('light'); playClick();
+    const commit = () => { setPageDirection('right'); nextPage(); };
+    if (pageStageRef.current) void pageStageRef.current.turn('next', commit); else commit();
+  }, [canGoNext, nextPage, triggerHaptic, playClick]);
+  const handlePrevPage = useCallback(() => {
+    if (!canGoPrev) return;
+    triggerHaptic('light'); playClick();
+    const commit = () => { setPageDirection('left'); prevPage(); };
+    if (pageStageRef.current) void pageStageRef.current.turn('prev', commit); else commit();
+  }, [canGoPrev, prevPage, triggerHaptic, playClick]);
+  const handleAddPage = useCallback(() => {
+    triggerHaptic('medium'); playSuccess();
+    const commit = () => { setPageDirection('right'); addNewPage(); toast.success('New page added!'); };
+    if (pageStageRef.current) void pageStageRef.current.unfold(commit); else commit();
+  }, [addNewPage, triggerHaptic, playSuccess]);
   const handleDeletePage = useCallback((index: number) => { if (totalPages > 1) { deletePage(index); triggerHaptic('medium'); toast.success('Page deleted'); } }, [deletePage, totalPages, triggerHaptic]);
-  const handleGoToPage = useCallback((index: number) => { setPageDirection(index > currentPageIndex ? 'right' : 'left'); triggerHaptic('light'); playClick(); goToPage(index); }, [currentPageIndex, goToPage, triggerHaptic, playClick]);
+  const handleGoToPage = useCallback((index: number) => {
+    if (index === currentPageIndex) return;
+    triggerHaptic('light'); playClick();
+    const direction = index > currentPageIndex ? 'next' : 'prev';
+    const commit = () => { setPageDirection(index > currentPageIndex ? 'right' : 'left'); goToPage(index); };
+    if (pageStageRef.current) void pageStageRef.current.turn(direction, commit); else commit();
+  }, [currentPageIndex, goToPage, triggerHaptic, playClick]);
+
+  const onPageStageTurn = useCallback((direction: 'next' | 'prev') => {
+    if (direction === 'next') handleNextPage(); else handlePrevPage();
+  }, [handleNextPage, handlePrevPage]);
 
   const handleExportPDF = useCallback(async () => {
     // Get content from block editor
@@ -1393,18 +1436,57 @@ const Index = () => {
 
               {mobileView === 'preview' && (
                 <div className="nn-board-preview">
-                  <NotebookPreview
-                    ref={previewRef}
-                    lines={previewLines}
-                    settings={settings}
-                    realPenMode={realPenMode}
-                    pageNumber={currentPageIndex + 1}
-                    totalPages={totalPages}
-                    inlineContent={inlineContent}
-                    onUpdateContent={updateContent}
-                    onDeleteContent={removeContent}
-                    dna={dnaContext.dna}
-                  />
+                  {/* One sheet at a time so a swipe can turn it like paper. */}
+                  <div className="nn-page-pager" role="group" aria-label="Page controls">
+                    <Button variant="ghost" size="sm" onClick={handlePrevPage} disabled={!canGoPrev} aria-label="Previous page">
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span aria-live="polite">Page {currentPageIndex + 1} of {totalPages}</span>
+                    <Button variant="ghost" size="sm" onClick={handleAddPage} aria-label="Add page">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleNextPage} disabled={!canGoNext} aria-label="Next page">
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <PageStage
+                    ref={pageStageRef}
+                    enter
+                    swipe
+                    onTurn={onPageStageTurn}
+                    ariaLabel={`Note page ${currentPageIndex + 1} of ${totalPages}`}
+                  >
+                    <NotebookPreview
+                      ref={previewRef}
+                      lines={previewLines}
+                      settings={settings}
+                      realPenMode={realPenMode}
+                      pageNumber={currentPageIndex + 1}
+                      totalPages={totalPages}
+                      inlineContent={inlineContent}
+                      onUpdateContent={updateContent}
+                      onDeleteContent={removeContent}
+                      dna={dnaContext.dna}
+                      focusPage={currentPageIndex}
+                      pageId={currentPage.id}
+                      strokes={currentStrokes}
+                      drawing={sketch.enabled ? sketch : undefined}
+                      onStroke={sketchStore.addStroke}
+                      onEraseStroke={sketchStore.eraseAt}
+                    />
+                  </PageStage>
+                  <div className="mt-2 flex justify-center">
+                    <SketchToolbar
+                      value={sketch}
+                      onChange={updateSketch}
+                      onUndo={sketchStore.undo}
+                      onRedo={sketchStore.redo}
+                      onClear={() => sketchStore.clearPage(currentPage.id)}
+                      canUndo={sketchStore.canUndo}
+                      canRedo={sketchStore.canRedo}
+                    />
+                  </div>
+                  <p className="nn-page-hint">Swipe left or right to turn the page</p>
                 </div>
               )}
               <div className="nn-board-footer">
@@ -1456,11 +1538,16 @@ const Index = () => {
               <div className="flex-1 overflow-hidden flex flex-col min-w-0">
                 <ScrollArea className="flex-1">
                   <div className="max-w-[900px] mx-auto px-6 py-4">
-                    {/* Notion-style integrated editor */}
-                    <motion.div
-                      key={currentPage.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
+                    {/* Notion-style integrated editor — the stage animates the
+                        sheet; the editor itself stays mounted across page turns. */}
+                    <PageStage
+                      ref={pageStageRef}
+                      enter
+                      disabled={isExporting}
+                      onTurn={onPageStageTurn}
+                      ariaLabel={`Note page ${currentPageIndex + 1} of ${totalPages}`}
+                    >
+                    <div
                       className={cn(
                         "rounded-2xl bg-white/60 backdrop-blur-xl border border-white/30 shadow-sm min-h-[calc(100vh-12rem)]",
                         moodStyles.paper
@@ -1511,7 +1598,16 @@ const Index = () => {
                           <div className="preview-card">
                             <div className="preview-card-header">
                               <span className="flex items-center gap-2 text-[11px] font-bold text-violet-700">✍️ Handwriting Preview</span>
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <SketchToolbar
+                                  value={sketch}
+                                  onChange={updateSketch}
+                                  onUndo={sketchStore.undo}
+                                  onRedo={sketchStore.redo}
+                                  onClear={() => sketchStore.clearPage(currentPage.id)}
+                                  canUndo={sketchStore.canUndo}
+                                  canRedo={sketchStore.canRedo}
+                                />
                                 <Button variant="ghost" size="sm" onClick={handleExportPDF} disabled={isExporting} className="h-6 px-2 text-[10px] rounded-lg gap-1">
                                   <FileDown className="w-3 h-3" /> PDF
                                 </Button>
@@ -1532,12 +1628,18 @@ const Index = () => {
                               onUpdateContent={updateContent}
                               onDeleteContent={removeContent}
                               dna={dnaContext.dna}
+                              pageId={currentPage.id}
+                              strokes={currentStrokes}
+                              drawing={sketch.enabled ? sketch : undefined}
+                              onStroke={sketchStore.addStroke}
+                              onEraseStroke={sketchStore.eraseAt}
                             />
                             </div>
                           </div>
                         </div>
                       )}
-                    </motion.div>
+                    </div>
+                    </PageStage>
 
                     {/* Smart suggestions below */}
                     <div className="mt-3">
@@ -1622,7 +1724,7 @@ const Index = () => {
               </div>
 
               {/* Home quick-nav dial — same semi-circular menu as Daily Tracker / Money */}
-              <div className="absolute bottom-4 left-4 z-40">
+              <div className="nn-dial-anchor-inline">
                 <SemiCircularDial
                   menuLabel="Quick menu"
                   centerLabel="Menu"
@@ -1731,10 +1833,28 @@ const Index = () => {
         <div ref={exportContainerRef} className="fixed left-[-10000px] top-0 pointer-events-none" aria-hidden="true">
           <div className="flex flex-col gap-6">
             {exportLinesOverride ? (
-              <NotebookPreview lines={exportLinesOverride} settings={settings} realPenMode={realPenMode} pageNumber={1} totalPages={1} forExport />
+              <NotebookPreview
+                lines={exportLinesOverride}
+                settings={settings}
+                realPenMode={realPenMode}
+                pageNumber={1}
+                totalPages={1}
+                forExport
+                pageId={currentPage.id}
+                strokes={currentStrokes}
+              />
             ) : pages.map((page, idx) => (
               <div key={page.id} style={{ width: 794, height: 1123 }}>
-                <NotebookPreview lines={page.lines} settings={settings} realPenMode={realPenMode} pageNumber={idx + 1} totalPages={pages.length} forExport />
+                <NotebookPreview
+                  lines={page.lines}
+                  settings={settings}
+                  realPenMode={realPenMode}
+                  pageNumber={idx + 1}
+                  totalPages={pages.length}
+                  forExport
+                  pageId={page.id}
+                  strokes={sketchStore.strokesFor(page.id)}
+                />
               </div>
             ))}
           </div>
@@ -1800,8 +1920,8 @@ const Index = () => {
           isOpen={showAIWorkspace}
           onClose={() => setShowAIWorkspace(false)}
           onInsertContent={(content) => {
-            // Insert AI content as properly organised blocks (no raw markdown)
-            handleAIInsertStructured(markdownToStructuredLines(content));
+            // Insert AI content as a real document (no raw markdown, no chatter)
+            handleAIInsertMarkdown(content);
           }}
         />
       </React.Suspense>

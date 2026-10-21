@@ -613,7 +613,6 @@ export function MobileExperience() {
               >
                 <Icon />
                 <span>{name}</span>
-                {name === 'NikAI' && <small>ASTRA</small>}
               </Button>
             ))}
             <div className="nn-divider" />

@@ -1,5 +1,5 @@
 // ============================================================
-// NikAI — Next-Gen Astra Neural Studio (Exact Signature Design)
+// NikAI — Neural Studio (signature design)
 // Official NikAI Brand Emblem + Dreamy Horizon Landscape + Clean Glass UI:
 // 1. Official NikAI Logo + Collapsible Left Sidebar + Recent Chats + Pro Card
 // 2. Top Search Bar (Ctrl+K) + Persistent Cross-Session Memory Pill + Model Picker
@@ -188,10 +188,10 @@ const MODEL_OPTIONS: Array<{
   label: string;
   badge: string;
 }> = [
-  { id: 'auto', label: 'Astra Neural Auto', badge: 'Auto Best Routing' },
-  { id: 'pro', label: 'Astra Pro 120B', badge: 'Deep Reasoning' },
-  { id: 'flash', label: 'Astra Flash', badge: 'Instant Speed' },
-  { id: 'vision', label: 'Astra Vision 2.5', badge: 'Diagrams & Scans' },
+  { id: 'auto', label: 'NikAI Auto', badge: 'Best routing' },
+  { id: 'pro', label: 'NikAI Pro', badge: 'Deeper reasoning' },
+  { id: 'flash', label: 'NikAI Flash', badge: 'Fast answers' },
+  { id: 'vision', label: 'NikAI Vision', badge: 'Diagrams & scans' },
 ];
 
 const SIDEBAR_NAV_ITEMS: Array<{
@@ -437,7 +437,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [liveThinkingText, setLiveThinkingText] = useState('');
-  const [liveModelName, setLiveModelName] = useState('NikAI Astra Core');
+  const [liveModelName, setLiveModelName] = useState('NikAI');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [listening, setListening] = useState(false);
@@ -999,7 +999,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             onClick={() => startNewChat('auto')}
             className="text-left focus:outline-none hover:opacity-95 transition-opacity"
           >
-            <NikAIBrand size="md" badge="ASTRA" />
+            <NikAIBrand size="md" />
           </button>
 
           <button
@@ -1254,7 +1254,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             )}
 
             {embedded ? (
-              <NikAIBrand size="sm" badge="ASTRA" />
+              <NikAIBrand size="sm" />
             ) : (
               <div className="w-48 sm:w-[272px] h-10 rounded-full bg-white/95 border border-[#ECEAF6] shadow-[0_2px_12px_rgba(30,20,70,0.04)] px-3.5 flex items-center gap-2.5 focus-within:border-[#C4B5FD] transition-colors">
                 <Search className="w-4 h-4 text-[#9490AD] shrink-0" />
@@ -1284,7 +1284,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             )}
           </div>
 
-          {/* Right: Memory Pill + Astra Neural Auto Dropdown + Profile Avatar */}
+          {/* Right: memory pill + NikAI model picker + profile avatar */}
           <div className="flex items-center gap-2.5 shrink-0">
             <button
               type="button"
@@ -1624,7 +1624,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                       <details className="rounded-xl bg-white/85 border border-[#E7E2F7] px-3.5 py-2 text-xs text-[#4C1D95]">
                         <summary className="cursor-pointer font-semibold select-none flex items-center gap-1.5">
                           <Brain className="w-3.5 h-3.5 text-[#7C3AED]" />
-                          View Astra Thought Process
+                          View NikAI reasoning
                         </summary>
                         <p className="mt-2 whitespace-pre-wrap text-[#5B5675] leading-relaxed">
                           {msg.thinking}
@@ -2224,9 +2224,9 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
           >
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-purple-950">NikAI Astra Cloud Engine</h3>
+                <h3 className="text-sm font-bold text-purple-950">NikAI Cloud Engine</h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Powered by Astra Multi-Model Cloud + optional personal API keys
+                  Powered by NikAI's multi-model cloud + optional personal API keys
                 </p>
               </div>
               <button

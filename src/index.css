@@ -1544,3 +1544,47 @@
 @media (prefers-reduced-motion: reduce) {
   .nn-nikai-pop::after { animation: none; opacity: 0; }
 }
+
+/* ============================================================
+   Quick-nav dial anchors — keep the centre button clear of the
+   mobile dock, the home indicator and the right safe area. The
+   dial measures its own geometry from this position, so the button
+   only has to be parked somewhere reachable.
+   ============================================================ */
+.nn-dial-anchor {
+  position: fixed;
+  z-index: 40;
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 6.25rem);
+}
+@media (min-width: 768px) {
+  .nn-dial-anchor {
+    right: 2rem;
+    bottom: 2rem;
+  }
+}
+
+/* A dial anchored inside the studio sidebar (absolute, not fixed). */
+.nn-dial-anchor-inline {
+  position: absolute;
+  left: 1rem;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  z-index: 40;
+}
+
+/* ============================================================
+   Paper page transitions — compositor-only transforms.
+   ============================================================ */
+.nn-page-stage {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  /* Vertical scrolling stays native; horizontal gestures belong to a page turn. */
+  touch-action: pan-y;
+}
+.nn-page-sheet {
+  will-change: transform;
+  transform: translateZ(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nn-page-sheet { will-change: auto; }
+}

@@ -52,7 +52,9 @@ export function TrackerShell({ title, subtitle, children }: { title: string; sub
           </nav>
         </div>
       </header>
-      <motion.main initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.24 }}
+      {/* Settle in place: a tiny fade + lift, never a horizontal shove that
+          makes the whole tracker feel like it jumps between sections. */}
+      <motion.main initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
         className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {children}
       </motion.main>

@@ -63,6 +63,9 @@ export function billStatus(b: { due_day: number; last_paid_month: string | null 
 }
 
 /** Month-to-date totals from saved transactions (dates are YYYY-MM-DD local days). */
+/** One money ledger row as stored on the device / in Supabase. */
+export type TxRow = { id: string; kind: string; amount: number | string; category?: string; note?: string; occurred_on: string; account?: string };
+
 export function monthSummary(rows: { kind: string; amount: number | string; occurred_on: string }[], today: Date = new Date()) {
   const prefix = toDay(today).slice(0, 7);
   let spent = 0, income = 0;

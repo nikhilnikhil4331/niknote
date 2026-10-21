@@ -6,7 +6,8 @@ import { Loader2, Wand2, FileText, BookOpen, PenTool, X, ChartLine } from 'lucid
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'framer-motion';
 import { NikAIMark } from './nikai/NikAIBrand';
-import { markdownToStructuredLines, stripMarkdownNoise, type StructuredLine } from '@/lib/noteStructure';
+import { stripMarkdownNoise, type StructuredLine } from '@/lib/noteStructure';
+import { composeStudyNotes } from '@/lib/aiNotes';
 import { GRAPH_PRESETS, encodeGraphSpec, graphLabel, type GraphSpec } from '@/lib/noteGraphs';
 
 interface AIWritingAssistantProps {
@@ -71,7 +72,9 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
   /** Insert into the active note — structured when supported, cleaned plain text otherwise. */
   const insertIntoNote = (text: string) => {
     if (onInsertStructured) {
-      onInsertStructured(markdownToStructuredLines(text));
+      // Same document composer the Smart Notes pipeline uses: no assistant
+      // chatter, no repeated headings, equations normalised, prose fitted.
+      onInsertStructured(composeStudyNotes(text).lines);
     } else {
       onInsertText(stripMarkdownNoise(text));
     }

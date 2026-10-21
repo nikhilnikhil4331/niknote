@@ -24,7 +24,7 @@ const GROUPS: { title: string; items: HubItem[] }[] = [
     { to: '/history', label: 'History', desc: 'Recent work', icon: History, hue: 190 },
   ]},
   { title: 'NikAI & Study', items: [
-    { to: '/ai', label: 'NikAI', desc: 'Astra Core · Memory · Smart Notes', icon: Sparkles, hue: 280, logo: true },
+    { to: '/ai', label: 'NikAI', desc: 'AI tutor · Memory · Smart Notes', icon: Sparkles, hue: 280, logo: true },
     { to: '/flashcards', label: 'Flashcards', desc: 'Smart revision decks', icon: Layers, hue: 20 },
     { to: '/handbook', label: 'Study Handbook', desc: 'Exam prep guides', icon: GraduationCap, hue: 160 },
   ]},

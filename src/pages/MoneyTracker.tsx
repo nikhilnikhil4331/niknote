@@ -264,7 +264,7 @@ export default function MoneyTracker() {
     return toDay(d);
   }, [range]);
 
-  const inRange = txs.filter(t => t.occurred_on >= fromDay);
+  const inRange = useMemo(() => txs.filter(t => t.occurred_on >= fromDay), [txs, fromDay]);
   const { income, expense } = cashflow(inRange);
   const balances = accountBalances(txs);
   const monthStart = toDay(new Date(now.getFullYear(), now.getMonth(), 1));
@@ -379,7 +379,7 @@ export default function MoneyTracker() {
                     return (
                       <li key={c.category}>
                         <div className="flex items-center justify-between text-sm"><span>{meta?.emoji} {c.category}</span><span className="font-medium">{formatMoney(c.amount, currency)} · {c.pct}%</span></div>
-                        <div className="h-2 rounded-full bg-muted overflow-hidden mt-1"><motion.div initial={{ width: 0 }} animate={{ width: `${c.pct}%` }} className="h-full rounded-full" style={{ background: meta?.color ?? 'hsl(var(--primary))' }} /></div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden mt-1"><motion.div initial={{ scaleX: 0 }} animate={{ scaleX: c.pct / 100 }} transition={{ duration: 0.45, ease: 'easeOut' }} className="h-full rounded-full" style={{ width: '100%', transformOrigin: 'left center', background: meta?.color ?? 'hsl(var(--primary))' }} /></div>
                       </li>
                     );
                   })}
@@ -457,7 +457,8 @@ export default function MoneyTracker() {
               onBlur={() => saveSettings({ monthly_budget: budget })} className="flex-1 min-w-0 h-11 rounded-xl border border-border bg-background px-3 text-sm" />
           </div>
           <div className="mt-4 h-4 rounded-full bg-muted overflow-hidden">
-            <motion.div initial={{ width: 0 }} animate={{ width: `${budgetPct}%` }} transition={{ type: 'spring', stiffness: 60 }}
+            <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: budgetPct / 100 }} transition={{ type: 'spring', stiffness: 60, damping: 20 }}
+              style={{ transformOrigin: 'left center', width: '100%' }}
               className={`h-full rounded-full ${budgetPct > 90 ? 'bg-rose-500' : budgetPct > 70 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
           </div>
           <p className="text-sm text-muted-foreground mt-2">
@@ -531,7 +532,9 @@ export default function MoneyTracker() {
                   <div className="flex justify-between text-sm"><span className="font-medium">{g.name}{pct >= 100 && ' 🎉'}</span>
                     <span className="text-muted-foreground">{formatMoney(g.saved, currency)} / {formatMoney(g.target, currency)}</span></div>
                   <div className="h-3 rounded-full bg-muted mt-1.5 overflow-hidden">
-                    <motion.div animate={{ width: `${pct}%` }} className="h-full bg-gradient-to-r from-primary to-accent rounded-full" />
+                    <motion.div animate={{ scaleX: pct / 100 }} transition={{ duration: 0.4, ease: 'easeOut' }}
+                      style={{ width: '100%', transformOrigin: 'left center' }}
+                      className="h-full bg-gradient-to-r from-primary to-accent rounded-full" />
                   </div>
                   <div className="flex gap-2 mt-2">
                     {[100, 500, 1000].map(a => <button key={a} onClick={() => addToGoal(g, a)} className="px-2.5 py-1 rounded-lg bg-muted text-xs font-medium active:scale-90">+{a}</button>)}
@@ -622,8 +625,10 @@ export default function MoneyTracker() {
         </div>
       </Panel>
 
-      {/* Semi-circular quick dial — same rotating nav language as the Daily Tracker */}
-      <div className="fixed z-40 bottom-24 right-3 md:bottom-8 md:right-8" data-testid="money-dial">
+      {/* Semi-circular quick dial — same rotating nav language as the Daily Tracker.
+          The anchor keeps clear of the mobile dock and safe area; the dial itself
+          measures the remaining viewport and keeps every action on screen. */}
+      <div className="nn-dial-anchor" data-testid="money-dial">
         <SemiCircularDial
           menuLabel="Money quick actions"
           centerLabel="Open money quick actions"

@@ -144,7 +144,7 @@ describe('NikAI Brand Identity, Cross-Session Memory, Multi-Ink Smart Notes & Th
     expect(greeting.content).toContain('NikAI');
   });
 
-  it('converts Markdown into multi-ink NikNote blocks, saves Smart Notes & extracts Flashcards', async () => {
+  it('converts Markdown into structured, realistically inked NikNote blocks and extracts Flashcards', async () => {
     const richMd = `# Thermodynamics Master Notes
 
 ## Laws of Thermodynamics
@@ -155,7 +155,12 @@ describe('NikAI Brand Identity, Cross-Session Memory, Multi-Ink Smart Notes & Th
 > 💡 Pro-Tip: Always convert temperature to Kelvin before applying ideal gas equations!`;
 
     const blocks = markdownToRichNikNoteBlocks(richMd);
-    expect(blocks.some((b) => b.type === 'heading1' && b.color === 'purple')).toBe(true);
+    // Real notes use one or two inks — a heading must be a real heading in a
+    // restrained ink, not a rainbow of four colours.
+    expect(blocks.some((b) => b.type === 'heading1')).toBe(true);
+    const inks = new Set(blocks.map((b) => b.color));
+    expect(inks.size).toBeLessThanOrEqual(3);
+    expect(inks.has('purple')).toBe(false);
     expect(blocks.some((b) => b.type === 'callout')).toBe(true);
     expect(blocks.some((b) => b.type === 'todo')).toBe(true);
 
@@ -544,7 +549,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     expect(screen.getByPlaceholderText('Search chats...')).toBeTruthy();
     expect(screen.getByText('Ctrl K')).toBeTruthy();
     expect(screen.getByTestId('nikai-memory-btn')).toBeTruthy();
-    expect(screen.getAllByText('Astra Neural Auto').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('NikAI Auto').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/What can I help you/i)).toBeTruthy();
     expect(screen.getByText('create?')).toBeTruthy();
     expect(screen.getByText('Learn a concept')).toBeTruthy();

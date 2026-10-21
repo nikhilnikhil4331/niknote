@@ -1,6 +1,6 @@
 import { effectsBackground, pageTilt, penClass } from '@/components/paper/PaperEffects';
 import React, { useMemo, forwardRef, useImperativeHandle, useRef, useState, useEffect, memo } from 'react';
-import { NoteLine } from '@/types/noteLine';
+import { NoteLine, PageStroke, StrokePoint, strokeToPath } from '@/types/noteLine';
 import { NoteSettings, FONT_OPTIONS, PAGE_SIZE_OPTIONS } from '@/types/notes';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DEFAULT_RESPONSIVE_MARGINS, calculateLinesPerPage } from '@/hooks/useResponsiveMargins';
@@ -20,11 +20,125 @@ interface NotebookPreviewProps {
   onUpdateContent?: (id: string, updates: Partial<InlineContent>) => void;
   onDeleteContent?: (id: string) => void;
   dna?: HandwritingDNA;
+  /** Render only this 0-based page (used by the swipe/page-turn reading view). */
+  focusPage?: number;
+  /** Structured freehand marks for the current paper page. */
+  strokes?: PageStroke[];
+  /** Notebook page id the ink belongs to (storage key). */
+  pageId?: string;
+  /** Drawing session state, shared across the visible sheet. */
+  drawing?: { enabled: boolean; tool: 'pen' | 'highlighter' | 'eraser'; color: string; width: number };
+  onStroke?: (pageId: string, stroke: { points: StrokePoint[]; color: string; width: number; tool: 'pen' | 'highlighter' }) => void;
+  onEraseStroke?: (pageId: string, point: StrokePoint) => void;
 }
 
 export interface NotebookPreviewHandle {
   getPageElements: () => HTMLElement[];
 }
+
+/**
+ * DrawingSurface — a pointer layer exactly the size of one paper page.
+ * Points are converted into page pixel space, so ink stays aligned when the
+ * page is scaled down for preview or rendered full size for PDF export.
+ */
+const DrawingSurface: React.FC<{
+  pageId: string;
+  width: number;
+  height: number;
+  width_: number;
+  color: string;
+  tool: 'pen' | 'highlighter' | 'eraser';
+  onStroke?: (pageId: string, stroke: { points: StrokePoint[]; color: string; width: number; tool: 'pen' | 'highlighter' }) => void;
+  onEraseStroke?: (pageId: string, point: StrokePoint) => void;
+}> = ({ pageId, width, height, width_, color, tool, onStroke, onEraseStroke }) => {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const drawing = useRef(false);
+  const points = useRef<StrokePoint[]>([]);
+  const [preview, setPreview] = useState<StrokePoint[]>([]);
+
+  const toPage = (e: React.PointerEvent): StrokePoint => {
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect || rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
+    return {
+      x: ((e.clientX - rect.left) / rect.width) * width,
+      y: ((e.clientY - rect.top) / rect.height) * height,
+    };
+  };
+
+  const start = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    const point = toPage(e);
+    if (tool === 'eraser') {
+      onEraseStroke?.(pageId, point);
+      return;
+    }
+    drawing.current = true;
+    points.current = [point];
+    setPreview([point]);
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+  };
+
+  const move = (e: React.PointerEvent) => {
+    if (!drawing.current) return;
+    e.stopPropagation();
+    const point = toPage(e);
+    const last = points.current[points.current.length - 1];
+    // Skip points that are too close together — cheaper paths, smoother ink.
+    if (!last || Math.hypot(point.x - last.x, point.y - last.y) > 1.2) {
+      points.current = [...points.current, point];
+      setPreview(points.current);
+    }
+  };
+
+  const finish = () => {
+    if (!drawing.current) return;
+    drawing.current = false;
+    const captured = points.current;
+    points.current = [];
+    setPreview([]);
+    if (captured.length) {
+      onStroke?.(pageId, {
+        points: captured,
+        color,
+        width: tool === 'highlighter' ? Math.max(width_ * 4, 12) : width_,
+        tool: tool === 'highlighter' ? 'highlighter' : 'pen',
+      });
+    }
+  };
+
+  const previewStroke: PageStroke = { id: 'preview', tool: tool === 'highlighter' ? 'highlighter' : 'pen', color, width: tool === 'highlighter' ? Math.max(width_ * 4, 12) : width_, points: preview };
+
+  return (
+    <svg
+      ref={svgRef}
+      className="absolute inset-0 h-full w-full z-20"
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      style={{ touchAction: 'none', cursor: tool === 'eraser' ? 'cell' : 'crosshair' }}
+      onPointerDown={start}
+      onPointerMove={move}
+      onPointerUp={finish}
+      onPointerCancel={finish}
+      onPointerLeave={finish}
+      data-drawing-surface="true"
+      data-no-swipe="true"
+      role="application"
+      aria-label="Draw on this page"
+    >
+      {preview.length > 0 && (
+        <path
+          d={strokeToPath(previewStroke)}
+          fill="none"
+          stroke={color}
+          strokeWidth={previewStroke.width}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity={previewStroke.tool === 'highlighter' ? 0.3 : 1}
+        />
+      )}
+    </svg>
+  );
+};
 
 // Page component - memoized for performance
 const NotebookPage = memo<{
@@ -48,6 +162,11 @@ const NotebookPage = memo<{
   scale: number;
   forExport: boolean;
   dna?: HandwritingDNA;
+  pageId?: string;
+  strokes?: PageStroke[];
+  drawing?: { enabled: boolean; tool: 'pen' | 'highlighter' | 'eraser'; color: string; width: number };
+  onStroke?: (pageId: string, stroke: { points: StrokePoint[]; color: string; width: number; tool: 'pen' | 'highlighter' }) => void;
+  onEraseStroke?: (pageId: string, point: StrokePoint) => void;
 }>(({
   pageLines,
   pageIndex,
@@ -69,6 +188,11 @@ const NotebookPage = memo<{
   scale,
   forExport,
   dna,
+  pageId,
+  strokes,
+  drawing,
+  onStroke,
+  onEraseStroke,
 }) => {
   const getTextColor = (): string => {
     if (isBlueprint) return 'hsl(200 80% 80%)';
@@ -200,6 +324,43 @@ const NotebookPage = memo<{
           })}
         </div>
 
+        {/* Freehand ink sits above the paper rules, below the controls. */}
+        {!!strokes?.length && (
+          <svg
+            className="absolute inset-0 h-full w-full pointer-events-none"
+            viewBox={`0 0 ${sizeConfig.width} ${sizeConfig.height}`}
+            preserveAspectRatio="none"
+            aria-hidden="true"
+            data-page-ink="true"
+          >
+            {strokes.map(stroke => (
+              <path
+                key={stroke.id}
+                d={strokeToPath(stroke)}
+                fill="none"
+                stroke={stroke.color}
+                strokeWidth={stroke.width}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={stroke.tool === 'highlighter' ? 0.3 : 1}
+              />
+            ))}
+          </svg>
+        )}
+
+        {drawing?.enabled && pageId && !forExport && (
+          <DrawingSurface
+            pageId={pageId}
+            width={sizeConfig.width}
+            height={sizeConfig.height}
+            color={drawing.color}
+            width_={drawing.width}
+            tool={drawing.tool}
+            onStroke={onStroke}
+            onEraseStroke={onEraseStroke}
+          />
+        )}
+
         {/* Page number - always shown, centered at bottom */}
         {settings.headerFooter.showPageNumber && (
           <div 
@@ -223,7 +384,7 @@ const NotebookPage = memo<{
 NotebookPage.displayName = 'NotebookPage';
 
 export const NotebookPreview = forwardRef<NotebookPreviewHandle, NotebookPreviewProps>(
-  ({ lines, settings, realPenMode, forExport = false, inlineContent, onUpdateContent, onDeleteContent, dna }, ref) => {
+  ({ lines, settings, realPenMode, forExport = false, inlineContent, onUpdateContent, onDeleteContent, dna, focusPage, strokes, pageId, drawing, onStroke, onEraseStroke }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
     const isMobile = useIsMobile();
@@ -251,18 +412,33 @@ export const NotebookPreview = forwardRef<NotebookPreviewHandle, NotebookPreview
       );
     }, [sizeConfig.height, settings.lineSpacing, margins, settings.headerFooter.showHeader, settings.headerFooter.showPageNumber]);
 
-    // Calculate scale to fit page in container
+    // Measure once per real resize (rAF-throttled) instead of on every
+    // window resize or render — repeated measurement during transitions is
+    // what made the paper jump while the layout settled.
     useEffect(() => {
       if (forExport) return; // Don't scale for export
-      
-      const updateWidth = () => {
-        if (containerRef.current) {
-          setContainerWidth(containerRef.current.clientWidth);
-        }
+      const el = containerRef.current;
+      if (!el) return;
+
+      let frame = 0;
+      const commit = () => {
+        const width = el.clientWidth;
+        setContainerWidth(prev => (Math.abs(prev - width) < 0.5 ? prev : width));
       };
-      updateWidth();
-      window.addEventListener('resize', updateWidth);
-      return () => window.removeEventListener('resize', updateWidth);
+      const schedule = () => {
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(commit);
+      };
+
+      schedule();
+      const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(schedule) : null;
+      observer?.observe(el);
+      if (!observer) window.addEventListener('resize', schedule);
+      return () => {
+        cancelAnimationFrame(frame);
+        observer?.disconnect();
+        window.removeEventListener('resize', schedule);
+      };
     }, [forExport]);
 
     // Calculate the scale factor to fit the page within container
@@ -306,23 +482,26 @@ export const NotebookPreview = forwardRef<NotebookPreviewHandle, NotebookPreview
     const isKraft = settings.pageStyle === 'kraft';
     const isVintage = settings.pageStyle === 'vintage';
 
+    // Rules follow the actual writing rhythm: every written line lands on a
+    // printed rule instead of drifting between two of them (the classic
+    // "text pasted on notebook paper" tell).
     const paperStyle = useMemo<React.CSSProperties>(() => {
       const pureWhite = '#FFFFFF';
       const lineColor = 'hsl(210, 35%, 85%)';
-      
+      const ruleGap = Math.max(22, Math.round(settings.lineSpacing || 32));
+      const ruleOffset = (((margins.top - 5) % ruleGap) + ruleGap) % ruleGap;
+      const ruled = (background = pureWhite, colour = lineColor): React.CSSProperties => ({
+        backgroundColor: background,
+        backgroundImage: `linear-gradient(transparent ${ruleGap - 1}px, ${colour} ${ruleGap - 1}px, ${colour} ${ruleGap}px)`,
+        backgroundSize: `100% ${ruleGap}px`,
+        backgroundPosition: `0 ${ruleOffset}px`,
+        backgroundRepeat: 'repeat',
+      });
+
       switch (settings.pageStyle) {
         case 'ruled':
-          return {
-            backgroundColor: pureWhite,
-            backgroundImage: `linear-gradient(transparent 31px, ${lineColor} 31px, ${lineColor} 32px)`,
-            backgroundSize: '100% 32px',
-          };
         case 'single-line':
-          return {
-            backgroundColor: pureWhite,
-            backgroundImage: `linear-gradient(transparent 47px, ${lineColor} 47px, ${lineColor} 48px)`,
-            backgroundSize: '100% 48px',
-          };
+          return ruled();
         case 'graph':
           return {
             backgroundColor: pureWhite,
@@ -336,40 +515,20 @@ export const NotebookPreview = forwardRef<NotebookPreviewHandle, NotebookPreview
             backgroundSize: '20px 20px',
           };
         case 'college':
-          return {
-            backgroundColor: pureWhite,
-            backgroundImage: `linear-gradient(transparent 23px, ${lineColor} 23px, ${lineColor} 24px)`,
-            backgroundSize: '100% 24px',
-          };
+          return ruled();
         case 'legal':
-          return {
-            backgroundColor: '#FFFDE7',
-            backgroundImage: 'linear-gradient(transparent 31px, hsl(210, 40%, 70%) 31px, hsl(210, 40%, 70%) 32px)',
-            backgroundSize: '100% 32px',
-          };
+          return ruled('#FFFDE7', 'hsl(210, 40%, 70%)');
         case 'spiral':
         case 'hole-punched':
-          return {
-            backgroundColor: pureWhite,
-            backgroundImage: `linear-gradient(transparent 31px, ${lineColor} 31px, ${lineColor} 32px)`,
-            backgroundSize: '100% 32px',
-          };
+          return ruled();
         case 'vintage':
-          return {
-            backgroundColor: '#F5E6D3',
-            backgroundImage: 'linear-gradient(transparent 31px, hsl(25, 30%, 70%) 31px, hsl(25, 30%, 70%) 32px)',
-            backgroundSize: '100% 32px',
-          };
+          return ruled('#F5E6D3', 'hsl(25, 30%, 70%)');
         case 'kraft':
-          return {
-            backgroundColor: '#C4A77D',
-            backgroundImage: 'linear-gradient(transparent 31px, hsl(30, 25%, 45%) 31px, hsl(30, 25%, 45%) 32px)',
-            backgroundSize: '100% 32px',
-          };
+          return ruled('#C4A77D', 'hsl(30, 25%, 45%)');
         case 'blueprint':
           return {
             backgroundColor: '#1E3A5F',
-            backgroundImage: 'linear-gradient(0deg, transparent 19px, hsl(210, 50%, 45%) 19px, hsl(210, 50%, 45%) 20px), linear-gradient(90deg, transparent 19px, hsl(210, 50%, 45%) 19px, hsl(210, 50%, 45%) 20px)',
+            backgroundImage: `linear-gradient(0deg, transparent 19px, hsl(210, 50%, 45%) 19px, hsl(210, 50%, 45%) 20px), linear-gradient(90deg, transparent 19px, hsl(210, 50%, 45%) 19px, hsl(210, 50%, 45%) 20px)`,
             backgroundSize: '20px 20px',
           };
         case 'music-sheet':
@@ -379,25 +538,31 @@ export const NotebookPreview = forwardRef<NotebookPreviewHandle, NotebookPreview
             backgroundImage: `linear-gradient(transparent 0px, transparent 7px, ${lineColor} 7px, ${lineColor} 8px, transparent 8px, transparent 15px, ${lineColor} 15px, ${lineColor} 16px, transparent 16px, transparent 23px, ${lineColor} 23px, ${lineColor} 24px, transparent 24px, transparent 31px, ${lineColor} 31px, ${lineColor} 32px, transparent 32px, transparent 39px, ${lineColor} 39px, ${lineColor} 40px, transparent 40px, transparent 60px)`,
           };
         case 'cornell':
-          return {
-            backgroundColor: pureWhite,
-            backgroundImage: `linear-gradient(transparent 31px, ${lineColor} 31px, ${lineColor} 32px)`,
-            backgroundSize: '100% 32px',
-          };
+          return ruled();
         case 'plain':
         default:
           return { backgroundColor: pureWhite };
       }
-    }, [settings.pageStyle]);
+    }, [settings.pageStyle, settings.lineSpacing, margins.top]);
+
+    // Reading mode renders one sheet at a time so a page turn can animate it.
+    // The index is clamped: the notebook page counter and the preview's own
+    // pagination can disagree, and a blank sheet would be worse than a reuse.
+    const focusIndex = focusPage === undefined || focusPage === null
+      ? null
+      : Math.min(Math.max(0, focusPage), Math.max(0, pages.length - 1));
+    const visiblePages = focusIndex === null
+      ? pages.map((lines, index) => ({ lines, index }))
+      : [{ lines: pages[focusIndex] ?? [], index: focusIndex }];
 
     return (
       <div 
         ref={containerRef} 
         data-preview-container="true"
-        className={`h-full overflow-y-auto scroll-smooth relative ${forExport ? 'p-0' : 'p-3 sm:p-6'}`}
+        className={`h-full ${focusPage === undefined ? 'overflow-y-auto' : 'overflow-hidden'} scroll-smooth relative ${forExport ? 'p-0' : 'p-3 sm:p-6'}`}
       >
         <div className="flex flex-col items-center gap-4 sm:gap-6">
-          {pages.map((pageLines, pageIndex) => (
+          {visiblePages.map(({ lines: pageLines, index: pageIndex }) => (
             <NotebookPage
               key={pageIndex}
               pageLines={pageLines}
@@ -420,6 +585,11 @@ export const NotebookPreview = forwardRef<NotebookPreviewHandle, NotebookPreview
               scale={scale}
               forExport={forExport}
               dna={dna}
+              pageId={pageIndex === 0 ? pageId : undefined}
+              strokes={pageIndex === 0 ? strokes : undefined}
+              drawing={pageIndex === 0 ? drawing : undefined}
+              onStroke={onStroke}
+              onEraseStroke={onEraseStroke}
             />
           ))}
 

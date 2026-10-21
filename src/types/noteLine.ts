@@ -98,6 +98,40 @@ export interface InlineDiagram {
 
 export type InlineContent = InlineImage | InlineDiagram;
 
+/**
+ * A freehand mark drawn directly on a paper page.
+ * Strokes are stored as structured points (page pixel space), never as a
+ * screenshot, so they survive resizes and stay editable/erasable.
+ */
+export interface StrokePoint { x: number; y: number }
+
+export interface PageStroke {
+  id: string;
+  tool: 'pen' | 'highlighter';
+  color: string;
+  width: number;
+  points: StrokePoint[];
+}
+
+export const strokeToPath = (stroke: PageStroke): string => {
+  const pts = stroke.points;
+  if (!pts.length) return '';
+  if (pts.length === 1) {
+    // A tap should still leave a dot.
+    return `M ${pts[0].x} ${pts[0].y} l 0.01 0.01`;
+  }
+  // Quadratic smoothing keeps handwriting-like strokes from looking faceted.
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const midX = (pts[i].x + pts[i + 1].x) / 2;
+    const midY = (pts[i].y + pts[i + 1].y) / 2;
+    d += ` Q ${pts[i].x} ${pts[i].y} ${midX} ${midY}`;
+  }
+  const last = pts[pts.length - 1];
+  d += ` L ${last.x} ${last.y}`;
+  return d;
+};
+
 export const generateContentId = (): string => {
   return `content-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 };

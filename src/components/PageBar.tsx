@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useMemo, useState } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Plus, Trash2, ChevronLeft, ChevronRight, FileText, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -39,6 +39,7 @@ export const PageBar: React.FC<PageBarProps> = ({
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [pageToDelete, setPageToDelete] = useState<number | null>(null);
+  const reduced = !!useReducedMotion();
 
   const handleDeleteClick = () => {
     if (totalPages > 1) {
@@ -55,8 +56,10 @@ export const PageBar: React.FC<PageBarProps> = ({
     }
   };
 
-  // Generate page thumbnails (show max 5 pages around current)
-  const getVisiblePages = () => {
+  // Generate page thumbnails (show max 5 pages around current).
+  // Memoised so typing in the editor never re-derives the strip, and the
+  // same keys are reused for every render (no thumbnail flicker).
+  const visiblePages = useMemo(() => {
     const pages = [];
     const maxVisible = 5;
     let start = Math.max(0, currentPage - 1 - Math.floor(maxVisible / 2));
@@ -70,7 +73,7 @@ export const PageBar: React.FC<PageBarProps> = ({
       pages.push(i);
     }
     return pages;
-  };
+  }, [currentPage, totalPages]);
 
   return (
     <>
@@ -93,21 +96,24 @@ export const PageBar: React.FC<PageBarProps> = ({
 
           {/* Page Thumbnails - Simplified for mobile */}
           <div className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-2 overflow-hidden">
-            <AnimatePresence mode="popLayout">
-              {getVisiblePages().slice(0, window.innerWidth < 640 ? 3 : 5).map((pageIndex) => (
+            <AnimatePresence initial={false}>
+              {visiblePages.map((pageIndex, position) => (
                 <motion.button
                   key={pageIndex}
-                  initial={{ opacity: 0, scale: 0.8 }}
+                  initial={reduced ? false : { opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
+                  exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+                  transition={{ duration: reduced ? 0 : 0.16, ease: 'easeOut' }}
+                  whileHover={reduced ? undefined : { scale: 1.08 }}
+                  whileTap={reduced ? undefined : { scale: 0.95 }}
                   onClick={() => onGoToPage(pageIndex)}
                   className={cn(
                     "min-w-[1.5rem] h-7 sm:min-w-[2rem] sm:h-9 px-1 rounded-md sm:rounded-lg inline-flex items-center justify-center text-[10px] sm:text-xs font-medium transition-all duration-200 border flex-shrink-0 leading-none",
                     pageIndex === currentPage - 1
                       ? "bg-primary text-primary-foreground border-primary shadow-md"
-                      : "bg-background border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                      : "bg-background border-border/50 text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                    // Keep three thumbnails on phones via CSS, not a render-time window read.
+                    position > 2 ? "hidden sm:inline-flex" : ""
                   )}
                 >
                   {pageIndex + 1}
