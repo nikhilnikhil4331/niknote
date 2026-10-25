@@ -18,6 +18,7 @@ export const SHAPE_TOOLS: PdfTool[] = ['rect', 'ellipse', 'line', 'arrow', 'chec
 
 export const TOOL_LABELS: Record<PdfTool, string> = {
   select: 'Read',
+  edittext: 'Edit text',
   pen: 'Pen',
   highlighter: 'Highlighter',
   eraser: 'Eraser',

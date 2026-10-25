@@ -4,12 +4,13 @@
 // they render identically at any zoom level and in the exported PDF.
 // ============================================================
 
-import { PDFDocument, degrees } from 'pdf-lib';
+import { PDFDocument, degrees, type PDFPage } from 'pdf-lib';
 
 export type Point = { x: number; y: number };
 
 export type PdfTool =
   | 'select'
+  | 'edittext'
   | 'pen'
   | 'highlighter'
   | 'eraser'
@@ -82,10 +83,29 @@ export type StampAnnotation = {
   color: string;
 };
 
+export type TextEditAnnotation = {
+  id: string;
+  type: 'textedit';
+  page: string;
+  /** Normalized cover box (y = top) painted with `bg` over the original glyphs. */
+  rect: { x: number; y: number; w: number; h: number };
+  /** Normalized baseline the replacement text sits on (matches the original line). */
+  baseline: number;
+  text: string;
+  color: string;
+  /** fraction of min(page width, height) — same unit as TextAnnotation.size */
+  size: number;
+  font: 'sans' | 'serif' | 'cursive' | 'mono';
+  bold: boolean;
+  /** cover colour, usually the page background */
+  bg: string;
+};
+
 export type Annotation =
   | StrokeAnnotation
   | ShapeAnnotation
   | TextAnnotation
+  | TextEditAnnotation
   | ImageAnnotation
   | StampAnnotation;
 
@@ -235,6 +255,18 @@ export function drawAnnotations(
       ann.text.split('\n').forEach((line, i) => {
         ctx.fillText(line, ann.at.x * width, ann.at.y * height + i * size * 1.28);
       });
+    } else if (ann.type === 'textedit') {
+      ctx.fillStyle = ann.bg;
+      ctx.fillRect(ann.rect.x * width, ann.rect.y * height, ann.rect.w * width, ann.rect.h * height);
+      if (ann.text) {
+        const size = Math.max(6, ann.size * Math.min(width, height));
+        ctx.fillStyle = ann.color;
+        ctx.textBaseline = 'alphabetic';
+        ctx.font = `${ann.bold ? '700' : '500'} ${size}px ${FONT_STACKS[ann.font]}`;
+        ann.text.split('\n').forEach((line, i) => {
+          ctx.fillText(line, ann.rect.x * width, ann.baseline * height + i * size * 1.25);
+        });
+      }
     } else if (ann.type === 'image') {
       const img = imageStore.get(ann.dataUrl);
       if (img) {
@@ -277,6 +309,16 @@ export function annotationBounds(ann: Annotation): { x1: number; y1: number; x2:
   if (ann.type === 'image') {
     return { x1: ann.at.x, y1: ann.at.y, x2: ann.at.x + ann.w, y2: ann.at.y + ann.h };
   }
+  if (ann.type === 'textedit') {
+    const lines = ann.text.split('\n');
+    const longest = lines.reduce((m, l) => Math.max(m, l.length), 1);
+    return {
+      x1: ann.rect.x,
+      y1: ann.rect.y,
+      x2: Math.max(ann.rect.x + ann.rect.w, ann.rect.x + longest * ann.size * 0.52),
+      y2: Math.max(ann.rect.y + ann.rect.h, ann.baseline + ann.size * 0.4 + (lines.length - 1) * ann.size * 1.25),
+    };
+  }
   return { x1: ann.at.x - ann.size / 2, y1: ann.at.y - ann.size / 2, x2: ann.at.x + ann.size / 2, y2: ann.at.y + ann.size / 2 };
 }
 
@@ -298,6 +340,9 @@ export function translateAnnotation(ann: Annotation, dx: number, dy: number): An
       from: { x: ann.from.x + dx, y: ann.from.y + dy },
       to: { x: ann.to.x + dx, y: ann.to.y + dy },
     };
+  }
+  if (ann.type === 'textedit') {
+    return { ...ann, rect: { ...ann.rect, x: ann.rect.x + dx, y: ann.rect.y + dy }, baseline: ann.baseline + dy };
   }
   return { ...ann, at: { x: ann.at.x + dx, y: ann.at.y + dy } } as Annotation;
 }
@@ -367,7 +412,7 @@ export async function exportAnnotatedPdf({
 
   let done = 0;
   for (const page of pages) {
-    let target: any;
+    let target: PDFPage;
     if (page.kind === 'original' && sourcePages[page.srcIndex]) {
       const [copied] = await out.copyPages(source, [page.srcIndex]);
       target = out.addPage(copied);

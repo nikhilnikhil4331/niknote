@@ -24,7 +24,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import {
-  type Annotation, type PdfPageEntry, type PdfTool, type Point, type TextAnnotation,
+  type Annotation, type PdfPageEntry, type PdfTool, type Point, type TextAnnotation, type TextEditAnnotation,
   FONT_STACKS, HIGHLIGHT_COLORS, INK_COLORS, PAGE_SIZES, baseName, createId,
   exportAnnotatedPdf, hitTest, isImageReady, loadImage, translateAnnotation,
 } from '@/lib/pdfStudio';
@@ -37,6 +37,7 @@ import {
   type PdfLoadErrorKind,
 } from '@/lib/pdfEditor';
 import { isNativeApp, openFileInNewTab, saveFile } from '@/lib/saveFile';
+import { buildTextRuns, runAtPoint, type RawTextItem, type TextRun } from '@/lib/pdfTextEdit';
 import PdfPageView, { type PagePointerMeta, type PointerKind } from './PdfPageView';
 import RadialTools, { type FanChoice } from './RadialTools';
 import PagePanel, { clearThumbnailCache } from './PagePanel';
@@ -114,6 +115,9 @@ export default function PdfStudio() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draftAnn, setDraftAnn] = useState<Annotation | null>(null);
   const [textDraft, setTextDraft] = useState<{ pageId: string; at: Point; value: string } | null>(null);
+  const [textRuns, setTextRuns] = useState<Record<string, TextRun[]>>({});
+  const [runsStatus, setRunsStatus] = useState<Record<string, 'loading' | 'done'>>({});
+  const [editDraft, setEditDraft] = useState<{ pageId: string; run: TextRun; value: string } | null>(null);
   const [imageTick, setImageTick] = useState(0);
   const [signatures, setSignatures] = useState<string[]>(() => readSignatures());
   const [activeSignature, setActiveSignature] = useState<string | null>(null);
@@ -170,12 +174,15 @@ export default function PdfStudio() {
   const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
   const programmaticScrollRef = useRef(0);
   const textCacheRef = useRef(new Map<number, string>());
+  const textRunsRef = useRef<Record<string, TextRun[]>>({});
+  const runsKeyRef = useRef(new Map<string, number>());
   const loadTokenRef = useRef(0);
 
   pagesRef.current = pages;
   pageIndexRef.current = pageIndex;
   annotationsRef.current = annotations;
   pdfRef.current = pdf;
+  textRunsRef.current = textRuns;
 
   const page = pages[pageIndex] as PdfPageEntry | undefined;
   const dirty = editSeq > exportedSeq;
@@ -257,6 +264,7 @@ export default function PdfStudio() {
     setPageIndex(target);
     setSelectedId(null);
     setTextDraft(null);
+    setEditDraft(null);
     if (viewMode === 'page') {
       setTurn({ dir: opts?.dir || (target > current ? 'next' : 'prev'), key: Date.now() });
       stageRef.current?.scrollTo({ top: 0, left: 0 });
@@ -322,6 +330,49 @@ export default function PdfStudio() {
     return win;
   }, [viewMode, pageIndex, pages.length, nearSet]);
 
+  // ── Edit-text runs (original text lines, lazily extracted) ──
+  const ensureRuns = useCallback(async (entry: PdfPageEntry) => {
+    const doc = pdfRef.current;
+    if (!doc || entry.kind !== 'original') return;
+    if (runsKeyRef.current.get(entry.id) === entry.rotation) return;
+    runsKeyRef.current.set(entry.id, entry.rotation);
+    setRunsStatus((prev) => ({ ...prev, [entry.id]: 'loading' }));
+    try {
+      const pg = await doc.getPage(entry.srcIndex + 1);
+      const rotation = ((entry.rotation % 360) + 360) % 360;
+      const vp = pg.getViewport({ scale: 1, rotation });
+      const tc = await pg.getTextContent();
+      const dims = displayDims(entry);
+      const runs = buildTextRuns(
+        tc.items as unknown as RawTextItem[],
+        tc.styles as Record<string, { fontFamily?: string; vertical?: boolean }>,
+        vp.transform,
+        dims.w,
+        dims.h
+      );
+      setTextRuns((prev) => ({ ...prev, [entry.id]: runs }));
+    } catch {
+      setTextRuns((prev) => ({ ...prev, [entry.id]: [] }));
+    } finally {
+      setRunsStatus((prev) => ({ ...prev, [entry.id]: 'done' }));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tool !== 'edittext' || !pdf) return;
+    activeSet.forEach((idx) => {
+      const entry = pages[idx];
+      if (entry) void ensureRuns(entry);
+    });
+  }, [tool, pdf, pages, activeSet, ensureRuns]);
+
+  const editBoxesByPage = useMemo(() => {
+    if (tool !== 'edittext') return null;
+    const map = new Map<string, Array<{ x: number; y: number; w: number; h: number }>>();
+    for (const [pageId, runs] of Object.entries(textRuns)) map.set(pageId, runs.map((r) => r.rect));
+    return map;
+  }, [tool, textRuns]);
+
   // ── Loading ──
   const openFile = useCallback(async (file: File, password?: string) => {
     if (!(file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'))) {
@@ -380,6 +431,10 @@ export default function PdfStudio() {
       setTool('select');
       setSelectedId(null);
       setTextDraft(null);
+      setEditDraft(null);
+      setTextRuns({});
+      setRunsStatus({});
+      runsKeyRef.current.clear();
       setDraftAnn(null);
       setSearchHits([]);
       setSearched(false);
@@ -563,6 +618,21 @@ export default function PdfStudio() {
     setTool('select');
   }, [textDraft, inkColor, textSize, font, bold, commitAnnotations]);
 
+  const commitEditDraft = useCallback(() => {
+    if (!editDraft) return;
+    const { pageId, run, value } = editDraft;
+    setEditDraft(null);
+    const ann: TextEditAnnotation = {
+      id: createId(), type: 'textedit', page: pageId,
+      rect: { ...run.rect, h: Math.max(run.rect.h, run.rect.h + (value.split('\n').length - 1) * run.sizeNorm * 1.25) },
+      baseline: run.baseline,
+      text: value.replace(/\s+$/, ''),
+      color: inkColor, size: run.sizeNorm, font: run.font, bold, bg: '#ffffff',
+    };
+    commitAnnotations([...annotationsRef.current, ann]);
+    toast.success(value.trim() ? 'Text replaced in the same style — Save PDF to bake it in' : 'Text covered (white-out)');
+  }, [editDraft, inkColor, bold, commitAnnotations]);
+
   // ── Pointer orchestration ──
   const handlePagePointer = useCallback((kind: PointerKind, pageId: string, point: Point, meta: PagePointerMeta) => {
     const entry = pagesRef.current.find((p) => p.id === pageId);
@@ -589,6 +659,27 @@ export default function PdfStudio() {
             swipeRef.current = { x: meta.clientX, y: meta.clientY, t: meta.timeStamp, pointerId: meta.pointerId };
             if (!hit) panRef.current = { x: meta.clientX, y: meta.clientY, pointerId: meta.pointerId };
           }
+        }
+        return;
+      }
+
+      if (tool === 'edittext') {
+        const runs = textRunsRef.current[pageId];
+        if (!runs) {
+          void ensureRuns(entry);
+          toast.info('Reading page text…');
+          return;
+        }
+        const idx = runAtPoint(runs, point);
+        if (idx >= 0) {
+          const run = runs[idx];
+          setEditDraft({ pageId, run, value: run.text });
+          setBold(run.bold);
+          setSelectedId(null);
+        } else if (runs.length === 0) {
+          toast.info('No editable text layer on this page — scanned PDFs need OCR first (PDF Tools)');
+        } else {
+          toast.info('Tap a highlighted line to edit it');
         }
         return;
       }
@@ -738,7 +829,7 @@ export default function PdfStudio() {
         ? draft.points.length < 2
         : draft.type === 'shape' && Math.abs(draft.to.x - draft.from.x) + Math.abs(draft.to.y - draft.from.y) < 0.008;
     if (!isTiny) commitAnnotations([...annotationsRef.current, draft]);
-  }, [tool, viewMode, activeSignature, signatures, effectiveColor, strokeWidth, opacity, commitAnnotations, eraseAt, flushDraft, placeSignature, goNext, goPrev, bumpEdit]);
+  }, [tool, viewMode, activeSignature, signatures, effectiveColor, strokeWidth, opacity, commitAnnotations, eraseAt, flushDraft, placeSignature, goNext, goPrev, bumpEdit, ensureRuns]);
 
   // ── Pinch + ctrl-wheel zoom (preview transform → sharp re-render on commit) ──
   useEffect(() => {
@@ -821,7 +912,16 @@ export default function PdfStudio() {
 
   // ── Page operations (index-based, functional updates only) ──
   const rotateAt = useCallback((index: number) => {
+    const id = pagesRef.current[index]?.id;
     setPages((prev) => prev.map((p, i) => (i === index ? { ...p, rotation: (p.rotation + 90) % 360 } : p)));
+    if (id) {
+      runsKeyRef.current.delete(id);
+      setTextRuns((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
     bumpEdit();
   }, [bumpEdit]);
 
@@ -1020,6 +1120,7 @@ export default function PdfStudio() {
     if (SHAPE_TOOLS.includes(next)) setLastShape(next);
     if (next !== 'select') setSelectedId(null);
     if (next !== 'text') setTextDraft(null);
+    if (next !== 'edittext') setEditDraft(null);
   };
 
   const onFanSelect = (choice: FanChoice) => {
@@ -1047,6 +1148,7 @@ export default function PdfStudio() {
       else if (e.key === 'Escape') {
         setSelectedId(null);
         setTextDraft(null);
+        setEditDraft(null);
         setMenuOpen(false);
         setZoomMenu(null);
         setGoToOpen(false);
@@ -1062,7 +1164,8 @@ export default function PdfStudio() {
       else if (!mod && key === 'v') selectTool('select');
       else if (!mod && key === 'p') selectTool('pen');
       else if (!mod && key === 'h') selectTool('highlighter');
-      else if (!mod && key === 'e') selectTool('eraser');
+      else if (!mod && key === 'e') selectTool('edittext');
+      else if (!mod && key === 'x') selectTool('eraser');
       else if (!mod && key === 't') selectTool('text');
     };
     window.addEventListener('keydown', onKey);
@@ -1377,6 +1480,7 @@ export default function PdfStudio() {
                     dpr={dpr}
                     annotations={annotationsByPage.get(entry.id) || []}
                     draft={draftAnn}
+                    editBoxes={editBoxesByPage?.get(entry.id)}
                     selectedId={selectedId}
                     imageTick={imageTick}
                     tool={tool}
@@ -1385,8 +1489,9 @@ export default function PdfStudio() {
                     registerRef={registerPageEl}
                     onPointer={handlePagePointer}
                   >
-                    {(plan) =>
-                      textDraft && textDraft.pageId === entry.id ? (
+                    {(plan) => (
+                      <>
+                        {textDraft && textDraft.pageId === entry.id ? (
                         <div className="absolute z-20" style={{ left: `${textDraft.at.x * 100}%`, top: `${textDraft.at.y * 100}%`, maxWidth: '75%' }}>
                           <textarea
                             autoFocus
@@ -1416,8 +1521,51 @@ export default function PdfStudio() {
                             </button>
                           </div>
                         </div>
-                      ) : null
-                    }
+                        ) : null}
+                        {editDraft && editDraft.pageId === entry.id ? (
+                          <div className="absolute z-20" style={{ left: `${editDraft.run.rect.x * 100}%`, top: `${editDraft.run.rect.y * 100}%`, maxWidth: '85%' }}>
+                            <div className="pdfs-bar mb-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-bold" style={{ color: 'var(--pdfs-accent)' }}>
+                              {editDraft.run.fontLabel} · {Math.round(editDraft.run.fontSizePt)}pt
+                              <span style={{ color: 'var(--pdfs-text-2)' }}>same style</span>
+                            </div>
+                            <textarea
+                              autoFocus
+                              rows={Math.min(4, editDraft.value.split('\n').length + 0)}
+                              value={editDraft.value}
+                              onChange={(e) => setEditDraft({ ...editDraft, value: e.target.value })}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEditDraft(); }
+                                if (e.key === 'Escape') setEditDraft(null);
+                              }}
+                              aria-label="Edit PDF text"
+                              className="rounded-lg border-2 bg-white/95 px-1.5 py-0.5 shadow-lg outline-none"
+                              style={{
+                                borderColor: 'var(--pdfs-accent)',
+                                color: inkColor,
+                                width: Math.max(210, Math.round(editDraft.run.rect.w * plan.cssW) + 24),
+                                fontSize: Math.max(13, Math.round(editDraft.run.fontSizePt * (plan.cssW / Math.max(1, displayDims(entry).w)))),
+                                fontFamily: FONT_STACKS[editDraft.run.font],
+                                fontWeight: bold ? 700 : 500,
+                                lineHeight: 1.25,
+                              }}
+                            />
+                            <div className="mt-1 flex gap-1.5">
+                              <button type="button" onClick={commitEditDraft} className="min-h-9 rounded-full px-3 text-[11.5px] font-bold text-white" style={{ background: 'var(--pdfs-accent)' }}>
+                                Replace text
+                              </button>
+                              <button type="button" onClick={() => setBold((b) => !b)} aria-pressed={bold}
+                                className="grid h-9 w-9 place-items-center rounded-full border text-[12px] font-black"
+                                style={bold ? { background: 'var(--pdfs-accent)', color: '#fff', borderColor: 'var(--pdfs-accent)' } : { borderColor: 'var(--pdfs-border)', background: 'var(--pdfs-surface)' }}>
+                                B
+                              </button>
+                              <button type="button" onClick={() => setEditDraft(null)} className="pdfs-bar min-h-9 rounded-full px-3 text-[11.5px] font-semibold">
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </>
+                    )}
                   </PdfPageView>
                 );
               })}
@@ -1471,6 +1619,15 @@ export default function PdfStudio() {
               onPickSignature={setActiveSignature}
               onNewSignature={() => setSignatureOpen(true)}
               onShape={selectTool}
+              editInfo={
+                !page
+                  ? undefined
+                  : runsStatus[page.id] === 'loading' || textRuns[page.id] === undefined
+                    ? 'Reading page text…'
+                    : textRuns[page.id].length === 0
+                      ? 'No editable text layer on this page — scanned page. Use PDF Tools → OCR, or Add text.'
+                      : `${textRuns[page.id].length} editable lines on this page — tap one (same font & size)`
+              }
               onDeleteSelected={() => {
                 if (!selected) return;
                 commitAnnotations(annotationsRef.current.filter((a) => a.id !== selected.id));
@@ -1756,13 +1913,14 @@ function ToolContextBar(props: {
   onPickSignature: (s: string) => void;
   onNewSignature: () => void;
   onShape: (t: PdfTool) => void;
+  editInfo?: string;
   onDeleteSelected: () => void;
   onClearPage: () => void;
   onDone: () => void;
 }) {
   const { tool } = props;
   const isShapeGroup = SHAPE_TOOLS.includes(tool);
-  const showInkColors = ['pen', 'text', ...SHAPE_TOOLS].includes(tool);
+  const showInkColors = ['pen', 'text', 'edittext', ...SHAPE_TOOLS].includes(tool);
   const shapeButtons: Array<{ id: PdfTool; label: string; icon: React.FC<{ className?: string }> }> = [
     { id: 'rect', label: 'Rectangle', icon: Square },
     { id: 'ellipse', label: 'Circle', icon: Circle },
@@ -1864,6 +2022,19 @@ function ToolContextBar(props: {
               B
             </button>
             <span className="hidden shrink-0 text-[11px] font-medium md:inline" style={{ color: 'var(--pdfs-text-2)' }}>Tap the page, then type</span>
+          </>
+        )}
+
+        {tool === 'edittext' && (
+          <>
+            <button type="button" onClick={props.onBold} aria-pressed={props.bold} aria-label="Bold"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full border text-[13px] font-black"
+              style={props.bold ? { background: 'var(--pdfs-accent)', color: '#fff', borderColor: 'var(--pdfs-accent)' } : { borderColor: 'var(--pdfs-border)' }}>
+              B
+            </button>
+            <span className="max-w-[220px] shrink-0 text-[11px] font-medium leading-tight sm:max-w-[300px]" style={{ color: 'var(--pdfs-text-2)' }} role="status">
+              {props.editInfo || 'Tap a highlighted line — new text keeps its font & size'}
+            </span>
           </>
         )}
 

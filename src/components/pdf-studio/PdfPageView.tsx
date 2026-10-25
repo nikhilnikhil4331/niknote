@@ -33,7 +33,7 @@ export interface PagePointerMeta {
 }
 
 const DRAWING_TOOLS: PdfTool[] = [
-  'pen', 'highlighter', 'eraser', 'text', 'rect', 'ellipse', 'line', 'arrow',
+  'pen', 'highlighter', 'eraser', 'text', 'edittext', 'rect', 'ellipse', 'line', 'arrow',
   'check', 'cross', 'star', 'signature', 'image',
 ];
 
@@ -47,6 +47,8 @@ interface Props {
   dpr: number;
   annotations: Annotation[];
   draft: Annotation | null;
+  /** Normalized boxes of editable text lines (Edit-text tool highlights). */
+  editBoxes?: Array<{ x: number; y: number; w: number; h: number }>;
   selectedId: string | null;
   imageTick: number;
   tool: PdfTool;
@@ -58,7 +60,7 @@ interface Props {
 }
 
 export default function PdfPageView({
-  doc, entry, index, active, containerW, zoom, dpr, annotations, draft,
+  doc, entry, index, active, containerW, zoom, dpr, annotations, draft, editBoxes,
   selectedId, imageTick, tool, viewMode, turnClass, registerRef, onPointer, children,
 }: Props) {
   const baseRef = useRef<HTMLCanvasElement | null>(null);
@@ -164,6 +166,18 @@ export default function PdfPageView({
     ctx.clearRect(0, 0, w, h);
     const list = draft && draft.page === entry.id ? [...annotations, draft] : annotations;
     drawAnnotations(ctx, list, w, h);
+    if (editBoxes && editBoxes.length > 0) {
+      ctx.save();
+      ctx.strokeStyle = 'hsl(221 83% 53%)';
+      ctx.fillStyle = 'hsl(221 83% 53% / 0.08)';
+      ctx.setLineDash([5 * plan.outputScale, 4 * plan.outputScale]);
+      ctx.lineWidth = Math.max(1.2, plan.outputScale);
+      for (const b of editBoxes) {
+        ctx.fillRect(b.x * w, b.y * h, b.w * w, b.h * h);
+        ctx.strokeRect(b.x * w, b.y * h, b.w * w, b.h * h);
+      }
+      ctx.restore();
+    }
     const selected = list.find((a) => a.id === selectedId);
     if (selected) {
       const b = annotationBounds(selected);
@@ -175,7 +189,7 @@ export default function PdfPageView({
       ctx.strokeRect(b.x1 * w - pad, b.y1 * h - pad, (b.x2 - b.x1) * w + pad * 2, (b.y2 - b.y1) * h + pad * 2);
       ctx.restore();
     }
-  }, [active, annotations, draft, selectedId, renderTick, imageTick, entry.id, plan.backingW, plan.backingH, plan.outputScale]);
+  }, [active, annotations, draft, editBoxes, selectedId, renderTick, imageTick, entry.id, plan.backingW, plan.backingH, plan.outputScale]);
 
   const emit = (kind: PointerKind) => (e: React.PointerEvent<HTMLCanvasElement>) => {
     const el = overlayRef.current;
