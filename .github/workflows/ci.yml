@@ -39,8 +39,43 @@ jobs:
           VITE_SUPABASE_URL: https://example.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: public-anon-key-placeholder
 
+      # Report failures as annotations too, so `gh pr checks` / the PR page shows
+      # exactly which test broke without opening the raw job log.
       - name: Unit tests
-        run: npm test -- --reporter=dot
+        id: tests
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm test -- --reporter=dot --reporter=json --outputFile=/tmp/vitest.json 2>&1 | tee /tmp/vitest.log
+
+      - name: Summarise test failures
+        if: steps.tests.outcome == 'failure'
+        run: |
+          node -e '
+            const fs = require("fs");
+            let report;
+            try { report = JSON.parse(fs.readFileSync("/tmp/vitest.json", "utf8")); } catch { report = null; }
+            const failed = (report?.testResults || []).flatMap((f) =>
+              (f.assertionResults || [])
+                .filter((t) => t.status === "failed")
+                .map((t) => ({ file: f.name, name: t.fullName, msg: (t.failureMessages || []).join("\n").slice(0, 1200) }))
+            );
+            if (failed.length === 0) {
+              const log = fs.existsSync("/tmp/vitest.log") ? fs.readFileSync("/tmp/vitest.log", "utf8") : "";
+              console.log("::error::vitest failed before running tests");
+              console.log(log.slice(-4000));
+              process.exit(1);
+            }
+            for (const f of failed) {
+              const msg = f.msg.replace(/\r?\n/g, " ");
+              console.log(`::error file=${f.file},title=${f.name}::${msg}`);
+            }
+            process.exit(1);
+          '
+
+      - name: Fail if tests failed
+        if: steps.tests.outcome == 'failure'
+        run: exit 1
 
       - name: Upload web build
         uses: actions/upload-artifact@v4
