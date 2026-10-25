@@ -395,7 +395,7 @@ async function tryDirectCloudStream(
         ? 'meta-llama/llama-4-scout-17b-16e-instruct'
         : opts.model === 'astra-pro' || mode === 'deep'
           ? 'openai/gpt-oss-120b'
-          : 'llama-3.3-70b-versatile';
+          : 'openai/gpt-oss-20b';
     const label = opts.model === 'astra-pro' || mode === 'deep' ? 'NikAI Astra Pro' : 'NikAI Astra Core';
 
     const res = await fetch(url, {
