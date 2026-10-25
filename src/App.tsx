@@ -85,7 +85,7 @@ import { trackPageView } from "@/utils/analytics";
 
 const queryClient = new QueryClient();
 
-const DOCK_ROUTES = ["/notebooks","/flashcards","/history","/account","/achievements","/ai-solver","/documents","/handbook","/feedback","/upgrade"];
+const DOCK_ROUTES = ["/notebooks","/flashcards","/history","/account","/achievements","/ai-solver","/documents","/handbook","/feedback","/upgrade","/pdf-editor"];
 function GlobalDock() {
   const { pathname } = useLocation();
   const mobile = useIsMobile();

@@ -1,0 +1,106 @@
+name: Android APK
+
+# Builds a ready-to-install NikNote APK on GitHub's runners — no Android Studio
+# needed on your machine.
+#
+# • Every tag like v1.0.0  → APK attached to a GitHub Release (direct download
+#                            link you can share with users)
+# • Pull request           → APK stored as a workflow artifact (build check)
+# • Manual run             → Actions tab → "Android APK" → Run workflow
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Attach the APK to a GitHub Release'
+        type: boolean
+        default: false
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK platform + build tools (compileSdk 36)
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" > /dev/null
+
+      - name: Ensure ImageMagick (brand icon generator)
+        run: |
+          command -v convert >/dev/null || (sudo apt-get update && sudo apt-get install -y imagemagick)
+          convert -version | head -1
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: '1'
+
+      # Icons + splash from public/niknote-logo.png, web build, then cap sync
+      - name: Generate brand icons, web build & sync Android
+        run: npm run android:sync
+
+      - name: Build debug APK
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.jvmargs=-Xmx3g -Dorg.gradle.daemon=false'
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Rename APK
+        run: |
+          mkdir -p release-out
+          cp android/app/build/outputs/apk/debug/app-debug.apk \
+             "release-out/niknote-${GITHUB_SHA::7}.apk"
+          ls -lh release-out
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: niknote-apk
+          path: release-out/*.apk
+          retention-days: 30
+
+      - name: Attach APK to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.release == true
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('apk-{0}', github.run_number) }}
+          name: NikNote APK ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('build-{0}', github.run_number) }}
+          body: |
+            ## NikNote APK
+
+            Direct install (Android 8+):
+            1. Phone par `niknote-*.apk` download karo
+            2. "Install unknown apps" allow karo
+            3. Tap to install — icon aur splash website wale logo se bane hain
+
+            Website: https://www.niknote.online
+          files: release-out/*.apk
+          fail_on_unmatched_files: true

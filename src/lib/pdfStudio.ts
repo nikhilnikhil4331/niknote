@@ -146,7 +146,11 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
     const img = new Image();
     img.onload = () => {
       imageStore.set(src, img);
-      resolve(img);
+      // Make sure the bitmap is decoded before the first canvas paint — otherwise
+      // a fast export can draw an empty (white) rectangle for a photo/signature.
+      Promise.resolve(img.decode?.())
+        .then(() => resolve(img))
+        .catch(() => resolve(img));
     };
     img.onerror = reject;
     img.src = src;
@@ -337,10 +341,18 @@ export interface ExportOptions {
   annotations: Annotation[];
   /** render scale for the annotation layer (2 = 2× page points, crisp) */
   scale?: number;
+  /** called after every page is flattened — powers the "Saving 3/12" UI */
+  onProgress?: (done: number, total: number) => void;
 }
 
 /** Flattens every annotation into a brand new PDF and returns its bytes. */
-export async function exportAnnotatedPdf({ bytes, pages, annotations, scale = 2 }: ExportOptions): Promise<Uint8Array> {
+export async function exportAnnotatedPdf({
+  bytes,
+  pages,
+  annotations,
+  scale = 2,
+  onProgress,
+}: ExportOptions): Promise<Uint8Array> {
   // Embedded photos / signatures must be decoded before the flatten pass,
   // otherwise they would silently be dropped from the exported file.
   await Promise.all(
@@ -353,6 +365,7 @@ export async function exportAnnotatedPdf({ bytes, pages, annotations, scale = 2 
   const out = await PDFDocument.create();
   const sourcePages = source.getPages();
 
+  let done = 0;
   for (const page of pages) {
     let target: any;
     if (page.kind === 'original' && sourcePages[page.srcIndex]) {
@@ -364,7 +377,11 @@ export async function exportAnnotatedPdf({ bytes, pages, annotations, scale = 2 
     if (page.rotation) target.setRotation(degrees(page.rotation));
 
     const pageAnnotations = annotations.filter((a) => a.page === page.id);
-    if (pageAnnotations.length === 0) continue;
+    if (pageAnnotations.length === 0) {
+      done += 1;
+      onProgress?.(done, pages.length);
+      continue;
+    }
 
     const { width, height } = target.getSize();
     const swap = ((page.rotation % 360) + 360) % 360 === 90 || ((page.rotation % 360) + 360) % 360 === 270;
@@ -376,9 +393,12 @@ export async function exportAnnotatedPdf({ bytes, pages, annotations, scale = 2 
       Math.min(3200, Math.max(800, visibleH * scale)),
       page.rotation
     );
-    if (!layer) continue;
-    const png = await out.embedPng(layer);
-    target.drawImage(png, { x: 0, y: 0, width, height });
+    if (layer) {
+      const png = await out.embedPng(layer);
+      target.drawImage(png, { x: 0, y: 0, width, height });
+    }
+    done += 1;
+    onProgress?.(done, pages.length);
   }
 
   out.setProducer('NikNote PDF Studio');
@@ -397,6 +417,12 @@ export function downloadBytes(bytes: Uint8Array, filename: string) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
+
+export const PAGE_SIZES: Record<'a4' | 'letter' | 'legal', { width: number; height: number }> = {
+  a4: { width: 595.28, height: 841.89 },
+  letter: { width: 612, height: 792 },
+  legal: { width: 612, height: 1008 },
+};
 
 export function baseName(name: string): string {
   return name.replace(/\.pdf$/i, '') || 'document';

@@ -9,20 +9,21 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as pdfjs from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import {
-  ArrowLeft, ArrowUpRight, Circle, Download, Eraser, FilePlus2, FileText,
+  ArrowLeft, ArrowRight, ArrowUpRight, Circle, Download, Eraser, FilePlus2, FileText,
   Highlighter, Image as ImageIcon, Loader2, MousePointer2, PenLine, Redo2, RotateCw,
   Square, Stamp, Trash2, Type, Undo2, Upload, ZoomIn, ZoomOut, Check, X, Star, Minus,
-  Copy, ChevronUp, ChevronDown, Save,
+  Copy, ChevronUp, ChevronDown, Save, Share2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import {
   type Annotation, type PdfPageEntry, type PdfTool, type Point, type TextAnnotation,
-  FONT_STACKS, HIGHLIGHT_COLORS, INK_COLORS, baseName, createId, downloadBytes,
+  FONT_STACKS, HIGHLIGHT_COLORS, INK_COLORS, PAGE_SIZES, baseName, createId,
   annotationBounds, drawAnnotations, exportAnnotatedPdf, hitTest, loadImage, toPagePoint,
   translateAnnotation,
 } from '@/lib/pdfStudio';
+import { isNativeApp, openFileInNewTab, saveFile } from '@/lib/saveFile';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -83,6 +84,8 @@ export default function PdfStudio() {
   const [bold, setBold] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{ done: number; total: number } | null>(null);
+  const [lastExport, setLastExport] = useState<{ bytes: Uint8Array; name: string } | null>(null);
   const [loadingDoc, setLoadingDoc] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [textDraft, setTextDraft] = useState<{ at: Point; value: string } | null>(null);
@@ -517,12 +520,14 @@ export default function PdfStudio() {
     );
   };
 
-  const addPage = () => {
+  const addPage = (size: 'same' | 'a4' | 'letter' = 'same') => {
     if (!page) return;
+    const dims = size === 'same' ? { width: page.width, height: page.height } : PAGE_SIZES[size];
     const blank: PdfPageEntry = {
       id: `blank-${createId()}`, kind: 'blank', srcIndex: -1,
-      rotation: 0, width: page.width, height: page.height,
+      rotation: 0, width: dims.width, height: dims.height,
     };
+    // insert right after the current page, then jump to it
     setPages((prev) => [...prev.slice(0, pageIndex + 1), blank, ...prev.slice(pageIndex + 1)]);
     setPageIndex(pageIndex + 1);
   };
@@ -567,20 +572,61 @@ export default function PdfStudio() {
   const exportPdf = async () => {
     if (!sourceBytes || pages.length === 0) return;
     setBusy(true);
+    setExportProgress({ done: 0, total: pages.length });
     try {
       const bytes = await exportAnnotatedPdf({
         bytes: sourceBytes,
         pages,
         annotations,
         scale: 2,
+        onProgress: (done, total) => setExportProgress({ done, total }),
       });
-      downloadBytes(bytes, `${baseName(fileName || 'document')}-niknote.pdf`);
-      toast.success('Saved your edited PDF — check your downloads');
+      const outName = `${baseName(fileName || 'document')}-niknote.pdf`;
+      setLastExport({ bytes, name: outName });
+
+      const result = await saveFile(bytes, outName, 'application/pdf');
+      if (result === 'shared') {
+        toast.success('PDF ready — choose where to save it');
+      } else if (result === 'downloaded') {
+        toast.success(
+          isNativeApp()
+            ? `Saved to Documents › ${outName} (${pages.length} pages)`
+            : `Downloaded ${outName} (${pages.length} pages)`
+        );
+      } else {
+        toast.info('Save cancelled — tap Save PDF again');
+      }
     } catch (err: any) {
       console.error(err);
-      toast.error(err?.message || 'Could not export this PDF');
+      toast.error(err?.message || 'Could not export this PDF', {
+        action: {
+          label: 'Retry',
+          onClick: () => {
+            void exportPdf();
+          },
+        },
+      });
     } finally {
       setBusy(false);
+      setExportProgress(null);
+    }
+  };
+
+  const sharePdf = async () => {
+    if (!lastExport) {
+      toast.info('Pehle Save PDF dabao — phir share kar sakte ho');
+      return;
+    }
+    if (isNativeApp() || (navigator as any)?.share) {
+      try {
+        await saveFile(lastExport.bytes, lastExport.name, 'application/pdf');
+        return;
+      } catch {
+        /* fall through */
+      }
+    }
+    if (!openFileInNewTab(lastExport.bytes)) {
+      toast.error('Sharing is not available in this browser');
     }
   };
 
@@ -664,7 +710,12 @@ export default function PdfStudio() {
         fileName={fileName}
         onOpen={() => fileInputRef.current?.click()}
         onExport={exportPdf}
+        onShare={sharePdf}
         busy={busy}
+        progress={exportProgress}
+        pageLabel={`${pageIndex + 1} / ${pages.length}`}
+        onPrevPage={() => setPageIndex((i) => Math.max(0, i - 1))}
+        onNextPage={() => setPageIndex((i) => Math.min(pages.length - 1, i + 1))}
         onUndo={undo}
         onRedo={redo}
         canUndo={past.length > 0}
@@ -673,6 +724,32 @@ export default function PdfStudio() {
         onZoom={(z) => setZoom(Math.min(3, Math.max(0.4, z)))}
         annotationCount={annotations.length}
       />
+
+      {/* Mobile page strip — always visible so multi-page PDFs are easy to move around */}
+      <div className="lg:hidden flex items-center gap-2 overflow-x-auto border-b border-[#ECEAF6] bg-white/80 px-2 py-1.5">
+        {pages.map((p, i) => (
+          <button
+            key={`m-${p.id}`}
+            onClick={() => setPageIndex(i)}
+            aria-label={`Page ${i + 1}`}
+            className={`relative shrink-0 h-16 w-12 rounded-lg overflow-hidden border-2 bg-white ${
+              i === pageIndex ? 'border-[#7C3AED]' : 'border-[#ECEAF6]'
+            }`}
+          >
+            {thumbs[p.id] ? <img src={thumbs[p.id]} alt="" className="h-full w-full object-cover" /> : null}
+            <span className="absolute bottom-0 inset-x-0 bg-black/55 text-white text-[9px] font-bold text-center">
+              {i + 1}
+            </span>
+          </button>
+        ))}
+        <button
+          onClick={() => addPage('same')}
+          className="shrink-0 h-16 w-12 rounded-lg border-2 border-dashed border-[#C4B5FD] text-[#7C3AED] flex flex-col items-center justify-center text-[9px] font-bold"
+        >
+          <FilePlus2 className="w-3.5 h-3.5" />
+          Page
+        </button>
+      </div>
 
       <div className="flex-1 flex min-h-0">
         {/* Page rail */}
@@ -786,7 +863,21 @@ export default function PdfStudio() {
             })}
             <div className="mx-1 h-8 w-px bg-[#ECEAF6] shrink-0" />
             <ToolbarIcon label="Rotate page" icon={RotateCw} onClick={rotatePage} />
-            <ToolbarIcon label="Add page" icon={FilePlus2} onClick={addPage} />
+            <ToolbarIcon label="Add blank page (same size)" icon={FilePlus2} onClick={() => addPage('same')} />
+            <button
+              onClick={() => addPage('a4')}
+              title="Add A4 blank page"
+              className="shrink-0 h-10 px-2 rounded-xl border border-[#ECEAF6] bg-white text-[11px] font-bold text-[#4B4568] hover:border-[#C4B5FD]"
+            >
+              + A4
+            </button>
+            <button
+              onClick={() => addPage('letter')}
+              title="Add Letter blank page"
+              className="shrink-0 h-10 px-2 rounded-xl border border-[#ECEAF6] bg-white text-[11px] font-bold text-[#4B4568] hover:border-[#C4B5FD]"
+            >
+              + Letter
+            </button>
             <ToolbarIcon label="Duplicate page" icon={Copy} onClick={duplicatePage} />
             <ToolbarIcon label="Move page up" icon={ChevronUp} onClick={() => movePage(-1)} />
             <ToolbarIcon label="Move page down" icon={ChevronDown} onClick={() => movePage(1)} />
@@ -908,8 +999,39 @@ export default function PdfStudio() {
                 </button>
               </div>
             )}
-            <div className="shrink-0 ml-auto text-[11px] font-semibold text-[#8A84A6]">
-              {activeToolLabel} · Page {pageIndex + 1}/{pages.length} · {pageAnnotations.length} marks
+            <div className="shrink-0 ml-auto flex items-center gap-1.5">
+              <button
+                onClick={() => setPageIndex((i) => Math.max(0, i - 1))}
+                disabled={pageIndex === 0}
+                aria-label="Previous page"
+                className="h-7 w-7 rounded-md border border-[#ECEAF6] bg-white flex items-center justify-center disabled:opacity-40"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+              </button>
+              <input
+                type="number"
+                min={1}
+                max={pages.length}
+                value={pageIndex + 1}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  if (Number.isFinite(n)) setPageIndex(Math.min(pages.length - 1, Math.max(0, n - 1)));
+                }}
+                aria-label="Page number"
+                className="h-7 w-11 rounded-md border border-[#ECEAF6] bg-white text-center text-[11px] font-bold text-[#4B4568]"
+              />
+              <span className="text-[10.5px] font-semibold text-[#8A84A6]">/ {pages.length}</span>
+              <button
+                onClick={() => setPageIndex((i) => Math.min(pages.length - 1, i + 1))}
+                disabled={pageIndex === pages.length - 1}
+                aria-label="Next page"
+                className="h-7 w-7 rounded-md border border-[#ECEAF6] bg-white flex items-center justify-center disabled:opacity-40"
+              >
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <span className="hidden sm:inline text-[11px] font-semibold text-[#8A84A6]">
+                {activeToolLabel} · {pageAnnotations.length} marks
+              </span>
             </div>
           </div>
         </div>
@@ -952,11 +1074,13 @@ export default function PdfStudio() {
 }
 
 function TopBar({
-  fileName, onOpen, onExport, busy, onUndo, onRedo, canUndo, canRedo, zoom, onZoom, annotationCount,
+  fileName, onOpen, onExport, onShare, busy, onUndo, onRedo, canUndo, canRedo, zoom, onZoom,
+  annotationCount, progress, pageLabel, onPrevPage, onNextPage,
 }: {
   fileName: string;
   onOpen: () => void;
   onExport?: () => void;
+  onShare?: () => void;
   busy?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
@@ -965,6 +1089,10 @@ function TopBar({
   zoom?: number;
   onZoom?: (z: number) => void;
   annotationCount?: number;
+  progress?: { done: number; total: number } | null;
+  pageLabel?: string;
+  onPrevPage?: () => void;
+  onNextPage?: () => void;
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-[#ECEAF6] bg-white/95 backdrop-blur px-2.5 py-2">
@@ -980,10 +1108,25 @@ function TopBar({
             </span>
           </div>
           <p className="text-[10.5px] text-[#8A84A6] font-medium">
-            {fileName ? `${annotationCount || 0} edits · saved on your device` : 'Edit PDFs on your device'}
+            {busy && progress
+              ? `Saving page ${progress.done}/${progress.total}…`
+              : fileName
+                ? `${annotationCount || 0} edits${pageLabel ? ` · page ${pageLabel}` : ''} · on your device`
+                : 'Edit PDFs on your device'}
           </p>
         </div>
         <div className="ml-auto flex items-center gap-1.5">
+          {pageLabel && (
+            <div className="sm:hidden flex items-center gap-1 rounded-xl border border-[#ECEAF6] bg-white px-1">
+              <button onClick={onPrevPage} aria-label="Previous page" className="h-8 w-7 flex items-center justify-center">
+                <ArrowLeft className="w-3.5 h-3.5 text-[#4B4568]" />
+              </button>
+              <span className="text-[11px] font-bold text-[#4B4568]">{pageLabel}</span>
+              <button onClick={onNextPage} aria-label="Next page" className="h-8 w-7 flex items-center justify-center">
+                <ArrowRight className="w-3.5 h-3.5 text-[#4B4568]" />
+              </button>
+            </div>
+          )}
           {onUndo && (
             <button
               onClick={onUndo}
@@ -1021,6 +1164,15 @@ function TopBar({
           >
             <Upload className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Open</span>
           </button>
+          {onShare && (
+            <button
+              onClick={onShare}
+              className="h-9 px-3 rounded-xl border border-[#ECEAF6] bg-white text-[12px] font-bold text-[#4B4568] flex items-center gap-1.5"
+              title="Share the saved PDF"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+            </button>
+          )}
           {onExport && (
             <button
               onClick={onExport}

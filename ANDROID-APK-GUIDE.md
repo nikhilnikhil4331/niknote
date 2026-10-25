@@ -29,6 +29,30 @@ Logo badalna ho to sirf `public/niknote-logo.png` replace karo aur `npm run icon
 
 ## 2. APK build karna
 
+### ⭐ Sabse aasan — GitHub Actions (Android Studio ki zaroorat nahi)
+
+Repo me do workflows already hain:
+
+| Workflow | Kab chalta hai | Output |
+| --- | --- | --- |
+| `.github/workflows/ci.yml` | har push / PR | type-check + tests + web build |
+| `.github/workflows/android-apk.yml` | `v*` tag, PR, ya manual | ready APK |
+
+APK nikalne ke 3 tareeke:
+
+1. **Actions → Android APK → Run workflow** → run khatam hone par neeche
+   **Artifacts → niknote-apk** download karo.
+2. **Release (share karne layak link):**
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+   → GitHub automatically **Release** banata hai jisme `niknote-xxxxxxx.apk` laga hota hai.
+   Link: `https://github.com/nikhilnikhil4331/niknote/releases/latest`
+3. `workflow_dispatch` me `release: true` tick karo.
+
+### Apne computer par
+
 Do raste hain:
 
 ### A) Android Studio se (sabse aasan)
@@ -73,12 +97,16 @@ Phir `npm run android:aab` — `android/app/build/outputs/bundle/release/app-rel
 | Splash screen | boot screen | same logo, white background |
 | NikAI | `/api/ai` gateway | wahi cloud gateway (device se direct) |
 | PDF Studio | `/pdf-editor` | same screen, fully on-device |
+| PDF download | browser download | **Documents folder + share sheet** (Filesystem + Share plugins) |
 | Notes / Handwriting | local + Supabase | local + Supabase |
 
 ## 5. Common problems
 
 - **"Logo purana dikh raha hai"** → APK uninstall karke naya install karo. Android
   launcher icons cache karta hai.
+- **PDF save nahi ho raha** → APK me file `Documents/NikNote` folder me jati hai aur share
+  sheet khulta hai (WhatsApp/Drive/Email). Nahi dikh raha to phone ke **Files → Documents**
+  me dekho.
 - **AI kaam nahi kar raha** → internet check karo. APK me AI cloud gateway se chalta hai
   (`https://www.niknote.online/api/ai`). Agar aapke paas apna key hai to
   NikAI → profile menu → **Cloud & API Keys** me Groq/Gemini key daal do.

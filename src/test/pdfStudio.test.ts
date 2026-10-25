@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PDFDocument, degrees } from 'pdf-lib';
 import {
+  PAGE_SIZES,
   annotationBounds,
   baseName,
   clamp01,
@@ -107,5 +108,32 @@ describe('PDF Studio export', () => {
     expect(reloaded.getPage(1).getRotation().angle).toBe(90);
     expect(reloaded.getPage(2).getSize()).toEqual({ width: 595, height: 842 });
     expect(reloaded.getTitle()).toBeUndefined();
+  });
+
+  it('reports progress for every page and supports standard blank page sizes', async () => {
+    const source = await PDFDocument.create();
+    source.addPage([595, 842]);
+    const bytes = await source.save();
+
+    const pages: PdfPageEntry[] = [
+      { id: 'src-0', kind: 'original', srcIndex: 0, rotation: 0, width: 595, height: 842 },
+      { id: 'a4', kind: 'blank', srcIndex: -1, rotation: 0, ...PAGE_SIZES.a4 },
+      { id: 'letter', kind: 'blank', srcIndex: -1, rotation: 0, ...PAGE_SIZES.letter },
+    ];
+
+    const seen: string[] = [];
+    const out = await exportAnnotatedPdf({
+      bytes: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
+      pages,
+      annotations: [ink],
+      onProgress: (done, total) => seen.push(`${done}/${total}`),
+    });
+
+    expect(seen).toEqual(['1/3', '2/3', '3/3']);
+    const reloaded = await PDFDocument.load(out);
+    expect(reloaded.getPageCount()).toBe(3);
+    expect(Math.round(reloaded.getPage(1).getSize().width)).toBe(595);
+    expect(Math.round(reloaded.getPage(2).getSize().width)).toBe(612);
+    expect(Math.round(reloaded.getPage(2).getSize().height)).toBe(792);
   });
 });
