@@ -692,7 +692,7 @@ export default function PdfStudio() {
                 className="h-11 px-5 rounded-full border border-[#ECEAF6] bg-white text-[#5B4E89] font-semibold text-sm inline-flex items-center gap-2 hover:border-[#C4B5FD]"
               >
                 <Combine className="w-4 h-4" />
-                Merge · Split · Compress
+                PDF Tools
               </Link>
             </div>
             <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11.5px] text-[#5B4E89]">

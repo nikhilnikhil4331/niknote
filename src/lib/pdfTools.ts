@@ -138,9 +138,26 @@ export async function loadPdf(bytes: Uint8Array | ArrayBuffer): Promise<PDFDocum
   return PDFDocument.load(data, { ignoreEncryption: true, updateMetadata: false });
 }
 
+/** Pages + whether the file is password-protected (readable without the password). */
+export async function inspectPdf(
+  bytes: Uint8Array | ArrayBuffer
+): Promise<{ pages: number; encrypted: boolean }> {
+  try {
+    const doc = await loadPdf(bytes);
+    return { pages: doc.getPageCount(), encrypted: Boolean((doc as any).isEncrypted) };
+  } catch {
+    // Encrypted files still expose the page tree — enough for the Unlock tool.
+    const doc = await PDFDocument.load(toBytes(bytes), {
+      ignoreEncryption: true,
+      updateMetadata: false,
+    });
+    return { pages: doc.getPageCount(), encrypted: true };
+  }
+}
+
 export async function countPdfPages(bytes: Uint8Array | ArrayBuffer): Promise<number> {
-  const doc = await loadPdf(bytes);
-  return doc.getPageCount();
+  const { pages } = await inspectPdf(bytes);
+  return pages;
 }
 
 export function toBytes(input: Uint8Array | ArrayBuffer): Uint8Array {

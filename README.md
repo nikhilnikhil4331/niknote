@@ -20,7 +20,7 @@ saare features dono jagah same rehte hain. (PHP use nahi hota — jaan-boojh kar
 | ✍️ Handwriting notes | `/` | Type karo → aapki handwriting me notebook pages |
 | 🧠 NikAI (Astra Core) | `/ai` | Streaming chat, memory, Smart Notes, quiz, vision |
 | 📄 **PDF Studio** | `/pdf-editor` | Kisi bhi PDF ko **detail me edit** karo — neeche dekho |
-| 🧰 **PDF Tools** | `/pdf-tools` | Merge, split, compress, watermark, page numbers, photos → PDF |
+| 🧰 **PDF Tools** | `/pdf-tools` | Merge/split/compress · Word · Excel · OCR · Protect/Unlock · Watermark · Numbers · Photos |
 | 🃏 Flashcards | `/flashcards` | Smart revision decks |
 | 💰 Money / Routine / Habit | `/money` `/routine` `/habit` | Trackers |
 | 📚 Documents | `/documents` | PDF/image upload → AI summary |
@@ -48,9 +48,28 @@ Studio ka doosra half — jo kaam editing se pehle/baad me aate hain:
 | **Watermark** | Text (DRAFT/CONFIDENTIAL/naam), center ya full page tile, opacity/angle/color |
 | **Page numbers** | `Page {n} of {total}` template, 6 positions, start-at, cover skip |
 | **Images → PDF** | JPG/PNG photos → A4/Letter/Legal/A5 ya image-size pages |
+| **PDF → Word** | Asli `.docx` — headings auto-detect, page breaks, editable text |
+| **PDF → Excel** | Asli `.xlsx` — har page ek sheet, column gaps se cells (tables seedha Excel me) |
+| **OCR** | Scan/photo PDF me **invisible text layer** — search + copy yogya, English aur हिन्दी |
+| **Protect / Unlock** | AES-256 password lagao, ya purana password hatao (asli decryption) |
 
-Sab kuch offline chalta hai (pdf-lib + pdf.js), koi upload nahi — export ke liye wahi
-`saveFile` helper (APK → Documents + share sheet, phone → share sheet, desktop → download).
+Sab kuch **device par** hota hai (pdf-lib + pdf.js + tesseract.js) — koi file upload nahi.
+Sirf OCR ko pehli baar model (~10 MB, CDN se) download karna padta hai, uske baad cache se offline.
+Export ke liye wahi `saveFile` helper (APK → Documents + share sheet, phone → share sheet, desktop → download).
+
+### Free / open-source jo use hota hai
+
+| Library | License | Kaam |
+| --- | --- | --- |
+| [pdf-lib](https://github.com/Hopding/pdf-lib) | MIT | PDF banana / edit karna |
+| [@cantoo/pdf-lib](https://github.com/cantoo-scribe/pdf-lib) | MIT | AES-256 encrypt / decrypt |
+| [pdf.js](https://github.com/mozilla/pdf.js) | Apache-2.0 | PDF padhna, pages render, text extract |
+| [tesseract.js](https://github.com/naptha/tesseract.js) | Apache-2.0 | OCR (searchable PDF) |
+| [docx](https://github.com/dolanmiu/docx) | MIT | `.docx` likhna |
+| [JSZip](https://github.com/Stuk/jszip) | MIT / GPL-3.0 dual | `.xlsx` aur `.docx` zip packaging |
+| [Noto Sans Devanagari](https://github.com/notofonts/devanagari) | OFL-1.1 | हिन्दी OCR text layer |
+
+Sab kuch **browser/phone me hi** chalta hai — koi PDF kisi server par nahi jaati.
 
 ## Local development
 
