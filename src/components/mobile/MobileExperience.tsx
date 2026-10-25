@@ -338,6 +338,7 @@ export function MobileExperience() {
                 { label: 'Write Note', icon: PenLine, customImg: '', tone: 'green', action: () => navigate('/?editor=1&new=1') },
                 { label: 'Templates', icon: LayoutGrid, customImg: '', tone: 'purple', action: () => navigate('/templates') },
                 { label: 'Draw Board', icon: ScanLine, customImg: '', tone: 'pink', action: () => navigate('/board') },
+                { label: 'PDF Edit', icon: FileText, customImg: '', tone: 'gold', action: () => navigate('/pdf-editor') },
               ].map(({ label, icon: Icon, customImg, tone, action }) => (
                 <Button variant="ghost" className="nn-quick" key={label} onClick={action}>
                   {customImg ? (
@@ -528,6 +529,7 @@ export function MobileExperience() {
             <div className="nn-settings-group">
               {[
                 { label: 'NikAI', icon: Sparkles, customImg: '/nikai-mark.png', action: () => navigate('/ai') },
+                { label: 'PDF Studio (edit & sign)', icon: FileText, customImg: '', action: () => navigate('/pdf-editor') },
                 { label: 'Account', icon: Settings, customImg: '', action: () => navigate('/account-details') },
                 { label: 'Appearance', icon: LayoutGrid, customImg: '', action: () => navigate('/appearance') },
                 {

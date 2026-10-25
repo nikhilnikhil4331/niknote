@@ -163,7 +163,7 @@ const SEED_RECENT_CHATS: SeedChatPreview[] = [
     relTime: '2 days ago',
     prompt:
       'Explain wave-particle duality simply with real-world intuition, de Broglie wavelength formula, and double-slit experiment clarity.',
-    mode: 'tutor',
+    mode: 'teacher',
   },
   {
     id: 'seed-dsa',
@@ -188,10 +188,10 @@ const MODEL_OPTIONS: Array<{
   label: string;
   badge: string;
 }> = [
-  { id: 'auto', label: 'Astra Neural Auto', badge: 'Auto Best Routing' },
-  { id: 'pro', label: 'Astra Pro 120B', badge: 'Deep Reasoning' },
-  { id: 'flash', label: 'Astra Flash', badge: 'Instant Speed' },
-  { id: 'vision', label: 'Astra Vision 2.5', badge: 'Diagrams & Scans' },
+  { id: 'astra-auto', label: 'Astra Neural Auto', badge: 'Auto Best Routing' },
+  { id: 'astra-pro', label: 'Astra Pro 120B', badge: 'Deep Reasoning' },
+  { id: 'astra-flash', label: 'Astra Flash', badge: 'Instant Speed' },
+  { id: 'astra-vision', label: 'Astra Vision 2.5', badge: 'Diagrams & Scans' },
 ];
 
 const SIDEBAR_NAV_ITEMS: Array<{
@@ -202,7 +202,7 @@ const SIDEBAR_NAV_ITEMS: Array<{
   { id: 'auto', label: 'Chat', icon: MessageCircle },
   { id: 'notes', label: 'Smart Notes', icon: Feather },
   { id: 'quiz', label: 'Quiz', icon: Target },
-  { id: 'writing', label: 'Writing Studio', icon: FileText },
+  { id: 'write', label: 'Writing Studio', icon: FileText },
   { id: 'code', label: 'Code', icon: Code2 },
 ];
 
@@ -230,7 +230,7 @@ const HERO_CARDS: Array<{
     description: 'Get simple explanations with examples and visual clarity.',
     prompt:
       'Explain Bayes Theorem and Conditional Probability intuitively from scratch with clear step-by-step real-life examples.',
-    mode: 'tutor',
+    mode: 'teacher',
     icon: GraduationCap,
     tintBg: 'linear-gradient(165deg, rgba(255,252,245,0.93) 0%, rgba(255,247,235,0.87) 100%)',
     borderTint: 'rgba(253, 230, 196, 0.8)',
@@ -397,7 +397,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
     return initial[0]?.id ?? null;
   });
   const [mode, setMode] = useState<AstaMode>('auto');
-  const [modelChoice, setModelChoice] = useState<AstaModelChoice>('auto');
+  const [modelChoice, setModelChoice] = useState<AstaModelChoice>('astra-auto');
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [composerModelMenuOpen, setComposerModelMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -767,10 +767,10 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       const imagesToSend = overridePrompt !== undefined ? [] : pendingImages;
       if ((!text && imagesToSend.length === 0) || isGenerating) return;
 
-      const effectiveMode: AstaMode =
-        imagesToSend.length > 0 && (overrideMode || mode) === 'auto'
-          ? 'vision'
-          : overrideMode || mode;
+      const effectiveMode: AstaMode = overrideMode || mode;
+      // Photos/diagrams are routed by the vision model, not by a fake "vision" mode.
+      const effectiveModel: AstaModelChoice =
+        imagesToSend.length > 0 ? 'astra-vision' : modelChoice;
       if (overrideMode && overrideMode !== mode) setMode(overrideMode);
 
       const userMsg: NikAIMessage = {
@@ -849,7 +849,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             images: m.images,
           })),
           mode: effectiveMode,
-          model: modelChoice,
+          model: effectiveModel,
           threadId: targetThreadId,
           noteContext: noteCtx,
           memoryContext: freshMemoryPrompt,
@@ -935,6 +935,15 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
           titleSource.slice(0, 56) || 'Study Session'
         );
         setMemoryState(updatedMemory);
+
+        // Be explicit when the built-in offline engine answered instead of a
+        // cloud model — otherwise template answers look like a broken AI.
+        if (result.provider === 'local') {
+          toast.info('Offline engine answered this one. Add a free Groq or Gemini key for full cloud AI.', {
+            id: 'nikai-offline-engine',
+            action: { label: 'Add key', onClick: () => setKeysModalOpen(true) },
+          });
+        }
       } catch (err: any) {
         if (err?.name === 'AbortError') return;
         const fallbackError =

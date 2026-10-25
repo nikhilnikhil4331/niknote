@@ -24,3 +24,11 @@ dist-ssr
 *.sw?
 .vercel
 .env*
+
+# Capacitor / Android generated artifacts
+android/app/src/main/assets/public
+android/app/build
+android/build
+android/.gradle
+android/local.properties
+android/app/release

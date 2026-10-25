@@ -24,6 +24,50 @@ export type AstaModelChoice =
   | 'astra-vision'
   | 'astra-coder';
 
+// ── Mode / model normalisation ──
+// The UI (and older stored threads) can use short ids like `tutor`, `writing`,
+// `pro`, `flash` or `vision`. The server gateway only understands the canonical
+// ids below, so every request is normalised before it leaves the browser.
+const MODE_ALIASES: Record<string, AstaMode> = {
+  tutor: 'teacher',
+  teaching: 'teacher',
+  guru: 'teacher',
+  learn: 'teacher',
+  writing: 'write',
+  writer: 'write',
+  essay: 'write',
+  vision: 'auto',
+  solve: 'solver',
+  homework: 'solver',
+  flashcards: 'notes',
+  revise: 'notes',
+};
+
+const KNOWN_MODES: AstaMode[] = ['auto', 'deep', 'teacher', 'solver', 'code', 'notes', 'quiz', 'write'];
+
+export function resolveAstaMode(mode?: string | null): AstaMode {
+  const key = String(mode || 'auto').trim().toLowerCase();
+  if (MODE_ALIASES[key]) return MODE_ALIASES[key];
+  return (KNOWN_MODES as string[]).includes(key) ? (key as AstaMode) : 'auto';
+}
+
+const MODEL_ALIASES: Record<string, AstaModelChoice> = {
+  auto: 'astra-auto',
+  pro: 'astra-pro',
+  flash: 'astra-flash',
+  vision: 'astra-vision',
+  coder: 'astra-coder',
+  code: 'astra-coder',
+};
+
+export function resolveAstaModel(model?: string | null): AstaModelChoice {
+  const key = String(model || 'astra-auto').trim().toLowerCase();
+  const aliased = MODEL_ALIASES[key];
+  if (aliased) return aliased;
+  const known: AstaModelChoice[] = ['astra-auto', 'astra-pro', 'astra-flash', 'astra-vision', 'astra-coder'];
+  return known.includes(key as AstaModelChoice) ? (key as AstaModelChoice) : 'astra-auto';
+}
+
 export interface AstaImageAttachment {
   name?: string;
   mimeType: string;
@@ -125,6 +169,12 @@ export async function probeAstaProviders(): Promise<{ cloudReady: boolean; provi
     // ignore network check failure
   }
 
+  // Dev / preview sandboxes relay to the production gateway, so cloud AI is
+  // available there even without local provider keys.
+  if (active.size === 0 && getRemoteAstraGatewayUrl()) {
+    active.add('NikAI Astra Cloud Relay');
+  }
+
   return {
     cloudReady: active.size > 0,
     providers: Array.from(active),
@@ -172,18 +222,15 @@ export function generateFollowUpSuggestions(query: string, mode: AstaMode): stri
       ];
 }
 
-// ── Tier 1: Same-origin /api/ai SSE stream ──
-async function tryServerlessStream(
-  opts: AstaStreamOptions,
-  memoryContext: string
-): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
+// ── Shared NikAI gateway request builder ──
+function buildGatewayRequest(opts: AstaStreamOptions, memoryContext: string): RequestInit {
   const custom = readCustomAIKeys();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (custom.groqKey) headers['X-Groq-Key'] = custom.groqKey;
   if (custom.geminiKey) headers['X-Gemini-Key'] = custom.geminiKey;
   if (custom.openaiKey) headers['X-OpenAI-Key'] = custom.openaiKey;
 
-  const res = await fetch('/api/ai', {
+  return {
     method: 'POST',
     headers,
     signal: opts.signal,
@@ -198,12 +245,15 @@ async function tryServerlessStream(
       instruction: opts.instruction,
       stream: true,
     }),
-  });
+  };
+}
 
-  if (!res.ok || !res.body) return null;
-  const ct = res.headers.get('content-type') || '';
-  if (!ct.includes('text/event-stream')) return null;
-
+// Parses the NikAI SSE protocol (`data: {"meta"|"thinking"|"delta"}`) into text.
+async function consumeAstraSSE(
+  res: Response,
+  opts: AstaStreamOptions
+): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
+  if (!res.body) return null;
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -249,6 +299,57 @@ async function tryServerlessStream(
   }
 
   return content.trim() ? { content, thinking, model, provider } : null;
+}
+
+// ── Tier 1: Same-origin /api/ai SSE stream ──
+async function tryServerlessStream(
+  opts: AstaStreamOptions,
+  memoryContext: string
+): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
+  const res = await fetch('/api/ai', buildGatewayRequest(opts, memoryContext));
+  if (!res.ok || !res.body) return null;
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('text/event-stream')) return null;
+  return consumeAstraSSE(res, opts);
+}
+
+// ── Tier 1.5: Remote NikAI gateway (dev / preview only) ──
+// A local dev server or an Arena/E2B preview sandbox has no provider API keys,
+// so `/api/ai` answers 503. In that case we relay the exact same streaming
+// request to the production gateway (which has the keys) instead of dropping
+// the user into the template-only offline brain. Never used on the real site.
+const SANDBOX_HOST_PATTERN =
+  /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])$|\.(e2b\.app|e2b\.dev|lovable\.dev|lovableproject\.com)$/i;
+
+export function getRemoteAstraGatewayUrl(): string | null {
+  try {
+    // Unit tests must stay deterministic (no live network calls), so the relay is
+    // opt-in there via an explicit URL.
+    if (typeof (globalThis as any).vi !== 'undefined') return null;
+    const explicit = String((import.meta as any)?.env?.VITE_NIKAI_REMOTE_AI_URL || '').trim();
+    if (explicit) return explicit;
+    const host = typeof window !== 'undefined' ? window.location.hostname : '';
+    if (host && SANDBOX_HOST_PATTERN.test(host)) return 'https://www.niknote.online/api/ai';
+  } catch {
+    // ignore env / window access issues
+  }
+  return null;
+}
+
+async function tryRemoteGatewayStream(
+  opts: AstaStreamOptions,
+  memoryContext: string
+): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
+  const gateway = getRemoteAstraGatewayUrl();
+  if (!gateway) return null;
+
+  const res = await fetch(gateway, buildGatewayRequest(opts, memoryContext));
+  if (!res.ok || !res.body) return null;
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('text/event-stream')) return null;
+  const out = await consumeAstraSSE(res, opts);
+  if (!out) return null;
+  return { ...out, provider: out.provider || 'cloud' };
 }
 
 // ── Tier 2: Direct Browser Cloud Stream (OpenAI / Groq / Gemini) ──
@@ -548,20 +649,28 @@ async function synthesizeOfflineAstaResponse(
 export async function streamAstaAI(opts: AstaStreamOptions): Promise<AstaResult> {
   const t0 = performance.now();
   const lastUser = [...opts.messages].reverse().find((m) => m.role === 'user')?.content || '';
-  const mode = opts.mode || 'auto';
+  const mode = resolveAstaMode(opts.mode);
   const memoryContext = opts.memoryContext ?? buildNikAIMemoryPrompt(opts.threadId);
 
+  // Canonical ids only — the gateway rejects unknown mode/model ids by silently
+  // falling back to the generic route, which used to drop Deep/Pro/Vision.
+  const request: AstaStreamOptions = { ...opts, mode, model: resolveAstaModel(opts.model) };
+
   const result =
-    (await tryServerlessStream(opts, memoryContext).catch((err) => {
+    (await tryServerlessStream(request, memoryContext).catch((err) => {
       if (err?.name === 'AbortError') throw err;
       return null;
     })) ||
-    (await tryDirectCloudStream(opts, memoryContext).catch((err) => {
+    (await tryDirectCloudStream(request, memoryContext).catch((err) => {
       if (err?.name === 'AbortError') throw err;
       return null;
     })) ||
-    (await trySupabaseEdge(opts, memoryContext).catch(() => null)) ||
-    (await synthesizeOfflineAstaResponse(opts, memoryContext));
+    (await tryRemoteGatewayStream(request, memoryContext).catch((err) => {
+      if (err?.name === 'AbortError') throw err;
+      return null;
+    })) ||
+    (await trySupabaseEdge(request, memoryContext).catch(() => null)) ||
+    (await synthesizeOfflineAstaResponse(request, memoryContext));
 
   return {
     ...result,

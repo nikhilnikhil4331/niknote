@@ -456,6 +456,7 @@ const Index = () => {
             id: generateLineId(),
             text: b.content || '',
             color: (b.color as LineInkColor) || 'blue',
+            timestamp: Date.now(),
           }))
         );
         setCloudNotebookId(note.notebookId || null);

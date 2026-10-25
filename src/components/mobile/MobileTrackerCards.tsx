@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, CalendarCheck, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { formatMoney, isScheduled, monthSummary, toDay, TxRow } from '@/lib/trackers';
+import { formatMoney, isScheduled, monthSummary, toDay } from '@/lib/trackers';
 import { readState } from '@/lib/routineStore';
 import { useHaptics } from '@/hooks/useHaptics';
 
@@ -13,7 +13,8 @@ function readLocalMoneySummary(now = new Date()): { money: ReturnType<typeof mon
     const raw = localStorage.getItem('niknote.money.v1.local');
     if (!raw) return { money: monthSummary([], now), currency: 'INR' };
     const parsed = JSON.parse(raw);
-    const rows: TxRow[] = Array.isArray(parsed?.rows) ? parsed.rows : [];
+    const rows: { kind: string; amount: number | string; occurred_on: string }[] =
+      Array.isArray(parsed?.rows) ? parsed.rows : [];
     const currency = typeof parsed?.settings?.currency === 'string' ? parsed.settings.currency : 'INR';
     return { money: monthSummary(rows, now), currency };
   } catch {

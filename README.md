@@ -1,73 +1,69 @@
-# Welcome to your Lovable project
+# NikNote — AI study notes + handwriting + PDF Studio
 
-## Project info
+[![CI (web)](https://github.com/nikhilnikhil4331/niknote/actions/workflows/ci.yml/badge.svg)](https://github.com/nikhilnikhil4331/niknote/actions/workflows/ci.yml)
+[![Android APK](https://github.com/nikhilnikhil4331/niknote/actions/workflows/android-apk.yml/badge.svg)](https://github.com/nikhilnikhil4331/niknote/actions/workflows/android-apk.yml)
+[![Latest APK](https://img.shields.io/github/v/release/nikhilnikhil4331/niknote?label=APK&logo=android)](https://github.com/nikhilnikhil4331/niknote/releases/latest)
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**Website:** https://www.niknote.online
+**App (APK):** [Releases → latest `.apk`](https://github.com/nikhilnikhil4331/niknote/releases/latest)
 
-## How can I edit this code?
+NikNote ek **React + TypeScript (Vite)** app hai. Website aur Android APK — dono
+**ek hi codebase** se bante hain (Capacitor ke through), is liye logo, icons, AI aur
+saare features dono jagah same rehte hain. (PHP use nahi hota — jaan-boojh kar.)
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+| Feature | Kahan | Detail |
+| --- | --- | --- |
+| ✍️ Handwriting notes | `/` | Type karo → aapki handwriting me notebook pages |
+| 🧠 NikAI (Astra Core) | `/ai` | Streaming chat, memory, Smart Notes, quiz, vision |
+| 📄 **PDF Studio** | `/pdf-editor` | Kisi bhi PDF ko **detail me edit** karo — neeche dekho |
+| 🃏 Flashcards | `/flashcards` | Smart revision decks |
+| 💰 Money / Routine / Habit | `/money` `/routine` `/habit` | Trackers |
+| 📚 Documents | `/documents` | PDF/image upload → AI summary |
 
-Changes made via Lovable will be committed automatically to this repo.
+### PDF Studio (`/pdf-editor`)
 
-**Use your preferred IDE**
+- **Multi-page**: koi bhi page count open karo — thumbnails, page jump, prev/next,
+  rotate, blank page (**same size / A4 / Letter**), duplicate, reorder, delete
+- **Editing A→Z**: pen, highlighter, text (4 fonts, bold, size), box, circle, line,
+  arrow, tick/cross/star stamps, photos, **haath se signature** (saved & reusable)
+- **Undo/redo** (Ctrl+Z / Ctrl+Shift+Z), select → move/delete, eraser, zoom, shortcuts
+- **Download** har jagah chalta hai: browser → normal download, phone → share sheet,
+  APK → `Documents` folder + share sheet (progress ke saath "Saving page 3/12")
+- Sab kuch **device par** hota hai — PDF kabhi upload nahi hoti
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Local development
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+npm install
+npm run dev          # http://localhost:8080
+npm test             # vitest
+npx tsc -p tsconfig.app.json --noEmit
+npm run build
 ```
 
-**Edit a file directly in GitHub**
+## APK banana
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Sabse aasan — **GitHub se** (koi Android Studio nahi chahiye):
 
-**Use GitHub Codespaces**
+1. **Actions → Android APK → Run workflow**, ya `v1.0.0` tag push karo
+2. APK download karo: workflow artifact se, ya **Releases** se (tag push par apna aap attach hota hai)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Apne computer par:
 
-## What technologies are used for this project?
+```bash
+npm run icons          # website logo → launcher icons + splash screens
+npm run android:sync   # icons + build + cap sync
+npm run android:apk    # debug APK
+```
 
-This project is built with:
+Pura guide (signing, Play Store AAB, common errors): **[ANDROID-APK-GUIDE.md](./ANDROID-APK-GUIDE.md)**
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Brand
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+`public/niknote-logo.png` = single source of truth. Logo badalna ho to bas ye file
+replace karke `npm run icons` chala do — website, PWA icons, Android launcher icons
+(adaptive + round) aur splash screens sab update ho jate hain.

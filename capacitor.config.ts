@@ -1,12 +1,19 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.c3b001c91ebc4b888264e21284718120',
-  appName: 'niknote',
+  appId: 'online.niknote.app',
+  appName: 'NikNote',
   webDir: 'dist',
+  android: {
+    // Notes live in localStorage/IndexedDB on this exact origin, so it must never
+    // change or users would lose their notes on update.
+    allowMixedContent: false,
+    captureInput: true,
+  },
   server: {
-    url: 'https://c3b001c9-1ebc-4b88-8264-e21284718120.lovableproject.com?forceHideBadge=true',
-    cleartext: true,
+    // Self-contained build: the app ships its own bundle and works offline.
+    androidScheme: 'https',
+    cleartext: false,
   },
 };
 

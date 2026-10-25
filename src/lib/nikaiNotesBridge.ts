@@ -136,7 +136,10 @@ export function markdownToRichNikNoteBlocks(markdown: string): Block[] {
     push('code', codeLines.join('\n'), 'purple');
   }
 
-  return blocks.length > 0 ? blocks : [createBlock('text', markdown.trim(), 'blue')];
+  if (blocks.length > 0) return blocks;
+  const fallback = createBlock('text', markdown.trim());
+  fallback.color = 'blue';
+  return [fallback];
 }
 
 /**
