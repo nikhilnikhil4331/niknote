@@ -57,67 +57,60 @@ export async function checkAi(timeoutMs = 20000): Promise<CheckResult> {
   const label = 'NikAI (AI)';
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const where = route === 'gateway' ? 'cloud relay' : 'same-origin';
 
   try {
-    const health = await fetch(url, { method: 'GET', signal: controller.signal });
-    let payload: HealthPayload | null = null;
+    // 1. Health: which providers does this endpoint actually have?
+    let providers = 'providers unknown';
     try {
-      payload = (await health.clone().json()) as HealthPayload;
+      const health = await fetch(url, { method: 'GET', signal: controller.signal });
+      if (health.ok) {
+        const payload = (await health.json()) as HealthPayload;
+        providers = formatProviders(payload?.providers);
+      }
     } catch {
-      payload = null;
+      /* the real answer below is the actual test */
     }
-    const providers = formatProviders(payload?.providers);
 
-    // A real answer, not just a health probe: same call the chat makes.
+    // 2. A real, tiny completion — same route the chat uses, but non-streaming
+    //    so the answer arrives in one shot (and proves the keys work).
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages: [{ role: 'user', content: 'Reply with exactly one word: OK' }],
         mode: 'auto',
-        stream: true,
+        stream: false,
       }),
       signal: controller.signal,
     });
 
     if (!res.ok) {
-      const where = route === 'gateway' ? 'NikNote cloud gateway' : 'site ka /api/ai';
       return {
         id: 'ai',
         label,
         status: 'fail',
-        detail: `${where} ne ${res.status} diya — site down ya internet nahi`,
+        detail: `${where} ne ${res.status} diya — site down ya internet nahi · ${providers}`,
         ms: Math.round(performance.now() - started),
       };
     }
 
-    let text = '';
-    const contentType = res.headers.get('content-type') || '';
-    if (res.body && contentType.includes('text/event-stream')) {
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      while (text.length < 400) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        text += decoder.decode(value, { stream: true });
-      }
-      try {
-        await reader.cancel();
-      } catch {
-        /* stream already closed */
-      }
-    } else {
-      text = await res.text();
+    let content = '';
+    let model = '';
+    try {
+      const payload = (await res.json()) as { content?: string; model?: string; provider?: string };
+      content = String(payload?.content || '').trim();
+      model = payload?.model || payload?.provider || '';
+    } catch {
+      content = '';
     }
 
-    const answered = /OK|ok/i.test(text.replace(/\s+/g, ' ')) || text.length > 20;
-    const where = route === 'gateway' ? 'cloud relay' : 'same-origin';
     return {
       id: 'ai',
       label,
-      status: answered ? 'ok' : 'warn',
-      detail: answered
-        ? `${where} · ${providers} · jawab mila`
+      status: content ? 'ok' : 'warn',
+      detail: content
+        ? `${where} · ${providers} · ${model || 'Astra'} · jawab: ${content.slice(0, 24)}`
         : `${where} se jawab khali aaya · ${providers}`,
       ms: Math.round(performance.now() - started),
     };
