@@ -190,15 +190,35 @@ async function runProbe(groqKey: string, geminiKey: string, openaiKey: string): 
   const prompt = 'Reply with exactly one word: OK';
   const errors: string[] = [];
 
-  const attempts: Array<{ provider: 'groq' | 'gemini' | 'openai'; model: string }> = [];
+  type Attempt = { provider: ProviderId; model: string };
+  const attempts: Attempt[] = [];
   if (groqKey) attempts.push({ provider: 'groq', model: 'llama-3.1-8b-instant' });
   if (geminiKey) attempts.push({ provider: 'gemini', model: 'gemini-2.0-flash' });
   if (openaiKey) attempts.push({ provider: 'openai', model: 'gpt-4o-mini' });
   if (groqKey) attempts.push({ provider: 'groq', model: 'llama-3.3-70b-versatile' });
 
+  const keys: Record<ProviderId, string> = { groq: groqKey, gemini: geminiKey, openai: openaiKey };
+  const tried = new Set(attempts.map((a) => `${a.provider}:${a.model}`));
+
+  const ok = (provider: ProviderId, model: string, answer: string) =>
+    new Response(
+      JSON.stringify({
+        ok: Boolean(answer),
+        provider,
+        model,
+        answer: answer.slice(0, 40),
+        ms: Date.now() - started,
+        errors,
+      }),
+      { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
+    );
+
   for (const attempt of attempts) {
     try {
       const signal = AbortSignal.timeout(12000);
+      let status = 0;
+      let answer = '';
+
       if (attempt.provider === 'gemini') {
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${attempt.model}:generateContent?key=${encodeURIComponent(geminiKey)}`,
@@ -209,61 +229,52 @@ async function runProbe(groqKey: string, geminiKey: string, openaiKey: string): 
             body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] }),
           }
         );
-        if (!res.ok) {
-          errors.push(`gemini/${attempt.model}: ${res.status} ${(await res.text().catch(() => '')).slice(0, 120)}`);
-          continue;
+        status = res.status;
+        if (res.ok) {
+          const json: any = await res.json();
+          answer =
+            json?.candidates?.[0]?.content?.parts
+              ?.filter((p: any) => !p.thought)
+              ?.map((p: any) => p.text || '')
+              ?.join('')
+              ?.trim() ?? '';
+          return ok('gemini', attempt.model, answer);
         }
-        const json: any = await res.json();
-        const answer =
-          json?.candidates?.[0]?.content?.parts
-            ?.filter((p: any) => !p.thought)
-            ?.map((p: any) => p.text || '')
-            ?.join('')
-            ?.trim() ?? '';
-        return new Response(
-          JSON.stringify({
-            ok: Boolean(answer),
-            provider: 'gemini',
+        errors.push(`gemini/${attempt.model}: ${status} ${(await res.text().catch(() => '')).slice(0, 120)}`);
+      } else {
+        const key = attempt.provider === 'groq' ? groqKey : openaiKey;
+        const base = attempt.provider === 'groq' ? 'https://api.groq.com/openai/v1' : 'https://api.openai.com/v1';
+        const res = await fetch(`${base}/chat/completions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+          signal,
+          body: JSON.stringify({
             model: attempt.model,
-            answer: answer.slice(0, 40),
-            ms: Date.now() - started,
-            errors,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 24,
+            temperature: 0,
+            stream: false,
           }),
-          { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
-        );
+        });
+        status = res.status;
+        if (res.ok) {
+          const json: any = await res.json();
+          answer = String(json?.choices?.[0]?.message?.content ?? '').trim();
+          return ok(attempt.provider, attempt.model, answer);
+        }
+        errors.push(`${attempt.provider}/${attempt.model}: ${status} ${(await res.text().catch(() => '')).slice(0, 120)}`);
       }
 
-      const key = attempt.provider === 'groq' ? groqKey : openaiKey;
-      const base = attempt.provider === 'groq' ? 'https://api.groq.com/openai/v1' : 'https://api.openai.com/v1';
-      const res = await fetch(`${base}/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-        signal,
-        body: JSON.stringify({
-          model: attempt.model,
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 24,
-          temperature: 0,
-          stream: false,
-        }),
-      });
-      if (!res.ok) {
-        errors.push(`${attempt.provider}/${attempt.model}: ${res.status} ${(await res.text().catch(() => '')).slice(0, 120)}`);
-        continue;
+      // Model retired (404 / "no longer available") — ask the provider what it
+      // serves now and retry once with a live id.
+      if (status === 404) {
+        const healed = await healModel(attempt.provider, keys[attempt.provider]);
+        const key = healed ? `${attempt.provider}:${healed}` : '';
+        if (healed && !tried.has(key)) {
+          tried.add(key);
+          attempts.push({ provider: attempt.provider, model: healed });
+        }
       }
-      const json: any = await res.json();
-      const answer = String(json?.choices?.[0]?.message?.content ?? '').trim();
-      return new Response(
-        JSON.stringify({
-          ok: Boolean(answer),
-          provider: attempt.provider,
-          model: attempt.model,
-          answer: answer.slice(0, 40),
-          ms: Date.now() - started,
-          errors,
-        }),
-        { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
-      );
     } catch (error: any) {
       errors.push(`${attempt.provider}/${attempt.model}: ${String(error?.message || error).slice(0, 120)}`);
     }
@@ -282,6 +293,112 @@ async function runProbe(groqKey: string, geminiKey: string, openaiKey: string): 
   );
 }
 
+// ---------------------------------------------------------------------------
+// Live model discovery.
+// Providers retire model ids without notice (Groq dropped the Llama 3.x ids,
+// Gemini retired 2.0 Flash), which used to make every chat request 404 and
+// silently fall back to the offline brain. We now ask the provider what it
+// actually serves and swap in a live model instead of a hardcoded guess.
+// ---------------------------------------------------------------------------
+type ProviderId = 'groq' | 'gemini' | 'openai';
+
+const MODEL_CACHE = new Map<string, { ids: string[]; at: number }>();
+const MODEL_TTL_MS = 5 * 60 * 1000;
+
+const PREFERRED_MODELS: Record<ProviderId, string[]> = {
+  groq: [
+    'openai/gpt-oss-120b',
+    'openai/gpt-oss-20b',
+    'llama-3.3-70b-versatile',
+    'llama-3.1-8b-instant',
+    'qwen/qwen3-32b',
+    'moonshotai/kimi-k2-instruct',
+  ],
+  gemini: [
+    'gemini-2.5-flash',
+    'gemini-flash-latest',
+    'gemini-2.5-pro',
+    'gemini-pro-latest',
+    'gemini-2.0-flash',
+  ],
+  openai: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini', 'gpt-4.1', 'gpt-5-mini', 'gpt-5'],
+};
+
+const VISION_HINTS = ['vision', 'scout', 'flash', 'gpt-4o', 'gpt-4.1'];
+
+function isChatModel(id: string): boolean {
+  if (!id) return false;
+  if (/embed|whisper|tts|audio|moderation|dall-e|stable-diffusion|rerank|imagen|veo|sora|realtime|guard|ocr/i.test(id)) return false;
+  return true;
+}
+
+async function listModels(provider: ProviderId, key: string): Promise<string[]> {
+  if (!key) return [];
+  const cacheKey = `${provider}:${key.slice(-8)}`;
+  const cached = MODEL_CACHE.get(cacheKey);
+  if (cached && Date.now() - cached.at < MODEL_TTL_MS) return cached.ids;
+
+  let ids: string[] = [];
+  try {
+    const signal = AbortSignal.timeout(8000);
+    if (provider === 'gemini') {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`,
+        { signal }
+      );
+      if (res.ok) {
+        const json: any = await res.json();
+        ids = (json?.models || [])
+          .filter((m: any) => (m.supportedGenerationMethods || []).includes('generateContent'))
+          .map((m: any) => String(m.name || '').replace(/^models\//, ''))
+          .filter(Boolean);
+      }
+    } else {
+      const base = provider === 'groq' ? 'https://api.groq.com/openai/v1' : 'https://api.openai.com/v1';
+      const res = await fetch(`${base}/models`, { headers: { Authorization: `Bearer ${key}` }, signal });
+      if (res.ok) {
+        const json: any = await res.json();
+        ids = (json?.data || []).map((m: any) => String(m.id || '')).filter(Boolean);
+      }
+    }
+  } catch {
+    /* offline or blocked — callers fall back to the curated ids */
+  }
+
+  if (ids.length) MODEL_CACHE.set(cacheKey, { ids, at: Date.now() });
+  return ids;
+}
+
+function pickModel(provider: ProviderId, ids: string[], preferVision = false): string | null {
+  const usable = ids.filter(isChatModel);
+  if (usable.length === 0) return null;
+  const pool = preferVision ? [...usable].sort((a, b) => {
+    const score = (id: string) => (VISION_HINTS.some((h) => id.includes(h)) ? 0 : 1);
+    return score(a) - score(b);
+  }) : usable;
+
+  for (const wanted of PREFERRED_MODELS[provider]) {
+    const exact = pool.find((id) => id === wanted);
+    if (exact) return exact;
+  }
+  for (const wanted of PREFERRED_MODELS[provider]) {
+    const partial = pool.find((id) => id.includes(wanted));
+    if (partial) return partial;
+  }
+  return pool[0] || null;
+}
+
+/** A replacement model for one dead candidate, or null when nothing is live. */
+async function healModel(
+  provider: ProviderId,
+  key: string,
+  preferVision = false
+): Promise<string | null> {
+  const ids = await listModels(provider, key);
+  return pickModel(provider, ids, preferVision);
+}
+
+
 export default async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { status: 200, headers: CORS_HEADERS });
@@ -298,6 +415,29 @@ export default async function handler(req: Request): Promise<Response> {
       gemini: Boolean(geminiKey),
       openai: Boolean(openaiKey),
     };
+
+    // ?models=1 — what each provider actually serves right now (debug + the
+    // source of truth for healing retired model ids).
+    if (url.searchParams.get('models')) {
+      const [groqIds, geminiIds, openaiIds] = await Promise.all([
+        listModels('groq', groqKey),
+        listModels('gemini', geminiKey),
+        listModels('openai', openaiKey),
+      ]);
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          engine: 'NikAI Astra Neural Core',
+          providers,
+          models: {
+            groq: { count: groqIds.length, picked: pickModel('groq', groqIds), ids: groqIds.slice(0, 40) },
+            gemini: { count: geminiIds.length, picked: pickModel('gemini', geminiIds), ids: geminiIds.slice(0, 40) },
+            openai: { count: openaiIds.length, picked: pickModel('openai', openaiIds), ids: openaiIds.slice(0, 40) },
+          },
+        }),
+        { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
+      );
+    }
 
     // ?probe=1 — real completion from each provider, so AI health is provable
     // from a plain URL (used by the in-app Check-up page and by smoke tests).
@@ -397,39 +537,40 @@ export default async function handler(req: Request): Promise<Response> {
   type Candidate = { provider: 'groq' | 'gemini' | 'openai'; model: string; label: string };
   const candidates: Candidate[] = [];
 
+  // Order matters: the fastest live model first. Anything the provider has
+  // since retired 404s, and queueHealedCandidate() swaps in a live id.
   if (hasImages || requestedModel === 'astra-vision') {
     if (geminiKey) {
       candidates.push({ provider: 'gemini', model: 'gemini-2.5-flash', label: 'NikAI Astra Vision' });
-      candidates.push({ provider: 'gemini', model: 'gemini-2.0-flash', label: 'NikAI Astra Vision' });
+      candidates.push({ provider: 'gemini', model: 'gemini-2.5-pro', label: 'NikAI Astra Vision Pro' });
     }
     if (groqKey) {
       candidates.push({ provider: 'groq', model: 'meta-llama/llama-4-scout-17b-16e-instruct', label: 'NikAI Astra Vision' });
+      candidates.push({ provider: 'groq', model: 'meta-llama/llama-4-maverick-17b-128e-instruct', label: 'NikAI Astra Vision' });
     }
     if (openaiKey) {
       candidates.push({ provider: 'openai', model: 'gpt-4o', label: 'NikAI Astra Vision Pro' });
     }
   } else if (requestedModel === 'astra-pro' || mode === 'deep') {
-    if (openaiKey) candidates.push({ provider: 'openai', model: 'gpt-4o', label: 'NikAI Astra Pro' });
     if (groqKey) candidates.push({ provider: 'groq', model: 'openai/gpt-oss-120b', label: 'NikAI Astra Pro 120B' });
+    if (openaiKey) candidates.push({ provider: 'openai', model: 'gpt-4o', label: 'NikAI Astra Pro' });
     if (geminiKey) candidates.push({ provider: 'gemini', model: 'gemini-2.5-pro', label: 'NikAI Astra Pro' });
-    if (groqKey) candidates.push({ provider: 'groq', model: 'llama-3.3-70b-versatile', label: 'NikAI Astra Core' });
     if (geminiKey) candidates.push({ provider: 'gemini', model: 'gemini-2.5-flash', label: 'NikAI Astra Flash' });
+    if (groqKey) candidates.push({ provider: 'groq', model: 'openai/gpt-oss-20b', label: 'NikAI Astra Core' });
   } else if (requestedModel === 'astra-coder' || mode === 'code') {
-    if (openaiKey) candidates.push({ provider: 'openai', model: 'gpt-4o', label: 'NikAI Astra Coder' });
     if (groqKey) candidates.push({ provider: 'groq', model: 'openai/gpt-oss-120b', label: 'NikAI Astra Coder 120B' });
-    if (groqKey) candidates.push({ provider: 'groq', model: 'llama-3.3-70b-versatile', label: 'NikAI Astra Coder' });
+    if (openaiKey) candidates.push({ provider: 'openai', model: 'gpt-4o', label: 'NikAI Astra Coder' });
     if (geminiKey) candidates.push({ provider: 'gemini', model: 'gemini-2.5-pro', label: 'NikAI Astra Coder' });
+    if (groqKey) candidates.push({ provider: 'groq', model: 'openai/gpt-oss-20b', label: 'NikAI Astra Coder' });
   } else {
-    if (openaiKey) candidates.push({ provider: 'openai', model: 'gpt-4o', label: 'NikAI Astra Core' });
     if (groqKey) {
-      candidates.push({ provider: 'groq', model: 'llama-3.3-70b-versatile', label: requestedModel === 'astra-flash' ? 'NikAI Astra Flash' : 'NikAI Astra Core' });
-      candidates.push({ provider: 'groq', model: 'openai/gpt-oss-120b', label: 'NikAI Astra Pro' });
-      candidates.push({ provider: 'groq', model: 'llama-3.1-8b-instant', label: 'NikAI Astra Instant' });
+      candidates.push({ provider: 'groq', model: 'openai/gpt-oss-120b', label: requestedModel === 'astra-flash' ? 'NikAI Astra Flash' : 'NikAI Astra Core' });
+      candidates.push({ provider: 'groq', model: 'openai/gpt-oss-20b', label: 'NikAI Astra Instant' });
     }
     if (geminiKey) {
       candidates.push({ provider: 'gemini', model: 'gemini-2.5-flash', label: 'NikAI Astra Flash' });
-      candidates.push({ provider: 'gemini', model: 'gemini-2.0-flash', label: 'NikAI Astra Flash' });
     }
+    if (openaiKey) candidates.push({ provider: 'openai', model: 'gpt-4o-mini', label: 'NikAI Astra Core' });
   }
 
   if (candidates.length === 0) {
@@ -443,6 +584,18 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const errors: string[] = [];
+  const triedModels = new Set(candidates.map((c) => `${c.provider}:${c.model}`));
+
+  /** Queue a live replacement when a provider retires the id we asked for. */
+  const queueHealedCandidate = async (dead: { provider: 'groq' | 'gemini' | 'openai'; label: string }, preferVision: boolean) => {
+    const key = dead.provider === 'groq' ? groqKey : dead.provider === 'gemini' ? geminiKey : openaiKey;
+    const healed = await healModel(dead.provider, key, preferVision);
+    if (!healed) return;
+    const id = `${dead.provider}:${healed}`;
+    if (triedModels.has(id)) return;
+    triedModels.add(id);
+    candidates.push({ provider: dead.provider, model: healed, label: dead.label });
+  };
 
   for (const candidate of candidates) {
     try {
@@ -491,6 +644,7 @@ export default async function handler(req: Request): Promise<Response> {
         if (!upstream.ok) {
           const errTxt = await upstream.text().catch(() => '');
           errors.push(`${candidate.provider}/${candidate.model}: ${upstream.status} ${errTxt.slice(0, 140)}`);
+          if (upstream.status === 404) await queueHealedCandidate(candidate, hasImages);
           continue;
         }
 
@@ -556,6 +710,7 @@ export default async function handler(req: Request): Promise<Response> {
         if (!upstream.ok) {
           const errTxt = await upstream.text().catch(() => '');
           errors.push(`gemini/${candidate.model}: ${upstream.status} ${errTxt.slice(0, 140)}`);
+          if (upstream.status === 404) await queueHealedCandidate(candidate, hasImages);
           continue;
         }
 
