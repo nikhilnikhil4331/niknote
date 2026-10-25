@@ -179,6 +179,109 @@ function createNormalizedSSEStream(
   });
 }
 
+// ---------------------------------------------------------------------------
+// Live probe: `GET /api/ai?probe=1` asks each configured provider for a single
+// word, so anyone (and the in-app Check-up page) can prove that the keys and
+// the upstream models are actually answering — a plain browser URL is enough,
+// no POST needed. Cost per hit: a handful of tokens.
+// ---------------------------------------------------------------------------
+async function runProbe(groqKey: string, geminiKey: string, openaiKey: string): Promise<Response> {
+  const started = Date.now();
+  const prompt = 'Reply with exactly one word: OK';
+  const errors: string[] = [];
+
+  const attempts: Array<{ provider: 'groq' | 'gemini' | 'openai'; model: string }> = [];
+  if (groqKey) attempts.push({ provider: 'groq', model: 'llama-3.1-8b-instant' });
+  if (geminiKey) attempts.push({ provider: 'gemini', model: 'gemini-2.0-flash' });
+  if (openaiKey) attempts.push({ provider: 'openai', model: 'gpt-4o-mini' });
+  if (groqKey) attempts.push({ provider: 'groq', model: 'llama-3.3-70b-versatile' });
+
+  for (const attempt of attempts) {
+    try {
+      const signal = AbortSignal.timeout(12000);
+      if (attempt.provider === 'gemini') {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${attempt.model}:generateContent?key=${encodeURIComponent(geminiKey)}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal,
+            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] }),
+          }
+        );
+        if (!res.ok) {
+          errors.push(`gemini/${attempt.model}: ${res.status} ${(await res.text().catch(() => '')).slice(0, 120)}`);
+          continue;
+        }
+        const json: any = await res.json();
+        const answer =
+          json?.candidates?.[0]?.content?.parts
+            ?.filter((p: any) => !p.thought)
+            ?.map((p: any) => p.text || '')
+            ?.join('')
+            ?.trim() ?? '';
+        return new Response(
+          JSON.stringify({
+            ok: Boolean(answer),
+            provider: 'gemini',
+            model: attempt.model,
+            answer: answer.slice(0, 40),
+            ms: Date.now() - started,
+            errors,
+          }),
+          { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
+        );
+      }
+
+      const key = attempt.provider === 'groq' ? groqKey : openaiKey;
+      const base = attempt.provider === 'groq' ? 'https://api.groq.com/openai/v1' : 'https://api.openai.com/v1';
+      const res = await fetch(`${base}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+        signal,
+        body: JSON.stringify({
+          model: attempt.model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 24,
+          temperature: 0,
+          stream: false,
+        }),
+      });
+      if (!res.ok) {
+        errors.push(`${attempt.provider}/${attempt.model}: ${res.status} ${(await res.text().catch(() => '')).slice(0, 120)}`);
+        continue;
+      }
+      const json: any = await res.json();
+      const answer = String(json?.choices?.[0]?.message?.content ?? '').trim();
+      return new Response(
+        JSON.stringify({
+          ok: Boolean(answer),
+          provider: attempt.provider,
+          model: attempt.model,
+          answer: answer.slice(0, 40),
+          ms: Date.now() - started,
+          errors,
+        }),
+        { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
+      );
+    } catch (error: any) {
+      errors.push(`${attempt.provider}/${attempt.model}: ${String(error?.message || error).slice(0, 120)}`);
+    }
+  }
+
+  return new Response(
+    JSON.stringify({
+      ok: false,
+      provider: null,
+      model: null,
+      answer: '',
+      ms: Date.now() - started,
+      errors: errors.length ? errors : ['no_provider_configured'],
+    }),
+    { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
+  );
+}
+
 export default async function handler(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { status: 200, headers: CORS_HEADERS });
@@ -189,17 +292,27 @@ export default async function handler(req: Request): Promise<Response> {
   const openaiKey = (req.headers.get('x-openai-key') || '').trim() || getEnv('OPENAI_API_KEY') || getEnv('VITE_OPENAI_KEY');
 
   if (req.method === 'GET') {
+    const url = new URL(req.url);
+    const providers = {
+      groq: Boolean(groqKey),
+      gemini: Boolean(geminiKey),
+      openai: Boolean(openaiKey),
+    };
+
+    // ?probe=1 — real completion from each provider, so AI health is provable
+    // from a plain URL (used by the in-app Check-up page and by smoke tests).
+    if (url.searchParams.get('probe')) {
+      const probe = await runProbe(groqKey, geminiKey, openaiKey);
+      const payload = (await probe.json()) as Record<string, unknown>;
+      return new Response(
+        JSON.stringify({ ok: Boolean(payload.ok), engine: 'NikAI Astra Neural Core', providers, probe: payload }),
+        { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
+      );
+    }
+
     return new Response(
-      JSON.stringify({
-        ok: true,
-        engine: 'NikAI Astra Neural Core',
-        providers: {
-          groq: Boolean(groqKey),
-          gemini: Boolean(geminiKey),
-          openai: Boolean(openaiKey),
-        },
-      }),
-      { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+      JSON.stringify({ ok: true, engine: 'NikAI Astra Neural Core', providers }),
+      { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
     );
   }
 

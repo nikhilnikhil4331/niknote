@@ -24,6 +24,15 @@ export type CheckResult = {
 export type AiRoute = 'gateway' | 'same-origin';
 
 /** Where NikAI will send its requests on this device. */
+interface ProbePayload {
+  ok?: boolean;
+  provider?: string | null;
+  model?: string | null;
+  answer?: string;
+  ms?: number;
+  errors?: string[];
+}
+
 export function getAiEndpoint(): { url: string; route: AiRoute } {
   const gateway = getRemoteAstraGatewayUrl();
   if (gateway) return { url: gateway, route: 'gateway' };
@@ -52,79 +61,83 @@ export function formatProviders(providers: Record<string, boolean> | null | unde
 type HealthPayload = { ok?: boolean; providers?: Record<string, boolean>; engine?: string };
 
 export async function checkAi(timeoutMs = 20000): Promise<CheckResult> {
-  const started = performance.now();
+  const started = Math.round(performance.now());
   const { url, route } = getAiEndpoint();
   const label = 'NikAI (AI)';
+  const where = route === 'gateway' ? 'cloud relay' : 'same-origin';
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-  const where = route === 'gateway' ? 'cloud relay' : 'same-origin';
+
+  const finish = (status: CheckResult['status'], detail: string): CheckResult => ({
+    id: 'ai',
+    label,
+    status,
+    detail,
+    ms: Math.round(performance.now()) - started,
+  });
 
   try {
-    // 1. Health: which providers does this endpoint actually have?
-    let providers = 'providers unknown';
+    // 1. Ask the gateway to do a real completion against each provider it has.
+    //    One GET, no stream, and it names the model that answered.
+    let providers = '';
+    let probe: ProbePayload | undefined;
     try {
-      const health = await fetch(url, { method: 'GET', signal: controller.signal });
-      if (health.ok) {
-        const payload = (await health.json()) as HealthPayload;
+      const res = await fetch(`${url}?probe=1`, { method: 'GET', signal: controller.signal });
+      if (res.ok) {
+        const payload = (await res.json()) as HealthPayload & { probe?: ProbePayload };
         providers = formatProviders(payload?.providers);
+        probe = payload?.probe;
       }
     } catch {
-      /* the real answer below is the actual test */
+      /* fall through to the chat-style POST */
     }
 
-    // 2. A real, tiny completion — same route the chat uses, but non-streaming
-    //    so the answer arrives in one shot (and proves the keys work).
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: 'Reply with exactly one word: OK' }],
-        mode: 'auto',
-        stream: false,
-      }),
-      signal: controller.signal,
-    });
-
-    if (!res.ok) {
-      return {
-        id: 'ai',
-        label,
-        status: 'fail',
-        detail: `${where} ne ${res.status} diya — site down ya internet nahi · ${providers}`,
-        ms: Math.round(performance.now() - started),
-      };
+    if (!probe) {
+      // Older deployment (no ?probe) — test the exact call the chat makes.
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: 'Reply with exactly one word: OK' }],
+          mode: 'auto',
+          stream: false,
+        }),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        return finish('fail', `${where} ne ${res.status} diya — site down ya internet nahi${providers ? ` · ${providers}` : ''}`);
+      }
+      const payload = (await res.json().catch(() => ({}))) as { content?: string; model?: string; provider?: string };
+      const content = String(payload?.content || '').trim();
+      providers = providers || formatProviders(undefined);
+      return content
+        ? finish('ok', `${where} · ${providers} · ${payload?.model || payload?.provider || 'Astra'} · jawab: ${content.slice(0, 24)}`)
+        : finish('warn', `${where} se jawab khali aaya${providers ? ` · ${providers}` : ''}`);
     }
 
-    let content = '';
-    let model = '';
-    try {
-      const payload = (await res.json()) as { content?: string; model?: string; provider?: string };
-      content = String(payload?.content || '').trim();
-      model = payload?.model || payload?.provider || '';
-    } catch {
-      content = '';
+    if (!probe.ok) {
+      const firstError = probe.errors?.[0] || 'koi provider jawab nahi de raha';
+      const noKeys = firstError.includes('no_provider_configured');
+      return finish(
+        'fail',
+        noKeys
+          ? `${where} par koi AI key set nahi hai — Vercel env me GROQ_API_KEY / GEMINI_API_KEY daalo`
+          : `${where} tak pahunch gaya par model ne jawab nahi diya · ${providers} · ${firstError.slice(0, 90)}`
+      );
     }
 
-    return {
-      id: 'ai',
-      label,
-      status: content ? 'ok' : 'warn',
-      detail: content
-        ? `${where} · ${providers} · ${model || 'Astra'} · jawab: ${content.slice(0, 24)}`
-        : `${where} se jawab khali aaya · ${providers}`,
-      ms: Math.round(performance.now() - started),
-    };
+    return finish(
+      'ok',
+      `${where} · ${providers} · ${probe.model || probe.provider || 'Astra'} · jawab: ${(probe.answer || 'OK').slice(0, 24)}`
+    );
   } catch (error: any) {
     const aborted = error?.name === 'AbortError';
-    return {
-      id: 'ai',
-      label,
-      status: 'fail',
-      detail: aborted
+    return finish(
+      'fail',
+      aborted
         ? `AI ne ${Math.round(timeoutMs / 1000)}s me jawab nahi diya — internet slow lagta hai`
-        : `AI tak nahi pahunch paye — internet check karo (${String(error?.message || 'network error').slice(0, 60)})`,
-      ms: Math.round(performance.now() - started),
-    };
+        : `AI tak nahi pahunch paye — internet check karo (${String(error?.message || 'network error').slice(0, 60)})`
+    );
   } finally {
     clearTimeout(timer);
   }

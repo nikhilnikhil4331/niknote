@@ -13,7 +13,10 @@ function niknoteLocalAIPlugin(): Plugin {
           chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
         }
         const bodyBuf = Buffer.concat(chunks);
-        const url = `http://${req.headers.host || "localhost"}/api/ai`;
+        // Keep the query string (?probe=1 etc.) — connect strips the mount path
+        // from req.url, so prefer originalUrl when it exists.
+        const pathWithQuery = req.originalUrl || `/api/ai${req.url || ""}`;
+        const url = `http://${req.headers.host || "localhost"}${pathWithQuery}`;
         const headers = new Headers();
         for (const [k, v] of Object.entries(req.headers)) {
           if (typeof v === "string") headers.set(k, v);
