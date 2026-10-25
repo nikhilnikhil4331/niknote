@@ -1127,8 +1127,10 @@ export default function PdfTools() {
         <div className="mb-4 flex items-start gap-2 rounded-2xl border border-border/60 bg-card/60 p-3 text-xs text-muted-foreground">
           <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
           <p>
-            Sab kuch tumhare phone me hi hota hai — koi file upload nahi hoti, internet ki bhi zarurat nahi.
-            Bade PDF par thoda time lagega, tab band mat karo.
+            Sab kuch tumhare phone me hi hota hai — koi file upload nahi hoti. Merge, split, compress,
+            Word, Excel, watermark aur password sab <strong className="font-semibold">offline</strong> chalte hain;
+            sirf OCR ko pehli baar model download karne ke liye internet chahiye. Bade PDF par thoda time lagega,
+            tab band mat karo.
           </p>
         </div>
 
