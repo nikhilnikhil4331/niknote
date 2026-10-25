@@ -21,6 +21,7 @@ saare features dono jagah same rehte hain. (PHP use nahi hota — jaan-boojh kar
 | 🧠 NikAI (Astra Core) | `/ai` | Streaming chat, memory, Smart Notes, quiz, vision |
 | 📄 **PDF Studio** | `/pdf-editor` | Kisi bhi PDF ko **detail me edit** karo — neeche dekho |
 | 🩺 **Check-up** | `/checkup` | AI, PDF engine, OCR aur storage ek tap me test karo (APK/web dono) |
+| 🔍 **AI probe** | `/api/ai?probe=1` · `/api/ai?models=1` | Asli completion se AI ka proof; provider ke live model ids dekho |
 | 🧰 **PDF Tools** | `/pdf-tools` | Merge/split/compress · Word · Excel · OCR · Protect/Unlock · Watermark · Numbers · Photos |
 | 🃏 Flashcards | `/flashcards` | Smart revision decks |
 | 💰 Money / Routine / Habit | `/money` `/routine` `/habit` | Trackers |
