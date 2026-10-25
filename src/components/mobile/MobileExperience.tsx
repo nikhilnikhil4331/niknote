@@ -531,6 +531,7 @@ export function MobileExperience() {
                 { label: 'NikAI', icon: Sparkles, customImg: '/nikai-mark.png', action: () => navigate('/ai') },
                 { label: 'PDF Studio (edit & sign)', icon: FileText, customImg: '', action: () => navigate('/pdf-editor') },
                 { label: 'PDF Tools (Word, Excel, OCR, protect)', icon: FileText, customImg: '', action: () => navigate('/pdf-tools') },
+                { label: 'Check-up (AI, PDF, OCR test)', icon: FileText, customImg: '', action: () => navigate('/checkup') },
                 { label: 'Account', icon: Settings, customImg: '', action: () => navigate('/account-details') },
                 { label: 'Appearance', icon: LayoutGrid, customImg: '', action: () => navigate('/appearance') },
                 {

@@ -20,6 +20,7 @@ saare features dono jagah same rehte hain. (PHP use nahi hota — jaan-boojh kar
 | ✍️ Handwriting notes | `/` | Type karo → aapki handwriting me notebook pages |
 | 🧠 NikAI (Astra Core) | `/ai` | Streaming chat, memory, Smart Notes, quiz, vision |
 | 📄 **PDF Studio** | `/pdf-editor` | Kisi bhi PDF ko **detail me edit** karo — neeche dekho |
+| 🩺 **Check-up** | `/checkup` | AI, PDF engine, OCR aur storage ek tap me test karo (APK/web dono) |
 | 🧰 **PDF Tools** | `/pdf-tools` | Merge/split/compress · Word · Excel · OCR · Protect/Unlock · Watermark · Numbers · Photos |
 | 🃏 Flashcards | `/flashcards` | Smart revision decks |
 | 💰 Money / Routine / Habit | `/money` `/routine` `/habit` | Trackers |

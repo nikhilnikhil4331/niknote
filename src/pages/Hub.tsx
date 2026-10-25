@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import type { ComponentType } from 'react';
-import { PenLine, Wallet, CalendarCheck, Sprout, Layers, Sparkles, BookOpen, FileText, Trophy, User, Crown, History, Bot, MessageSquare, GraduationCap, Combine } from 'lucide-react';
+import { PenLine, Wallet, CalendarCheck, Sprout, Layers, Sparkles, BookOpen, FileText, Trophy, User, Crown, History, Bot, MessageSquare, GraduationCap, Combine, Activity } from 'lucide-react';
 import { AppDock } from '@/components/AppDock';
 import { haptic } from '@/hooks/useHaptics';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,6 +41,7 @@ const GROUPS: { title: string; items: HubItem[] }[] = [
     { to: '/account', label: 'Account', desc: 'Profile & settings', icon: User, hue: 220 },
     { to: '/upgrade', label: 'Go Premium', desc: 'Unlock everything', icon: Crown, hue: 40 },
     { to: '/feedback', label: 'Feedback', desc: 'Tell us anything', icon: MessageSquare, hue: 200 },
+    { to: '/checkup', label: 'Check-up', desc: 'AI, PDF, OCR sab test karo', icon: Activity, hue: 150 },
   ]},
 ];
 
