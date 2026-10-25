@@ -54,6 +54,7 @@ const AI4Page = lazy(() =>
 const DocumentIntelligence = lazy(() =>
   import("@/components/document-intelligence/DocumentIntelligence").then(m => ({ default: m.default }))
 );
+const PdfStudioPage = lazy(() => import("@/components/pdf-studio/PdfStudio"));
 const QAPage = lazy(() =>
   import("@/pages/QA").then(m => ({ default: m.default }))
 );
@@ -195,6 +196,8 @@ const App = () => {
                         <Route path="/admin-panel-nikhil" element={<AdminPanelNikhil />} />
                         <Route path="/ai-solver" element={<AISolverPage />} />
                         <Route path="/documents" element={<DocumentIntelligence />} />
+                        <Route path="/pdf-editor" element={<PdfStudioPage />} />
+                        <Route path="/pdf" element={<PdfStudioPage />} />
                         <Route path="/qa" element={<QAPage />} />
                         <Route path="/blog" element={<BlogPage />} />
                         <Route path="/blog/:slug" element={<BlogPage />} />

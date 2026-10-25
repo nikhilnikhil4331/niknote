@@ -218,6 +218,13 @@ ${extractedText.substring(0, 4000)}`,
         <p className="text-muted-foreground text-sm mt-1">
           PDF ya image upload karo — AI sab samajh lega! 🧠
         </p>
+        <button
+          onClick={() => navigate('/pdf-editor')}
+          className="mt-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#EC4899] px-4 py-2 text-[12.5px] font-bold text-white shadow-sm"
+        >
+          <FileText className="w-4 h-4" />
+          PDF Studio — edit, sign & annotate any PDF
+        </button>
       </div>
 
       {/* Upload Area */}

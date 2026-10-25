@@ -21,6 +21,7 @@ const GROUPS: { title: string; items: HubItem[] }[] = [
     { to: '/', label: 'Handwriting Notes', desc: 'Type → your handwriting', icon: PenLine, hue: 330 },
     { to: '/notebooks', label: 'My Notebooks', desc: 'All your pages', icon: BookOpen, hue: 270 },
     { to: '/documents', label: 'Documents', desc: 'Upload PDF & images', icon: FileText, hue: 210 },
+    { to: '/pdf-editor', label: 'PDF Studio', desc: 'Edit, sign & annotate PDFs', icon: PenLine, hue: 350 },
     { to: '/history', label: 'History', desc: 'Recent work', icon: History, hue: 190 },
   ]},
   { title: 'NikAI & Study', items: [

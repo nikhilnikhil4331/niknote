@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NikNote</string>
+    <string name="title_activity_main">NikNote</string>
+    <string name="package_name">app.lovable.c3b001c91ebc4b888264e21284718120</string>
+    <string name="custom_url_scheme">app.lovable.c3b001c91ebc4b888264e21284718120</string>
+</resources>
