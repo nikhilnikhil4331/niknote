@@ -158,6 +158,17 @@ export default function Checkup() {
             <li>• <strong className="font-semibold">PDF fail:</strong> app ka naya version install karo (niknote.online se APK).</li>
             <li>• <strong className="font-semibold">Storage band:</strong> browser me site data / cookies allow karo, warna notes save nahi honge.</li>
           </ul>
+          <a
+            href={`${endpoint.url}?probe=1`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 flex items-center justify-between rounded-2xl border border-dashed border-border/70 bg-background/60 px-3 py-2 text-xs transition hover:border-violet-400/60"
+          >
+            <span className="font-semibold">AI ka seedha proof (JSON)</span>
+            <span className="text-muted-foreground">
+              {endpoint.route === 'gateway' ? '/api/ai?probe=1' : 'is site ka /api/ai?probe=1'}
+            </span>
+          </a>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <Link to="/ai" className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 text-sm transition hover:border-violet-400/60">
               <span className="font-semibold">NikAI kholo</span>
