@@ -12,7 +12,7 @@ import {
   ArrowLeft, ArrowRight, ArrowUpRight, Circle, Download, Eraser, FilePlus2, FileText,
   Highlighter, Image as ImageIcon, Loader2, MousePointer2, PenLine, Redo2, RotateCw,
   Square, Stamp, Trash2, Type, Undo2, Upload, ZoomIn, ZoomOut, Check, X, Star, Minus,
-  Copy, ChevronUp, ChevronDown, Save, Share2,
+  Copy, ChevronUp, ChevronDown, Save, Share2, Combine,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -678,14 +678,23 @@ export default function PdfStudio() {
               Type, write, highlight, draw shapes, add signatures & photos, rotate or reorder pages — everything
               happens on your device. Your file is never uploaded.
             </p>
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={loadingDoc}
-              className="mt-5 h-11 px-6 rounded-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-semibold"
-            >
-              {loadingDoc ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-              {loadingDoc ? 'Opening…' : 'Open a PDF'}
-            </Button>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loadingDoc}
+                className="h-11 px-6 rounded-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-semibold"
+              >
+                {loadingDoc ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                {loadingDoc ? 'Opening…' : 'Open a PDF'}
+              </Button>
+              <Link
+                to="/pdf-tools"
+                className="h-11 px-5 rounded-full border border-[#ECEAF6] bg-white text-[#5B4E89] font-semibold text-sm inline-flex items-center gap-2 hover:border-[#C4B5FD]"
+              >
+                <Combine className="w-4 h-4" />
+                Merge · Split · Compress
+              </Link>
+            </div>
             <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11.5px] text-[#5B4E89]">
               {['Pen & highlighter', 'Text anywhere', 'Signatures', 'Shapes & arrows', 'Ticks & stamps', 'Images', 'Rotate & reorder', 'Add blank pages', 'Flattened export'].map((f) => (
                 <div key={f} className="rounded-xl bg-[#F8F6FE] border border-[#F1EFF9] px-2.5 py-2 font-medium">{f}</div>
@@ -1127,6 +1136,14 @@ function TopBar({
               </button>
             </div>
           )}
+          <Link
+            to="/pdf-tools"
+            title="Merge, split, compress, watermark"
+            className="h-9 px-2.5 rounded-xl border border-[#ECEAF6] bg-white flex items-center gap-1 text-[11px] font-bold text-[#5B4E89] hover:border-[#C4B5FD]"
+          >
+            <Combine className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Tools</span>
+          </Link>
           {onUndo && (
             <button
               onClick={onUndo}
