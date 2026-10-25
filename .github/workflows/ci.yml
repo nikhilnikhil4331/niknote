@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   check:
-    name: Type-check → test → build
+    name: Type-check → build → test
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -31,14 +31,16 @@ jobs:
       - name: Type-check
         run: npm run typecheck
 
-      - name: Unit tests
-        run: npm test -- --reporter=dot
+      # Build before tests: src/lib/habit-e2e.test.tsx asserts on dist/index.html.
 
       - name: Production build
         run: npm run build
         env:
           VITE_SUPABASE_URL: https://example.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: public-anon-key-placeholder
+
+      - name: Unit tests
+        run: npm test -- --reporter=dot
 
       - name: Upload web build
         uses: actions/upload-artifact@v4
