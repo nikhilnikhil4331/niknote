@@ -323,6 +323,9 @@ const SANDBOX_HOST_PATTERN =
 
 export function getRemoteAstraGatewayUrl(): string | null {
   try {
+    // Unit tests must stay deterministic (no live network calls), so the relay is
+    // opt-in there via an explicit URL.
+    if (typeof (globalThis as any).vi !== 'undefined') return null;
     const explicit = String((import.meta as any)?.env?.VITE_NIKAI_REMOTE_AI_URL || '').trim();
     if (explicit) return explicit;
     const host = typeof window !== 'undefined' ? window.location.hostname : '';

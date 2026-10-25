@@ -1,4 +1,15 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
+
+// The relay is disabled while a test runner is detected; these specs exercise the
+// URL logic directly, so re-enable it by hiding the runner marker.
+const withoutTestGuard = () => {
+  const g = globalThis as any;
+  const saved = g.vi;
+  delete g.vi;
+  return () => {
+    if (saved) g.vi = saved;
+  };
+};
 import {
   resolveAstaMode,
   resolveAstaModel,
@@ -35,19 +46,31 @@ describe('NikAI preview gateway relay', () => {
     vi.unstubAllGlobals();
   });
 
-  it('relays to the production gateway only on sandbox / local hosts', () => {
+  it('is disabled under a test runner so specs never hit the network', () => {
     vi.stubGlobal('window', { location: { hostname: 'localhost' } });
-    expect(getRemoteAstraGatewayUrl()).toBe('https://www.niknote.online/api/ai');
-
-    vi.stubGlobal('window', { location: { hostname: '8080-abc123.e2b.app' } });
-    expect(getRemoteAstraGatewayUrl()).toBe('https://www.niknote.online/api/ai');
-
-    vi.stubGlobal('window', { location: { hostname: 'www.niknote.online' } });
     expect(getRemoteAstraGatewayUrl()).toBeNull();
   });
 
+  it('relays to the production gateway only on sandbox / local hosts', () => {
+    const restore = withoutTestGuard();
+    try {
+      vi.stubGlobal('window', { location: { hostname: 'localhost' } });
+      expect(getRemoteAstraGatewayUrl()).toBe('https://www.niknote.online/api/ai');
+
+      vi.stubGlobal('window', { location: { hostname: '8080-abc123.e2b.app' } });
+      expect(getRemoteAstraGatewayUrl()).toBe('https://www.niknote.online/api/ai');
+
+      vi.stubGlobal('window', { location: { hostname: 'www.niknote.online' } });
+      expect(getRemoteAstraGatewayUrl()).toBeNull();
+    } finally {
+      restore();
+    }
+  });
+
   it('reports the cloud relay as an active provider in sandboxes without keys', async () => {
+    const restore = withoutTestGuard();
     vi.stubGlobal('window', { location: { hostname: 'localhost' } });
+    try {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => new Response(JSON.stringify({ ok: true, providers: {} }), {
@@ -56,8 +79,11 @@ describe('NikAI preview gateway relay', () => {
       }))
     );
 
-    const probe = await probeAstaProviders();
-    expect(probe.cloudReady).toBe(true);
-    expect(probe.providers).toContain('NikAI Astra Cloud Relay');
+      const probe = await probeAstaProviders();
+      expect(probe.cloudReady).toBe(true);
+      expect(probe.providers).toContain('NikAI Astra Cloud Relay');
+    } finally {
+      restore();
+    }
   });
 });
