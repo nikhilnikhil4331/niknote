@@ -31,31 +31,43 @@ Logo badalna ho to sirf `public/niknote-logo.png` replace karo aur `npm run icon
 
 ### ⭐ Sabse aasan — GitHub Actions (Android Studio ki zaroorat nahi)
 
-Repo me do workflows already hain:
+Repo me do workflows hain:
 
 | Workflow | Kab chalta hai | Output |
 | --- | --- | --- |
 | `.github/workflows/ci.yml` | har push / PR | type-check + tests + web build |
-| `.github/workflows/android-apk.yml` | `v*` tag, PR, ya manual | ready APK |
+| `.github/workflows/android-release.yml` | `v*` tag, ya manual run | **signed APK + AAB** release me |
 
 APK nikalne ke 3 tareeke:
 
-1. **Actions → Android APK → Run workflow** → run khatam hone par neeche
-   **Artifacts → niknote-apk** download karo.
+1. **Actions → Android release → Run workflow** → run khatam hone par
+   **Artifacts → niknote-android-x.y.z** download karo (APK + AAB dono).
 2. **Release (share karne layak link):**
    ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
+   git tag v1.1.0
+   git push origin v1.1.0
    ```
-   → GitHub automatically **Release** banata hai jisme `niknote-xxxxxxx.apk` laga hota hai.
-   Link: `https://github.com/nikhilnikhil4331/niknote/releases/latest`
-3. `workflow_dispatch` me `release: true` tick karo.
+   → GitHub Release ban jata hai jisme `niknote-v1.1.0.apk` aur `.aab` lage hote hain.
+   Direct link: `https://github.com/nikhilnikhil4331/niknote/releases/latest`
+3. Manual run me `version_name` / `version_code` bhar do (har release me code badhana zaroori hai).
+
+**Apni signing key (Play Store ke liye):** repo settings → Secrets me ye 4 add karo:
+
+| Secret | Kya hai |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | `.jks` file ka base64 (`base64 -w0 niknote-release.jks`) |
+| `ANDROID_KEYSTORE_PASSWORD` | keystore password |
+| `ANDROID_KEY_ALIAS` | alias (default `niknote`) |
+| `ANDROID_KEY_PASSWORD` | key password (na do to keystore password) |
+
+Secrets na hone par bhi build hota hai — debug key se signed (sideload ke liye theek,
+Play Store ke liye apni key zaroori).
 
 ### Apne computer par
 
 Do raste hain:
 
-### A) Android Studio se (sabse aasan)
+#### A) Android Studio se (sabse aasan)
 
 ```bash
 npm run android:open       # Android Studio khul jayega
@@ -64,14 +76,14 @@ npm run android:open       # Android Studio khul jayega
 Android Studio me: **Build → Build Bundle(s)/APK(s) → Build APK(s)**
 APK yahan milega: `android/app/build/outputs/apk/debug/app-debug.apk`
 
-### B) Command line se (Android SDK installed hona chahiye)
+#### B) Command line se (Android SDK installed hona chahiye)
 
 ```bash
 npm run android:apk        # debug APK
 npm run android:aab        # Play Store ke liye release bundle
 ```
 
-## 3. Play Store / share karne ke liye release APK
+## 3. Play Store / share karne ke liye release APK (local)
 
 ```bash
 keytool -genkeypair -v -keystore niknote-release.jks \
@@ -117,7 +129,7 @@ Phir `npm run android:aab` — `android/app/build/outputs/bundle/release/app-rel
 ## 6. Package id / app name
 
 - App name: `NikNote` (`android/app/src/main/res/values/strings.xml`)
-- Package id: `app.lovable.c3b001c91ebc4b888264e21284718120`
-  (Play Store par pehli upload ke baad ye badalna possible nahi hota — chaho to
-  upload se **pehle** `capacitor.config.ts`, `strings.xml` aur
-  `android/app/build.gradle` (`applicationId`) me apna id daal do, e.g. `online.niknote.app`.)
+- Package id: **`online.niknote.app`** (v1.0.0 release se same — is liye purane APK ke
+  upar update seedha install ho jayega).
+- Version: `android/app/build.gradle` me `versionName` / `versionCode`. CI release me
+  `NIKNOTE_VERSION_NAME` / `NIKNOTE_VERSION_CODE` env se aata hai.

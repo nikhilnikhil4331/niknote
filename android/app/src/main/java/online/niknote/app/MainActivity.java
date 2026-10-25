@@ -1,4 +1,4 @@
-package app.lovable.c3b001c91ebc4b888264e21284718120;
+package online.niknote.app;
 
 import com.getcapacitor.BridgeActivity;
 

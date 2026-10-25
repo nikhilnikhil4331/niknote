@@ -1,18 +1,17 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.c3b001c91ebc4b888264e21284718120',
+  appId: 'online.niknote.app',
   appName: 'NikNote',
   webDir: 'dist',
-  // Ship the bundled build inside the APK (same logo, icons & AI as the
-  // website). No remote server URL: the app boots offline-first and only the
-  // AI calls leave the device (they go to the NikNote cloud gateway).
   android: {
+    // Notes live in localStorage/IndexedDB on this exact origin, so it must never
+    // change or users would lose their notes on update.
     allowMixedContent: false,
     captureInput: true,
-    webContentsDebuggingEnabled: false,
   },
   server: {
+    // Self-contained build: the app ships its own bundle and works offline.
     androidScheme: 'https',
     cleartext: false,
   },

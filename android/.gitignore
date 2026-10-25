@@ -99,6 +99,3 @@ app/src/main/assets/public
 app/src/main/assets/capacitor.config.json
 app/src/main/assets/capacitor.plugins.json
 app/src/main/res/xml/config.xml
-
-# Capacitor generated web bundle (re-created by `npx cap sync android`)
-app/src/main/assets/public
