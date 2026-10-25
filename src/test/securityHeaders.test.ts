@@ -51,6 +51,7 @@ describe('vercel.json security headers', () => {
       'https://*.supabase.co',
       'https://checkout.razorpay.com',
       'https://api.openai.com',
+      'https://www.niknote.online',
       'https://fonts.gstatic.com',
       'https://accounts.google.com',
     ]) {
