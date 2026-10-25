@@ -1,8 +1,8 @@
 apply plugin: 'com.android.application'
 
 // Version is bumped in one place (here) and mirrored by the release workflow.
-def appVersionName = System.getenv("NIKNOTE_VERSION_NAME") ?: "1.0.6"
-def appVersionCode = (System.getenv("NIKNOTE_VERSION_CODE") ?: "7").toInteger()
+def appVersionName = System.getenv("NIKNOTE_VERSION_NAME") ?: "1.0.7"
+def appVersionCode = (System.getenv("NIKNOTE_VERSION_CODE") ?: "8").toInteger()
 
 // Release signing comes from CI secrets. Without them the build falls back to the
 // debug key so a sideload APK (Orion Store, direct download) can still be produced.
