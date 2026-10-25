@@ -220,7 +220,30 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  const mode = body.mode || 'auto';
+  // Accept both the canonical ids and the short UI ids (`tutor`, `writing`,
+  // `pro`, `flash`, `vision`) so persona + model routing never silently drops.
+  const MODE_ALIASES: Record<string, string> = {
+    tutor: 'teacher',
+    teaching: 'teacher',
+    guru: 'teacher',
+    learn: 'teacher',
+    writing: 'write',
+    writer: 'write',
+    essay: 'write',
+    vision: 'auto',
+    solve: 'solver',
+    homework: 'solver',
+  };
+  const MODEL_ALIASES: Record<string, string> = {
+    auto: 'astra-auto',
+    pro: 'astra-pro',
+    flash: 'astra-flash',
+    vision: 'astra-vision',
+    coder: 'astra-coder',
+    code: 'astra-coder',
+  };
+  const requestedMode = String(body.mode || 'auto').trim().toLowerCase();
+  const mode = MODE_ALIASES[requestedMode] || requestedMode;
   const wantStream = body.stream !== false;
 
   let systemInstruction = `${NIKAI_ASTRA_IDENTITY}\n\n${MODE_INSTRUCTIONS[mode] || MODE_INSTRUCTIONS.auto}`;
@@ -255,7 +278,8 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   const hasImages = conversation.some((m) => Array.isArray(m.images) && m.images.length > 0);
-  const requestedModel = (body.model || 'astra-auto').toLowerCase();
+  const rawModel = String(body.model || 'astra-auto').trim().toLowerCase();
+  const requestedModel = MODEL_ALIASES[rawModel] || rawModel;
 
   type Candidate = { provider: 'groq' | 'gemini' | 'openai'; model: string; label: string };
   const candidates: Candidate[] = [];
