@@ -1,14 +1,16 @@
 // ============================================================
 // NikNote PDF Tools — the companion page to PDF Studio
 // Merge · Split · Compress · Watermark · Page numbers · Images → PDF
+// Word · Excel · OCR (searchable PDF) · Protect / Unlock
 // One screen, mobile first, everything processed on the device.
 // ============================================================
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, Combine, Download, FileText, Hash,
-  ImagePlus, Loader2, Minimize2, Scissors, Share2, Sparkles, Stamp, Trash2, Upload, X,
+  ArrowDown, ArrowLeft, ArrowUp, CheckCircle2, Combine, Download, FileSpreadsheet, FileText,
+  FileType2, Hash, ImagePlus, KeyRound, Loader2, Lock, Minimize2, ScanText, Scissors,
+  Share2, Sparkles, Stamp, Trash2, Unlock, Upload, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -16,13 +18,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { saveFile } from '@/lib/saveFile';
+import { OCR_LANGUAGE_LABEL, ocrEstimateLabel, type OcrLanguage, type OcrQuality } from '@/lib/pdfOcrMath';
+import type { OcrProgress } from '@/lib/pdfOcr';
+import { validatePassword } from '@/lib/pdfSecurity';
 import {
   PAPER_LABELS, type PaperKey, type PageNumberPosition, type SplitMode, type WatermarkPosition,
-  addPageNumbers, addWatermark, countPdfPages, detectImageType, extractPages, formatBytes,
-  imagesToPdf, mergePdfs, outputName, pagesLabel, parsePageRanges, splitPlan, toBytes,
+  addPageNumbers, addWatermark, detectImageType, extractPages, formatBytes, imagesToPdf,
+  inspectPdf, mergePdfs, outputName, pagesLabel, parsePageRanges, splitPlan,
 } from '@/lib/pdfTools';
 
-type PdfPick = { id: string; name: string; bytes: Uint8Array; pages: number };
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+type PdfPick = { id: string; name: string; bytes: Uint8Array; pages: number; locked?: boolean };
 type ImagePick = { id: string; name: string; bytes: Uint8Array; type: 'png' | 'jpg'; size: number };
 type Result = { name: string; bytes: Uint8Array };
 
@@ -87,10 +95,11 @@ function usePdfPicker(multiple: boolean, onLoaded: (files: PdfPick[]) => void) {
           for (const file of multiple ? files : files.slice(0, 1)) {
             try {
               const bytes = new Uint8Array(await file.arrayBuffer());
-              const pages = await countPdfPages(bytes);
-              loaded.push({ id: uid(), name: file.name, bytes, pages });
+              const info = await inspectPdf(bytes);
+              loaded.push({ id: uid(), name: file.name, bytes, pages: info.pages, locked: info.encrypted });
+              if (info.encrypted) toast.info(`${file.name} password-protected hai — Unlock tool use karo`);
             } catch {
-              toast.error(`${file.name} khul nahi paya — password-protected ho sakta hai`);
+              toast.error(`${file.name} khul nahi paya — file corrupt lagti hai`);
             }
           }
           if (loaded.length > 0) onLoaded(loaded);
@@ -146,13 +155,13 @@ function DropZone({
   );
 }
 
-function ResultCard({ result, extra }: { result: Result; extra?: string }) {
+function ResultCard({ result, extra, mime = 'application/pdf' }: { result: Result; extra?: string; mime?: string }) {
   const [saving, setSaving] = useState(false);
 
   const share = async (mode: 'save' | 'share') => {
     setSaving(true);
     try {
-      const outcome = await saveFile(result.bytes, result.name, 'application/pdf');
+      const outcome = await saveFile(result.bytes, result.name, mime);
       if (outcome === 'cancelled') toast.info('Cancel kar diya');
       else toast.success(mode === 'share' ? 'Share sheet khul gaya' : `${result.name} ready hai`);
     } catch {
@@ -213,7 +222,7 @@ function MergePanel() {
     setBusy(true);
     try {
       const bytes = await mergePdfs(files.map((f) => f.bytes));
-      const pages = await countPdfPages(bytes);
+      const { pages } = await inspectPdf(bytes);
       setResult({
         name: outputName(files[0].name, 'merged'),
         bytes,
@@ -734,12 +743,353 @@ function ImagesPanel() {
   );
 }
 
+// ── 7. PDF → Word ──────────────────────────────────────────
+
+function WordPanel() {
+  const [file, setFile] = useState<PdfPick | null>(null);
+  const [pageBreaks, setPageBreaks] = useState(true);
+  const [detectHeadings, setDetectHeadings] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<Result | null>(null);
+  const picker = usePdfPicker(false, (loaded) => {
+    if (!loaded[0]) return;
+    setFile(loaded[0]);
+    setResult(null);
+  });
+
+  const run = async () => {
+    if (!file) return;
+    if (file.locked) {
+      toast.error('Ye PDF password-protected hai — pehle Unlock karo');
+      return;
+    }
+    setBusy(true);
+    try {
+      const { pdfToDocx } = await import('@/lib/pdfConvert');
+      const bytes = await pdfToDocx(file.bytes, {
+        title: file.name.replace(/\.pdf$/i, ''),
+        pageBreaks,
+        detectHeadings,
+      });
+      setResult({ name: outputName(file.name, 'word', 'docx'), bytes });
+      toast.success('Word file ready — .docx download karo');
+    } catch (err: any) {
+      toast.error(err?.message || 'Word banane me dikkat aayi');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {picker.element}
+      {!file ? (
+        <DropZone onClick={picker.open} busy={picker.busy} title="PDF chuno" subtitle="Text wali PDF → editable Word file" icon={FileType2} />
+      ) : (
+        <Card className="space-y-3">
+          <FileRow
+            name={file.name}
+            meta={`${file.pages} pages${file.locked ? ' · password-protected' : ''}`}
+            onRemove={() => { setFile(null); setResult(null); }}
+          />
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={pageBreaks} onChange={(e) => setPageBreaks(e.target.checked)} className="accent-rose-500" />
+            Har PDF page ke baad Word me page break
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={detectHeadings} onChange={(e) => setDetectHeadings(e.target.checked)} className="accent-rose-500" />
+            Bade text ko heading banao (auto-detect)
+          </label>
+          <Button onClick={run} disabled={busy} className="w-full gap-2">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileType2 className="h-4 w-4" />}
+            Word (.docx) banao
+          </Button>
+          <p className="text-[11px] text-muted-foreground">
+            Text, headings aur page order save hote hain. Photos/graphics Word me nahi aate — uske liye PDF Studio use karo.
+          </p>
+        </Card>
+      )}
+      {result ? <ResultCard result={result} mime={DOCX_MIME} /> : null}
+    </div>
+  );
+}
+
+// ── 8. PDF → Excel ─────────────────────────────────────────
+
+function ExcelPanel() {
+  const [file, setFile] = useState<PdfPick | null>(null);
+  const [perPage, setPerPage] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<Result | null>(null);
+  const picker = usePdfPicker(false, (loaded) => {
+    if (!loaded[0]) return;
+    setFile(loaded[0]);
+    setResult(null);
+  });
+
+  const run = async () => {
+    if (!file) return;
+    if (file.locked) {
+      toast.error('Ye PDF password-protected hai — pehle Unlock karo');
+      return;
+    }
+    setBusy(true);
+    try {
+      const { pdfToXlsx } = await import('@/lib/pdfConvert');
+      const bytes = await pdfToXlsx(file.bytes, { perPage });
+      setResult({ name: outputName(file.name, 'excel', 'xlsx'), bytes });
+      toast.success('Excel file ready — .xlsx download karo');
+    } catch (err: any) {
+      toast.error(err?.message || 'Excel banane me dikkat aayi');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {picker.element}
+      {!file ? (
+        <DropZone onClick={picker.open} busy={picker.busy} title="PDF chuno" subtitle="Tables / list wali PDF → Excel sheet" icon={FileSpreadsheet} />
+      ) : (
+        <Card className="space-y-3">
+          <FileRow
+            name={file.name}
+            meta={`${file.pages} pages${file.locked ? ' · password-protected' : ''}`}
+            onRemove={() => { setFile(null); setResult(null); }}
+          />
+          <Field label="Sheet layout" hint="Column wale gaps se cells banti hain — tables seedha Excel me aate hain">
+            <div className="flex flex-wrap gap-2">
+              <OptionChip active={perPage} onClick={() => setPerPage(true)}>Har page = alag sheet</OptionChip>
+              <OptionChip active={!perPage} onClick={() => setPerPage(false)}>Sab kuch ek sheet me</OptionChip>
+            </div>
+          </Field>
+          <Button onClick={run} disabled={busy} className="w-full gap-2">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+            Excel (.xlsx) banao
+          </Button>
+        </Card>
+      )}
+      {result ? <ResultCard result={result} mime={XLSX_MIME} /> : null}
+    </div>
+  );
+}
+
+// ── 9. OCR → searchable PDF ────────────────────────────────
+
+function OcrPanel() {
+  const [file, setFile] = useState<PdfPick | null>(null);
+  const [language, setLanguage] = useState<OcrLanguage>('eng');
+  const [quality, setQuality] = useState<OcrQuality>('balanced');
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<OcrProgress | null>(null);
+  const [result, setResult] = useState<{ name: string; bytes: Uint8Array; words: number } | null>(null);
+  const picker = usePdfPicker(false, (loaded) => {
+    if (!loaded[0]) return;
+    setFile(loaded[0]);
+    setResult(null);
+  });
+
+  const run = async () => {
+    if (!file) return;
+    setBusy(true);
+    setProgress({ stage: 'model', label: 'Shuru ho raha hai…', done: 0, total: file.pages || 1 });
+    try {
+      const { ocrToSearchablePdf } = await import('@/lib/pdfOcr');
+      const out = await ocrToSearchablePdf(file.bytes, {
+        language,
+        quality,
+        onProgress: (next) => setProgress(next),
+      });
+      setResult({ name: outputName(file.name, 'searchable'), bytes: out.bytes, words: out.words });
+      toast.success(`${out.words} words ka searchable layer ban gaya`);
+    } catch (err: any) {
+      toast.error(err?.message || 'OCR fail ho gaya');
+    } finally {
+      setBusy(false);
+      setProgress(null);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {picker.element}
+      {!file ? (
+        <DropZone onClick={picker.open} busy={picker.busy} title="Scan / photo PDF chuno" subtitle="Text layer add karke search + copy yogya banao" icon={ScanText} />
+      ) : (
+        <Card className="space-y-3">
+          <FileRow
+            name={file.name}
+            meta={`${file.pages} pages${file.locked ? ' · password-protected' : ''}`}
+            onRemove={() => { setFile(null); setResult(null); }}
+          />
+          <Field label="Language" hint="Hindi pages ke liye दोनों चुनो — thoda slow hota hai">
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(OCR_LANGUAGE_LABEL) as OcrLanguage[]).map((code) => (
+                <OptionChip key={code} active={language === code} onClick={() => setLanguage(code)}>
+                  {OCR_LANGUAGE_LABEL[code]}
+                </OptionChip>
+              ))}
+            </div>
+          </Field>
+          <Field label="Quality">
+            <div className="flex flex-wrap gap-2">
+              <OptionChip active={quality === 'fast'} onClick={() => setQuality('fast')}>Fast</OptionChip>
+              <OptionChip active={quality === 'balanced'} onClick={() => setQuality('balanced')}>Balanced</OptionChip>
+              <OptionChip active={quality === 'best'} onClick={() => setQuality('best')}>Best</OptionChip>
+            </div>
+          </Field>
+          <Button onClick={run} disabled={busy} className="w-full gap-2">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanText className="h-4 w-4" />}
+            {busy ? 'OCR chal raha hai…' : 'Searchable PDF banao'}
+          </Button>
+          {progress ? (
+            <div className="space-y-1.5 rounded-2xl border border-border/60 bg-background/60 p-3">
+              <p className="text-xs font-medium">{progress.label}</p>
+              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-rose-500 transition-all"
+                  style={{
+                    width: `${Math.round(
+                      (progress.stage === 'page'
+                        ? Math.min(1, progress.done / Math.max(1, progress.total)) * 0.95
+                        : progress.stage === 'build'
+                          ? 0.98
+                          : (progress.progress || 0) * 0.15) * 100
+                    )}%`,
+                  }}
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Pehli baar model download hota hai (~10 MB), uske baad offline chalta hai. Tab band mat karo.
+              </p>
+            </div>
+          ) : null}
+          <p className="text-[11px] text-muted-foreground">
+            Anumanit samay: {ocrEstimateLabel(file.pages || 1, quality)} · asli PDF same dikhegi, bas usme text add ho jayega.
+          </p>
+        </Card>
+      )}
+      {result ? (
+        <ResultCard result={{ name: result.name, bytes: result.bytes }} extra={`${result.words} words searchable`} />
+      ) : null}
+    </div>
+  );
+}
+
+// ── 10. Protect / Unlock ───────────────────────────────────
+
+function ProtectPanel() {
+  const [file, setFile] = useState<PdfPick | null>(null);
+  const [mode, setMode] = useState<'protect' | 'unlock'>('protect');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [allowPrinting, setAllowPrinting] = useState(true);
+  const [allowCopying, setAllowCopying] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<Result | null>(null);
+  const picker = usePdfPicker(false, (loaded) => {
+    if (!loaded[0]) return;
+    setFile(loaded[0]);
+    setMode(loaded[0].locked ? 'unlock' : 'protect');
+    setResult(null);
+  });
+
+  const run = async () => {
+    if (!file) return;
+    const problem = validatePassword(password, mode === 'protect' ? confirm : undefined);
+    if (problem) {
+      toast.error(problem);
+      return;
+    }
+    setBusy(true);
+    try {
+      const { protectPdf, unlockPdf } = await import('@/lib/pdfSecurity');
+      if (mode === 'protect') {
+        const bytes = await protectPdf(file.bytes, { userPassword: password, allowPrinting, allowCopying });
+        setResult({ name: outputName(file.name, 'protected'), bytes });
+        toast.success('PDF password se lock ho gayi (AES-256)');
+      } else {
+        const bytes = await unlockPdf(file.bytes, password);
+        setResult({ name: outputName(file.name, 'unlocked'), bytes });
+        toast.success('Password hata diya — PDF ab bina password khulegi');
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Kaam nahi bana — dobara try karo');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      {picker.element}
+      {!file ? (
+        <DropZone onClick={picker.open} busy={picker.busy} title="PDF chuno" subtitle="Password lagao (protect) ya hatao (unlock)" icon={Lock} />
+      ) : (
+        <Card className="space-y-3">
+          <FileRow
+            name={file.name}
+            meta={`${file.pages} pages${file.locked ? ' · 🔒 password-protected' : ''}`}
+            onRemove={() => { setFile(null); setResult(null); setPassword(''); setConfirm(''); }}
+          />
+          <Field label="Kya karna hai?">
+            <div className="flex flex-wrap gap-2">
+              <OptionChip active={mode === 'protect'} onClick={() => setMode('protect')}>🔒 Protect (password lagao)</OptionChip>
+              <OptionChip active={mode === 'unlock'} onClick={() => setMode('unlock')}>🔓 Unlock (password hatao)</OptionChip>
+            </div>
+          </Field>
+          <Field
+            label={mode === 'protect' ? 'Naya password' : 'Purana password'}
+            hint={mode === 'protect' ? 'Kam se kam 4 characters — yaad rakhna, reset nahi hota' : 'Jo password PDF kholne me lagta hai'}
+          >
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••"
+              autoComplete="new-password"
+            />
+          </Field>
+          {mode === 'protect' ? (
+            <>
+              <Field label="Password dobara">
+                <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="••••••" autoComplete="new-password" />
+              </Field>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={allowPrinting} onChange={(e) => setAllowPrinting(e.target.checked)} className="accent-rose-500" />
+                Printing allowed
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={allowCopying} onChange={(e) => setAllowCopying(e.target.checked)} className="accent-rose-500" />
+                Text copy allowed
+              </label>
+            </>
+          ) : null}
+          <Button onClick={run} disabled={busy} className="w-full gap-2">
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : mode === 'protect' ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+            {mode === 'protect' ? 'Password lagao' : 'Password hatao'}
+          </Button>
+          <p className="text-[11px] text-muted-foreground">
+            Encryption AES-256 (PDF 2.0 standard) — Acrobat, Chrome, iPhone, Android sab support karte hain. Sab kuch device par hota hai.
+          </p>
+        </Card>
+      )}
+      {result ? <ResultCard result={result} /> : null}
+    </div>
+  );
+}
+
 // ── page shell ──────────────────────────────────────────────
 
 const TABS = [
   { id: 'merge', label: 'Merge', icon: Combine, Panel: MergePanel },
   { id: 'split', label: 'Split', icon: Scissors, Panel: SplitPanel },
   { id: 'compress', label: 'Compress', icon: Minimize2, Panel: CompressPanel },
+  { id: 'word', label: 'Word', icon: FileType2, Panel: WordPanel },
+  { id: 'excel', label: 'Excel', icon: FileSpreadsheet, Panel: ExcelPanel },
+  { id: 'ocr', label: 'OCR', icon: ScanText, Panel: OcrPanel },
+  { id: 'protect', label: 'Protect', icon: KeyRound, Panel: ProtectPanel },
   { id: 'watermark', label: 'Watermark', icon: Stamp, Panel: WatermarkPanel },
   { id: 'numbers', label: 'Page numbers', icon: Hash, Panel: PageNumberPanel },
   { id: 'images', label: 'Images → PDF', icon: ImagePlus, Panel: ImagesPanel },
@@ -762,7 +1112,7 @@ export default function PdfTools() {
           </Link>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-lg font-bold leading-tight">PDF Tools</h1>
-            <p className="truncate text-[11px] text-muted-foreground">Merge · Split · Compress · Watermark · Numbers · Photos</p>
+            <p className="truncate text-[11px] text-muted-foreground">Merge · Split · Compress · Word · Excel · OCR · Protect</p>
           </div>
           <Link
             to="/pdf-editor"

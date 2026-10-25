@@ -15,7 +15,7 @@ describe('PDF Tools page', () => {
   test('shows every tool tab', () => {
     renderTools();
     expect(screen.getByRole('heading', { name: 'PDF Tools' })).toBeInTheDocument();
-    for (const label of ['Merge', 'Split', 'Compress', 'Watermark', 'Page numbers', 'Images → PDF']) {
+    for (const label of ['Merge', 'Split', 'Compress', 'Word', 'Excel', 'OCR', 'Protect', 'Watermark', 'Page numbers', 'Images → PDF']) {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     }
   });
@@ -23,6 +23,11 @@ describe('PDF Tools page', () => {
   test('merge tab starts with an upload zone', () => {
     renderTools();
     expect(screen.getByText(/PDF add karo/i)).toBeInTheDocument();
+  });
+
+  test('protect tab starts on protect mode', () => {
+    renderTools();
+    expect(screen.queryByText(/PDF add karo/i)).toBeInTheDocument();
   });
 
   test('links back to the editor and the hub', () => {

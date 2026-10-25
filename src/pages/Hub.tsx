@@ -22,7 +22,7 @@ const GROUPS: { title: string; items: HubItem[] }[] = [
     { to: '/notebooks', label: 'My Notebooks', desc: 'All your pages', icon: BookOpen, hue: 270 },
     { to: '/documents', label: 'Documents', desc: 'Upload PDF & images', icon: FileText, hue: 210 },
     { to: '/pdf-editor', label: 'PDF Studio', desc: 'Edit, sign & annotate PDFs', icon: PenLine, hue: 350 },
-    { to: '/pdf-tools', label: 'PDF Tools', desc: 'Merge, split, compress, watermark', icon: Combine, hue: 0 },
+    { to: '/pdf-tools', label: 'PDF Tools', desc: 'Word, Excel, OCR, protect, merge', icon: Combine, hue: 0 },
     { to: '/history', label: 'History', desc: 'Recent work', icon: History, hue: 190 },
   ]},
   { title: 'NikAI & Study', items: [

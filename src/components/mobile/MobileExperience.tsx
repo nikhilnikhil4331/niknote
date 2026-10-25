@@ -530,7 +530,7 @@ export function MobileExperience() {
               {[
                 { label: 'NikAI', icon: Sparkles, customImg: '/nikai-mark.png', action: () => navigate('/ai') },
                 { label: 'PDF Studio (edit & sign)', icon: FileText, customImg: '', action: () => navigate('/pdf-editor') },
-                { label: 'PDF Tools (merge, split, compress)', icon: FileText, customImg: '', action: () => navigate('/pdf-tools') },
+                { label: 'PDF Tools (Word, Excel, OCR, protect)', icon: FileText, customImg: '', action: () => navigate('/pdf-tools') },
                 { label: 'Account', icon: Settings, customImg: '', action: () => navigate('/account-details') },
                 { label: 'Appearance', icon: LayoutGrid, customImg: '', action: () => navigate('/appearance') },
                 {
