@@ -220,7 +220,24 @@ export async function checkDevice(): Promise<CheckResult> {
   };
 }
 
-export async function runAllChecks(): Promise<CheckResult[]> {
-  const [ai, pdf, ocr, device] = await Promise.all([checkAi(), checkPdfEngine(), checkOcr(), checkDevice()]);
-  return [ai, pdf, ocr, device];
+export const CHECKS: { id: CheckResult['id']; label: string; run: () => Promise<CheckResult> }[] = [
+  { id: 'device', label: 'Device', run: checkDevice },
+  { id: 'pdf', label: 'PDF engine', run: checkPdfEngine },
+  { id: 'ocr', label: 'OCR', run: checkOcr },
+  { id: 'ai', label: 'NikAI', run: checkAi },
+];
+
+/** Runs every check and reports each one the moment it finishes (AI is slowest). */
+export async function runAllChecks(
+  onResult?: (result: CheckResult) => void
+): Promise<CheckResult[]> {
+  const settled = await Promise.all(
+    CHECKS.map(async (check) => {
+      const result = await check.run();
+      onResult?.(result);
+      return result;
+    })
+  );
+  const order: CheckResult['id'][] = ['ai', 'pdf', 'ocr', 'device'];
+  return settled.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
 }

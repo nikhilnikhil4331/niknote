@@ -1,6 +1,7 @@
 // ============================================================
 // NikNote Check-up — ek tap me pata karo ki AI, PDF, OCR aur
 // storage sab is device (website ya APK) par chal rahe hain.
+// Results aate-aate dikhte hain, AI ka intezaar poora page nahi rokta.
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';
@@ -12,18 +13,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { getAiEndpoint, runAllChecks, type CheckResult } from '@/lib/appHealth';
 
-const ICONS: Record<CheckResult['id'], React.FC<{ className?: string }>> = {
-  ai: Sparkles,
-  pdf: FileText,
-  ocr: ScanText,
-  device: Smartphone,
-};
+type Row = { id: CheckResult['id']; label: string; icon: React.FC<{ className?: string }> };
 
-function StatusIcon({ status }: { status: CheckResult['status'] }) {
-  if (status === 'ok') return <CheckCircle2 className="h-5 w-5 text-emerald-500" />;
-  if (status === 'warn') return <AlertTriangle className="h-5 w-5 text-amber-500" />;
-  return <XCircle className="h-5 w-5 text-rose-500" />;
-}
+const ROWS: Row[] = [
+  { id: 'ai', label: 'NikAI (AI)', icon: Sparkles },
+  { id: 'pdf', label: 'PDF engine (edit, convert, protect)', icon: FileText },
+  { id: 'ocr', label: 'OCR (searchable PDF)', icon: ScanText },
+  { id: 'device', label: 'Device', icon: Smartphone },
+];
 
 const CHIP: Record<CheckResult['status'], string> = {
   ok: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
@@ -37,15 +34,25 @@ const CHIP_LABEL: Record<CheckResult['status'], string> = {
   fail: 'Fail',
 };
 
+function StatusIcon({ status }: { status?: CheckResult['status'] }) {
+  if (!status) return <Loader2 className="h-4.5 w-4.5 animate-spin text-muted-foreground" />;
+  if (status === 'ok') return <CheckCircle2 className="h-5 w-5 text-emerald-500" />;
+  if (status === 'warn') return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+  return <XCircle className="h-5 w-5 text-rose-500" />;
+}
+
 export default function Checkup() {
-  const [results, setResults] = useState<CheckResult[]>([]);
+  const [results, setResults] = useState<Partial<Record<CheckResult['id'], CheckResult>>>({});
   const [running, setRunning] = useState(false);
   const endpoint = getAiEndpoint();
 
   const run = useCallback(async () => {
     setRunning(true);
+    setResults({});
     try {
-      setResults(await runAllChecks());
+      await runAllChecks((result) => {
+        setResults((prev) => ({ ...prev, [result.id]: result }));
+      });
     } finally {
       setRunning(false);
     }
@@ -55,9 +62,19 @@ export default function Checkup() {
     void run();
   }, [run]);
 
-  const failed = results.filter((r) => r.status === 'fail').length;
-  const warned = results.filter((r) => r.status === 'warn').length;
-  const allGood = results.length > 0 && failed === 0 && warned === 0;
+  const done = Object.values(results).filter(Boolean) as CheckResult[];
+  const failed = done.filter((r) => r.status === 'fail').length;
+  const warned = done.filter((r) => r.status === 'warn').length;
+  const finished = done.length === ROWS.length;
+  const allGood = finished && failed === 0 && warned === 0;
+
+  const headline = running && !finished
+    ? `Check chal raha hai… (${done.length}/${ROWS.length})`
+    : allGood
+      ? 'Sab kuch ready hai ✅'
+      : failed > 0
+        ? `${failed} cheez fail ho rahi hai`
+        : `${warned} cheez par dhyan do`;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-violet-500/10 via-background to-background pb-24">
@@ -91,52 +108,46 @@ export default function Checkup() {
                 : 'border-border/60 bg-card/70'
           }`}
         >
-          <p className="text-sm font-bold">
-            {running && results.length === 0
-              ? 'Check chal raha hai…'
-              : allGood
-                ? 'Sab kuch ready hai ✅'
-                : failed > 0
-                  ? `${failed} cheez fail ho rahi hai`
-                  : `${warned} cheez par dhyan do`}
-          </p>
+          <p className="text-sm font-bold">{headline}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            AI ka raasta: <span className="font-semibold">{endpoint.route === 'gateway' ? 'NikNote cloud gateway' : 'is site ka /api/ai'}</span>
+            AI ka raasta:{' '}
+            <span className="font-semibold">
+              {endpoint.route === 'gateway' ? 'NikNote cloud gateway' : 'is site ka /api/ai'}
+            </span>
             {' · '}Ye check device par hi chalta hai, koi data kahin nahi jaata.
           </p>
         </div>
 
         <div className="mt-4 space-y-2">
-          {(results.length > 0 ? results : []).map((result) => {
-            const Icon = ICONS[result.id];
+          {ROWS.map(({ id, label, icon: Icon }) => {
+            const result = results[id];
             return (
-              <div key={result.id} className="rounded-2xl border border-border/60 bg-card/80 p-3">
+              <div key={id} className="rounded-2xl border border-border/60 bg-card/80 p-3">
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-500/10">
-                    <Icon className="h-4.5 w-4.5 text-violet-600 dark:text-violet-300" />
+                    <Icon className="h-4 w-4 text-violet-600 dark:text-violet-300" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="min-w-0 flex-1 truncate text-sm font-semibold">{result.label}</p>
-                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${CHIP[result.status]}`}>
-                        {CHIP_LABEL[result.status]}
-                      </span>
-                      <StatusIcon status={result.status} />
+                      <p className="min-w-0 flex-1 truncate text-sm font-semibold">{result?.label || label}</p>
+                      {result ? (
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${CHIP[result.status]}`}>
+                          {CHIP_LABEL[result.status]}
+                        </span>
+                      ) : null}
+                      <StatusIcon status={result?.status} />
                     </div>
-                    <p className="mt-1 text-[11.5px] leading-snug text-muted-foreground">{result.detail}</p>
-                    <p className="mt-0.5 text-[10px] text-muted-foreground/70">{result.ms} ms</p>
+                    <p className="mt-1 text-[11.5px] leading-snug text-muted-foreground">
+                      {result?.detail || 'Check ho raha hai…'}
+                    </p>
+                    {result ? (
+                      <p className="mt-0.5 text-[10px] text-muted-foreground/70">{result.ms} ms</p>
+                    ) : null}
                   </div>
                 </div>
               </div>
             );
           })}
-
-          {running && results.length === 0 ? (
-            <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card/70 p-4">
-              <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
-              <p className="text-sm text-muted-foreground">AI ka jawab aane ka intezaar…</p>
-            </div>
-          ) : null}
         </div>
 
         <div className="mt-5 rounded-3xl border border-border/60 bg-card/70 p-4">
