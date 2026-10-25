@@ -192,10 +192,10 @@ async function runProbe(groqKey: string, geminiKey: string, openaiKey: string): 
 
   type Attempt = { provider: ProviderId; model: string };
   const attempts: Attempt[] = [];
-  if (groqKey) attempts.push({ provider: 'groq', model: 'llama-3.1-8b-instant' });
-  if (geminiKey) attempts.push({ provider: 'gemini', model: 'gemini-2.0-flash' });
+  if (groqKey) attempts.push({ provider: 'groq', model: 'openai/gpt-oss-20b' });
+  if (geminiKey) attempts.push({ provider: 'gemini', model: 'gemini-2.5-flash' });
   if (openaiKey) attempts.push({ provider: 'openai', model: 'gpt-4o-mini' });
-  if (groqKey) attempts.push({ provider: 'groq', model: 'llama-3.3-70b-versatile' });
+  if (groqKey) attempts.push({ provider: 'groq', model: 'openai/gpt-oss-120b' });
 
   const keys: Record<ProviderId, string> = { groq: groqKey, gemini: geminiKey, openai: openaiKey };
   const tried = new Set(attempts.map((a) => `${a.provider}:${a.model}`));
@@ -251,7 +251,9 @@ async function runProbe(groqKey: string, geminiKey: string, openaiKey: string): 
           body: JSON.stringify({
             model: attempt.model,
             messages: [{ role: 'user', content: prompt }],
-            max_tokens: 24,
+            // gpt-oss spends tokens on reasoning before the answer, so keep
+            // enough room that a one-word reply is not truncated to nothing.
+            max_tokens: 512,
             temperature: 0,
             stream: false,
           }),
@@ -328,7 +330,7 @@ const VISION_HINTS = ['vision', 'scout', 'flash', 'gpt-4o', 'gpt-4.1'];
 
 function isChatModel(id: string): boolean {
   if (!id) return false;
-  if (/embed|whisper|tts|audio|moderation|dall-e|stable-diffusion|rerank|imagen|veo|sora|realtime|guard|ocr/i.test(id)) return false;
+  if (/embed|whisper|tts|audio|moderation|dall-e|stable-diffusion|rerank|imagen|veo|sora|realtime|guard|ocr|orpheus|lyria|nano-banana|transcribe|computer-use|robotics|image/i.test(id)) return false;
   return true;
 }
 
@@ -395,6 +397,12 @@ async function healModel(
   preferVision = false
 ): Promise<string | null> {
   const ids = await listModels(provider, key);
+  // Groq's vision models are Llama 4 Scout/Maverick; if none are live, let the
+  // other provider handle the image instead of sending it to a text-only model.
+  if (preferVision && provider === 'groq') {
+    const multimodal = ids.filter((id) => /scout|maverick|vision/i.test(id));
+    return pickModel(provider, multimodal, true);
+  }
   return pickModel(provider, ids, preferVision);
 }
 
@@ -564,8 +572,8 @@ export default async function handler(req: Request): Promise<Response> {
     if (groqKey) candidates.push({ provider: 'groq', model: 'openai/gpt-oss-20b', label: 'NikAI Astra Coder' });
   } else {
     if (groqKey) {
-      candidates.push({ provider: 'groq', model: 'openai/gpt-oss-120b', label: requestedModel === 'astra-flash' ? 'NikAI Astra Flash' : 'NikAI Astra Core' });
-      candidates.push({ provider: 'groq', model: 'openai/gpt-oss-20b', label: 'NikAI Astra Instant' });
+      candidates.push({ provider: 'groq', model: 'openai/gpt-oss-20b', label: requestedModel === 'astra-flash' ? 'NikAI Astra Flash' : 'NikAI Astra Core' });
+      candidates.push({ provider: 'groq', model: 'openai/gpt-oss-120b', label: 'NikAI Astra Pro' });
     }
     if (geminiKey) {
       candidates.push({ provider: 'gemini', model: 'gemini-2.5-flash', label: 'NikAI Astra Flash' });
