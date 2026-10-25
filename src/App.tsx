@@ -55,6 +55,7 @@ const DocumentIntelligence = lazy(() =>
   import("@/components/document-intelligence/DocumentIntelligence").then(m => ({ default: m.default }))
 );
 const PdfStudioPage = lazy(() => import("@/components/pdf-studio/PdfStudio"));
+const PdfToolsPage = lazy(() => import("@/components/pdf-tools/PdfTools"));
 const QAPage = lazy(() =>
   import("@/pages/QA").then(m => ({ default: m.default }))
 );
@@ -85,7 +86,7 @@ import { trackPageView } from "@/utils/analytics";
 
 const queryClient = new QueryClient();
 
-const DOCK_ROUTES = ["/notebooks","/flashcards","/history","/account","/achievements","/ai-solver","/documents","/handbook","/feedback","/upgrade","/pdf-editor"];
+const DOCK_ROUTES = ["/notebooks","/flashcards","/history","/account","/achievements","/ai-solver","/documents","/handbook","/feedback","/upgrade","/pdf-editor","/pdf-tools"];
 function GlobalDock() {
   const { pathname } = useLocation();
   const mobile = useIsMobile();
@@ -198,6 +199,7 @@ const App = () => {
                         <Route path="/documents" element={<DocumentIntelligence />} />
                         <Route path="/pdf-editor" element={<PdfStudioPage />} />
                         <Route path="/pdf" element={<PdfStudioPage />} />
+                        <Route path="/pdf-tools" element={<PdfToolsPage />} />
                         <Route path="/qa" element={<QAPage />} />
                         <Route path="/blog" element={<BlogPage />} />
                         <Route path="/blog/:slug" element={<BlogPage />} />

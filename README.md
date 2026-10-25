@@ -20,6 +20,7 @@ saare features dono jagah same rehte hain. (PHP use nahi hota — jaan-boojh kar
 | ✍️ Handwriting notes | `/` | Type karo → aapki handwriting me notebook pages |
 | 🧠 NikAI (Astra Core) | `/ai` | Streaming chat, memory, Smart Notes, quiz, vision |
 | 📄 **PDF Studio** | `/pdf-editor` | Kisi bhi PDF ko **detail me edit** karo — neeche dekho |
+| 🧰 **PDF Tools** | `/pdf-tools` | Merge, split, compress, watermark, page numbers, photos → PDF |
 | 🃏 Flashcards | `/flashcards` | Smart revision decks |
 | 💰 Money / Routine / Habit | `/money` `/routine` `/habit` | Trackers |
 | 📚 Documents | `/documents` | PDF/image upload → AI summary |
@@ -34,6 +35,22 @@ saare features dono jagah same rehte hain. (PHP use nahi hota — jaan-boojh kar
 - **Download** har jagah chalta hai: browser → normal download, phone → share sheet,
   APK → `Documents` folder + share sheet (progress ke saath "Saving page 3/12")
 - Sab kuch **device par** hota hai — PDF kabhi upload nahi hoti
+
+### PDF Tools (`/pdf-tools`)
+
+Studio ka doosra half — jo kaam editing se pehle/baad me aate hain:
+
+| Tool | Kya karta hai |
+| --- | --- |
+| **Merge** | 2+ PDFs ko order ke saath jodo (up/down se order badlo) |
+| **Split** | Custom ranges (`1-3, 4-6`), har N pages, ya har page alag file |
+| **Compress** | Smallest / Balanced / Sharper — scans 60-80% tak chhoti |
+| **Watermark** | Text (DRAFT/CONFIDENTIAL/naam), center ya full page tile, opacity/angle/color |
+| **Page numbers** | `Page {n} of {total}` template, 6 positions, start-at, cover skip |
+| **Images → PDF** | JPG/PNG photos → A4/Letter/Legal/A5 ya image-size pages |
+
+Sab kuch offline chalta hai (pdf-lib + pdf.js), koi upload nahi — export ke liye wahi
+`saveFile` helper (APK → Documents + share sheet, phone → share sheet, desktop → download).
 
 ## Local development
 
