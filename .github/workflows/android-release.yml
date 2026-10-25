@@ -51,11 +51,16 @@ jobs:
         run: |
           NAME="${{ inputs.version_name }}"
           CODE="${{ inputs.version_code }}"
+          # A tag like v1.2.3 is the source of truth: versionName 1.2.3 and
+          # versionCode 10203, so every release is a real upgrade for Android.
+          if [ -z "$NAME" ] && [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            NAME="${GITHUB_REF_NAME#v}"
+          fi
           if [ -z "$NAME" ]; then
             NAME=$(grep -oP 'appVersionName = System.getenv\("NIKNOTE_VERSION_NAME"\) \?: "\K[^"]+' android/app/build.gradle)
           fi
           if [ -z "$CODE" ]; then
-            CODE=$(grep -oP 'NIKNOTE_VERSION_CODE"\) \?: "\K[^"]+' android/app/build.gradle)
+            CODE=$(echo "$NAME" | awk -F. '{ printf "%d", $1*10000 + $2*100 + $3 }')
           fi
           CODE=$(echo "$CODE" | tr -dc '0-9')
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
