@@ -158,7 +158,8 @@ export async function probeAstaProviders(): Promise<{ cloudReady: boolean; provi
   if (localKeys.gemini) active.add('NikAI Astra Vision 2.5');
 
   try {
-    const res = await fetch('/api/ai', { method: 'GET' });
+    const probeUrl = getRemoteAstraGatewayUrl() || '/api/ai';
+    const res = await fetch(probeUrl, { method: 'GET' });
     if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
       const data = await res.json();
       if (data?.providers?.openai) active.add('NikAI Astra OpenAI Core');
@@ -328,6 +329,17 @@ export function getRemoteAstraGatewayUrl(): string | null {
     if (typeof (globalThis as any).vi !== 'undefined') return null;
     const explicit = String((import.meta as any)?.env?.VITE_NIKAI_REMOTE_AI_URL || '').trim();
     if (explicit) return explicit;
+
+    // The Android/iOS app ships without provider keys (they must never be baked
+    // into an APK), so native builds always talk to the production gateway.
+    // Checking Capacitor directly also covers webviews whose origin is not the
+    // usual https://localhost (e.g. a custom androidScheme).
+    const cap = (globalThis as any)?.Capacitor;
+    const native = Boolean(
+      cap && (typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : cap.getPlatform?.() !== 'web')
+    );
+    if (native) return 'https://www.niknote.online/api/ai';
+
     const host = typeof window !== 'undefined' ? window.location.hostname : '';
     if (host && SANDBOX_HOST_PATTERN.test(host)) return 'https://www.niknote.online/api/ai';
   } catch {

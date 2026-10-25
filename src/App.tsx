@@ -56,6 +56,7 @@ const DocumentIntelligence = lazy(() =>
 );
 const PdfStudioPage = lazy(() => import("@/components/pdf-studio/PdfStudio"));
 const PdfToolsPage = lazy(() => import("@/components/pdf-tools/PdfTools"));
+const CheckupPage = lazy(() => import("@/pages/Checkup"));
 const QAPage = lazy(() =>
   import("@/pages/QA").then(m => ({ default: m.default }))
 );
@@ -200,6 +201,7 @@ const App = () => {
                         <Route path="/pdf-editor" element={<PdfStudioPage />} />
                         <Route path="/pdf" element={<PdfStudioPage />} />
                         <Route path="/pdf-tools" element={<PdfToolsPage />} />
+                        <Route path="/checkup" element={<CheckupPage />} />
                         <Route path="/qa" element={<QAPage />} />
                         <Route path="/blog" element={<BlogPage />} />
                         <Route path="/blog/:slug" element={<BlogPage />} />
