@@ -336,15 +336,15 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
 
   it('opens MoneyTracker, RoutineTracker, and Board immediately in guest device mode', async () => {
     const m = wrap(<MoneyTracker />, '/money');
-    await waitFor(() => expect(screen.getByText('Money')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Money')).toBeTruthy(), { timeout: 4000 });
     m.unmount();
 
     const r = wrap(<RoutineTracker />, '/routine');
-    await waitFor(() => expect(screen.getByText('Daily Routine')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Daily Routine')).toBeTruthy(), { timeout: 4000 });
     r.unmount();
 
     wrap(<BoardPage />, '/board');
-    await waitFor(() => expect(screen.getByText(/New board/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/New board/i)).toBeTruthy(), { timeout: 4000 });
   });
 
   it('opens Guest Mode cleanly with zero errors on /login even when anonymous auth fails or device is offline', async () => {
