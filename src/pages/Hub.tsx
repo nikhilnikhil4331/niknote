@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import type { ComponentType } from 'react';
-import { PenLine, Wallet, CalendarCheck, Sprout, Layers, Sparkles, BookOpen, FileText, Trophy, User, Crown, History, Bot, MessageSquare, GraduationCap, Combine, Activity } from 'lucide-react';
+import { PenLine, Wallet, CalendarCheck, Sprout, Layers, Sparkles, BookOpen, FileText, Trophy, User, Crown, History, Bot, MessageSquare, GraduationCap, Combine, Activity, ScanText } from 'lucide-react';
 import { AppDock } from '@/components/AppDock';
 import { haptic } from '@/hooks/useHaptics';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +23,7 @@ const GROUPS: { title: string; items: HubItem[] }[] = [
     { to: '/documents', label: 'Documents', desc: 'Upload PDF & images', icon: FileText, hue: 210 },
     { to: '/pdf-editor', label: 'PDF Studio', desc: 'Edit, sign & annotate PDFs', icon: PenLine, hue: 350 },
     { to: '/pdf-tools', label: 'PDF Tools', desc: 'Word, Excel, OCR, protect, merge', icon: Combine, hue: 0 },
+    { to: '/scan-notes', label: 'Scan Handwriting', desc: 'Photo → typed, editable notes', icon: ScanText, hue: 160 },
     { to: '/history', label: 'History', desc: 'Recent work', icon: History, hue: 190 },
   ]},
   { title: 'NikAI & Study', items: [

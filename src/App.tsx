@@ -42,6 +42,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileExperience } from '@/components/mobile/MobileExperience';
 import '@/components/mobile/mobile.css';
 import { NiknoteLoader } from '@/components/motion/NiknoteLoader';
+import { initNativeShell } from '@/lib/nativeNav';
 
 // Lazy load heavy pages — keeps initial mobile bundle snappy
 const AstaAIWorkspace = lazy(() => import("@/components/asta/AstaAIWorkspace"));
@@ -57,6 +58,7 @@ const DocumentIntelligence = lazy(() =>
 const PdfStudioPage = lazy(() => import("@/components/pdf-studio/PdfStudio"));
 const PdfToolsPage = lazy(() => import("@/components/pdf-tools/PdfTools"));
 const CheckupPage = lazy(() => import("@/pages/Checkup"));
+const ScanNotesPage = lazy(() => import("@/pages/ScanNotes"));
 const QAPage = lazy(() =>
   import("@/pages/QA").then(m => ({ default: m.default }))
 );
@@ -135,6 +137,8 @@ function RouteAnalytics() {
 
 const App = () => {
   useEffect(() => {
+    // Android hardware Back (no-op on web)
+    void initNativeShell();
     document.documentElement.classList.remove("dark");
     localStorage.setItem("theme", "light");
 
@@ -201,6 +205,7 @@ const App = () => {
                         <Route path="/pdf-editor" element={<PdfStudioPage />} />
                         <Route path="/pdf" element={<PdfStudioPage />} />
                         <Route path="/pdf-tools" element={<PdfToolsPage />} />
+                        <Route path="/scan-notes" element={<ScanNotesPage />} />
                         <Route path="/checkup" element={<CheckupPage />} />
                         <Route path="/qa" element={<QAPage />} />
                         <Route path="/blog" element={<BlogPage />} />

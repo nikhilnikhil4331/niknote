@@ -8,16 +8,20 @@ vi.mock('@/lib/pdfStudio', async () => {
   return actual;
 });
 
-describe('PDF Studio screen', () => {
-  it('opens the editor shell with every tool ready before a file is chosen', () => {
-    render(
+describe('PDF Editor 2.0 empty state', () => {
+  it('opens in a clean read-first state — no canvas, no auto-activated pen', () => {
+    const { container } = render(
       <MemoryRouter>
         <PdfStudio />
       </MemoryRouter>
     );
-    expect(screen.getByText(/PDF Studio — edit any PDF/i)).toBeTruthy();
+    expect(screen.getByText(/Open a PDF to begin/i)).toBeTruthy();
     expect(screen.getByRole('button', { name: /open a pdf/i })).toBeTruthy();
-    expect(screen.getAllByText(/signatures/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/flattened export/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /try the sample/i })).toBeTruthy();
+    expect(screen.getByText(/nothing draws until you choose a tool/i)).toBeTruthy();
+    expect(screen.getAllByText(/Signatures/i).length).toBeGreaterThan(0);
+    // The empty state must not mount a drawing surface at all.
+    expect(container.querySelector('canvas')).toBeNull();
+    expect(screen.queryByLabelText(/page 1/i)).toBeNull();
   });
 });
