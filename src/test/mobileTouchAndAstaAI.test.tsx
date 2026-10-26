@@ -289,20 +289,20 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     Element.prototype.scrollIntoView = vi.fn();
   });
 
-  it('shows the classic NikNote PC screen FIRST on desktop (1440px) without opening NikAI until the NikAI button is clicked', async () => {
+  it('shows the NikNote desktop Home FIRST on desktop (1440px) without opening NikAI until AI Assistant is clicked', async () => {
     window.history.pushState({}, '', '/');
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1440 });
     window.dispatchEvent(new Event('resize'));
 
     render(<App />);
 
-    // 1. Classic PC screen loads first — NikAI is NOT open automatically!
-    const pcNikAIBtn = await screen.findByTestId('pc-open-nikai-btn');
-    expect(pcNikAIBtn.textContent).toContain('NikAI');
+    // 1. New desktop Home (sidebar workspace) loads first — NikAI is NOT open automatically!
+    const aiNav = await screen.findByText('AI Assistant', {}, { timeout: 5000 });
+    expect(document.querySelector('.nik-desktop')).not.toBeNull();
     expect(document.querySelector('[data-nikai-root="true"]')).toBeNull();
 
-    // 2. Clicking the single NikAI option opens full NikAI Studio (/ai)!
-    fireEvent.click(pcNikAIBtn);
+    // 2. Clicking AI Assistant in the sidebar opens full NikAI Studio (/ai)!
+    fireEvent.click(aiNav);
     await waitFor(() => {
       expect(window.location.pathname).toBe('/ai');
       expect(document.querySelector('[data-nikai-root="true"]')).not.toBeNull();
