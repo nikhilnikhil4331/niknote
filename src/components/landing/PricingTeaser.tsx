@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Check, ArrowRight, Sparkles, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { trackClickCTA, trackPremiumUpgradeClick } from '@/lib/tracking';
 
 const plans = [
   {
@@ -20,7 +21,7 @@ const plans = [
     ],
     cta: 'Start Free ✨',
     highlighted: false,
-    link: '/signup',
+    link: '/',
   },
   {
     name: 'Student Pro',
@@ -123,7 +124,23 @@ export const PricingTeaser: React.FC = () => {
               </ul>
 
               <Button
-                onClick={() => navigate(plan.link)}
+                onClick={() => {
+                  if (plan.link.startsWith('/payment')) {
+                    trackPremiumUpgradeClick({
+                      planName: plan.name,
+                      buttonLocation: 'pricing_teaser_card',
+                      conversionSource: 'welcome_pricing',
+                      pageType: 'landing',
+                    });
+                  } else {
+                    trackClickCTA({
+                      buttonLocation: 'pricing_teaser_free',
+                      conversionSource: 'welcome_pricing',
+                      pageType: 'landing',
+                    });
+                  }
+                  navigate(plan.link);
+                }}
                 className={`w-full rounded-full h-12 font-semibold ${
                   plan.highlighted
                     ? 'bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-500 text-white shadow-lg shadow-primary/20'

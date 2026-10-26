@@ -1,6 +1,23 @@
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+
+function gscVerificationPlugin(verificationToken?: string): Plugin {
+  const cleanToken = verificationToken?.trim();
+  return {
+    name: "niknote-gsc-verification",
+    transformIndexHtml(html) {
+      if (!cleanToken || cleanToken.includes("REPLACE_WITH")) {
+        return html;
+      }
+      const safeToken = cleanToken.replace(/["<>]/g, "");
+      return html.replace(
+        "</head>",
+        `  <meta name="google-site-verification" content="${safeToken}" />\n</head>`,
+      );
+    },
+  };
+}
 
 function niknoteLocalAIPlugin(): Plugin {
   const attach = (middlewares: any) => {
@@ -69,7 +86,9 @@ function niknoteLocalAIPlugin(): Plugin {
 }
 
 // https://vitejs.org/config/
-export default defineConfig(() => ({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  return {
   server: {
     host: "0.0.0.0",
     port: 8080,
@@ -84,6 +103,7 @@ export default defineConfig(() => ({
   plugins: [
     react(),
     niknoteLocalAIPlugin(),
+    gscVerificationPlugin(env.VITE_GSC_VERIFICATION),
   ],
   resolve: {
     alias: {
@@ -122,4 +142,5 @@ export default defineConfig(() => ({
     sourcemap: false,
     chunkSizeWarningLimit: 600,
   },
-}));
+  };
+});

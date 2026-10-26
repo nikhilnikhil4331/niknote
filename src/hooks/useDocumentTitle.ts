@@ -1,9 +1,10 @@
 // ============================================================
-// NikNote 4.0 — Dynamic Document Title Hook
-// Updates page title + meta description per route
+// NikNote — Dynamic Document Title & Meta Hook
+// Updates page title + meta description + canonical cleanly
 // ============================================================
 
 import { useEffect } from 'react';
+import { getCanonicalUrl, resolveRouteSeo } from '@/lib/seoConfig';
 
 interface PageMeta {
   title: string;
@@ -11,39 +12,29 @@ interface PageMeta {
 }
 
 const DEFAULT_META: PageMeta = {
-  title: 'NikNote — Free AI Study App for Indian Students | Handwriting Notes + AI Teacher',
-  description: 'NikNote — India ka #1 AI Study App! Convert text to 16+ handwriting styles. AI Teacher (Hindi+English), Quiz Generator, Flashcards. Free shuru karo!',
+  title: 'NikNote — Create Realistic Handwritten Notes Online | AI Study & PDF Tools',
+  description:
+    'Create, customize, organize, and export realistic handwritten-style notes online with NikNote. Includes 16+ handwriting styles, Hindi & English AI study assistant, PDF editor, OCR scanner, quizzes, and flashcards.',
 };
 
 export function useDocumentTitle(meta: PageMeta) {
   useEffect(() => {
-    const prevTitle = document.title;
     const descEl = document.querySelector('meta[name="description"]');
-    const previousDescription = descEl?.getAttribute('content');
     const ogTitle = document.querySelector('meta[property="og:title"]');
     const ogDescription = document.querySelector('meta[property="og:description"]');
-    const previousOgTitle = ogTitle?.getAttribute('content');
-    const previousOgDescription = ogDescription?.getAttribute('content');
-    document.title = meta.title;
+    const canonical = document.querySelector('link[rel="canonical"]');
 
-    // Update meta description if provided
-    if (meta.description) {
-      if (descEl) {
-        descEl.setAttribute('content', meta.description);
-      }
+    document.title = meta.title;
+    if (meta.description && descEl) {
+      descEl.setAttribute('content', meta.description);
     }
     ogTitle?.setAttribute('content', meta.title);
     if (meta.description) ogDescription?.setAttribute('content', meta.description);
-    const canonical = document.querySelector('link[rel="canonical"]');
-    if (canonical) canonical.setAttribute('href', `https://www.niknote.online${window.location.pathname}`);
 
-    return () => {
-      document.title = prevTitle;
-      if (previousDescription !== null && previousDescription !== undefined) descEl?.setAttribute('content', previousDescription);
-      if (previousOgTitle !== null && previousOgTitle !== undefined) ogTitle?.setAttribute('content', previousOgTitle);
-      if (previousOgDescription !== null && previousOgDescription !== undefined) ogDescription?.setAttribute('content', previousOgDescription);
-      if (canonical) canonical.setAttribute('href', 'https://www.niknote.online/');
-    };
+    if (canonical && typeof window !== 'undefined') {
+      const seo = resolveRouteSeo(window.location.pathname);
+      canonical.setAttribute('href', getCanonicalUrl(seo.canonicalPath));
+    }
   }, [meta.title, meta.description]);
 }
 

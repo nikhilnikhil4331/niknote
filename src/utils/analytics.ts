@@ -4,8 +4,9 @@
 // (Server-side analytics would need Supabase integration)
 // ============================================================
 
+import { hasAnalyticsConsent } from '@/lib/consent';
+
 const ANALYTICS_KEY = 'niknote_analytics';
-const CONSENT_KEY = 'niknote_optional_analytics';
 
 interface AnalyticsEvent {
   event: string;
@@ -29,7 +30,7 @@ interface AnalyticsSummary {
 
 // Track an event
 export function trackEvent(event: string, data?: Record<string, string | number>): void {
-  if (localStorage.getItem(CONSENT_KEY) !== 'accepted') return;
+  if (!hasAnalyticsConsent()) return;
   try {
     const events: AnalyticsEvent[] = JSON.parse(localStorage.getItem(ANALYTICS_KEY) || '[]');
     events.push({
@@ -128,9 +129,9 @@ export function trackPDFExport(pages: number): void {
   trackEvent('pdf_export', { pages });
 }
 
-// Track AI query
-export function trackAIQuery(topic: string): void {
-  trackEvent('ai_query', { topic: topic.slice(0, 50) });
+// Track AI query (do not record raw prompt text)
+export function trackAIQuery(_topic?: string): void {
+  trackEvent('ai_query');
 }
 
 // Track signup

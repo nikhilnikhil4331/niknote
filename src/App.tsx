@@ -17,34 +17,36 @@ import { ShareButtons } from "@/components/promotion/ShareButtons";
 import { HandwritingDNAProvider } from "@/contexts/HandwritingDNAContext";
 import { TouchHealthGuard } from "@/components/mobile/TouchHealthGuard";
 import Index from "./pages/Index";
-import Welcome from "./pages/Welcome";
 import NotFound from "./pages/NotFound";
 import { AuthPage } from "@/components/auth/AuthPage";
 import Login from "./pages/Login";
-import ResetPassword from "./pages/ResetPassword";
 import Signup from "./pages/Signup";
-import Upgrade from "./pages/Upgrade";
-import Donate from "./pages/Donate";
-import Payment from "./pages/Payment";
-import Admin from "./pages/Admin";
-import AdminPanelNikhil from "./pages/AdminPanelNikhil";
-import AdminLogin from "./pages/AdminLogin";
-import History from "./pages/History";
-import Account from "./pages/Account";
-import Achievements from "./pages/Achievements";
-import MyNotebooks from "./pages/MyNotebooks";
-import PremiumLanding from "./pages/PremiumLanding";
-import Onboarding from "./pages/Onboarding";
-import LegalPage from "./pages/LegalPage";
 import { AppDock } from "@/components/AppDock";
 import { CookieConsent } from "./components/CookieConsent";
+import { SeoHead } from "@/components/seo/SeoHead";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileExperience } from '@/components/mobile/MobileExperience';
 import '@/components/mobile/mobile.css';
 import { NiknoteLoader } from '@/components/motion/NiknoteLoader';
 import { initNativeShell } from '@/lib/nativeNav';
+import { initTracking, trackRouteView } from '@/lib/tracking';
 
-// Lazy load heavy pages — keeps initial mobile bundle snappy
+// Lazy load secondary, admin & heavy pages — keeps initial entry bundle fast
+const Welcome = lazy(() => import("./pages/Welcome"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Upgrade = lazy(() => import("./pages/Upgrade"));
+const Donate = lazy(() => import("./pages/Donate"));
+const Payment = lazy(() => import("./pages/Payment"));
+const Admin = lazy(() => import("./pages/Admin"));
+const AdminPanelNikhil = lazy(() => import("./pages/AdminPanelNikhil"));
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const History = lazy(() => import("./pages/History"));
+const Account = lazy(() => import("./pages/Account"));
+const Achievements = lazy(() => import("./pages/Achievements"));
+const MyNotebooks = lazy(() => import("./pages/MyNotebooks"));
+const PremiumLanding = lazy(() => import("./pages/PremiumLanding"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const LegalPage = lazy(() => import("./pages/LegalPage"));
 const AstaAIWorkspace = lazy(() => import("@/components/asta/AstaAIWorkspace"));
 const AISolverPage = lazy(() =>
   import("@/components/ai/AISolverPage").then(m => ({ default: m.AISolverPage }))
@@ -85,7 +87,6 @@ const PageLoader = () => <NiknoteLoader />;
 
 import { registerServiceWorker } from "@/hooks/useServiceWorkerRegistration";
 import { checkReferral } from "@/utils/referral";
-import { trackPageView } from "@/utils/analytics";
 
 const queryClient = new QueryClient();
 
@@ -130,8 +131,10 @@ function GlobalCookieConsent() {
 }
 
 function RouteAnalytics() {
-  const { pathname } = useLocation();
-  useEffect(() => { trackPageView(pathname); }, [pathname]);
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    trackRouteView(pathname, search);
+  }, [pathname, search]);
   return null;
 }
 
@@ -139,6 +142,7 @@ const App = () => {
   useEffect(() => {
     // Android hardware Back (no-op on web)
     void initNativeShell();
+    initTracking();
     document.documentElement.classList.remove("dark");
     localStorage.setItem("theme", "light");
 
@@ -172,6 +176,7 @@ const App = () => {
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
+                  <SeoHead />
                   <TouchHealthGuard />
                   <RouteAnalytics />
                   <Suspense fallback={<PageLoader />}>

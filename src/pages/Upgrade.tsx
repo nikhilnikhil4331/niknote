@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { usePremium } from '@/hooks/usePremium';
 import { UrgencyTimer } from '@/components/urgency/UrgencyTimer';
 import { PlanArt } from '@/components/motion/FeatureArt';
+import { trackPremiumUpgradeClick } from '@/lib/tracking';
 
 const plans = [
   {
@@ -73,7 +74,7 @@ const Upgrade = () => {
           <div className="flex justify-center"><PlanArt /></div>
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-primary/10 via-orange-500/10 to-pink-500/10 text-xs sm:text-sm font-medium border border-primary/10">
             <Flame className="h-4 w-4 text-orange-500" />
-            2,500+ students already premium
+            Student Pro ₹49/week · Premium ₹99/month
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             {isPremium ? "You're Premium! 🎉" : 'Unlock Your Full Potential'}
@@ -170,7 +171,15 @@ const Upgrade = () => {
             {/* Desktop inline CTA */}
             <div className="hidden sm:block">
               <Button
-                onClick={() => navigate(`/payment?plan=${activePlan.code}`)}
+                onClick={() => {
+                  trackPremiumUpgradeClick({
+                    planName: activePlan.label,
+                    buttonLocation: 'upgrade_desktop_cta',
+                    conversionSource: 'upgrade_page',
+                    pageType: 'pricing',
+                  });
+                  navigate(`/payment?plan=${activePlan.code}`);
+                }}
                 className="w-full h-12 rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-base font-semibold"
               >
                 <CreditCard className="w-4 h-4 mr-2" />
@@ -210,7 +219,15 @@ const Upgrade = () => {
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
         >
           <Button
-            onClick={() => navigate(`/payment?plan=${activePlan.code}`)}
+            onClick={() => {
+              trackPremiumUpgradeClick({
+                planName: activePlan.label,
+                buttonLocation: 'upgrade_mobile_sticky',
+                conversionSource: 'upgrade_page',
+                pageType: 'pricing',
+              });
+              navigate(`/payment?plan=${activePlan.code}`);
+            }}
             className="w-full h-12 rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-sm font-semibold shadow-lg shadow-primary/20"
           >
             <CreditCard className="w-4 h-4 mr-2" />

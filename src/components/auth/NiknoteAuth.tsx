@@ -11,6 +11,7 @@ import { useHaptics } from '@/hooks/useHaptics';
 import { NiknoteLoader } from '@/components/motion/NiknoteLoader';
 import { supabase } from '@/integrations/supabase/client';
 import { isCloudUserId } from '@/lib/cloudSyncEngine';
+import { trackLoginCompleted, trackSignUpCompleted } from '@/lib/tracking';
 
 export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
   const { signIn, signUp, signInWithGoogle, signInAsGuest, user, loading: authLoading } = useAuth();
@@ -101,6 +102,11 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
         setError(result.error.message);
         triggerHaptic('error');
       } else {
+        if (isSignup) {
+          trackSignUpCompleted('email', 'auth_page');
+        } else {
+          trackLoginCompleted('email', 'auth_page');
+        }
         setSuccess(true);
         triggerHaptic('success');
         setPassword('');
@@ -181,6 +187,8 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
       setBusy(false);
       setError(res.error.message);
       triggerHaptic('error');
+    } else {
+      trackLoginCompleted('google', 'auth_page');
     }
   };
 

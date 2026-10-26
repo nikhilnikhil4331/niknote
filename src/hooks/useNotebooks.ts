@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { trackStartNoteCreation } from '@/lib/tracking';
 
 export interface Notebook {
   id: string;
@@ -91,6 +92,11 @@ export const useNotebooks = () => {
 
       const newNotebook = data as Notebook;
       setNotebooks(prev => [newNotebook, ...prev]);
+      trackStartNoteCreation({
+        conversionSource: 'create_notebook',
+        featureName: 'handwriting_editor',
+        pageType: 'workspace',
+      });
       toast.success('Notebook created!');
       return newNotebook;
     } catch (error) {

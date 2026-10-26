@@ -2,227 +2,181 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>NikNote — Free AI Study App for Indian Students | Handwriting Notes + AI Teacher + Quiz</title>
-    <meta name="description" content="NikNote — India ka #1 AI Study App! Convert text to 16+ handwriting styles. AI Teacher (Hindi+English), Quiz Generator, Flashcards, Mind Maps. CBSE, ICSE, JEE, NEET ke liye. Free shuru karo! Founded by Nikhil Jatav.">
-    <meta name="keywords" content="handwriting notes app, AI teacher Hindi, Indian students study app, NCERT notes generator, exam preparation app, handwritten notes maker, quiz generator free, flashcards maker, CBSE notes, ICSE notes, JEE preparation, NEET preparation, free study tool India, handwriting converter, AI study assistant, Notion alternative India, GoodNotes alternative free, NikNote, Nikhil Jatav">
-    <meta name="author" content="Nikhil Jatav" />
-    <meta name="robots" content="index, follow" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- Primary SEO Meta Tags -->
+    <title>NikNote — Online Handwriting Notes Maker &amp; AI Study App</title>
+    <meta name="description" content="Convert typed text into realistic handwritten notes in 16+ styles, study in Hindi &amp; English with NikAI, edit PDFs, scan notes with OCR &amp; export 300 DPI PDFs." />
+    <meta name="author" content="Nikhil Jatav — NikNote" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow" />
     <link rel="canonical" href="https://www.niknote.online/" />
 
-    <!-- ============================================================
-         PWA Meta Tags
-         ============================================================ -->
-    <meta name="theme-color" content="#6366f1" />
+    <!-- Geo Targeting -->
+    <meta name="geo.region" content="IN" />
+    <meta name="geo.country" content="India" />
+    <meta name="language" content="English, Hindi" />
+
+    <!-- PWA & App Meta -->
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="NikNote" />
-    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="NikNote" />
-    <meta name="msapplication-TileColor" content="#6366f1" />
-    <meta name="msapplication-navbutton-color" content="#6366f1" />
-    <!-- Google Search Console: Add your verification meta tag here after verifying at https://search.google.com/search-console -->
-
-    <!-- ============================================================
-         Favicon & Icons — NikNote Logo
-         ============================================================ -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
-    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
-
-    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/png" href="/niknote-logo.png" />
+    <link rel="apple-touch-icon" href="/niknote-logo.png" />
 
-    <!-- ============================================================
-         Preconnect — Performance
-         ============================================================ -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Patrick+Hand&family=Shadows+Into+Light&family=Indie+Flower&family=Dancing+Script:wght@400;500;600;700&family=Architects+Daughter&family=Satisfy&family=Gloria+Hallelujah&family=Covered+By+Your+Grace&family=Rock+Salt&family=Reenie+Beanie&family=Homemade+Apple&family=Nothing+You+Could+Do&family=Cedarville+Cursive&family=La+Belle+Aurore&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
-
-    <!-- ============================================================
-         Open Graph — Social Sharing
-         ============================================================ -->
+    <!-- Open Graph / Social -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="NikNote" />
     <meta property="og:url" content="https://www.niknote.online/" />
-    <meta property="og:title" content="NikNote — Free AI Study App for Indian Students 🇮🇳" />
-    <meta property="og:description" content="India ka #1 AI Study App! Handwriting Notes + AI Teacher (Hindi+English) + Quiz Generator + Flashcards. CBSE/ICSE/JEE/NEET ke liye. Free shuru karo!" />
-    <meta property="og:image" content="https://www.niknote.online/og-image.jpg?v=4" />
-    <meta property="og:image:secure_url" content="https://www.niknote.online/og-image.jpg?v=4" />
-    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:title" content="NikNote — Online Handwriting Notes Maker &amp; AI Study App" />
+    <meta property="og:description" content="Convert typed text into realistic handwritten notes in 16+ styles, study in Hindi &amp; English with NikAI, edit PDFs, scan notes with OCR &amp; export 300 DPI PDFs." />
+    <meta property="og:image" content="https://www.niknote.online/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="NikNote logo" />
-    <meta property="og:site_name" content="NikNote" />
+    <meta property="og:image:alt" content="NikNote — Online Handwriting Notes Maker and AI Study Workspace" />
     <meta property="og:locale" content="en_IN" />
 
-    <!-- ============================================================
-         Twitter Card
-         ============================================================ -->
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@NikNote" />
-    <meta name="twitter:title" content="NikNote — Free AI Study App for Indian Students 🇮🇳" />
-    <meta name="twitter:description" content="India ka #1 AI Study App! Handwriting Notes + AI Teacher + Quiz Generator + Flashcards. Free shuru karo! 🎓" />
-    <meta name="twitter:image" content="https://www.niknote.online/og-image.jpg?v=4" />
+    <meta name="twitter:site" content="@NikNoteApp" />
+    <meta name="twitter:title" content="NikNote — Online Handwriting Notes Maker &amp; AI Study App" />
+    <meta name="twitter:description" content="Convert typed text into realistic handwritten notes in 16+ styles, study in Hindi &amp; English with NikAI, edit PDFs &amp; export 300 DPI PDFs." />
+    <meta name="twitter:image" content="https://www.niknote.online/og-image.png" />
 
-
-    <!-- ============================================================
-         JSON-LD: Organization — with Founder Info
-         ============================================================ -->
+    <!-- Truthful Structured Data: Organization, WebSite, SoftwareApplication -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "NikNote",
-      "url": "https://www.niknote.online",
-      "logo": "https://www.niknote.online/niknote-logo.png",
-      "description": "NikNote is India's #1 AI-powered study app for students. Convert text to realistic handwritten notes, learn with AI Teacher in Hindi & English, generate quizzes and flashcards. Founded by Nikhil Jatav.",
-      "foundingDate": "2025",
-      "founder": {
-        "@type": "Person",
-        "name": "Nikhil Jatav",
-        "jobTitle": "Founder & Developer",
-        "url": "https://www.niknote.online"
-      },
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "email": "support@niknote.online",
-        "contactType": "customer support"
-      },
-      "sameAs": [
-        "https://twitter.com/NikNote",
-        "https://github.com/nikhilnikhil4331/ink-scribe"
-      ]
-    }
-    </script>
-
-    <!-- ============================================================
-         JSON-LD: WebApplication
-         ============================================================ -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "NikNote",
-      "url": "https://www.niknote.online",
-      "applicationCategory": "EducationalApplication",
-      "operatingSystem": "Web",
-      "browserRequirements": "Requires JavaScript. Requires HTML5.",
-      "author": {
-        "@type": "Person",
-        "name": "Nikhil Jatav"
-      },
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "INR"
-      },
-      "featureList": [
-        "16+ handwriting styles",
-        "AI Teacher in Hindi & English",
-        "Quiz Generator",
-        "Flashcard Maker",
-        "Mind Maps",
-        "28+ built-in subjects",
-        "14 paper types (ruled, graph, dotted, college)",
-        "12 ink colors",
-        "PDF export at 300 DPI",
-        "Offline mode for AI explanations",
-        "WhatsApp one-click share",
-        "Mobile responsive PWA"
-      ]
-    }
-    </script>
-
-    <!-- ============================================================
-         JSON-LD: SoftwareApplication — with Founder
-         ============================================================ -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "NikNote",
-      "applicationCategory": "EducationalApplication",
-      "operatingSystem": "Web",
-      "url": "https://www.niknote.online",
-      "description": "NikNote — India's #1 AI-powered study app. Convert text to 16+ handwriting styles, learn with AI Teacher in Hindi & English, generate quizzes, flashcards, and mind maps. CBSE, ICSE, JEE, NEET focused. Free to start.",
-      "author": {
-        "@type": "Person",
-        "name": "Nikhil Jatav"
-      },
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "INR",
-        "description": "Free plan available. Student Pro at ₹49/week. Premium at ₹99/month."
-      },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.9",
-        "ratingCount": "1250"
-      }
-    }
-    </script>
-
-    <!-- ============================================================
-         JSON-LD: FAQPage
-         ============================================================ -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
+      "@graph": [
         {
-          "@type": "Question",
-          "name": "NikNote kya hai?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "NikNote India ka #1 AI study app hai jo text ko realistic handwritten notes mein convert karta hai. AI Teacher (Hindi+English), Quiz Generator, Flashcards, Mind Maps — sab ek jagah. Founded by Nikhil Jatav."
-          }
+          "@type": "Organization",
+          "@id": "https://www.niknote.online/#organization",
+          "name": "NikNote",
+          "url": "https://www.niknote.online",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.niknote.online/niknote-logo.png"
+          },
+          "founder": {
+            "@type": "Person",
+            "name": "Nikhil Jatav"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "support@niknote.online",
+            "contactType": "customer support",
+            "areaServed": "IN",
+            "availableLanguage": ["en", "hi"]
+          },
+          "sameAs": [
+            "https://github.com/nikhilnikhil4331/niknote"
+          ]
         },
         {
-          "@type": "Question",
-          "name": "Kya NikNote free hai?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Haan! NikNote free mein start kar sakte ho. Basic features bilkul free hain. Student Pro plan ₹99/month mein unlimited pages aur advanced AI features milte hain."
-          }
+          "@type": "WebSite",
+          "@id": "https://www.niknote.online/#website",
+          "url": "https://www.niknote.online",
+          "name": "NikNote",
+          "description": "Online handwriting notes generator, Hindi + English AI study assistant, PDF editor, OCR scanner, and study flashcards.",
+          "publisher": {
+            "@id": "https://www.niknote.online/#organization"
+          },
+          "inLanguage": ["en-IN", "hi-IN"]
         },
         {
-          "@type": "Question",
-          "name": "NikNote ka founder kaun hai?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "NikNote ka founder aur developer Nikhil Jatav hai. Yeh app specifically Indian students ke liye design kiya gaya hai."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Phone pe kaam karta hai kya?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Bilkul! NikNote mobile-friendly PWA hai. Chrome, Safari, kisi bhi browser pe chalta hai. Offline bhi 28+ subjects ka AI explanation kaam karta hai."
-          }
+          "@type": "SoftwareApplication",
+          "@id": "https://www.niknote.online/#software",
+          "name": "NikNote",
+          "applicationCategory": "EducationalApplication",
+          "operatingSystem": "Web, Android, PWA",
+          "url": "https://www.niknote.online/",
+          "description": "Online handwriting notes maker and AI study workspace with 16+ handwriting styles, Hindi & English AI tutor, PDF editor, OCR note scanner, flashcards, and 300 DPI PDF export.",
+          "publisher": {
+            "@id": "https://www.niknote.online/#organization"
+          },
+          "offers": [
+            {
+              "@type": "Offer",
+              "name": "Free Plan",
+              "price": "0",
+              "priceCurrency": "INR",
+              "url": "https://www.niknote.online/"
+            },
+            {
+              "@type": "Offer",
+              "name": "Student Pro (Weekly)",
+              "price": "49",
+              "priceCurrency": "INR",
+              "url": "https://www.niknote.online/upgrade"
+            },
+            {
+              "@type": "Offer",
+              "name": "Premium (Monthly)",
+              "price": "99",
+              "priceCurrency": "INR",
+              "url": "https://www.niknote.online/upgrade"
+            }
+          ],
+          "featureList": [
+            "Convert typed text into 16+ realistic handwriting styles",
+            "Customize ruled, graph, dotted, and plain paper styles with 12 ink colors",
+            "Handwriting DNA style matching from uploaded samples",
+            "Export print-ready 300 DPI A4 PDFs and PNG/JPEG images",
+            "NikAI study assistant with Hindi and English explanations, quizzes, and flashcards",
+            "In-browser PDF editor and PDF merge, split, compress, and OCR tools",
+            "Handwritten and printed note OCR scanner (English and Hindi)"
+          ]
         }
       ]
     }
     </script>
 
-    <!-- Google Identity Services -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Core UI & Primary Handwriting Fonts (secondary handwriting styles load on idle via src/main.tsx) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
   </head>
+
   <body>
-    <div id="root"><div class="nn-boot" role="status" aria-label="Loading Niknote"><img src="/niknote-logo.png" alt="Niknote" width="240" height="120" /><span></span></div></div>
-    <style>
-      .nn-boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#fafbfc}
-      .nn-boot img{width:min(240px,64vw);height:auto;mix-blend-mode:multiply;animation:nnBootPop .7s cubic-bezier(.34,1.56,.64,1) both,nnBootWrite 1s .15s cubic-bezier(.65,0,.35,1) both}
-      .nn-boot span{width:120px;height:4px;border-radius:99px;background:linear-gradient(90deg,#f59e0b,#ec4899,#7c3aed);background-size:200% 100%;animation:nnBootInk 1.2s linear infinite}
-      @keyframes nnBootPop{from{transform:scale(.55) translateY(14px);opacity:0}to{transform:none;opacity:1}}
-      @keyframes nnBootWrite{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
-      @keyframes nnBootInk{to{background-position:-200% 0}}
-      @media (prefers-reduced-motion:reduce){.nn-boot img,.nn-boot span{animation:none}}
-    </style>
+    <div id="root"></div>
+    <noscript>
+      <main style="padding: 2rem; max-width: 720px; margin: 0 auto; font-family: system-ui, sans-serif; line-height: 1.6; color: #111827;">
+        <header>
+          <h1>NikNote — Online Handwriting Notes Maker &amp; AI Study App</h1>
+          <p>NikNote converts typed text into realistic handwritten-style notes across 16+ handwriting styles, ruled/graph/dotted paper layouts, and 12 ink colors, with 300 DPI A4 PDF export, Hindi &amp; English AI study tools, in-browser PDF editing, and OCR note scanning.</p>
+        </header>
+        <section>
+          <h2>Core Features &amp; Study Tools</h2>
+          <ul>
+            <li><a href="https://www.niknote.online/">Handwriting Notes Editor</a> — Type or paste study notes and export realistic handwritten A4 PDFs.</li>
+            <li><a href="https://www.niknote.online/welcome">How NikNote Works &amp; Overview</a> — Product walkthrough, pricing overview, and FAQs.</li>
+            <li><a href="https://www.niknote.online/ai">NikAI Study Assistant</a> — Hindi &amp; English explanations, study notes, quizzes, and flashcards.</li>
+            <li><a href="https://www.niknote.online/ai-solver">AI Doubt &amp; Problem Solver</a> — Step-by-step Physics, Chemistry, Maths, Biology, and coding help.</li>
+            <li><a href="https://www.niknote.online/pdf-editor">Online PDF Editor</a> — Edit PDF text in place, highlight, draw, sign, and annotate in your browser.</li>
+            <li><a href="https://www.niknote.online/pdf-tools">Free PDF Tools</a> — Merge, split, compress, OCR, and convert PDFs privately in your browser.</li>
+            <li><a href="https://www.niknote.online/scan-notes">Scan Handwritten Notes (OCR)</a> — Convert photos of English &amp; Hindi notes into editable pages.</li>
+            <li><a href="https://www.niknote.online/documents">Document AI</a> — Summarize PDFs and generate revision material.</li>
+            <li><a href="https://www.niknote.online/flashcards">Online Study Flashcards</a> — Active-recall study cards for exams.</li>
+            <li><a href="https://www.niknote.online/habit">Student Habit Tracker &amp; Pomodoro Timer</a> — Daily study streaks and focus timer.</li>
+          </ul>
+        </section>
+        <section>
+          <h2>Plans, Guides &amp; Policies</h2>
+          <ul>
+            <li><a href="https://www.niknote.online/upgrade">Pricing Plans</a> — Free plan, Student Pro (₹49/week), and Premium (₹99/month).</li>
+            <li><a href="https://www.niknote.online/schools">NikNote for Schools &amp; Coaching Institutes</a> — Institutional plans starting at ₹25,000/year.</li>
+            <li><a href="https://www.niknote.online/blog">Study &amp; Handwriting Blog</a> — Guides on handwritten notes, CBSE, JEE, NEET &amp; UPSC preparation.</li>
+            <li><a href="https://www.niknote.online/handbook">NikNote Product Handbook</a> — Feature documentation.</li>
+            <li><a href="https://www.niknote.online/privacy">Privacy Policy</a> · <a href="https://www.niknote.online/terms">Terms &amp; Conditions</a> · <a href="https://www.niknote.online/refunds">Refund Policy</a></li>
+          </ul>
+        </section>
+        <p>JavaScript is required to launch the interactive handwriting canvas and AI workspace.</p>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

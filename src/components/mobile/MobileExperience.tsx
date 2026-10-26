@@ -1,6 +1,6 @@
 import { GuestUpgradeCard } from '@/components/auth/GuestUpgradeCard';
 import { MobileTrackerCards } from './MobileTrackerCards';
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu, Search, X, Sparkles, ScanLine, LayoutGrid, Upload, BookOpen, Brain, Dna, Code,
@@ -25,8 +25,9 @@ import { IconButton, MobileHeader, MobileNavigation, ThemeSelector } from './Mob
 import { useMobileAppearance } from './useMobileAppearance';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useAccountName } from '@/hooks/useAccountName';
-import AstaAIWorkspace from '@/components/asta/AstaAIWorkspace';
 import { CLOUD_SYNC_EVENT, notifyLocalDataChanged } from '@/lib/cloudSyncEngine';
+
+const AstaAIWorkspace = lazy(() => import('@/components/asta/AstaAIWorkspace'));
 
 interface LocalDeviceNotebook {
   id: string;
@@ -123,7 +124,11 @@ export function MobileExperience() {
 
   // Render full ChatGPT-Ultra Asta AI Workspace when on /ai
   if (page === 'ai') {
-    return <AstaAIWorkspace />;
+    return (
+      <Suspense fallback={null}>
+        <AstaAIWorkspace />
+      </Suspense>
+    );
   }
 
   const prepareNote = (title: string, text: string, id?: string, style?: string, customBlocks?: Block[]) => {

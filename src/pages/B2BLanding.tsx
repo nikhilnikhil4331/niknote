@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { trackClickCTA, trackGenerateLead } from '@/lib/tracking';
 
 const institutionPlans = [
   {
@@ -179,6 +180,11 @@ const B2BPage = () => {
       );
       window.open(`mailto:nikhilnikhil4331@gmail.com?subject=${subject}&body=${body}`, '_blank');
 
+      trackGenerateLead({
+        planName: 'school_pro',
+        conversionSource: 'schools_form',
+        pageType: 'b2b',
+      });
       toast.success("Thank you! We'll contact you within 24 hours 🎉");
     } catch (err) {
       console.error('Submit error:', err);
