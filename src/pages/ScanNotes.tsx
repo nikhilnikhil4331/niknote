@@ -32,6 +32,7 @@ import {
   type SavedScan,
   type ScanSource,
 } from '@/lib/scanOcr';
+import { trackSaveNote } from '@/lib/tracking';
 
 type Engine = 'device' | 'ai';
 
@@ -178,6 +179,7 @@ export default function ScanNotes() {
           content: blocks.length ? blocks : [createBlock('text', text ?? '')],
         }]);
         if (pgErr) throw pgErr;
+        trackSaveNote({ featureName: 'scan_notes_ocr', conversionSource: 'scan_cloud_save', pageCount: 1 });
         toast.success('Notebook me save ho gaya — My Notebooks me milega');
         navigate('/notebooks');
         return;
@@ -192,6 +194,7 @@ export default function ScanNotes() {
       });
       setScans(loadLocalScans());
       setEditingLocalId(entry.id);
+      trackSaveNote({ featureName: 'scan_notes_ocr', conversionSource: 'scan_device_save', pageCount: 1 });
       toast.success(isLocalGuest
         ? 'Is device ke notebook me save ho gaya (neeche list me hai) — login karne par cloud notebook banta hai'
         : 'Is device par save kar diya (network/account issue) — neeche list me hai');

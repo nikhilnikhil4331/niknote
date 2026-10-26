@@ -1,21 +1,112 @@
+# NikNote Crawl & AI Discovery Policy — https://www.niknote.online
+# Public landing, tool, legal, and blog pages ( plus required JS/CSS/font/image assets ) are allowed.
+# Private account workspaces, admin routes, payment checkouts, and internal QA utilities are disallowed.
+
 User-agent: *
 Allow: /
-Disallow: /admin-panel-nikhil
-Disallow: /admin-login
+Allow: /assets/
 Disallow: /admin
+Disallow: /admin-login
+Disallow: /adminpanelnikhil
+Disallow: /api/
+Disallow: /account
+Disallow: /history
+Disallow: /notebooks
+Disallow: /achievements
+Disallow: /onboarding
 Disallow: /payment
-Disallow: /auth
 Disallow: /login
 Disallow: /signup
-Disallow: /account
-Disallow: /notebooks
-Disallow: /feedback
-Disallow: /history
+Disallow: /auth
+Disallow: /reset-password
 Disallow: /qa
 
-Sitemap: https://www.niknote.online/sitemap.xml
+# Search Engines
+User-agent: Googlebot
+Allow: /
+Allow: /assets/
+Disallow: /admin
+Disallow: /admin-login
+Disallow: /adminpanelnikhil
+Disallow: /api/
+Disallow: /account
+Disallow: /history
+Disallow: /notebooks
+Disallow: /achievements
+Disallow: /onboarding
+Disallow: /payment
+Disallow: /login
+Disallow: /signup
+Disallow: /auth
+Disallow: /reset-password
+Disallow: /qa
 
-# NikNote — AI-Powered Learning & Handwriting Platform
-# Made for Indian Students 🇮🇳
-# Founded by Nikhil Jatav
-# https://www.niknote.online
+User-agent: Bingbot
+Allow: /
+Allow: /assets/
+Disallow: /admin
+Disallow: /admin-login
+Disallow: /adminpanelnikhil
+Disallow: /api/
+Disallow: /account
+Disallow: /history
+Disallow: /notebooks
+Disallow: /achievements
+Disallow: /onboarding
+Disallow: /payment
+Disallow: /login
+Disallow: /signup
+Disallow: /auth
+Disallow: /reset-password
+Disallow: /qa
+
+# AI Search & Answer Engine Crawlers (explicitly permitted on public content)
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin
+Disallow: /adminpanelnikhil
+Disallow: /api/
+Disallow: /account
+Disallow: /notebooks
+Disallow: /payment
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin
+Disallow: /adminpanelnikhil
+Disallow: /api/
+Disallow: /account
+Disallow: /notebooks
+Disallow: /payment
+
+User-agent: GPTBot
+Allow: /
+Disallow: /admin
+Disallow: /adminpanelnikhil
+Disallow: /api/
+Disallow: /account
+Disallow: /notebooks
+Disallow: /payment
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin
+Disallow: /adminpanelnikhil
+Disallow: /api/
+Disallow: /account
+Disallow: /notebooks
+Disallow: /payment
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin
+Disallow: /adminpanelnikhil
+Disallow: /api/
+Disallow: /account
+Disallow: /notebooks
+Disallow: /payment
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://www.niknote.online/sitemap.xml

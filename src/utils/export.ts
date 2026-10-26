@@ -4,8 +4,7 @@
 // high-DPI, proper A4 sizing, dark/light mode support
 // ============================================================
 
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+import { trackExportNote } from '@/lib/tracking';
 
 export type ExportProgress = {
   current: number;
@@ -57,6 +56,7 @@ const captureToCanvas = async (
   retries = 2
 ): Promise<HTMLCanvasElement> => {
   if (!element) throw new Error('Element not found');
+  const { default: html2canvas } = await import('html2canvas');
 
   let lastError: Error | null = null;
 
@@ -140,7 +140,7 @@ export async function exportToPDF(
   }
 
   onProgress?.({ current: 0, total: validElements.length, percentage: 0, status: 'preparing' });
-  await waitForResources();
+  const [{ jsPDF }] = await Promise.all([import('jspdf'), waitForResources()]);
 
   const pdf = new jsPDF({
     orientation: 'portrait',
@@ -218,6 +218,7 @@ export async function exportToPDF(
 
   onProgress?.({ current: total, total, percentage: 100, status: 'saving' });
   pdf.save(`${filename}.pdf`);
+  trackExportNote({ exportFormat: 'pdf', pageCount: total, featureName: 'handwriting_editor' });
   onProgress?.({ current: total, total, percentage: 100, status: 'done' });
 }
 
@@ -255,6 +256,7 @@ export async function exportToImage(
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  trackExportNote({ exportFormat: format, pageCount: 1, featureName: 'handwriting_editor' });
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 

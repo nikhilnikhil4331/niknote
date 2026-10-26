@@ -15,6 +15,7 @@ import { UrgencyTimer } from "@/components/urgency/UrgencyTimer";
 import { ThankYouBurst } from "@/components/motion/ThankYouBurst";
 import { PaymentArt } from "@/components/motion/FeatureArt";
 import { AnimatePresence } from "framer-motion";
+import { trackBeginCheckout, trackVerifiedPurchase } from "@/lib/tracking";
 
 type PlanCode = "weekly" | "monthly";
 type PaymentStep = "select" | "processing" | "success" | "error";
@@ -194,6 +195,15 @@ export default function PaymentPage() {
               throw new Error("Payment could not be verified. Contact support@niknote.online with your payment ID; do not pay again yet.");
             }
 
+            trackVerifiedPurchase({
+              transactionId: response.razorpay_payment_id,
+              orderId: response.razorpay_order_id || data.orderId,
+              planCode: selectedPlan,
+              planName: plan.label,
+              value: plan.price,
+              currency: data.currency || "INR",
+            });
+
             await refreshPremium();
             setPaymentStep("success");
             toast.success("🎉 Payment successful! Premium activated!");
@@ -222,6 +232,12 @@ export default function PaymentPage() {
         toast.error(failMsg + ". Dobara try karo!");
       });
       setCheckoutOpen(true);
+      trackBeginCheckout({
+        planCode: selectedPlan,
+        planName: plan.label,
+        value: plan.price,
+        currency: data.currency || "INR",
+      });
       rzp.open();
     } catch (err) {
       console.error("Payment error:", err);

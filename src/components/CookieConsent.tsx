@@ -1,67 +1,65 @@
 // ============================================================
-// NikNote 6.0 — Cookie Consent Banner (Mobile-Nav Safe)
-// Never blocks mobile bottom navigation bar or screen taps.
+// NikNote — Cookie & Tracking Consent Banner (Mobile-Nav Safe)
+// Governs Essential storage, GA4 Analytics, and Meta Pixel.
 // ============================================================
 
-import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { Cookie, X, Check, Shield } from "lucide-react";
-
-const COOKIE_CONSENT_KEY = "niknote_cookie_consent";
-
-interface CookieConsentState {
-  essential: boolean;
-  analytics: boolean;
-  marketing: boolean;
-  timestamp: string;
-}
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Cookie, X, Check, Shield } from 'lucide-react';
+import {
+  getSavedConsent,
+  saveConsentPreferences,
+  OPEN_COOKIE_SETTINGS_EVENT,
+} from '@/lib/consent';
 
 export const CookieConsent: React.FC = () => {
   const { pathname } = useLocation();
   const [visible, setVisible] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const [consent, setConsent] = useState<CookieConsentState>({
-    essential: true,
-    analytics: true,
-    marketing: false,
-    timestamp: "",
-  });
+  const [forcedOpen, setForcedOpen] = useState(false);
+  const [analytics, setAnalytics] = useState(false);
+  const [marketing, setMarketing] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(COOKIE_CONSENT_KEY);
-      if (!saved) {
-        const timer = setTimeout(() => setVisible(true), 1200);
-        return () => clearTimeout(timer);
-      }
-    } catch {
-      // storage blocked in strict private mode — stay quiet
+    const saved = getSavedConsent();
+    if (saved) {
+      setAnalytics(saved.analytics);
+      setMarketing(saved.marketing);
+    } else {
+      const timer = setTimeout(() => setVisible(true), 1200);
+      return () => clearTimeout(timer);
     }
   }, []);
 
-  const saveConsent = (state: CookieConsentState) => {
-    try {
-      localStorage.setItem(COOKIE_CONSENT_KEY, JSON.stringify({ ...state, timestamp: new Date().toISOString() }));
-    } catch {
-      // ignore storage quota errors
-    }
+  useEffect(() => {
+    const handleOpenSettings = () => {
+      const saved = getSavedConsent();
+      setAnalytics(saved?.analytics ?? false);
+      setMarketing(saved?.marketing ?? false);
+      setShowDetails(true);
+      setForcedOpen(true);
+      setVisible(true);
+    };
+    window.addEventListener(OPEN_COOKIE_SETTINGS_EVENT, handleOpenSettings);
+    return () => window.removeEventListener(OPEN_COOKIE_SETTINGS_EVENT, handleOpenSettings);
+  }, []);
+
+  const persistChoice = (nextAnalytics: boolean, nextMarketing: boolean) => {
+    setAnalytics(nextAnalytics);
+    setMarketing(nextMarketing);
+    saveConsentPreferences({ analytics: nextAnalytics, marketing: nextMarketing });
+    setForcedOpen(false);
     setVisible(false);
   };
 
-  const handleAcceptAll = () => {
-    saveConsent({ essential: true, analytics: true, marketing: true, timestamp: "" });
-  };
+  const handleAcceptAll = () => persistChoice(true, true);
+  const handleRejectNonEssential = () => persistChoice(false, false);
+  const handleSavePreferences = () => persistChoice(analytics, marketing);
 
-  const handleRejectNonEssential = () => {
-    saveConsent({ essential: true, analytics: false, marketing: false, timestamp: "" });
-  };
-
-  const handleSavePreferences = () => {
-    saveConsent(consent);
-  };
-
-  // Never cover full-screen immersive workspaces (/habit, /board, /ai)
-  if (!visible || pathname === "/habit" || pathname === "/board" || pathname === "/ai") return null;
+  // Never cover full-screen immersive workspaces unless explicitly opened via Cookie settings
+  if (!visible || (!forcedOpen && (pathname === '/habit' || pathname === '/board' || pathname === '/ai'))) {
+    return null;
+  }
 
   return (
     <div
@@ -74,8 +72,10 @@ export const CookieConsent: React.FC = () => {
           <div className="flex items-center gap-2 min-w-0">
             <Cookie className="w-4 h-4 text-primary flex-shrink-0" />
             <p className="text-xs text-muted-foreground leading-snug">
-              We use essential storage to keep your notes, chats &amp; preferences synced smoothly.{" "}
-              <a href="/privacy-policy" className="text-primary underline font-medium">Privacy</a>
+              We use essential storage to keep your notes &amp; sign-in working, and optional analytics &amp; conversion cookies only with your permission.{' '}
+              <Link to="/privacy" className="text-primary underline font-medium">
+                Privacy Policy
+              </Link>
             </p>
           </div>
           <button
@@ -91,15 +91,30 @@ export const CookieConsent: React.FC = () => {
         {showDetails && (
           <div className="mt-2.5 p-2.5 rounded-xl bg-muted/50 space-y-2 text-xs">
             <label className="flex items-center justify-between py-0.5">
-              <span><strong className="text-foreground">Essential</strong> · Always active</span>
+              <span>
+                <strong className="text-foreground">Essential</strong> · Sign-in &amp; note storage (always active)
+              </span>
               <input type="checkbox" checked disabled className="rounded accent-primary w-4 h-4" />
             </label>
             <label className="flex items-center justify-between py-0.5 cursor-pointer">
-              <span><strong className="text-foreground">Analytics</strong> · Performance insights</span>
+              <span>
+                <strong className="text-foreground">Analytics</strong> · Google Analytics 4 &amp; usage insights
+              </span>
               <input
                 type="checkbox"
-                checked={consent.analytics}
-                onChange={(e) => setConsent((p) => ({ ...p, analytics: e.target.checked }))}
+                checked={analytics}
+                onChange={(e) => setAnalytics(e.target.checked)}
+                className="rounded accent-primary w-4 h-4 cursor-pointer"
+              />
+            </label>
+            <label className="flex items-center justify-between py-0.5 cursor-pointer">
+              <span>
+                <strong className="text-foreground">Marketing</strong> · Meta Pixel conversion measurement
+              </span>
+              <input
+                type="checkbox"
+                checked={marketing}
+                onChange={(e) => setMarketing(e.target.checked)}
                 className="rounded accent-primary w-4 h-4 cursor-pointer"
               />
             </label>
@@ -113,7 +128,7 @@ export const CookieConsent: React.FC = () => {
             className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 min-h-[40px] px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold active:scale-[0.98]"
           >
             <Check className="w-3.5 h-3.5" />
-            Accept
+            Accept all
           </button>
           {showDetails ? (
             <button

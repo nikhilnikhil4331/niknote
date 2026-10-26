@@ -3,6 +3,8 @@
 // Generates SEO meta tags, social share links, sitemap
 // ============================================================
 
+import { getAllSitemapEntries } from '@/lib/seoConfig';
+
 export const SITE_CONFIG = {
   name: 'NikNote',
   tagline: 'AI-Powered Handwriting Notes for Indian Students',
@@ -70,24 +72,20 @@ export function getPageSEO(page: string) {
   return pages[page] || pages.home;
 }
 
-// Generate sitemap XML
+// Generate sitemap XML (canonical indexable public routes only)
 export function generateSitemap(): string {
-  const urls = [
-    { loc: '/', changefreq: 'daily', priority: '1.0' },
-    { loc: '/ai', changefreq: 'daily', priority: '0.9' },
-    { loc: '/login', changefreq: 'monthly', priority: '0.7' },
-    { loc: '/signup', changefreq: 'monthly', priority: '0.7' },
-    { loc: '/documents', changefreq: 'weekly', priority: '0.8' },
-    { loc: '/qa', changefreq: 'weekly', priority: '0.6' },
-  ];
+  const entries = getAllSitemapEntries();
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.map(u => `  <url>
-    <loc>${SITE_CONFIG.url}${u.loc}</loc>
-    <changefreq>${u.changefreq}</changefreq>
-    <priority>${u.priority}</priority>
-  </url>`).join('\n')}
+${entries
+  .map((u) => {
+    const lastmod = u.lastmod ? `\n    <lastmod>${u.lastmod}</lastmod>` : '';
+    return `  <url>
+    <loc>${u.loc}</loc>${lastmod}
+  </url>`;
+  })
+  .join('\n')}
 </urlset>`;
 }
 

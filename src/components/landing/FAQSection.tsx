@@ -9,50 +9,59 @@ import {
 
 const faqs = [
   {
-    question: 'NikNote kya hai? Kaise kaam karta hai?',
-    answer: 'NikNote ek AI-powered study app hai Indian students ke liye. Type karo text → 16+ handwriting styles mein convert → PDF export. Plus: AI Teacher (Hindi+English), Quiz Generator, Flashcards, Mind Maps — sab ek jagah! Internet bina bhi 28+ subjects ka instant explanation milta hai.',
+    question: 'What is NikNote and how can I create handwritten-style notes online?',
+    answer: 'NikNote is an online handwriting notes editor and AI study workspace. Type or paste your text in the editor, pick from 16+ handwriting styles, choose ruled, graph, dotted, or plain paper with 12 ink colors, and export print-ready A4 PDFs or images.',
   },
   {
-    question: 'Kya NikNote free hai?',
-    answer: 'Haan! NikNote free mein start kar sakte ho. Free plan mein handwriting notes, AI Teacher, 28+ subjects, quiz generator — sab kuch milta hai. Premium mein extra pages, no watermark, aur advanced AI features milte hain. No credit card needed!',
+    question: 'Can I customize handwriting styles or match my own handwriting?',
+    answer: 'Yes. You can adjust handwriting font family, font size, ink color, line spacing, baseline variation, and word spacing. With Handwriting Studio (Handwriting DNA), you can also upload a sample of your own writing to calibrate slant, spacing, pressure, and size.',
   },
   {
-    question: 'Phone pe kaam karta hai?',
-    answer: 'Bilkul! NikNote mobile-friendly hai — Chrome, Safari, kisi bhi browser pe chalta hai. PWA install karke app jaisa use kar sakte ho. Offline bhi 28+ subjects ka AI explanation kaam karta hai!',
+    question: 'Can I export notes as PDFs or edit existing PDF files?',
+    answer: 'Yes. Notes can be exported as high-resolution A4 PDFs or PNG/JPEG images. NikNote also includes an in-browser PDF Editor (/pdf-editor) for highlighting, annotating, and in-place text editing, plus PDF Tools (/pdf-tools) for merging, splitting, compressing, OCR, and converting PDFs.',
   },
   {
-    question: 'Kya handwriting real lagti hai?',
-    answer: 'Haan! 16+ handwriting styles hain — neat cursive se lekar casual print tak. Har style mein natural imperfections hain (baseline jitter, stroke variation, spacing randomness) toh output genuinely handwritten lagta hai. Professor bhi nahi bata sakte! 😄',
+    question: 'Is NikNote free to use?',
+    answer: 'Yes, you can start using NikNote for free without a credit card, including instant guest workspace access. Paid plans — Student Pro (₹49/week) and Premium (₹99/month) — unlock higher AI limits, priority AI responses, and full premium features.',
   },
   {
-    question: 'AI Teacher kaise kaam karta hai?',
-    answer: 'Koi bhi topic puchiye — "Newton ke laws samjhao", "Photosynthesis explain karo" — AI Teacher turant Hindi + English mein samjhata hai. Beginner se lekar exam-level tak. 28+ subjects built-in hain, internet bina bhi kaam karta hai!',
+    question: 'How does the Hindi + English AI Study Assistant (NikAI) work?',
+    answer: 'Ask any study question in Hindi, English, or Hinglish — such as Physics laws, Chemistry reactions, Biology concepts, or programming problems. NikAI generates structured study notes, interactive multiple-choice quizzes, and flashcards, plus includes an offline fallback topic library.',
   },
   {
-    question: 'CBSE/ICSE/JEE/NEET ke liye useful hai?',
-    answer: 'Bilkul! NikNote specifically Indian exams ke liye design kiya gaya hai. NCERT pattern ke notes, JEE/NEET ke liye quiz practice, CBSE board exam format — sab available hai. Hindi medium students ke liye bhi Hindi mein explanations milte hain!',
+    question: 'Can I scan photos of handwritten notes into editable text?',
+    answer: 'Yes. Use Scan Handwriting (/scan-notes) to convert photos or screenshots of printed or handwritten notes into editable notebook pages using on-device English/Hindi OCR or NikAI vision recognition.',
   },
   {
-    question: 'PDF export kaise karein?',
-    answer: 'Notes bana ke simply "Export PDF" button dabao. 300 DPI print-ready PDF milta hai — A4 size, perfect for printing. Individual pages PNG mein bhi download kar sakte ho. WhatsApp pe directly share bhi kar sakte ho!',
+    question: 'Which devices and browsers are supported, and does it work offline?',
+    answer: 'NikNote runs in modern mobile and desktop browsers (Chrome, Edge, Safari, Firefox), can be installed as a Progressive Web App (PWA), and is available as an Android APK. Core note editing, handwriting preview, habit tracking, and client-side PDF tools work offline after first load; cloud AI and sync require an internet connection.',
   },
   {
-    question: 'Assignment ke liye use karna ethical hai?',
-    answer: 'NikNote legitimate study tool hai — personal notes, revision, teaching materials, creative projects ke liye. Academic integrity ka respect karein. AI Teacher se samjho, notes banao, quiz practice karo — smart study ke liye use karo!',
-  },
-  {
-    question: 'Kya offline kaam karta hai?',
-    answer: 'Haan! 28+ subjects ka AI explanation offline bhi kaam karta hai. PWA install karke app jaisa use karo — internet ke bina bhi basic features available hain. Full AI features ke liye internet chahiye.',
-  },
-  {
-    question: 'Payment kaise hai? UPI accept hota hai?',
-    answer: 'Haan! UPI, credit card, debit card — sab accept hota hai. Razorpay integration hai, fully secure. Premium plan bahut affordable hai — ek chai se sasta! ☕',
+    question: 'Which payment methods are supported?',
+    answer: 'Subscriptions are processed securely via Razorpay in INR and support UPI, debit/credit cards, and popular wallets. NikNote never stores your card number or UPI PIN.',
   },
 ];
 
 export const FAQSection: React.FC = () => {
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  };
+
   return (
     <section id="faq" className="py-24 bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <div className="container mx-auto px-4 lg:px-6 max-w-3xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

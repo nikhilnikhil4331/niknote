@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LandingPage } from '@/components/landing/LandingPage';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { trackClickCTA, trackStartNoteCreation } from '@/lib/tracking';
 
 const Welcome = () => {
   const navigate = useNavigate();
@@ -11,7 +12,20 @@ const Welcome = () => {
     <LandingPage
       isDark={isDark}
       onToggleDark={toggleDark}
-      onStartWriting={() => navigate('/')}
+      onStartWriting={() => {
+        trackClickCTA({
+          buttonLocation: 'welcome_start_writing',
+          conversionSource: 'welcome_page',
+          pageType: 'landing',
+          featureName: 'handwriting_editor',
+        });
+        trackStartNoteCreation({
+          conversionSource: 'welcome_page',
+          featureName: 'handwriting_editor',
+          pageType: 'landing',
+        });
+        navigate('/');
+      }}
     />
   );
 };

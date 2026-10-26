@@ -7,6 +7,7 @@ import { useMobileAppearance } from '@/components/mobile/useMobileAppearance';
 import { HandwritingTextImporter } from '@/components/HandwritingTextImporter';
 import { useNotebooks } from '@/hooks/useNotebooks';
 import { supabase } from '@/integrations/supabase/client';
+import { trackSaveNote } from '@/lib/tracking';
 import type { Block } from '@/types/block';
 import { type PageStyle } from '@/types/notes';
 import { NotionEditor } from '@/components/editor/NotionEditor';
@@ -524,6 +525,7 @@ const Index = () => {
 
         setCloudNotebookId(id);
         notifyLocalDataChanged();
+        trackSaveNote({ featureName: 'handwriting_editor', conversionSource: 'device_save', pageCount: 1 });
         toast.success('Note saved on this device ✨');
         return;
       }
@@ -540,6 +542,7 @@ const Index = () => {
         ? await supabase.from('pages').update({ content: blockEditor.blocks as any, title: noteTitle }).eq('id', existing[0].id)
         : await supabase.from('pages').insert({ notebook_id: id, user_id: user.id, page_number: 1, title: noteTitle, content: blockEditor.blocks as any });
       if (result.error) throw result.error;
+      trackSaveNote({ featureName: 'handwriting_editor', conversionSource: 'cloud_save', pageCount: 1 });
       toast.success('Note saved to your notebooks');
     } catch { toast.error('Could not save note. Your local draft is still available.'); }
     finally { setSavingNote(false); }

@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
 import { motion, useInView, useScroll, useTransform } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import niknoteLogoImg from '@/assets/niknote-logo.png';
+import { trackClickCTA, trackStartNoteCreation } from '@/lib/tracking';
 
 /* ───────────────── helpers ───────────────── */
 const SectionWrapper: React.FC<{ children: React.ReactNode; className?: string; id?: string }> = ({ children, className = '', id }) => {
@@ -33,7 +34,20 @@ const PremiumLanding: React.FC = () => {
   const heroY = useTransform(scrollYProgress, [0, 1], [0, 200]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
-  const goApp = () => navigate('/');
+  const goApp = () => {
+    trackClickCTA({
+      buttonLocation: 'premium_landing_cta',
+      conversionSource: 'landing_page',
+      pageType: 'landing',
+      featureName: 'handwriting_editor',
+    });
+    trackStartNoteCreation({
+      conversionSource: 'landing_page',
+      featureName: 'handwriting_editor',
+      pageType: 'landing',
+    });
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden selection:bg-purple-500/30">

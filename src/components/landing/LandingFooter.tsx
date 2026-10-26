@@ -39,9 +39,9 @@ export const LandingFooter: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { icon: Shield, label: 'Data Encrypted' },
-                  { icon: Star, label: '4.9 Rating' },
+                  { icon: Star, label: '300 DPI PDF Export' },
                   { icon: Heart, label: 'Made in India' },
-                  { icon: Mail, label: '24/7 Support' },
+                  { icon: Mail, label: 'Email Support' },
                 ].map((badge) => (
                   <div key={badge.label} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/30 text-xs text-muted-foreground">
                     <badge.icon className="w-3 h-3 text-primary" />
@@ -96,11 +96,13 @@ export const LandingFooter: React.FC = () => {
           <div>
             <h4 className="font-semibold text-foreground mb-3 text-sm">Features</h4>
             <ul className="space-y-2">
-              <li><Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">✍️ Handwriting Notes</Link></li>
-              <li><Link to="/ai" className="text-sm text-muted-foreground hover:text-foreground transition-colors">🧠 AI Teacher</Link></li>
-              <li><Link to="/ai-solver" className="text-sm text-muted-foreground hover:text-foreground transition-colors">📝 AI Solver</Link></li>
-              <li><Link to="/documents" className="text-sm text-muted-foreground hover:text-foreground transition-colors">📄 Document AI</Link></li>
-              <li><Link to="/blog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">📚 Blog</Link></li>
+              <li><Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Handwriting Notes Editor</Link></li>
+              <li><Link to="/ai" className="text-sm text-muted-foreground hover:text-foreground transition-colors">NikAI Study Assistant</Link></li>
+              <li><Link to="/pdf-editor" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Online PDF Editor</Link></li>
+              <li><Link to="/pdf-tools" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Free PDF Tools</Link></li>
+              <li><Link to="/scan-notes" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Scan Handwriting (OCR)</Link></li>
+              <li><Link to="/flashcards" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Study Flashcards</Link></li>
+              <li><Link to="/habit" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Habit &amp; Focus Timer</Link></li>
             </ul>
           </div>
 
@@ -108,9 +110,12 @@ export const LandingFooter: React.FC = () => {
           <div>
             <h4 className="font-semibold text-foreground mb-3 text-sm">Resources</h4>
             <ul className="space-y-2">
-              <li><Link to="/upgrade" className="text-sm text-muted-foreground hover:text-foreground transition-colors">💎 Premium Plans</Link></li>
-              <li><Link to="/landing#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">❓ FAQ</Link></li>
-              <li><a href="mailto:support@niknote.online" className="text-sm text-muted-foreground hover:text-foreground transition-colors">📧 Contact Us</a></li>
+              <li><Link to="/welcome" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How NikNote Works</Link></li>
+              <li><Link to="/upgrade" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing &amp; Plans</Link></li>
+              <li><Link to="/schools" className="text-sm text-muted-foreground hover:text-foreground transition-colors">For Schools &amp; Coaching</Link></li>
+              <li><Link to="/blog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Study &amp; Handwriting Blog</Link></li>
+              <li><Link to="/handbook" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Product Handbook</Link></li>
+              <li><a href="mailto:support@niknote.online" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact Support</a></li>
             </ul>
           </div>
 
@@ -135,7 +140,7 @@ export const LandingFooter: React.FC = () => {
                 Follow on Twitter
               </a>
               <a
-                href="https://github.com/nikhilnikhil4331/ink-scribe"
+                href="https://github.com/nikhilnikhil4331/niknote"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
