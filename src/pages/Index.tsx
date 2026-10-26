@@ -1115,10 +1115,12 @@ const Index = () => {
             >
               <PanelLeft className="w-4 h-4 text-gray-600" />
             </button>
-            <img 
-              src="/niknote-logo.png" 
-              alt="NikNote" 
-              className={cn("select-none", isMobile ? "h-8" : "h-10")}
+            <img
+              src="/niknote-logo.png"
+              alt="NikNote"
+              title={isMobile ? undefined : 'Back to Home'}
+              onClick={isMobile ? undefined : () => navigate('/')}
+              className={cn("select-none", isMobile ? "h-8" : "h-10 cursor-pointer hover:opacity-80 transition-opacity")}
               style={{ WebkitTapHighlightColor: 'transparent' }}
             />
             

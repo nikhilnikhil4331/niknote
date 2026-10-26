@@ -1,0 +1,310 @@
+/* ============================================================
+   NikNote Desktop Workspace — Notion-style enhanced UI
+   Scoped to .nik-desktop so mobile / APK styles are untouched.
+   Palette matches the design mockup: soft lavender, pastel
+   tiles, warm near-black text on a light lilac-grey canvas.
+   ============================================================ */
+
+.nik-desktop {
+  --nd-bg: #f7f7fc;
+  --nd-panel: #ffffff;
+  --nd-side: #fbfbfe;
+  --nd-border: #e9e9f2;
+  --nd-border-soft: #f0f0f6;
+  --nd-text: #26233a;
+  --nd-text-2: #6f6c8a;
+  --nd-text-3: #a19eba;
+  --nd-primary: #6c5ce7;
+  --nd-primary-dark: #5a4bd1;
+  --nd-primary-soft: #efecff;
+  --nd-primary-softer: #f5f3ff;
+  --nd-shadow: 0 1px 2px rgba(38, 35, 58, 0.04), 0 10px 30px rgba(38, 35, 58, 0.05);
+  --nd-shadow-hover: 0 2px 4px rgba(38, 35, 58, 0.05), 0 16px 40px rgba(108, 92, 231, 0.12);
+  font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  background: var(--nd-bg);
+  color: var(--nd-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.nik-desktop *::-webkit-scrollbar { width: 8px; height: 8px; }
+.nik-desktop *::-webkit-scrollbar-thumb { background: #dcdaf0; border-radius: 99px; border: 2px solid transparent; background-clip: padding-box; }
+.nik-desktop *::-webkit-scrollbar-thumb:hover { background: #c6c2e8; background-clip: padding-box; border: 2px solid transparent; }
+.nik-desktop *::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- Sidebar ---------- */
+.nd-side-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 10px; margin: 1px 8px;
+  border-radius: 9px; font-size: 13.5px; font-weight: 500;
+  color: #45415e; cursor: pointer; user-select: none;
+  transition: background .15s ease, color .15s ease, transform .1s ease;
+  white-space: nowrap;
+}
+.nd-side-item:hover { background: #f1f0fa; color: var(--nd-text); }
+.nd-side-item:active { transform: scale(.985); }
+.nd-side-item.nd-active { background: var(--nd-primary-soft); color: var(--nd-primary); font-weight: 600; }
+.nd-side-item.nd-active svg { color: var(--nd-primary); }
+.nd-side-item .nd-count {
+  margin-left: auto; font-size: 11px; font-weight: 600;
+  background: #efedfb; color: #8b87ad; padding: 1px 7px; border-radius: 99px;
+}
+.nd-side-item.nd-active .nd-count { background: #e2dcff; color: var(--nd-primary); }
+
+.nd-side-label {
+  padding: 14px 18px 5px; font-size: 11px; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--nd-text-3);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.nd-search {
+  display: flex; align-items: center; gap: 8px;
+  margin: 2px 12px 8px; padding: 7px 10px;
+  background: #f2f1fa; border: 1px solid transparent; border-radius: 9px;
+  font-size: 13px; color: var(--nd-text-2); cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.nd-search:hover { background: #eceaf9; }
+.nd-search kbd {
+  margin-left: auto; font-size: 10.5px; font-family: inherit; color: var(--nd-text-3);
+  background: #fff; border: 1px solid var(--nd-border); border-radius: 5px; padding: 1px 5px;
+}
+
+/* ---------- Cards & buttons ---------- */
+.nd-card {
+  background: var(--nd-panel); border: 1px solid var(--nd-border);
+  border-radius: 16px; box-shadow: var(--nd-shadow);
+}
+
+.nd-btn-primary {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--nd-primary); color: #fff; border: none;
+  font-size: 13.5px; font-weight: 600; padding: 8px 16px; border-radius: 10px;
+  cursor: pointer; transition: background .15s, transform .1s, box-shadow .15s;
+  box-shadow: 0 4px 14px rgba(108, 92, 231, .28);
+}
+.nd-btn-primary:hover { background: var(--nd-primary-dark); }
+.nd-btn-primary:active { transform: scale(.97); }
+
+.nd-btn-ghost {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #fff; color: #45415e; border: 1px solid var(--nd-border);
+  font-size: 13px; font-weight: 500; padding: 7px 13px; border-radius: 10px;
+  cursor: pointer; transition: background .15s, border-color .15s;
+}
+.nd-btn-ghost:hover { background: #f5f4fc; border-color: #dcd9f2; }
+
+.nd-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px; border: none; background: transparent;
+  color: var(--nd-text-2); cursor: pointer; transition: background .15s, color .15s;
+}
+.nd-icon-btn:hover { background: #f1f0fa; color: var(--nd-text); }
+
+/* Quick action tiles */
+.nd-quick {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  background: #fff; border: 1px solid var(--nd-border); border-radius: 14px;
+  padding: 13px 14px; cursor: pointer; width: 100%;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s;
+}
+.nd-quick:hover { transform: translateY(-2px); box-shadow: var(--nd-shadow-hover); border-color: #ddd9f5; }
+.nd-quick:active { transform: translateY(0) scale(.98); }
+.nd-quick .nd-quick-ic {
+  width: 38px; height: 38px; border-radius: 11px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Note paper preview (handwritten notebook look) */
+.nd-paper {
+  position: relative; overflow: hidden; border-radius: 12px 12px 0 0;
+  background-color: #fdfbf3;
+  background-image:
+    linear-gradient(90deg, transparent 26px, rgba(244, 114, 182, .28) 26px, rgba(244, 114, 182, .28) 27px, transparent 27px),
+    repeating-linear-gradient(to bottom, transparent 0 21px, rgba(96, 120, 200, .16) 21px 22px);
+}
+.nd-paper .nd-paper-title {
+  font-family: 'Caveat', cursive; font-weight: 700; color: #3d4a8a;
+  line-height: 22px; padding: 8px 12px 0 34px; font-size: 17px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.nd-paper .nd-paper-lines {
+  font-family: 'Caveat', cursive; color: #5b6690; line-height: 22px;
+  padding: 0 12px 0 34px; font-size: 14.5px; opacity: .85;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+.nd-note-card {
+  background: #fff; border: 1px solid var(--nd-border); border-radius: 14px;
+  overflow: hidden; cursor: pointer; text-align: left; padding: 0; width: 100%;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s;
+}
+.nd-note-card:hover { transform: translateY(-3px); box-shadow: var(--nd-shadow-hover); border-color: #ddd9f5; }
+
+/* Chips */
+.nd-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 600; padding: 2.5px 9px; border-radius: 99px;
+  white-space: nowrap;
+}
+.nd-chip-btn {
+  font-size: 12.5px; font-weight: 500; padding: 6px 13px; border-radius: 99px;
+  border: 1px solid var(--nd-border); background: #fff; color: #45415e; cursor: pointer;
+  transition: all .15s; white-space: nowrap;
+}
+.nd-chip-btn:hover { background: #f5f3ff; border-color: #d9d4f8; }
+.nd-chip-btn.nd-on { background: var(--nd-primary); border-color: var(--nd-primary); color: #fff; box-shadow: 0 3px 10px rgba(108,92,231,.3); }
+
+/* View tabs (Table / Board / Gallery ...) */
+.nd-vtabs {
+  display: inline-flex; background: #f0effa; border-radius: 11px; padding: 3px; gap: 2px;
+}
+.nd-vtabs button {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 500; color: var(--nd-text-2);
+  padding: 6px 12px; border-radius: 8px; border: none; background: transparent; cursor: pointer;
+  transition: all .15s;
+}
+.nd-vtabs button:hover { color: var(--nd-text); }
+.nd-vtabs button.nd-on { background: #fff; color: var(--nd-text); font-weight: 600; box-shadow: 0 1px 4px rgba(38,35,58,.08); }
+
+/* ---------- Table ---------- */
+.nd-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.nd-table th {
+  text-align: left; font-size: 11.5px; font-weight: 600; color: var(--nd-text-3);
+  text-transform: uppercase; letter-spacing: .05em;
+  padding: 10px 14px; border-bottom: 1px solid var(--nd-border);
+  background: #fcfcfe;
+}
+.nd-table td { padding: 11px 14px; border-bottom: 1px solid var(--nd-border-soft); vertical-align: middle; }
+.nd-table tbody tr { cursor: pointer; transition: background .12s; }
+.nd-table tbody tr:hover { background: #f8f7ff; }
+
+/* ---------- Kanban ---------- */
+.nd-kanban-col { border-radius: 16px; padding: 12px; min-height: 220px; transition: box-shadow .15s; }
+.nd-kanban-col.nd-drop { box-shadow: inset 0 0 0 2px var(--nd-primary); }
+.nd-kanban-card {
+  background: #fff; border: 1px solid var(--nd-border); border-radius: 12px;
+  padding: 11px 12px; margin-bottom: 9px; cursor: grab;
+  box-shadow: 0 1px 3px rgba(38,35,58,.05);
+  transition: transform .14s, box-shadow .14s, opacity .14s;
+}
+.nd-kanban-card:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(38,35,58,.09); }
+.nd-kanban-card.nd-dragging { opacity: .45; }
+.nd-kanban-new {
+  width: 100%; text-align: left; font-size: 13px; font-weight: 500; color: var(--nd-text-2);
+  padding: 8px 10px; border-radius: 10px; border: none; background: transparent; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; transition: background .14s, color .14s;
+}
+.nd-kanban-new:hover { background: rgba(255,255,255,.75); color: var(--nd-text); }
+
+/* ---------- Calendar ---------- */
+.nd-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+.nd-cal-day {
+  min-height: 104px; border-right: 1px solid var(--nd-border-soft); border-bottom: 1px solid var(--nd-border-soft);
+  padding: 6px 7px; cursor: pointer; transition: background .12s; overflow: hidden;
+}
+.nd-cal-day:hover { background: #f9f8ff; }
+.nd-cal-day.nd-selected { background: #f3f0ff; box-shadow: inset 0 0 0 2px #d9d2ff; }
+.nd-cal-day.nd-out { background: #fbfbfd; }
+.nd-cal-day.nd-out .nd-cal-num { color: #c6c3da; }
+.nd-cal-num {
+  font-size: 12px; font-weight: 600; color: #55516f;
+  width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 99px;
+}
+.nd-cal-num.nd-today { background: var(--nd-primary); color: #fff; }
+.nd-cal-ev {
+  font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 6px; margin-top: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---------- Inputs ---------- */
+.nd-input {
+  width: 100%; font-size: 13.5px; color: var(--nd-text);
+  background: #fff; border: 1px solid var(--nd-border); border-radius: 10px;
+  padding: 8px 12px; outline: none; transition: border-color .15s, box-shadow .15s;
+  font-family: inherit;
+}
+.nd-input:focus { border-color: var(--nd-primary); box-shadow: 0 0 0 3px rgba(108,92,231,.15); }
+.nd-input::placeholder { color: var(--nd-text-3); }
+
+/* Task checkbox */
+.nd-check {
+  width: 19px; height: 19px; border-radius: 6px; flex: none;
+  border: 1.8px solid #cfcbe6; background: #fff; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all .15s; color: transparent;
+}
+.nd-check:hover { border-color: var(--nd-primary); }
+.nd-check.nd-done { background: var(--nd-primary); border-color: var(--nd-primary); color: #fff; }
+
+/* Progress ring */
+.nd-ring-track { stroke: #efeafd; }
+.nd-ring-bar { transition: stroke-dashoffset .7s cubic-bezier(.22,1,.36,1); stroke-linecap: round; }
+
+/* Animations */
+@keyframes nd-fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.nd-anim { animation: nd-fade-up .45s cubic-bezier(.22,1,.36,1) both; }
+.nd-anim-1 { animation-delay: .05s; } .nd-anim-2 { animation-delay: .1s; }
+.nd-anim-3 { animation-delay: .15s; } .nd-anim-4 { animation-delay: .2s; }
+.nd-anim-5 { animation-delay: .25s; } .nd-anim-6 { animation-delay: .3s; }
+
+@keyframes nd-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.nd-float { animation: nd-float 5s ease-in-out infinite; }
+
+/* Banner */
+.nd-banner {
+  position: relative; border-radius: 18px; overflow: hidden;
+  border: 1px solid var(--nd-border); min-height: 196px;
+  background: linear-gradient(120deg, #f6e3ff, #ffe9f2 45%, #fff3e0);
+}
+.nd-banner img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.nd-banner .nd-banner-quote {
+  position: absolute; top: 16px; left: 20px; max-width: 240px;
+  font-family: 'Caveat', cursive; font-size: 21px; font-weight: 600;
+  color: #5b4a8a; line-height: 1.25; text-shadow: 0 1px 0 rgba(255,255,255,.6);
+}
+
+/* Template mini previews */
+.nd-tpl-paper {
+  border-radius: 10px; border: 1px solid var(--nd-border-soft);
+  background-color: #fffef8;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 15px, rgba(96,120,200,.13) 15px 16px);
+  padding: 10px 12px; overflow: hidden;
+}
+.nd-tpl-paper .nd-skel { height: 7px; border-radius: 99px; background: #e7e4f6; margin-bottom: 9px; }
+.nd-tpl-paper .nd-skel.nd-acc { background: #cfc4f7; }
+
+/* Dropdown menus (shell-local) */
+.nd-menu {
+  position: absolute; z-index: 60; min-width: 200px;
+  background: #fff; border: 1px solid var(--nd-border); border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(38,35,58,.14); padding: 5px;
+  animation: nd-fade-up .18s ease both;
+}
+.nd-menu button {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  font-size: 13px; font-weight: 500; color: #3d3a55;
+  padding: 7px 9px; border-radius: 8px; border: none; background: transparent; cursor: pointer;
+}
+.nd-menu button:hover { background: #f4f2fe; }
+.nd-menu button.nd-danger { color: #dc2626; }
+.nd-menu button.nd-danger:hover { background: #fef2f2; }
+
+/* Modal */
+.nd-modal-back {
+  position: fixed; inset: 0; z-index: 80; background: rgba(38,35,58,.38);
+  backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.nd-modal {
+  background: #fff; border-radius: 18px; width: 100%; max-width: 460px;
+  box-shadow: 0 24px 70px rgba(38,35,58,.25); padding: 22px;
+  animation: nd-fade-up .25s cubic-bezier(.22,1,.36,1) both;
+}
+.nd-swatch { width: 26px; height: 26px; border-radius: 99px; cursor: pointer; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--nd-border); transition: transform .12s, box-shadow .12s; }
+.nd-swatch:hover { transform: scale(1.12); }
+.nd-swatch.nd-on { box-shadow: 0 0 0 2px var(--nd-primary); transform: scale(1.12); }
+
+@media (prefers-reduced-motion: reduce) {
+  .nd-anim, .nd-float, .nd-menu, .nd-modal { animation: none; }
+  .nd-ring-bar { transition: none; }
+}

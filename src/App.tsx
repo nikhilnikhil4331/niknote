@@ -82,6 +82,15 @@ const MoneyTrackerPage = lazy(() => import("@/pages/MoneyTracker"));
 const BoardPageRoute = lazy(() => import("@/pages/Board"));
 const RoutineTrackerPage = lazy(() => import("@/pages/RoutineTracker"));
 const NikHabitPage = lazy(() => import("@/pages/RoutineApp"));
+// Desktop workspace (Notion-style enhanced UI) — desktop routes only;
+// mobile keeps rendering MobileExperience exactly as before.
+const DesktopHome = lazy(() => import("@/pages/DesktopHome"));
+const DesktopNotes = lazy(() => import("@/pages/DesktopNotes"));
+const DesktopTemplates = lazy(() => import("@/pages/DesktopTemplates"));
+const DesktopCalendar = lazy(() => import("@/pages/DesktopCalendar"));
+const DesktopTasks = lazy(() => import("@/pages/DesktopTasks"));
+const DesktopTrash = lazy(() => import("@/pages/DesktopTrash"));
+const DesktopShared = lazy(() => import("@/pages/DesktopShared"));
 
 const PageLoader = () => <NiknoteLoader />;
 
@@ -107,7 +116,11 @@ function WorkspaceEntry() {
   const mobile = useIsMobile();
   const { search } = useLocation();
   const params = new URLSearchParams(search);
-  return mobile && !params.has('editor') && !params.has('notebook') ? <MobileExperience /> : <Index />;
+  const wantsEditor = params.has('editor') || params.has('notebook');
+  // Desktop lands on the new Notion-style Home; the editor (Index) opens
+  // when a note is being written. Mobile flow is unchanged.
+  if (!mobile && !wantsEditor) return <DesktopHome />;
+  return mobile && !wantsEditor ? <MobileExperience /> : <Index />;
 }
 function LegacyEditorRedirect() {
   const { search } = useLocation();
@@ -192,7 +205,11 @@ const App = () => {
                         <Route path="/ai-workspace" element={<AstaAIWorkspace />} />
                         <Route path="/ai-classic" element={<AI4Page />} />
                         <Route path="/appearance" element={<MobileExperience />} />
-                        <Route path="/templates" element={<MobileExperience />} />
+                        <Route path="/templates" element={<ResponsivePage><DesktopTemplates /></ResponsivePage>} />
+                        <Route path="/calendar" element={<ResponsivePage><DesktopCalendar /></ResponsivePage>} />
+                        <Route path="/tasks" element={<ResponsivePage><DesktopTasks /></ResponsivePage>} />
+                        <Route path="/trash" element={<ResponsivePage><DesktopTrash /></ResponsivePage>} />
+                        <Route path="/shared" element={<ResponsivePage><DesktopShared /></ResponsivePage>} />
                         <Route path="/welcome" element={<Welcome />} />
                         <Route path="/onboarding" element={<Onboarding />} />
                         <Route path="/login" element={<Login />} />
@@ -218,8 +235,9 @@ const App = () => {
                         <Route path="/history" element={<History />} />
                         <Route path="/account" element={<ResponsivePage><Account /></ResponsivePage>} />
                         <Route path="/achievements" element={<Achievements />} />
-                        <Route path="/notebooks" element={<ResponsivePage><MyNotebooks /></ResponsivePage>} />
-                        <Route path="/notes" element={<ResponsivePage><MyNotebooks /></ResponsivePage>} />
+                        <Route path="/notebooks" element={<ResponsivePage><DesktopNotes /></ResponsivePage>} />
+                        <Route path="/notes" element={<ResponsivePage><DesktopNotes /></ResponsivePage>} />
+                        <Route path="/notebooks-classic" element={<ResponsivePage><MyNotebooks /></ResponsivePage>} />
                         <Route path="/landing" element={<PremiumLanding />} />
                         <Route path="/schools" element={<Suspense fallback={<PageLoader />}><B2BPage /></Suspense>} />
                         <Route path="/institutions" element={<Suspense fallback={<PageLoader />}><B2BPage /></Suspense>} />
