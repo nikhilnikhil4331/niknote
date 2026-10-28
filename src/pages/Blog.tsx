@@ -38,7 +38,7 @@ function getContextualToolLinks(post: BlogPost): { label: string; to: string; de
     links.push({
       label: 'NikNote for Schools & Coaching',
       to: '/schools',
-      desc: 'Institutional plans starting at ₹25,000/year.',
+      desc: 'Teacher plans from ₹999/year, tuition centres from ₹4,999/year, free 30-day pilot.',
     });
   } else {
     links.push({
