@@ -147,3 +147,27 @@ describe('allowlist contract', () => {
     }
   });
 });
+
+describe('campaign attribution', () => {
+  it('keeps UTM parameters so channels can be told apart', async () => {
+    window.history.replaceState({}, '', '/?utm_source=instagram&utm_campaign=shorts');
+    await sendServerEvent('landing_page_viewed', { source: 'instagram' }, {
+      dedupeKey: 'landing:ig',
+      dedupeLimit: 1,
+    });
+    expect(insert).toHaveBeenCalledTimes(1);
+    expect(insert.mock.calls[0][0].page_url).toContain('utm_source=instagram');
+  });
+
+  it('drops the query string when it carries an identifier', async () => {
+    window.history.replaceState({}, '', '/?email=student%40example.com');
+    await sendServerEvent('page_view', { page: '/x' }, { dedupeKey: 'x', dedupeLimit: 1 });
+    expect(insert.mock.calls[0][0].page_url).not.toContain('example.com');
+  });
+
+  it('drops the query string for credential-like params', async () => {
+    window.history.replaceState({}, '', '/?token=abc123');
+    await sendServerEvent('page_view', { page: '/y' }, { dedupeKey: 'y', dedupeLimit: 1 });
+    expect(insert.mock.calls[0][0].page_url).not.toContain('token');
+  });
+});

@@ -109,9 +109,20 @@ function markSeen(key: string, limit: number): boolean {
   }
 }
 
+/**
+ * Full URL including the query string, because campaign attribution
+ * (?utm_source=...) is the only way channel_performance can tell an
+ * Instagram visitor from an organic one. Query is dropped entirely if it
+ * looks like it carries an identifier we should not store.
+ */
 function currentPath(): string {
   try {
-    return `${window.location.origin}${window.location.pathname}`;
+    const base = `${window.location.origin}${window.location.pathname}`;
+    const search = window.location.search || '';
+    if (!search) return base;
+    if (EMAIL_LIKE.test(search)) return base;
+    if (/[?&](email|phone|token|password|key|auth)=/i.test(search)) return base;
+    return `${base}${search}`.slice(0, 300);
   } catch {
     return '';
   }
