@@ -116,9 +116,9 @@ export const ExitIntentPopup: React.FC = () => {
               {/* Content */}
               <div className="p-6 pt-2 space-y-4">
                 <p className="text-center text-sm text-muted-foreground">
-                  Premium features sirf <span className="font-bold text-foreground">₹49/week</span> mein!
+                  Premium features sirf <span className="font-bold text-foreground">₹49/week</span> mein.
                   <br />
-                  <span className="text-orange-600 font-semibold">Yeh offer limited time ke liye hai!</span>
+                  <span className="text-muted-foreground">Koi countdown nahi — jab chaho band kar do.</span>
                 </p>
 
                 {/* Quick benefits */}
