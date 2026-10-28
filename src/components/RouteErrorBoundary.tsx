@@ -32,8 +32,27 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, { error: Err
     console.error('[RouteErrorBoundary] route crash:', error);
     if (isChunkError(error)) {
       // Stale deploy / cache mismatch: a fresh load of the same URL picks up
-      // the current HTML + chunk names. Same ?fresh= pattern the app already
-      // uses for auto-recovery.
+      // the current HTML + chunk names.
+      //
+      // This used to reload on every chunk error with no ceiling. If the CDN
+      // is serving an HTML document that names chunks the current deploy no
+      // longer has, every reload fetches the same stale HTML and fails the
+      // same way, so the page reloads forever and never renders the retry UI.
+      // /payment was doing exactly this in production. Reload at most twice
+      // per tab session; after that, show the user the error and let them act.
+      const KEY = 'niknote:chunk-reloads';
+      let attempts = 0;
+      try {
+        attempts = Number(window.sessionStorage.getItem(KEY) || '0');
+      } catch {
+        attempts = 2; // storage blocked: never loop
+      }
+      if (attempts >= 2) return;
+      try {
+        window.sessionStorage.setItem(KEY, String(attempts + 1));
+      } catch {
+        return;
+      }
       window.setTimeout(() => {
         window.location.replace(window.location.pathname + '?fresh=' + Date.now());
       }, 900);
