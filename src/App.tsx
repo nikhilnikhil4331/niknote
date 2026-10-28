@@ -13,6 +13,7 @@ import { PremiumProvider } from "@/contexts/PremiumContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { InstallBanner } from "@/components/InstallBanner";
+import { PricingPopup } from "@/components/premium/PricingPopup";
 import { ShareButtons } from "@/components/promotion/ShareButtons";
 import { HandwritingDNAProvider } from "@/contexts/HandwritingDNAContext";
 import { TouchHealthGuard } from "@/components/mobile/TouchHealthGuard";
@@ -265,6 +266,12 @@ const App = () => {
                         every route and sent the whole app to the global error
                         screen. See src/lib/appShell.test.tsx. */}
                     <InstallBanner />
+                    {/* Pricing offer. Lives inside the router because it reads
+                        useLocation/useNavigate, and inside AuthProvider because
+                        it asks usePremium() whether this visitor already pays.
+                        It suppresses itself on checkout, auth and B2B routes and
+                        remembers a dismissal for a week. */}
+                    <PricingPopup />
                     <DesktopFloatingShare />
                   </Suspense>
                 </BrowserRouter>
