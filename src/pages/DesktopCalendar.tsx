@@ -6,16 +6,18 @@
 
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, CheckSquare, Plus, ArrowRight } from 'lucide-react';
+import { FileText, CheckSquare, Plus, ArrowRight, Timer } from 'lucide-react';
 import { DesktopShell } from '@/components/desktop/DesktopShell';
 import { MonthCalendar, dayKey, type CalItem } from '@/components/desktop/MonthCalendar';
 import { useDesktopNotes } from '@/components/desktop/notes';
-import { useTasks } from '@/components/desktop/store';
+import { useTasks, useFocusSessions, FOCUS_CATEGORIES } from '@/components/desktop/store';
+import { formatMinutesAsHours } from '@/lib/productivity';
 
 const DesktopCalendar: React.FC = () => {
   const navigate = useNavigate();
   const { active, trashed, openNote, openNew } = useDesktopNotes();
   const { tasks } = useTasks();
+  const { sessions } = useFocusSessions();
   const [day, setDay] = useState(dayKey(new Date()));
 
   const folders = useMemo(
@@ -27,18 +29,28 @@ const DesktopCalendar: React.FC = () => {
     () => [
       ...active.map((n): CalItem => ({ id: n.id, title: n.title, date: n.updatedAt, color: n.cover, kind: 'note' })),
       ...tasks.filter((t) => t.due).map((t): CalItem => ({ id: t.id, title: t.title, date: t.due!, color: t.status === 'done' ? '#1FA97A' : '#F26D8D', kind: 'task' })),
+      ...sessions.map((fs): CalItem => ({
+        id: fs.id,
+        title: `${formatMinutesAsHours(fs.durationSec / 60)} ${fs.category}`,
+        date: fs.startedAt,
+        color: FOCUS_CATEGORIES.find((c) => c.name === fs.category)?.color ?? '#7028D9',
+        kind: 'focus',
+      })),
     ],
-    [active, tasks],
+    [active, tasks, sessions],
   );
 
   const dayNotes = active.filter((n) => (n.updatedAt || '').slice(0, 10) === day);
   const dayTasks = tasks.filter((t) => t.due === day);
+  const daySessions = sessions.filter((fs) => (fs.startedAt || '').slice(0, 10) === day);
   const prettyDay = new Date(`${day}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   const handleItem = (it: CalItem) => {
     if (it.kind === 'note') {
       const note = active.find((n) => n.id === it.id);
       if (note) void openNote(note);
+    } else if (it.kind === 'focus') {
+      navigate('/focus');
     } else {
       navigate('/tasks');
     }
@@ -66,13 +78,14 @@ const DesktopCalendar: React.FC = () => {
               <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#7C6CF0' }} /> Note edited</span>
               <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#F26D8D' }} /> Task due</span>
               <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#1FA97A' }} /> Task done</span>
+              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#7028D9' }} /> Focus session</span>
             </div>
           </div>
 
           <div className="col-span-4 nd-card p-4">
             <div className="text-[14px] font-bold" style={{ color: 'var(--nd-text)' }}>{prettyDay}</div>
             <div className="text-[12px] mt-0.5 mb-3" style={{ color: 'var(--nd-text-3)' }}>
-              {dayNotes.length + dayTasks.length === 0 ? 'Nothing here yet — a clean slate ✨' : `${dayNotes.length} note(s) · ${dayTasks.length} task(s)`}
+              {dayNotes.length + dayTasks.length + daySessions.length === 0 ? 'Nothing here yet — a clean slate ✨' : `${dayNotes.length} note(s) · ${dayTasks.length} task(s) · ${formatMinutesAsHours(daySessions.reduce((a, fs) => a + fs.durationSec, 0) / 60)} focused`}
             </div>
 
             {dayTasks.length > 0 && (
@@ -92,6 +105,28 @@ const DesktopCalendar: React.FC = () => {
                         style={{ color: 'var(--nd-text)', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}
                       >
                         {t.title}
+                      </span>
+                      <ArrowRight size={12} className="ml-auto flex-none" style={{ color: 'var(--nd-text-3)' }} />
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {daySessions.length > 0 && (
+              <>
+                <div className="text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--nd-text-3)' }}>Focus sessions</div>
+                <div className="flex flex-col gap-1.5 mb-3">
+                  {daySessions.map((fs) => (
+                    <button
+                      key={fs.id}
+                      className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-[#F8F7FF] transition-colors"
+                      style={{ border: '1px solid var(--nd-border-soft)' }}
+                      onClick={() => navigate('/focus')}
+                    >
+                      <Timer size={14} style={{ color: FOCUS_CATEGORIES.find((c) => c.name === fs.category)?.color ?? '#7028D9' }} className="flex-none" />
+                      <span className="text-[13px] font-semibold truncate" style={{ color: 'var(--nd-text)' }}>
+                        {fs.taskTitle || fs.category} · {formatMinutesAsHours(fs.durationSec / 60)}
                       </span>
                       <ArrowRight size={12} className="ml-auto flex-none" style={{ color: 'var(--nd-text-3)' }} />
                     </button>

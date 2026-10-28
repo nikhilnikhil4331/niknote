@@ -4,19 +4,20 @@
 // Spaces, and profile footer. Rendered ONLY on desktop routes.
 // ============================================================
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, NotebookPen, Sparkles, CalendarDays, CheckSquare, HeartPulse,
-  Wallet, LayoutTemplate, Users, Trash2, Search, Plus, Folder, Timer,
+  Wallet, LayoutTemplate, Users, Trash2, Search, Plus, Folder, Timer, FileText,
   ChevronsLeft, ChevronsRight, ChevronUp, User, Trophy, Crown, LogOut, LogIn, Check,
+  MoreHorizontal, Pencil,
 } from 'lucide-react';
-import { CommandPalette } from '@/components/command-palette/CommandPalette';
+import { CommandPalette, type CommandItem } from '@/components/command-palette/CommandPalette';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccountName } from '@/hooks/useAccountName';
 import { usePremiumContext } from '@/contexts/PremiumContext';
-import { useSpaces } from './store';
-import { isGuestUser } from './notes';
+import { useSpaces, useTasks } from './store';
+import { isGuestUser, useDesktopNotes } from './notes';
 import { cn } from '@/lib/utils';
 import './desktop.css';
 
@@ -47,7 +48,44 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
   const account = useAccountName();
   const { isPremium } = usePremiumContext();
   const guest = isGuestUser(user);
-  const { spaces, addSpace } = useSpaces(folders);
+  const { spaces, addSpace, renameSpace, removeSpace, isCustom } = useSpaces(folders);
+  const { active: searchNotes, openNote: openSearchNote } = useDesktopNotes();
+  const { tasks: searchTasks } = useTasks();
+
+  /** Real content results for ⌘K: notes open straight in the editor. */
+  const contentCommands = useMemo<CommandItem[]>(() => {
+    const items: CommandItem[] = [];
+    for (const n of searchNotes.slice(0, 50)) {
+      items.push({
+        id: `note-${n.id}`,
+        label: n.title,
+        description: (n.preview || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 90) || undefined,
+        icon: <FileText size={14} />,
+        category: 'content',
+        action: () => { void openSearchNote(n); },
+      });
+    }
+    for (const t of searchTasks.filter((x) => x.status !== 'done').slice(0, 30)) {
+      items.push({
+        id: `task-${t.id}`,
+        label: `Task: ${t.title}`,
+        description: t.due ? `due ${t.due}` : undefined,
+        icon: <CheckSquare size={14} />,
+        category: 'content',
+        action: () => navigate('/tasks'),
+      });
+    }
+    for (const sp of spaces) {
+      items.push({
+        id: `space-${sp.name}`,
+        label: `Space: ${sp.name}`,
+        icon: <Folder size={14} />,
+        category: 'content',
+        action: () => navigate(`/notebooks?space=${encodeURIComponent(sp.name)}`),
+      });
+    }
+    return items;
+  }, [searchNotes, searchTasks, spaces, navigate, openSearchNote]);
 
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('niknote.desktop.sidebar') === '1');
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -55,6 +93,10 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
   const [newSpaceOpen, setNewSpaceOpen] = useState(false);
   const [spaceName, setSpaceName] = useState('');
   const spaceInputRef = useRef<HTMLInputElement>(null);
+  const [spaceMenuFor, setSpaceMenuFor] = useState<string | null>(null);
+  const [renamingSpace, setRenamingSpace] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
+  const renameInputRef = useRef<HTMLInputElement>(null);
 
   const params = new URLSearchParams(search);
   const activeSpace = pathname === '/notebooks' || pathname === '/notes' ? params.get('space') : null;
@@ -83,11 +125,33 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
     if (newSpaceOpen) spaceInputRef.current?.focus();
   }, [newSpaceOpen]);
 
+  useEffect(() => {
+    if (renamingSpace) {
+      renameInputRef.current?.focus();
+      renameInputRef.current?.select();
+    }
+  }, [renamingSpace]);
+
   const submitSpace = () => {
     const created = addSpace(spaceName);
     setSpaceName('');
     setNewSpaceOpen(false);
     if (created) navigate(`/notebooks?space=${encodeURIComponent(created.name)}`);
+  };
+
+  const submitRenameSpace = (oldName: string) => {
+    const clean = renameDraft.trim();
+    if (clean && renameSpace(oldName, clean)) {
+      if (activeSpace === oldName) navigate(`/notebooks?space=${encodeURIComponent(clean)}`);
+    }
+    setRenamingSpace(null);
+  };
+
+  const deleteSpace = (name: string) => {
+    if (!window.confirm(`Delete the “${name}” space? Notes inside keep their folder until you move them.`)) return;
+    removeSpace(name);
+    setSpaceMenuFor(null);
+    if (activeSpace === name) navigate('/notebooks');
   };
 
   const initial = (account.fullName || user?.email || 'N').charAt(0).toUpperCase();
@@ -169,15 +233,79 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
               </div>
               {spaces.map((sp) => {
                 const active = activeSpace === sp.name;
+                const custom = isCustom(sp.name);
+                if (renamingSpace === sp.name) {
+                  return (
+                    <div key={sp.name} className="flex items-center gap-1.5 mx-3 mt-1">
+                      <input
+                        ref={renameInputRef}
+                        className="nd-input !py-1.5 !px-2.5 !text-[13px]"
+                        value={renameDraft}
+                        onChange={(e) => setRenameDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') submitRenameSpace(sp.name);
+                          if (e.key === 'Escape') setRenamingSpace(null);
+                        }}
+                        aria-label={`Rename space ${sp.name}`}
+                      />
+                      <button
+                        className="nd-icon-btn flex-none !bg-[#7028D9] !text-white hover:!bg-[#4D168F]"
+                        onClick={() => submitRenameSpace(sp.name)}
+                        title="Save name"
+                      >
+                        <Check size={15} />
+                      </button>
+                    </div>
+                  );
+                }
                 return (
                   <div
                     key={sp.name}
-                    className={cn('nd-side-item', active && 'nd-active')}
+                    className={cn('nd-side-item group', active && 'nd-active')}
                     onClick={() => navigate(`/notebooks?space=${encodeURIComponent(sp.name)}`)}
                     role="button"
                   >
                     <Folder size={16} className="flex-none" fill={sp.color} color={sp.color} />
                     <span className="truncate">{sp.name}</span>
+                    {custom && (
+                      <span className="ml-auto relative">
+                        <button
+                          className="nd-icon-btn !w-6 !h-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title={`Manage ${sp.name}`}
+                          aria-label={`Manage space ${sp.name}`}
+                          aria-expanded={spaceMenuFor === sp.name}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSpaceMenuFor((v) => (v === sp.name ? null : sp.name));
+                          }}
+                        >
+                          <MoreHorizontal size={13} />
+                        </button>
+                        {spaceMenuFor === sp.name && (
+                          <>
+                            <div className="fixed inset-0 z-50" onClick={(e) => { e.stopPropagation(); setSpaceMenuFor(null); }} />
+                            <div className="nd-menu" style={{ position: 'absolute', right: 0, top: 26, zIndex: 60, minWidth: 150 }}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRenameDraft(sp.name);
+                                  setRenamingSpace(sp.name);
+                                  setSpaceMenuFor(null);
+                                }}
+                              >
+                                <Pencil size={13} /> Rename
+                              </button>
+                              <button
+                                className="nd-danger"
+                                onClick={(e) => { e.stopPropagation(); deleteSpace(sp.name); }}
+                              >
+                                <Trash2 size={13} /> Delete space
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </span>
+                    )}
                   </div>
                 );
               })}

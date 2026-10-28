@@ -255,6 +255,7 @@ export function useSpaces(extraFolders: string[] = []) {
     (name: string) => {
       const clean = name.trim();
       if (!clean) return null;
+      if (DEFAULT_SPACES.some((s) => s.name.toLowerCase() === clean.toLowerCase())) return null;
       const space: NikSpace = { name: clean, color: SPACE_COLORS[Math.floor(Math.random() * SPACE_COLORS.length)] };
       setCustom((prev) => (prev.some((s) => s.name.toLowerCase() === clean.toLowerCase()) ? prev : [...prev, space]));
       return space;
@@ -262,7 +263,38 @@ export function useSpaces(extraFolders: string[] = []) {
     [setCustom],
   );
 
-  return { spaces, addSpace };
+  /** Rename a CUSTOM space (defaults and folder-derived spaces are untouched). Returns false when not allowed. */
+  const renameSpace = useCallback(
+    (oldName: string, newName: string): boolean => {
+      const clean = newName.trim();
+      if (!clean || clean.toLowerCase() === oldName.toLowerCase()) return false;
+      let ok = false;
+      setCustom((prev) => {
+        const exists = prev.some((s) => s.name === oldName);
+        const dupe =
+          DEFAULT_SPACES.some((s) => s.name.toLowerCase() === clean.toLowerCase()) ||
+          prev.some((s) => s.name.toLowerCase() === clean.toLowerCase());
+        if (!exists || dupe) return prev;
+        ok = true;
+        return prev.map((s) => (s.name === oldName ? { ...s, name: clean } : s));
+      });
+      return ok;
+    },
+    [setCustom],
+  );
+
+  /** Remove a CUSTOM space. Never removes defaults or note-backed folders. */
+  const removeSpace = useCallback(
+    (name: string) => setCustom((prev) => prev.filter((s) => s.name !== name)),
+    [setCustom],
+  );
+
+  const isCustom = useCallback(
+    (name: string) => custom.some((s) => s.name.toLowerCase() === name.toLowerCase()),
+    [custom],
+  );
+
+  return { spaces, addSpace, renameSpace, removeSpace, isCustom };
 }
 
 // ---------------- Habits (home rings) ----------------

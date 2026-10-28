@@ -16,13 +16,13 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
-interface CommandItem {
+export interface CommandItem {
   id: string;
   label: string;
   description?: string;
   icon: React.ReactNode;
   shortcut?: string;
-  category: 'action' | 'page' | 'ai' | 'recent' | 'block';
+  category: 'action' | 'page' | 'ai' | 'recent' | 'block' | 'content';
   action: () => void;
 }
 
@@ -32,10 +32,15 @@ interface CommandPaletteProps {
   onNewNote?: () => void;
   onToggleTheme?: () => void;
   onToggleSidebar?: () => void;
+  /**
+   * Optional caller-supplied real content results (notes, tasks, spaces…).
+   * These only appear once the user types — never in the idle list.
+   */
+  content?: CommandItem[];
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
-  isOpen, onClose, onNewNote, onToggleTheme, onToggleSidebar
+  isOpen, onClose, onNewNote, onToggleTheme, onToggleSidebar, content = []
 }) => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -91,20 +96,25 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   // Filter commands based on query
   const filteredCommands = useMemo(() => {
-    if (!query.trim()) return commands;
+    const all = content.length > 0 ? [...content, ...commands] : commands;
+    if (!query.trim()) {
+      // idle: never show content items — just the static command list
+      return content.length > 0 ? all.filter((c) => c.category !== 'content') : all;
+    }
     const q = query.toLowerCase();
-    return commands.filter(cmd =>
+    return all.filter(cmd =>
       cmd.label.toLowerCase().includes(q) ||
       cmd.description?.toLowerCase().includes(q) ||
       cmd.category.toLowerCase().includes(q)
     );
-  }, [commands, query]);
+  }, [commands, query, content]);
 
   // Group filtered commands by category
   const grouped = useMemo(() => {
     const groups: { category: string; items: CommandItem[] }[] = [];
-    const categoryOrder = ['page', 'action', 'ai', 'block'];
+    const categoryOrder = ['content', 'page', 'action', 'ai', 'block'];
     const categoryLabels: Record<string, string> = {
+      content: '🔎 Your content',
       page: '📄 Pages',
       action: '⚡ Actions',
       ai: '✨ AI Features',
