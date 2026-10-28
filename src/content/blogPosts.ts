@@ -190,7 +190,7 @@ Coaching fees ₹50,000+? NikNote free mein AI Teacher, Quiz Generator, aur Flas
   {
     slug: 'free-handwriting-app-indian-students',
     title: 'Free Handwriting App for Indian Students — NikNote Review 2026',
-    excerpt: 'Free mein handwriting notes banane wala app? Haan! NikNote 16+ handwriting styles deta hai bilkul free mein. Indian students ke liye best.',
+    excerpt: 'Free mein handwriting notes banane wala app? NikNote ka free tier try karo — 16+ handwriting styles premium mein unlock hote hain, free tier mein basic export milta hai.',
     category: 'App Review',
     readTime: '4 min',
     tags: ['handwriting app', 'free app', 'Indian students', 'notes app'],
@@ -373,56 +373,67 @@ But basic note-taking + handwriting + PDF = **100% offline!**
   {
     slug: 'school-management-software-india',
     title: 'Best School Management Software India 2026 — NikNote for Schools & Coaching',
-    excerpt: 'Schools aur coaching centers ke liye NikNote — AI-powered learning platform. Starting ₹25,000/year for 100 students. 14-day free trial.',
+    excerpt: 'Teachers aur tuition centres ke liye NikNote — typed worksheet 2 minute mein handwritten ban jaata hai. ₹999/year se, 30 din free pilot. Jo abhi nahi hai, wo bechte nahi.',
     category: 'B2B',
     readTime: '7 min',
     tags: ['school software', 'coaching center', 'EdTech', 'B2B', 'institution'],
     content: `# NikNote for Schools & Coaching Centers 🏫
 
-India ke schools aur coaching centers ke liye **AI-powered learning platform** — affordable, easy to setup, and student-focused.
+India ke teachers aur tuition centres ke liye ek simple tool — aur ek honest price list.
 
-## Why Schools Need NikNote?
+> **Note:** Is article ka pehla version "teacher dashboard", "white-label", "SSO", "bulk CSV import" aur ₹25,000–₹2,00,000/year ke plans advertise karta tha. **Wo features banaye hi nahi gaye the.** Humne use theek kar diya hai. Jo neeche likha hai, wahi aaj sach mein milta hai.
 
-### Current Problems:
-- ❌ Printed notes expensive (₹2,000/student/year)
-- ❌ No tracking — pata nahi student padh raha hai ya nahi
-- ❌ No personalization — sabko same notes
-- ❌ Digital tools expensive (₹500+/student/month)
+## Asli problem kya hai?
 
-### NikNote Solution:
-- ✅ Digital notes — ₹150/student/year (92% cheaper!)
-- ✅ Teacher dashboard — track every student's progress
-- ✅ AI personalization — har student ko uske level pe samjhai
-- ✅ Handwriting DNA — digital bhi personal feel kare
+Ek teacher ko 2-page ka worksheet haath se likhne mein **~40 minute** lagte hain.
 
-## Plans for Institutions
+Hafte mein 3 worksheet × 40 hafte = **~76 ghante saal mein**, sirf copy karne mein.
 
-| Plan | Price | Students | Key Features |
-|------|-------|----------|-------------|
-| School Starter | ₹25,000/yr | 100 | Premium features, basic analytics |
-| School Pro | ₹75,000/yr | 500 | + Custom branding, exam packs, teacher dashboard |
-| Coaching Center | ₹2,00,000/yr | 2,000 | + White-label, API, SSO |
-| Enterprise | Custom | Unlimited | On-premise, dedicated support |
+Yeh paisa ka problem nahi hai. Yeh teacher ke evening ka problem hai.
 
-## 50% Discount for Government Schools! 🇮🇳
+## NikNote kya karta hai (aaj)
 
-We believe every student deserves access to AI-powered learning. Government schools & NGOs get **50% off** all plans.
+- ✅ **Typed worksheet → handwritten page** — 16+ styles, ruled/graph/plain paper, 300 DPI print-ready PDF
+- ✅ **PDF tools** — merge, split, compress, OCR, e-sign — sab browser mein, file upload ke bina
+- ✅ **AI help** — Hindi/English explanations, quizzes, flashcards
+- ✅ **Offline** — ek baar install karo, bina internet chalta hai
 
-## ROI Example
+## Plans (jo aaj exist karte hain)
 
-- 500 students × ₹2,000 (printed notes) = ₹10,00,000/year
-- 500 students × ₹150 (NikNote) = ₹75,000/year
-- **Savings: ₹9,25,000/year (92.5%)**
+| Plan | Price | Logins | Kya milta hai |
+|------|-------|--------|---------------|
+| Teacher | ₹999/yr | 1 | Unlimited worksheets, 16+ styles, 300 DPI export, PDF tools |
+| Tuition Centre | ₹4,999/yr | 5 | Teacher plan ×5, question-paper sets, onboarding call |
+| School / College Pilot | ₹0 / 30 din | 30 students | Ek department ke liye free pilot, no card, no contract |
 
-## Setup in 48 Hours
+## Jo abhi nahi hai
 
-1. Sign up → We set up your institution
-2. Import students (bulk CSV)
-3. Teachers get dashboard
-4. Students get premium access
-5. Done! Start learning
+Yeh roadmap pe hain. Inke paise nahi liye jaate:
 
-**Get free trial: https://www.niknote.online/schools** 🏫`,
+- Teacher / admin dashboard
+- Bulk student import
+- SSO
+- White-label branding
+- LMS integration
+- Per-student analytics
+
+## Time bachat ka hisaab
+
+- Worksheet haath se: ~40 min
+- NikNote se: ~2 min
+- Bachat per worksheet: ~38 min
+- 3 worksheet/hafta × 40 hafte = **~76 ghante saal mein**
+
+*(Yeh estimate hai, guarantee nahi.)*
+
+## Shuru kaise karein
+
+1. Free 30-day pilot request karo — card nahi chahiye
+2. Hum call pe saath set up karte hain
+3. Day 25 pe feedback call
+4. Kaam aaya to continue karo, warna band — koi auto-renewal nahi
+
+**Free pilot: https://www.niknote.online/schools** 🏫`,
   },
   {
     slug: 'upsc-preparation-ai-notes',
