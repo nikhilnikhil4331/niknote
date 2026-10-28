@@ -75,24 +75,38 @@ solo founder with ₹0 marketing spend.
 
 ## 3. Five things blocking every rupee
 
-### Blocker 1 — The AI does not work. At all. (highest impact, 5-minute fix)
-Every AI edge function requires `LOVABLE_API_KEY`, `OPENAI_API_KEY`,
-`GEMINI_API_KEY` or `GROQ_API_KEY`. **None of those secrets exist in the
-project.** The configured secrets are only Supabase + Razorpay.
+### Blocker 1 — The AI works on the main path, but the fallback paths are dead
+**Corrected 28 Oct 2026.** An earlier version of this document claimed "the AI
+does not work at all". That was wrong, and the correction matters.
 
-The deployed `ai-proxy` function is well written and already handles this
-correctly — it returns `503 provider_not_configured`. But that means every
-"AI Generate", "AI Solver", handwriting analysis, document processing and AI
-writing assist call fails for every user.
+Verified live against production:
 
-The product's entire headline promise is offline.
+```
+GET https://www.niknote.online/api/ai
+{"ok":true,"engine":"NikAI Astra Neural Core",
+ "providers":{"groq":true,"gemini":true,"openai":false}}
+```
 
-**Fix (only Nikhil can do this):**
-1. Get a free key at https://aistudio.google.com/apikey (Gemini, free tier)
-2. Add it as a Supabase secret named `GEMINI_API_KEY`
-3. Redeploy `ai-proxy` and `editor-ai`
+The primary AI gateway is the Vercel edge function `api/ai.ts`, and it is
+healthy: Groq and Gemini both respond. The keys live in the Vercel project as
+`VITE_GROQ_KEY` and `VITE_GEMINI_KEY`.
 
-That is it. It costs ₹0 and unblocks the premium pitch.
+What is genuinely broken is the **fallback** layer. The Supabase edge functions
+`openai-brain`, `editor-ai` and `ai-writing-assist` read `LOVABLE_API_KEY`,
+`OPENAI_API_KEY`, `GEMINI_API_KEY` or `GROQ_API_KEY` from **Supabase** secrets,
+and none of those exist. `aiEngine.ts` invokes `openai-brain` directly, so any
+feature that reaches only that path fails.
+
+Secondary but real: because the Vercel keys are named with a `VITE_` prefix,
+Vite inlines them into the public browser bundle, and `api/ai.ts` also accepts
+an `x-groq-key` header. Anyone can extract those keys from the JS and spend
+your Groq/Google quota. Fixing it properly means routing every AI call through
+`/api/ai` and holding the keys server-side only — an architectural change, not
+a one-line edit, and it must not be attempted half-way or AI breaks.
+
+**So the earlier "five-minute fix" framing was wrong.** Adding a Supabase
+`GEMINI_API_KEY` is still worth doing to repair the fallback paths, but it is
+not the headline blocker. Nobody was failing to use AI because of a missing key.
 
 ### Blocker 2 — Nobody is visiting
 1 signup/day. No acquisition channel is running. SEO takes 3–6 months;
@@ -150,9 +164,15 @@ Verified after the changes: `tsc --noEmit` clean, `npm run build` succeeds,
 
 ## 5. The one thing to do next
 
-If you do only one thing this week:
+**Get real traffic in front of the working product.** AI is live; the product
+functions. What NikNote does not have is anyone arriving.
 
-**Add a free Gemini API key as a Supabase secret named `GEMINI_API_KEY`.**
+1. **Submit the sitemap in Google Search Console.** 35 URLs now render as 35
+   distinct documents with their own titles, canonicals and structured data.
+   None of that matters until Google is told they exist. (Needs the founder's
+   Google account — `VITE_GSC_VERIFICATION` is already wired in `vite.config.ts`.)
+2. **Post the first three reels** from `CONTENT-PACK.md`.
+3. **Send 25 messages** to tuition centres using `SALES-PLAYBOOK.md`.
 
-Until the AI works, the premium product being sold does not exist. Everything
-else — pricing, SEO, sales calls — is building on sand.
+Then read `acquisition_funnel_daily` and `channel_performance` — both are now
+populated by real events instead of localStorage guesses.
