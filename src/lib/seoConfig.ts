@@ -164,9 +164,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/schools',
-    title: 'NikNote for Schools & Coaching Institutes — Digital Notes & AI Learning Platform',
+    title: 'NikNote for Teachers & Tuition Centres — Handwritten Worksheet Maker',
     description:
-      'Provide students and teachers with digital handwritten notes, AI study assistance, and institutional onboarding. School plans starting ₹25,000/year.',
+      'Turn typed questions into realistic handwritten worksheets, assignments and answer keys in minutes. Teacher plans from ₹999/year. Free 30-day pilot for one department.',
     canonicalPath: '/schools',
     robots: 'index, follow',
     pageType: 'b2b',

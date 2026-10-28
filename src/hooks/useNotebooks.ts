@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { trackFirstNoteCreated } from '@/utils/analytics';
 import { trackStartNoteCreation } from '@/lib/tracking';
 
 export interface Notebook {
@@ -97,6 +98,9 @@ export const useNotebooks = () => {
         featureName: 'handwriting_editor',
         pageType: 'workspace',
       });
+      // Activation event: this is the first time the user gets real value.
+      // Deduped to once per session so it measures activation, not volume.
+      trackFirstNoteCreated();
       toast.success('Notebook created!');
       return newNotebook;
     } catch (error) {

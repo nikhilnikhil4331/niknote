@@ -5,6 +5,11 @@
 // ============================================================
 
 import { hasAnalyticsConsent } from '@/lib/consent';
+import {
+  SERVER_EVENT_TYPES,
+  trackServerEvent,
+  type ServerEventType,
+} from '@/lib/serverAnalytics';
 
 const ANALYTICS_KEY = 'niknote_analytics';
 
@@ -31,6 +36,20 @@ interface AnalyticsSummary {
 // Track an event
 export function trackEvent(event: string, data?: Record<string, string | number>): void {
   if (!hasAnalyticsConsent()) return;
+
+  // Mirror allowed events to the server so the founder can actually see them.
+  // Previously every event died in localStorage.
+  if ((SERVER_EVENT_TYPES as readonly string[]).includes(event)) {
+    // Per-page dedupe: an SPA fires page_view on every route change, so a
+    // single global key would silently cap a session at a handful of views.
+    const page = typeof data?.page === 'string' ? data.page : '';
+    const dedupeKey = page ? `${event}:${page}` : event;
+    trackServerEvent(event as ServerEventType, data, {
+      dedupeKey,
+      dedupeLimit: event === 'page_view' ? 1 : 5,
+    });
+  }
+
   try {
     const events: AnalyticsEvent[] = JSON.parse(localStorage.getItem(ANALYTICS_KEY) || '[]');
     events.push({
@@ -171,4 +190,56 @@ export function getEngagementLevel(score: number): { level: string; emoji: strin
   if (score >= 40) return { level: 'Active User', emoji: '🔥', color: 'text-orange-500' };
   if (score >= 20) return { level: 'Regular User', emoji: '📚', color: 'text-green-500' };
   return { level: 'New Explorer', emoji: '🌱', color: 'text-gray-500' };
+}
+
+// ============================================================
+// Acquisition funnel events (Phase 8)
+// These are the events that answer "where do visitors drop off?"
+// ============================================================
+
+/** Visitor landed on the public marketing surface. */
+export function trackLandingView(source?: string): void {
+  trackServerEvent('landing_page_viewed', source ? { source } : undefined, {
+    dedupeKey: 'landing_page_viewed',
+    dedupeLimit: 1,
+  });
+}
+
+/** Visitor opened the pricing / upgrade surface. */
+export function trackPricingViewed(plan?: string): void {
+  trackServerEvent('pricing_viewed', plan ? { plan } : undefined, {
+    dedupeKey: 'pricing_viewed',
+    dedupeLimit: 2,
+  });
+}
+
+export function trackCheckoutStarted(plan: string): void {
+  trackServerEvent('checkout_started', { plan });
+}
+
+export function trackPaymentSucceeded(plan: string): void {
+  trackServerEvent('payment_succeeded', { plan }, { dedupeKey: `paid:${plan}`, dedupeLimit: 1 });
+}
+
+export function trackPaymentFailed(plan: string, reason?: string): void {
+  trackServerEvent('payment_failed', reason ? { plan, reason } : { plan });
+}
+
+export function trackSignupCompleted(method: string): void {
+  trackServerEvent('signup_completed', { method }, { dedupeKey: 'signup_completed', dedupeLimit: 1 });
+}
+
+export function trackFirstNoteCreated(): void {
+  // Only the first real activation matters, so dedupe hard.
+  trackServerEvent('first_note_created', undefined, {
+    dedupeKey: 'first_note_created',
+    dedupeLimit: 1,
+  });
+}
+
+export function trackReturningSession(): void {
+  trackServerEvent('returning_session_started', undefined, {
+    dedupeKey: 'returning_session_started',
+    dedupeLimit: 1,
+  });
 }

@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { trackPricingViewed } from '@/utils/analytics';
 import React from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -52,6 +54,10 @@ const Upgrade = () => {
   const [selected, setSelected] = React.useState<'weekly' | 'monthly'>('monthly');
 
   const activePlan = plans.find((p) => p.code === selected)!;
+
+  useEffect(() => {
+    trackPricingViewed(selected);
+  }, [selected]);
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-background to-secondary/20 pb-32 sm:pb-12">

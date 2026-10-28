@@ -12,6 +12,7 @@ import { NiknoteLoader } from '@/components/motion/NiknoteLoader';
 import { supabase } from '@/integrations/supabase/client';
 import { isCloudUserId } from '@/lib/cloudSyncEngine';
 import { trackLoginCompleted, trackSignUpCompleted } from '@/lib/tracking';
+import { trackSignupCompleted as trackSignupServer } from '@/utils/analytics';
 
 export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
   const { signIn, signUp, signInWithGoogle, signInAsGuest, user, loading: authLoading } = useAuth();
@@ -104,6 +105,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
       } else {
         if (isSignup) {
           trackSignUpCompleted('email', 'auth_page');
+          trackSignupServer('email');
         } else {
           trackLoginCompleted('email', 'auth_page');
         }
