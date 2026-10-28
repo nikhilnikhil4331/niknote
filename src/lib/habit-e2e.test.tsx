@@ -1315,8 +1315,15 @@ describe('Production build verification', () => {
     expect(html).toContain('<script');
     expect(html).toContain('assets/');
     const vercel = JSON.parse(await fs.readFile('vercel.json', 'utf-8'));
-    expect(vercel.rewrites[0].source).toBe('/(.*)');
-    expect(vercel.rewrites[0].destination).toBe('/index.html');
+    // The SPA catch-all must still exist and still point at index.html.
+    // It is no longer rewrite[0] because prerendered routes are matched first;
+    // src/test/prerender.test.ts asserts that every public route is covered
+    // before this fallback.
+    const catchAll = vercel.rewrites.find(
+      (r: { source: string }) => r.source === '/(.*)',
+    );
+    expect(catchAll).toBeDefined();
+    expect(catchAll.destination).toBe('/index.html');
     expect(vercel.headers).toBeDefined();
   });
 });

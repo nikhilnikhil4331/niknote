@@ -16,6 +16,7 @@ import { ThankYouBurst } from "@/components/motion/ThankYouBurst";
 import { PaymentArt } from "@/components/motion/FeatureArt";
 import { AnimatePresence } from "framer-motion";
 import { trackBeginCheckout, trackVerifiedPurchase } from "@/lib/tracking";
+import { trackCheckoutStarted, trackPaymentFailed, trackPaymentSucceeded } from "@/utils/analytics";
 
 type PlanCode = "weekly" | "monthly";
 type PaymentStep = "select" | "processing" | "success" | "error";
@@ -204,12 +205,15 @@ export default function PaymentPage() {
               currency: data.currency || "INR",
             });
 
+            trackPaymentSucceeded(selectedPlan);
+
             await refreshPremium();
             setPaymentStep("success");
             toast.success("🎉 Payment successful! Premium activated!");
             setTimeout(() => navigate("/"), 2500);
           } catch (err) {
             console.error("Verification error:", err);
+            trackPaymentFailed(selectedPlan, "verification_failed");
             setVerificationPending(true);
             setPaymentStep("error");
             toast.error(err instanceof Error ? err.message : "Payment verification failed. Contact support@niknote.online before retrying.");
@@ -227,6 +231,7 @@ export default function PaymentPage() {
       const rzp = new (window as any).Razorpay(options);
       rzp.on("payment.failed", (response: any) => {
         console.error("Payment failed:", response.error);
+        trackPaymentFailed(selectedPlan, "provider_failed");
         setPaymentStep("error");
         const failMsg = response.error?.description || "Payment fail ho gaya";
         toast.error(failMsg + ". Dobara try karo!");
@@ -238,6 +243,7 @@ export default function PaymentPage() {
         value: plan.price,
         currency: data.currency || "INR",
       });
+      trackCheckoutStarted(selectedPlan);
       rzp.open();
     } catch (err) {
       console.error("Payment error:", err);

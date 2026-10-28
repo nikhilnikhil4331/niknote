@@ -95,13 +95,18 @@ export class ErrorBoundary extends Component<Props, State> {
     try {
       this.setState({ reported: true });
       const { supabase } = await import('@/integrations/supabase/client');
+      // Column names must match public.error_logs exactly (stack_trace /
+      // page_url / created_at). The previous shape used error_stack / url /
+      // timestamp, which silently failed, so no client error was ever recorded.
+      const componentStack = errorInfo.componentStack || '';
       await supabase.from('error_logs').insert({
-        error_message: error.message,
-        error_stack: error.stack?.substring(0, 2000) || null,
-        component_stack: errorInfo.componentStack?.substring(0, 2000) || null,
-        url: window.location.href,
-        user_agent: navigator.userAgent,
-        timestamp: new Date().toISOString(),
+        error_type: error.name || 'client_error',
+        error_message: error.message || 'Unknown error',
+        stack_trace: [error.stack || '', componentStack ? `\n--- component stack ---${componentStack}` : '']
+          .join('')
+          .slice(0, 4000),
+        page_url: window.location.href.slice(0, 300),
+        user_agent: navigator.userAgent.slice(0, 300),
       });
     } catch {
       // Silently fail — don't crash the error boundary itself

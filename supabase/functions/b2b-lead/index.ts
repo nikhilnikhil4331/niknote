@@ -6,6 +6,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function clean(v: unknown, max = 200): string {
+  return typeof v === "string" ? v.trim().slice(0, max) : "";
+}
+
+function inferSegment(institution: string, students: string, plan: string): string {
+  const hay = `${institution} ${plan}`.toLowerCase();
+  if (/coaching|institute|academy|classes|tuition|tutorial/.test(hay)) return "coaching";
+  if (/college|university|polytechnic/.test(hay)) return "college";
+  if (/school/.test(hay)) return "school";
+  const n = Number(students);
+  if (Number.isFinite(n) && n > 0 && n <= 60) return "teacher";
+  return "unknown";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -17,57 +33,90 @@ serve(async (req) => {
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
     const body = await req.json();
-    const { name, email, phone, institution, students, message, plan } = body;
+    const name = clean(body.name, 120);
+    const email = clean(body.email, 200).toLowerCase();
+    const phone = clean(body.phone, 30);
+    const institution = clean(body.institution, 160);
+    const message = clean(body.message, 2000);
+    const plan = clean(body.plan, 60);
+    const studentsRaw = clean(String(body.students ?? ""), 20);
+    const students = /^\d{1,6}$/.test(studentsRaw) ? Number(studentsRaw) : null;
 
-    if (!name || !email || !institution) {
-      return new Response(JSON.stringify({ error: "Name, email, and institution are required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!name || !institution || !EMAIL_RE.test(email)) {
+      return new Response(
+        JSON.stringify({ error: "A valid name, institution and email are required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    // Save lead to analytics_events
-    const { error } = await adminClient.from("analytics_events").insert({
+    const segment = inferSegment(institution, studentsRaw, plan);
+
+    // Durable pipeline record. This is the system of record for sales follow-up.
+    const { data: lead, error: leadError } = await adminClient
+      .from("sales_leads")
+      .upsert(
+        {
+          name,
+          email,
+          phone: phone || null,
+          institution,
+          segment,
+          students,
+          message: message || null,
+          plan: plan || null,
+          source: "website",
+          stage: "new",
+        },
+        { onConflict: "email,institution", ignoreDuplicates: true },
+      )
+      .select("id")
+      .maybeSingle();
+
+    if (leadError) {
+      // Never silently swallow this: a lost lead is lost revenue.
+      console.error("sales_leads insert failed:", leadError);
+    }
+
+    // Keep the legacy event trail so existing dashboards keep working.
+    const { error: eventError } = await adminClient.from("analytics_events").insert({
       event_type: "b2b_lead",
       event_data: {
         name,
         email,
-        phone: phone || "",
+        phone,
         institution,
-        students: students || "",
-        message: message || "",
-        plan: plan || "unknown",
+        students: studentsRaw,
+        plan,
+        segment,
+        lead_id: lead?.id ?? null,
         source: "niknote_website",
         timestamp: new Date().toISOString(),
       },
     });
+    if (eventError) console.error("Analytics save error:", eventError);
 
-    if (error) {
-      console.error("Lead save error:", error);
+    if (leadError) {
+      return new Response(
+        JSON.stringify({ error: "Could not save your details. Please email us directly." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    // Also try to save to user_roles table for tracking
-    try {
-      await adminClient.from("error_logs").insert({
-        message: `B2B LEAD: ${name} | ${institution} | ${email} | ${phone || "no phone"} | Students: ${students || "?"} | Plan: ${plan || "?"}`,
-        stack: message || "",
-        created_at: new Date().toISOString(),
-      });
-    } catch (e) {
-      console.error("Log save error:", e);
-    }
+    console.log(`B2B LEAD stored: ${name} | ${institution} | ${segment} | ${email}`);
 
-    console.log(`B2B LEAD: ${name} from ${institution} (${email}) — ${students} students — Plan: ${plan}`);
-
-    return new Response(JSON.stringify({
-      success: true,
-      message: "Thank you! We'll contact you within 24 hours.",
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Received. We will reply within one working day.",
+        leadId: lead?.id ?? null,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (error) {
-    console.error("B2B lead error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("Error:", error);
+    return new Response(
+      JSON.stringify({ error: "Internal server error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });
