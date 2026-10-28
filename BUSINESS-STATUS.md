@@ -73,7 +73,46 @@ solo founder with ₹0 marketing spend.
 
 ---
 
-## 3. Five things blocking every rupee
+## 3. Six things blocking every rupee
+
+### Blocker 0 — The paywall gates nothing, and the site still charges
+**Found 29 Oct 2026. This is the most important finding in this document.**
+
+NikNote sells subscriptions for things it gives away to everyone.
+
+| What the code says | Where |
+|---|---|
+| `FREE_TRIAL = true` | `src/config/features.ts:5` |
+| `isPremium: FREE_TRIAL \|\| isPremium` — every visitor counted as premium | `src/contexts/PremiumContext.tsx:212` |
+| `checkFeatureAccess()` returns `limit: Infinity` when the flag is on | `PremiumContext.tsx:151` |
+| `incrementUsage()` has **no call site in the app** | `PremiumContext.tsx:165` |
+| `SIGNUP_ENABLED = false` — nobody can create a real account | `src/config/features.ts:4` |
+
+Consequences:
+
+1. **Free users and paying users get identical access.** Premium buys nothing.
+   The one customer who ever paid ₹49 got no feature they did not already have.
+   That is a consumer-protection exposure under the Consumer Protection Act
+   2019, and a chargeback risk on UPI.
+2. **`/upgrade` and `/payment` were advertising fictional deltas.** "Unlimited
+   Exports" (exports were never capped), "Priority AI" (no priority queue was
+   built), "2,500+ students already premium" (5 real users).
+3. **The `FREE_LIMITS` table cannot work as written.** Even with
+   `FREE_TRIAL = false`, nothing ever increments a usage counter, so
+   `used < limit` stays true forever and no limit ever fires.
+4. **`SIGNUP_ENABLED = false` explains the account data.** 184 auth users, 179
+   of them anonymous guests, because a real signup cannot happen.
+
+What was shipped on 29 Oct: the pricing page now states the truth ("Free for
+everyone") rather than inventing deltas, and the false claims are gone. **The
+paywall was deliberately not turned on**, because flipping `FREE_TRIAL` without
+first wiring `incrementUsage()` into the AI and style call sites would lock two
+gates (AI Style Matcher, Handwriting Import) and leave the rest open — a worse
+state than either extreme.
+
+**Decision needed from the founder (see §5):** either (a) stop taking money and
+tell visitors the product is free during launch, or (b) wire the counters and
+launch a real paid tier.
 
 ### Blocker 1 — The AI works on the main path, but the fallback paths are dead
 **Corrected 28 Oct 2026.** An earlier version of this document claimed "the AI
@@ -162,7 +201,25 @@ Verified after the changes: `tsc --noEmit` clean, `npm run build` succeeds,
 
 ---
 
-## 5. The one thing to do next
+## 5. The one thing to do next — a decision, not a task
+
+The pricing question is now the top of the queue, and it is not an engineering
+choice. `/upgrade` currently tells the truth — every feature is free for
+everyone — which means the page cannot sell anything. Pick one:
+
+| Option | What it needs | Revenue | Risk |
+|---|---|---|---|
+| **A. Stop charging during launch** | One banner; turns `/payment` off | ₹0 until launch | None. Stops taking money for nothing. |
+| **B. Launch a real paid tier** | Wire `incrementUsage()` into the AI, style, flashcard and dictation call sites; set `FREE_TRIAL = false`; re-enable `SIGNUP_ENABLED`; size the free tier so guests can still try the handwriting feature | Real, if anyone visits | Free users lose access they have today; a botched gate breaks the editor |
+| **C. Switch to pay-per-download** | A one-off ₹10–20 per PDF gate. LikhAI sells at ₹5/page, Assignment King from ₹6/page, both without an account | Small, immediate, impulse-friendly | Needs a Razorpay order type that is not a subscription |
+
+Today's numbers, for scale: 184 auth users (179 anonymous guests), 0 active paid
+subscriptions, ₹49 lifetime revenue, 0 leads, 0 verified payments. The binding
+constraint is still traffic, but B or C has to be true before traffic can turn
+into money.
+
+### The one thing to do next (after the decision)
+
 
 **Get real traffic in front of the working product.** AI is live; the product
 functions. What NikNote does not have is anyone arriving.
