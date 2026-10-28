@@ -23,10 +23,10 @@ const plans = [
     icon: Zap,
     badge: 'Try First',
     features: [
-      'All 16+ handwriting styles',
-      'AI notes, solver, flashcards, voice dictation',
-      'PDF, image and print-ready export',
-      'Works offline after first load',
+      'AI writing assistant — rewrite, summarise',
+      'Voice dictation — speak instead of typing',
+      'AI style matcher from your own handwriting',
+      'Handwriting import — photo of notes to text',
     ],
   },
   {
@@ -40,30 +40,34 @@ const plans = [
     features: [
       'Everything in Student Pro',
       'Billed monthly instead of weekly',
-      'Works out ~50% cheaper per week',
+      'About half the weekly rate',
       'Cancel yourself, any time',
     ],
   },
 ];
 
-// TRUTH CHECK (2026-10-29). This page used to sell feature deltas that did not
-// exist: "Unlimited Exports" (exports were never capped for anyone) and
-// "Priority AI" (no priority queue was ever built). The list was then going to
-// be rewritten with the FREE_LIMITS numbers, but those are not enforced either:
-// incrementUsage() has no call site anywhere in the app, and FREE_TRIAL in
-// src/config/features.ts is true, which makes checkFeatureAccess() return
-// limit: Infinity for every visitor. So today every row below is free and
-// unlimited for everyone, paying or not. That is what this page says until the
-// limits are actually wired up.
+// TRUTH CHECK (2026-10-29). This grid has been wrong in both directions, so
+// here is exactly what the code enforces, verified against the editor:
+//
+//   premium  — PenPalette passes `premiumLocked={!premium.isPremium}` to the AI
+//              writing assistant and gates its Dictate button the same way.
+//              ControlPanel receives `premiumLocked` and overlays a lock on the
+//              AI Style Matcher and Handwriting Import panels.
+//   free     — handwriting styles, AI notes, AI solver, flashcards, PDF tools
+//              and exports have no `isPremium` check in the editor.
+//
+// Note: FREE_LIMITS is still inert because incrementUsage() is never called, so
+// the monthly/day caps on AI notes and flashcards do not bite. Those features
+// are therefore listed as free rather than sold as unlimited.
 const allFeatures = [
+  { icon: Crown, text: '16+ Handwriting Styles', free: true },
   { icon: Sparkles, text: 'AI Note Generator', free: true },
   { icon: Brain, text: 'AI Solver', free: true },
-  { icon: Star, text: 'AI Flashcards', free: true },
-  { icon: BookOpen, text: 'Voice Dictation', free: true },
-  { icon: Crown, text: '16+ Handwriting Styles', free: true },
-  { icon: Shield, text: 'AI Text Tools', free: true },
-  { icon: Zap, text: 'Image → PDF', free: true },
-  { icon: CreditCard, text: 'PDF / image exports', free: true },
+  { icon: CreditCard, text: 'PDF tools & exports', free: true },
+  { icon: Shield, text: 'AI Writing Assistant', free: false },
+  { icon: BookOpen, text: 'Voice Dictation', free: false },
+  { icon: Star, text: 'AI Style Matcher', free: false },
+  { icon: Zap, text: 'Handwriting Import', free: false },
 ];
 
 const Upgrade = () => {
@@ -188,7 +192,13 @@ const Upgrade = () => {
                     <feature.icon className="w-4 h-4 text-primary" />
                   </div>
                   <div className="text-xs font-semibold leading-tight">{feature.text}</div>
-                  <div className="text-[10px] text-muted-foreground leading-tight">Free for everyone</div>
+                  <div
+                    className={`text-[10px] leading-tight ${
+                      feature.free ? 'text-muted-foreground' : 'font-semibold text-primary'
+                    }`}
+                  >
+                    {feature.free ? 'Free for everyone' : 'Premium only'}
+                  </div>
                 </motion.div>
               ))}
             </div>

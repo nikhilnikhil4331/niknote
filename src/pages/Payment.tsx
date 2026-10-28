@@ -357,16 +357,31 @@ export default function PaymentPage() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-4 space-y-4 pb-28">
-        {/* Launch honesty notice. FREE_TRIAL is on in src/config/features.ts and
-            incrementUsage() is never called, so a subscription today unlocks
-            nothing a free visitor does not already have. Taking money without
-            saying that out loud is the dark pattern this page just removed.
-            See BUSINESS-STATUS.md, Blocker 0. */}
-        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-3.5 py-3 text-[11px] leading-relaxed text-amber-900 dark:text-amber-200">
-          <strong className="font-semibold">Before you pay:</strong> every feature
-          is currently free for everyone during launch. Subscribing today
-          supports development, but it will not unlock anything you do not
-          already have. Free-tier limits switch on when the paid tier launches.
+        {/* What the money actually buys. Earlier revisions of this page sold
+            "Priority AI" and "Unlimited Exports", neither of which was ever
+            built; this list is the set of features the editor genuinely locks
+            behind `premiumLocked`. See src/components/premium/PricingPopup.tsx
+            for the single source of that list. */}
+        <div className="rounded-2xl border border-border/60 bg-card px-3.5 py-3">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            What you unlock
+          </p>
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11.5px] leading-snug">
+            {[
+              'AI writing assistant',
+              'Voice dictation',
+              'AI style matcher',
+              'Handwriting import',
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-1.5 text-foreground">
+                <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600" />
+                {item}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[10.5px] leading-relaxed text-muted-foreground">
+            Handwriting styles, AI notes, PDF tools and exports stay free.
+          </p>
         </div>
 
         <TrustBar variant="card" />
