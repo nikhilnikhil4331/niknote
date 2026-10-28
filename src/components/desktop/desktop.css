@@ -308,3 +308,230 @@
   .nd-anim, .nd-float, .nd-menu, .nd-modal { animation: none; }
   .nd-ring-bar { transition: none; }
 }
+
+/* ============================================================
+   Redesign 2026 — brand identity tokens (original NikNote logo
+   palette: purple / magenta / pink / warm orange) and the new
+   dashboard components. Scoped to .nik-desktop like the rest.
+   ============================================================ */
+
+.nik-desktop {
+  /* Brand palette — single source of truth for the redesign */
+  --nd-brand: #7028d9;
+  --nd-brand-deep: #4d168f;
+  --nd-brand-magenta: #d92c9b;
+  --nd-brand-pink: #f26d9b;
+  --nd-brand-orange: #ffad45;
+  --nd-lavender: #f5f0ff;
+  --nd-pink-bg: #fff3f8;
+  --nd-canvas: #faf8fd;
+  --nd-ink: #21172f;
+  --nd-ink-2: #766a86;
+  --nd-line: #eae3f2;
+  --nd-success: #159b68;
+  --nd-warning: #eaa23b;
+  --nd-error: #d94a65;
+  --nd-grad-brand: linear-gradient(135deg, #7028d9, #d92c9b);
+  --nd-grad-warm: linear-gradient(120deg, #f26d9b, #ffad45);
+
+  /* Rebind the functional tokens to the brand canvas (existing
+     components keep working but now sit on the new palette). */
+  --nd-bg: var(--nd-canvas);
+  --nd-text: var(--nd-ink);
+  --nd-text-2: var(--nd-ink-2);
+  --nd-border: var(--nd-line);
+  --nd-primary: var(--nd-brand);
+  --nd-primary-dark: var(--nd-brand-deep);
+}
+
+/* ---------- Hero banner ---------- */
+.nd-hero {
+  position: relative; border-radius: 20px; overflow: hidden;
+  border: 1px solid var(--nd-line); min-height: 210px;
+  background: var(--nd-grad-warm);
+  box-shadow: 0 12px 34px rgba(112, 40, 217, 0.13);
+  isolation: isolate;
+}
+.nd-hero img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  transform: scale(1.02);
+}
+.nd-hero .nd-hero-veil {
+  position: absolute; inset: 0;
+  background: linear-gradient(100deg, rgba(33, 23, 47, 0.34), rgba(217, 44, 155, 0.12) 46%, rgba(255, 173, 69, 0.06) 90%);
+}
+@keyframes nd-kenburns { from { transform: scale(1.02) translateX(0); } to { transform: scale(1.1) translateX(-1.4%); } }
+.nd-hero .nd-kenburns { animation: nd-kenburns 26s ease-in-out infinite alternate; }
+.nd-hero-script {
+  font-family: 'Caveat', cursive; font-weight: 600;
+  color: #fff; text-shadow: 0 2px 14px rgba(33, 23, 47, 0.45);
+  transform: rotate(-2.5deg);
+}
+
+/* ---------- Focus dial ---------- */
+.nd-dial { position: relative; touch-action: none; user-select: none; -webkit-user-select: none; }
+.nd-dial svg { display: block; overflow: visible; }
+.nd-dial [role='slider'] { outline: none; }
+.nd-dial:has([role='slider']:focus-visible) .nd-dial-handle {
+  stroke: var(--nd-brand-deep); stroke-width: 3;
+}
+.nd-dial:has([role='slider']:focus-visible) { filter: drop-shadow(0 0 8px rgba(112, 40, 217, .28)); }
+.nd-dial-ring-track { stroke: #f0e9f9; }
+.nd-dial-handle {
+  fill: #fff; stroke: var(--nd-brand-magenta); stroke-width: 2;
+  filter: drop-shadow(0 2px 6px rgba(217, 44, 155, 0.45));
+  cursor: grab;
+  transition: r .15s ease;
+}
+.nd-dial.nd-dragging { cursor: grabbing; }
+.nd-dial.nd-dragging .nd-dial-handle { cursor: grabbing; r: 11; }
+.nd-dial-tick { stroke: #d9cfec; stroke-width: 1.4; stroke-linecap: round; }
+.nd-dial-tick.nd-tick-major { stroke: #b7a6d8; stroke-width: 2; }
+.nd-dial-running .nd-dial-progress-glow {
+  animation: nd-pulse-opacity 2.2s ease-in-out infinite;
+}
+@keyframes nd-pulse-opacity { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes nd-complete-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.nd-complete-pop { animation: nd-complete-pop .5s cubic-bezier(.22,1,.36,1); }
+
+/* Segmented control (Pomodoro / Timer / Stopwatch) */
+.nd-seg {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  background: #f2edfb; border-radius: 12px; padding: 3px; gap: 2px;
+}
+.nd-seg button {
+  border: none; background: transparent; border-radius: 9px; cursor: pointer;
+  font-size: 12px; font-weight: 600; color: var(--nd-ink-2);
+  padding: 6px 4px; transition: all .16s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+}
+.nd-seg button:hover { color: var(--nd-ink); }
+.nd-seg button.nd-on {
+  background: #fff; color: var(--nd-brand-magenta); font-weight: 700;
+  box-shadow: 0 1.5px 6px rgba(112, 40, 217, 0.14);
+}
+
+/* Timer preset chips */
+.nd-preset {
+  border: 1px solid var(--nd-line); background: #fff; border-radius: 12px;
+  padding: 7px 4px; font-size: 12px; font-weight: 600; color: var(--nd-ink-2);
+  cursor: pointer; text-align: center; transition: all .15s;
+}
+.nd-preset:hover { border-color: #d9c9f5; color: var(--nd-ink); transform: translateY(-1px); }
+.nd-preset.nd-on {
+  background: var(--nd-grad-brand); border-color: transparent; color: #fff;
+  box-shadow: 0 5px 14px rgba(217, 44, 155, 0.35);
+}
+.nd-preset:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+/* Gradient CTA */
+.nd-btn-cta {
+  display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer;
+  background: var(--nd-grad-brand); color: #fff;
+  font-size: 13.5px; font-weight: 700; padding: 10px 18px; border-radius: 13px;
+  box-shadow: 0 8px 20px rgba(217, 44, 155, 0.32), inset 0 1px 0 rgba(255,255,255,.25);
+  transition: transform .14s ease, box-shadow .14s ease, filter .14s ease;
+}
+.nd-btn-cta:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 12px 26px rgba(217, 44, 155, 0.4); }
+.nd-btn-cta:active { transform: translateY(0) scale(.98); }
+
+/* KPI stat cards */
+.nd-kpi {
+  background: #fff; border: 1px solid var(--nd-line); border-radius: 16px;
+  padding: 13px 15px; box-shadow: var(--nd-shadow);
+  display: flex; align-items: center; gap: 11px; min-width: 0;
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.nd-kpi:hover { transform: translateY(-2px); box-shadow: var(--nd-shadow-hover); }
+.nd-kpi-ic {
+  width: 40px; height: 40px; border-radius: 12px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.nd-delta { display: inline-flex; align-items: center; gap: 2px; font-size: 11px; font-weight: 700; }
+.nd-delta.nd-up { color: var(--nd-success); }
+.nd-delta.nd-down { color: var(--nd-error); }
+
+/* Folder strip cards */
+.nd-folder {
+  background: #fff; border: 1px solid var(--nd-line); border-radius: 14px;
+  padding: 11px 13px; display: flex; align-items: center; gap: 10px; cursor: pointer;
+  transition: transform .15s, box-shadow .15s, border-color .15s; text-align: left; width: 100%;
+}
+.nd-folder:hover { transform: translateY(-2px); box-shadow: var(--nd-shadow-hover); border-color: #ddd2f5; }
+
+/* Notes section tabs (underline style) */
+.nd-utabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.nd-utabs button {
+  border: none; background: transparent; cursor: pointer; position: relative;
+  font-size: 13px; font-weight: 600; color: var(--nd-ink-2); padding: 7px 11px;
+  border-radius: 9px; transition: color .15s, background .15s;
+}
+.nd-utabs button:hover { color: var(--nd-ink); background: #f6f2fd; }
+.nd-utabs button.nd-on { color: var(--nd-brand-magenta); background: var(--nd-pink-bg); }
+.nd-utabs button.nd-on::after {
+  content: ''; position: absolute; left: 11px; right: 11px; bottom: 2px; height: 2.5px;
+  border-radius: 99px; background: var(--nd-grad-brand);
+}
+
+/* Right-rail card heading */
+.nd-rail-title { display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 800; color: var(--nd-ink); letter-spacing: -0.01em; }
+
+/* Mini calendar (right rail) */
+.nd-mini-cal-day {
+  position: relative; border: none; background: transparent; cursor: pointer;
+  font-size: 11.5px; font-weight: 600; color: var(--nd-ink-2);
+  height: 28px; border-radius: 99px; transition: background .13s, color .13s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+}
+.nd-mini-cal-day:hover { background: #f3edfc; color: var(--nd-ink); }
+.nd-mini-cal-day.nd-mc-out { color: #c9c1dd; }
+.nd-mini-cal-day.nd-mc-today { background: var(--nd-grad-brand); color: #fff; box-shadow: 0 4px 10px rgba(217, 44, 155, 0.35); }
+.nd-mini-cal-day .nd-mc-dot { width: 3.5px; height: 3.5px; border-radius: 99px; }
+
+/* Task tag chip */
+.nd-tag { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+
+/* Sidebar premium card */
+.nd-premium-card {
+  margin: 8px 12px 6px; border-radius: 14px; padding: 12px;
+  background: linear-gradient(135deg, #f3ebff, #ffeaf4 60%, #fff4e2);
+  border: 1px solid #ecdffd; cursor: pointer; text-align: left;
+  transition: transform .15s, box-shadow .15s;
+}
+.nd-premium-card:hover { transform: translateY(-1.5px); box-shadow: 0 10px 24px rgba(217, 44, 155, 0.18); }
+
+/* Focus-mode pulse on the header button */
+@keyframes nd-focus-breathe { 0%,100% { box-shadow: 0 0 0 0 rgba(217, 44, 155, .28); } 50% { box-shadow: 0 0 0 6px rgba(217, 44, 155, 0); } }
+.nd-focus-live { animation: nd-focus-breathe 2.4s ease-out infinite; }
+
+/* Chart tooltip */
+.nd-chart-tip {
+  background: #fff; border: 1px solid var(--nd-line); border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(33, 23, 47, 0.14); padding: 9px 12px; font-size: 12px;
+}
+
+/* Creation tile inside notes grid */
+.nd-create-tile {
+  border: 1.6px dashed #dccdf3; border-radius: 14px; background: #fdfbff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  min-height: 190px; cursor: pointer; color: var(--nd-brand);
+  transition: border-color .15s, background .15s, transform .15s;
+}
+.nd-create-tile:hover { border-color: var(--nd-brand-magenta); background: var(--nd-pink-bg); transform: translateY(-2px); }
+.nd-create-tile .nd-create-plus {
+  width: 44px; height: 44px; border-radius: 99px; background: var(--nd-pink-bg);
+  border: 1.6px solid #f3d3e5; display: flex; align-items: center; justify-content: center;
+  color: var(--nd-brand-magenta);
+}
+
+/* Lap list */
+.nd-lap-row { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 9px; font-size: 12px; }
+.nd-lap-row:nth-child(odd) { background: #faf7ff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nd-hero .nd-kenburns, .nd-dial-running .nd-dial-progress-glow, .nd-focus-live, .nd-complete-pop { animation: none; }
+}

@@ -92,6 +92,7 @@ const DesktopCalendar = lazy(() => import("@/pages/DesktopCalendar"));
 const DesktopTasks = lazy(() => import("@/pages/DesktopTasks"));
 const DesktopTrash = lazy(() => import("@/pages/DesktopTrash"));
 const DesktopShared = lazy(() => import("@/pages/DesktopShared"));
+const DesktopFocus = lazy(() => import("@/pages/DesktopFocus"));
 
 const PageLoader = () => <NiknoteLoader />;
 
@@ -209,6 +210,7 @@ const App = () => {
                         <Route path="/templates" element={<ResponsivePage><DesktopTemplates /></ResponsivePage>} />
                         <Route path="/calendar" element={<ResponsivePage><DesktopCalendar /></ResponsivePage>} />
                         <Route path="/tasks" element={<ResponsivePage><DesktopTasks /></ResponsivePage>} />
+                        <Route path="/focus" element={<ResponsivePage><DesktopFocus /></ResponsivePage>} />
                         <Route path="/trash" element={<ResponsivePage><DesktopTrash /></ResponsivePage>} />
                         <Route path="/shared" element={<ResponsivePage><DesktopShared /></ResponsivePage>} />
                         <Route path="/welcome" element={<Welcome />} />

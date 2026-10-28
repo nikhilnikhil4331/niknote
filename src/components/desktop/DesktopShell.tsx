@@ -8,7 +8,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, NotebookPen, Sparkles, CalendarDays, CheckSquare, HeartPulse,
-  Wallet, LayoutTemplate, Users, Trash2, Search, Plus, Folder,
+  Wallet, LayoutTemplate, Users, Trash2, Search, Plus, Folder, Timer,
   ChevronsLeft, ChevronsRight, ChevronUp, User, Trophy, Crown, LogOut, LogIn, Check,
 } from 'lucide-react';
 import { CommandPalette } from '@/components/command-palette/CommandPalette';
@@ -33,6 +33,7 @@ const NAV = [
   { label: 'Calendar', icon: CalendarDays, to: '/calendar', match: (p: string) => p === '/calendar' },
   { label: 'Tasks', icon: CheckSquare, to: '/tasks', match: (p: string) => p === '/tasks' },
   { label: 'Habit Tracker', icon: HeartPulse, to: '/habit', match: (p: string) => p === '/habit' },
+  { label: 'Focus Timer', icon: Timer, to: '/focus', match: (p: string) => p === '/focus' },
   { label: 'Money Tracker', icon: Wallet, to: '/money', match: (p: string) => p === '/money' },
   { label: 'Templates', icon: LayoutTemplate, to: '/templates', match: (p: string) => p === '/templates' },
   { label: 'Shared with me', icon: Users, to: '/shared', match: (p: string) => p === '/shared' },
@@ -69,8 +70,13 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
         setPaletteOpen((v) => !v);
       }
     };
+    const onOpen = () => setPaletteOpen(true);
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('nik:open-command-palette', onOpen);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('nik:open-command-palette', onOpen);
+    };
   }, []);
 
   useEffect(() => {
@@ -202,6 +208,36 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
             </>
           )}
         </nav>
+
+        {/* Premium upsell (mockup) — only for non-premium users */}
+        {!isPremium && !collapsed && (
+          <button
+            className="nd-premium-card flex-none"
+            onClick={() => navigate('/upgrade')}
+            title="Upgrade to NikNote Premium"
+          >
+            <span className="flex items-center gap-2">
+              <span className="grid place-items-center rounded-lg w-8 h-8" style={{ background: 'linear-gradient(135deg,#ffad45,#d92c9b)', color: '#fff' }}>
+                <Crown size={15} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[12.5px] font-extrabold" style={{ color: 'var(--nd-ink)' }}>NikNote Premium</span>
+                <span className="block text-[10.5px] font-medium" style={{ color: 'var(--nd-ink-2)' }}>Unlock all features</span>
+              </span>
+              <ChevronsRight size={14} className="ml-auto" style={{ color: 'var(--nd-brand-magenta)' }} />
+            </span>
+          </button>
+        )}
+        {!isPremium && collapsed && (
+          <button
+            className="nd-icon-btn mx-auto mb-1.5 flex-none"
+            style={{ background: 'linear-gradient(135deg,#ffad45,#d92c9b)', color: '#fff' }}
+            onClick={() => navigate('/upgrade')}
+            title="Upgrade to NikNote Premium"
+          >
+            <Crown size={15} />
+          </button>
+        )}
 
         {/* Profile footer */}
         <div className="relative flex-none" style={{ borderTop: '1px solid var(--nd-border-soft)' }}>
