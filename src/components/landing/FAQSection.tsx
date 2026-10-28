@@ -22,7 +22,7 @@ const faqs = [
   },
   {
     question: 'Is NikNote free to use?',
-    answer: 'Yes, you can start using NikNote for free without a credit card, including instant guest workspace access. Paid plans — Student Pro (₹49/week) and Premium (₹99/month) — unlock higher AI limits, priority AI responses, and full premium features.',
+    answer: 'Yes, you can start using NikNote for free without a credit card, including instant guest workspace access. Handwriting styles, AI notes, PDF tools and exports are free for everyone. Paid plans — Student Pro (₹49/week) and Premium (₹99/month) — unlock the AI writing assistant, voice dictation, AI style matching and handwriting import.',
   },
   {
     question: 'How does the Hindi + English AI Study Assistant (NikAI) work?',

@@ -11,13 +11,17 @@ const plans = [
     price: '₹0',
     period: 'forever',
     description: 'Shuru karo — risk nahi!',
+    // The old list said "1 handwriting style" and "5 AI notes/month". Neither
+    // limit exists: every style is unlocked and the AI counters are never
+    // incremented. Listing caps that do not apply is the same lie as listing
+    // features that do not exist.
     features: [
-      '✍️ 1 handwriting style',
-      '🧠 AI Teacher (limited)',
-      '📝 5 AI notes/month',
-      '📄 Basic PDF export',
-      '🎨 12 ink colors',
-      '📱 Mobile + Desktop',
+      '✍️ All 16+ handwriting styles',
+      '🧠 AI Teacher & notes generator',
+      '📄 PDF tools & print-ready export',
+      '🎨 12 ink colours',
+      '📱 Mobile + desktop',
+      '💾 Works offline',
     ],
     cta: 'Start Free ✨',
     highlighted: false,
@@ -28,15 +32,15 @@ const plans = [
     price: '₹49',
     period: '/week',
     description: 'Try karke dekho! ☕',
+    // Only the four tools the editor actually locks behind premiumLocked.
+    // "Priority AI responses", "No watermark PDF" and paid handwriting styles
+    // were all advertised here and none of them were real.
     features: [
-      '✨ Sab kuch Free mein +',
-      '📄 Unlimited AI notes',
-      '🧠 Advanced AI features',
-      '📥 No watermark PDF',
-      '🎨 16+ handwriting styles',
-      '💾 Voice dictation',
-      '⚡ Priority AI responses',
-      '📊 Flashcards & quizzes',
+      '✍️ AI writing assistant — rewrite, summarise',
+      '🎤 Voice dictation — speak instead of typing',
+      '🔍 AI style matcher — from your handwriting',
+      '📷 Handwriting import — photo of notes to text',
+      '📦 Plus everything in Free',
     ],
     cta: 'Try ₹49/week',
     highlighted: false,
@@ -48,14 +52,10 @@ const plans = [
     period: '/month',
     description: 'Best value — ek chai se sasta! ☕',
     features: [
-      '✨ Sab kuch Student Pro +',
-      '📄 Unlimited everything',
-      '🧠 Priority AI responses',
-      '📥 HD PDF export',
-      '🎨 All handwriting DNA',
-      '💾 Full history & sync',
-      '📊 Mind Maps & Diagrams',
-      '⚡ Priority rendering',
+      '📦 Everything in Student Pro',
+      '🗓️ Billed monthly, not weekly',
+      '💰 About half the weekly rate',
+      '🚪 Cancel yourself, any time',
     ],
     cta: 'Get Premium 🔥',
     highlighted: true,

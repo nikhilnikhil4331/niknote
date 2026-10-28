@@ -67,7 +67,7 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
     path: '/landing',
     title: 'NikNote Features — Handwriting Studio, AI Solver & Study Workspace',
     description:
-      'Explore NikNote features for students: 16+ handwriting styles, custom Handwriting DNA, AI doubt solver, flashcards, whiteboards, and print-ready PDF export.',
+      'Explore NikNote features for students: 16+ handwriting styles, custom Handwriting DNA, an AI doubt solver, flashcards, and print-ready PDF export.',
     canonicalPath: '/landing',
     robots: 'index, follow',
     pageType: 'landing',
@@ -177,7 +177,7 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
     path: '/upgrade',
     title: 'NikNote Pricing & Plans — Free Tier, Student Pro (₹49/wk) & Premium (₹99/mo)',
     description:
-      'Compare NikNote Free, Student Pro (₹49/week), and Premium (₹99/month) plans. Unlock full handwriting styles, priority AI, and exports with UPI, cards, or wallets.',
+      'Compare NikNote Free, Student Pro (₹49/week) and Premium (₹99/month). Premium adds the AI writing assistant, voice dictation, handwriting import and AI style matching. UPI, cards and wallets.',
     canonicalPath: '/upgrade',
     robots: 'index, follow',
     pageType: 'pricing',
@@ -396,8 +396,8 @@ const NON_INDEXABLE_ROUTES: Record<string, Omit<RouteSeoEntry, 'path' | 'inSitem
     pageType: 'workspace',
   },
   '/board': {
-    title: 'Whiteboard — NikNote',
-    description: 'Free-form study boards for diagrams, sketches, and notes.',
+    title: 'Study Board — NikNote',
+    description: 'Kanban-style study boards for planning tasks, deadlines and revision.',
     canonicalPath: '/board',
     robots: 'noindex, nofollow',
     pageType: 'workspace',
