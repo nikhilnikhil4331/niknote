@@ -215,9 +215,9 @@ const B2BPage = () => {
             transition={{ delay: 0.1 }}
             className="text-3xl sm:text-5xl font-extrabold leading-tight mb-4"
           >
-            AI-Powered Learning for
+            Handwritten worksheets,
             <span className="block bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-              Every Indian Classroom
+              without the hand-copying
             </span>
           </motion.h1>
           <motion.p
@@ -226,8 +226,9 @@ const B2BPage = () => {
             transition={{ delay: 0.2 }}
             className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8"
           >
-            From handwriting to AI — give your students the smartest note-taking platform. 
-            Built by a developer who still answers his own support messages.
+            A teacher hand-copies a 2-page worksheet in about 40 minutes.
+            NikNote does it in about two, at 300 DPI, ready to print.
+            Built by one developer in India who still answers his own support messages.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -240,7 +241,7 @@ const B2BPage = () => {
               className="rounded-xl text-base px-8 h-12"
               onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
             >
-              Start Free Trial
+              Request Free Pilot
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
             <Button
@@ -279,12 +280,12 @@ const B2BPage = () => {
           <h2 className="text-2xl font-bold text-center mb-10">Why Institutions Choose NikNote</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: Brain, title: "AI-Powered Learning", desc: "AI generates notes, solves problems, creates flashcards — students learn 3x faster" },
-              { icon: BookOpen, title: "Handwriting DNA", desc: "Students write in their own handwriting style — personal, natural, effective" },
-              { icon: BarChart3, title: "Teacher Dashboard", desc: "Track student progress, see engagement metrics, identify struggling students" },
-              { icon: Shield, title: "Data Privacy", desc: "Student data stays in India. Compliant with Indian data protection laws" },
-              { icon: Clock, title: "Zero Setup Time", desc: "Cloud-based, works on any device. Students start in minutes, not days" },
-              { icon: Calculator, title: "Exam Packs", desc: "JEE, NEET, UPSC, CBSE content pre-loaded. Students get exam-ready instantly" },
+              { icon: BookOpen, title: "Handwritten worksheets", desc: "Type a worksheet once, get realistic handwriting on ruled, graph or plain paper at 300 DPI. Print and hand it out." },
+              { icon: Brain, title: "AI help that works", desc: "Hindi and English explanations, quizzes and flashcards. Verified live in production — no setup needed." },
+              { icon: Shield, title: "Files stay on the device", desc: "PDF merge, split, compress and OCR run in the browser. Students' files are not uploaded to a server." },
+              { icon: Clock, title: "Works offline", desc: "Install once as an app. It keeps working when the classroom Wi-Fi does not." },
+              { icon: Zap, title: "Any device", desc: "Phone, tablet or laptop. No install, no IT ticket, no per-seat setup." },
+              { icon: CheckCircle2, title: "Honest scope", desc: "We sell only what ships today. No dashboard we have not built, and no feature you would have to wait for." },
             ].map((item, i) => (
               <motion.div
                 key={item.title}
@@ -360,13 +361,6 @@ const B2BPage = () => {
                 </div>
               </motion.div>
             ))}
-          </div>
-          {/* Govt school discount */}
-          <div className="mt-6 text-center p-4 rounded-xl bg-green-500/10 border border-green-500/20">
-            <div className="text-sm font-semibold text-green-700 flex items-center justify-center gap-2">
-              <Award className="h-4 w-4" />
-              50% Discount for Government Schools & NGOs
-            </div>
           </div>
         </div>
       </section>
@@ -480,7 +474,7 @@ const B2BPage = () => {
       <section id="contact" className="py-16 px-4 bg-gradient-to-br from-primary/5 to-purple-500/5">
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-3">Get Started Today</h2>
-          <p className="text-center text-muted-foreground mb-8">14-day free trial. No credit card required.</p>
+          <p className="text-center text-muted-foreground mb-8">Free 30-day pilot for one department. No card, no contract, no auto-renewal.</p>
           <form onSubmit={handleSubmit} className="bg-card rounded-2xl border border-border/30 p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -554,7 +548,7 @@ const B2BPage = () => {
               disabled={submitting}
               className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-primary to-primary/80"
             >
-              {submitting ? "Submitting..." : "Start Free Trial"}
+              {submitting ? "Submitting..." : "Request Free Pilot"}
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
             <p className="text-xs text-muted-foreground text-center">
