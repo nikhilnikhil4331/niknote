@@ -31,6 +31,8 @@ const CONSUMER_COPY = [
   'src/components/landing/LandingPage.tsx',
   'src/components/landing/HeroSection.tsx',
   'src/components/landing/SocialProofSection.tsx',
+  'src/pages/PremiumLanding.tsx',
+  'src/components/urgency/ExitIntentPopup.tsx',
   'src/content/blogPosts.ts',
   'src/utils/promotion.ts',
   'src/components/promotion/ShareButtons.tsx',
@@ -92,6 +94,34 @@ const BANNED: { pattern: RegExp; why: string }[] = [
   {
     pattern: /\b4-?line\s+paper/i,
     why: 'Only plain/ruled/graph/dotted/legal/vintage/kraft/blueprint exist.',
+  },
+  {
+    pattern: /thousands of students|join thousands/i,
+    why: 'Five real accounts. This is invented social proof.',
+  },
+  {
+    pattern: /clone your handwriting/i,
+    why: 'The style matcher maps slant/size/spacing; it does not clone a hand.',
+  },
+  {
+    pattern: /unlimited\s+ai\s+(notes|power|generated)/i,
+    why: 'AI notes are free for everyone, so unlimited is not a thing you sell.',
+  },
+  {
+    pattern: /unlimited\s+(transcription|conversions|voice)/i,
+    why: 'No cap applies to these, so "unlimited" is not a premium benefit.',
+  },
+  {
+    pattern: /50-page lectures/i,
+    why: 'No bulk-PDF summarisation pipeline exists.',
+  },
+  {
+    pattern: /no watermark/i,
+    why: 'Exports have never carried a watermark, free or paid.',
+  },
+  {
+    pattern: /\b9 ai (teachers|agents)\b/i,
+    why: 'src/data/agents.ts holds engineering roles, not teachers.',
   },
 ];
 

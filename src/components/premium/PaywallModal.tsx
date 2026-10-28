@@ -16,22 +16,24 @@ export interface PaywallModalProps {
 }
 
 const featureLabels: Record<PremiumFeature, { icon: any; label: string; desc: string }> = {
-  ai_note_generator: { icon: Wand2, label: "AI Note Generator", desc: "Generate unlimited notes with AI" },
-  ai_solver: { icon: Brain, label: "AI Solver", desc: "Unlimited problem solving" },
+  ai_note_generator: { icon: Wand2, label: "AI Note Generator", desc: "Generate notes with AI" },
+  ai_solver: { icon: Brain, label: "AI Solver", desc: "Step-by-step problem solving" },
   ai_text_tools: { icon: Sparkles, label: "AI Text Tools", desc: "Rewrite, summarize & more" },
-  handwriting_styles: { icon: Wand2, label: "Handwriting DNA", desc: "Unlimited custom styles" },
-  image_pdf_convert: { icon: FileImage, label: "Image/PDF to Notes", desc: "Unlimited conversions" },
-  voice_to_notes: { icon: Volume2, label: "Voice to Notes", desc: "Unlimited transcription" },
-  ai_flashcards: { icon: BookOpen, label: "AI Flashcards", desc: "Unlimited decks & cards" },
+  handwriting_styles: { icon: Wand2, label: "Handwriting DNA", desc: "Custom styles from your own writing" },
+  image_pdf_convert: { icon: FileImage, label: "Image/PDF to Notes", desc: "Turn files into notes" },
+  voice_to_notes: { icon: Volume2, label: "Voice to Notes", desc: "Speak instead of typing" },
+  ai_flashcards: { icon: BookOpen, label: "AI Flashcards", desc: "Decks and cards from any topic" },
 };
 
+// This grid is shown after someone taps a locked feature, so it has to name
+// what they actually hit. The previous list sold AI notes, solver and
+// flashcards as premium — all three are free — and promised "unlimited" on
+// tools whose caps are not enforced. See PricingPopup.tsx for the real list.
 const allFeatures = [
-  { icon: Wand2, label: "AI Note Generator", desc: "Unlimited AI-generated notes" },
-  { icon: Brain, label: "AI Solver", desc: "Unlimited problem solving" },
-  { icon: Sparkles, label: "AI Text Tools", desc: "Rewrite, summarize, expand" },
-  { icon: Mic, label: "Voice Dictation", desc: "Unlimited voice transcription" },
-  { icon: FileImage, label: "Image/PDF to Notes", desc: "Unlimited conversions" },
-  { icon: BookOpen, label: "AI Flashcards", desc: "Unlimited decks & cards" },
+  { icon: Wand2, label: "AI Writing Assistant", desc: "Rewrite, summarize, expand" },
+  { icon: Mic, label: "Voice Dictation", desc: "Speak instead of typing" },
+  { icon: Sparkles, label: "AI Style Matcher", desc: "Match your real handwriting" },
+  { icon: FileImage, label: "Handwriting Import", desc: "Photo of notes to text" },
 ];
 
 const plans = [

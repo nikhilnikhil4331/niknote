@@ -124,10 +124,10 @@ export const ExitIntentPopup: React.FC = () => {
                 {/* Quick benefits */}
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    '🧠 Unlimited AI Notes',
-                    '✍️ 16+ Handwriting Styles',
-                    '📝 Quiz & Flashcards',
+                    '🧠 AI Writing Assistant',
                     '🎙️ Voice Dictation',
+                    '🔍 AI Style Matcher',
+                    '📷 Handwriting Import',
                   ].map((benefit) => (
                     <div key={benefit} className="flex items-center gap-1.5 text-xs font-medium text-foreground bg-muted/30 rounded-lg px-2 py-1.5">
                       {benefit}
