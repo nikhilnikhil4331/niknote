@@ -199,7 +199,7 @@ const PremiumLanding: React.FC = () => {
               <span className="bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">Like You.</span>
             </h2>
             <p className="mt-4 text-white/40 text-lg max-w-xl mx-auto">
-              Clone your handwriting with AI. Make your digital notes feel personal and authentic.
+              Match your own handwriting with AI, so digital notes feel personal. Upload a sample and NikNote maps its slant, size and spacing.
             </p>
           </div>
 
@@ -364,8 +364,8 @@ const PremiumLanding: React.FC = () => {
         <div className="relative z-10 max-w-6xl mx-auto text-center">
           <span className="text-sm font-semibold tracking-widest uppercase text-orange-400/80">Feature 03</span>
           <h2 className="mt-4 text-4xl md:text-6xl font-extrabold">
-            Unlimited{' '}
-            <span className="bg-gradient-to-r from-orange-400 via-pink-400 to-purple-500 bg-clip-text text-transparent">AI Power.</span>
+            Study tools that{' '}
+            <span className="bg-gradient-to-r from-orange-400 via-pink-400 to-purple-500 bg-clip-text text-transparent">do the boring part.</span>
           </h2>
           <p className="mt-4 text-white/40 text-lg max-w-xl mx-auto">
             Summarize lectures, organize messy notes, and generate quizzes automatically.
@@ -374,9 +374,9 @@ const PremiumLanding: React.FC = () => {
           {/* Neural network grid */}
           <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { icon: '📝', title: 'Smart Summarizer', desc: 'Turn 50-page lectures into crisp, exam-ready notes in one click.' },
+              { icon: '📝', title: 'Smart Summarizer', desc: 'Paste a lecture or chapter and get a shorter, exam-ready version.' },
               { icon: '🧠', title: 'Auto Quiz Generator', desc: 'Create practice questions from any topic. Test yourself instantly.' },
-              { icon: '🎤', title: 'Voice to Handwriting', desc: 'Dictate your thoughts. NikNote writes them in your handwriting.' },
+              { icon: '🎤', title: 'Voice Dictation', desc: 'Speak your notes and they appear as text you can style as handwriting.' },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -437,7 +437,7 @@ const PremiumLanding: React.FC = () => {
             <span className="bg-gradient-to-r from-orange-400 via-pink-400 to-purple-500 bg-clip-text text-transparent">Beautifully?</span>
           </h2>
           <p className="mt-6 text-white/40 text-lg">
-            Join thousands of students who've made their notes smarter, faster, and more personal.
+            NikNote is early and built by one developer in India. Try it free, and tell him what breaks.
           </p>
           <button
             onClick={goApp}

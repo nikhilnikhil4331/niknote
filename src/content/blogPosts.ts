@@ -182,8 +182,8 @@ Coaching fees ₹50,000+? NikNote free mein AI Teacher, Quiz Generator, aur Flas
 4. **Mind Maps**: Complex topics ko visually samjho
 
 ### Free vs Premium:
-- Free: Basic quiz, 28+ AI subjects, limited pages
-- Student Pro (₹99/mo): Unlimited quiz, advanced AI, no watermark, mind maps
+- Free: quizzes, flashcards, 28+ AI topics, 16+ handwriting styles, unlimited pages, exports me koi watermark nahi
+- Premium (₹49/week ya ₹99/month): AI writing assistant, voice dictation, AI style matcher, handwriting import
 
 **Start JEE/NEET prep free: https://www.niknote.online** 🚀`,
   },
