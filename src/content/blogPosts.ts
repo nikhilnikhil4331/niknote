@@ -503,22 +503,54 @@ CBSE students ke liye free AI homework helper — Hindi mein jawab deta hai!
   {
     slug: 'handwriting-notes-maker-online-free',
     title: 'Handwriting Notes Maker Online Free — Convert Text to Handwriting Instantly',
-    excerpt: 'Free online handwriting notes maker — text type karo, handwriting mein convert karo. 16+ styles, PDF download, mobile friendly. No signup needed.',
+    excerpt: 'Free online handwriting notes maker — text type karo, handwriting mein convert karo. Ek free style, 16+ premium styles, 300 DPI PDF export, mobile friendly.',
     category: 'Tool',
     readTime: '3 min',
     tags: ['handwriting maker', 'online free', 'text to handwriting', 'notes maker'],
     content: `# Free Online Handwriting Notes Maker ✍️
 
-NikNote se text ko handwriting mein convert karo — bilkul free!
+Website nahi, browser tab — kuch install karne ki zaroorat nahi hai.
 
-## Features
-- ✅ 16+ handwriting styles
-- ✅ PDF download free
-- ✅ No signup required
-- ✅ Works on mobile
-- ✅ 12 ink colors
+Lekin pehle ek honest baat: **16+ handwriting styles saare free nahi hain.** Free tier mein ek style milta hai. 16+ styles ke liye ₹49/week ya ₹99/month. Jo neeche likha hai, wahi milta hai.
 
-**Try free: https://www.niknote.online** ✍️`,
+## Free tier mein kya milta hai (asli)
+
+| Cheez | Free | Premium |
+|-------|------|---------|
+| Handwriting styles | 1 | 16+ |
+| Exports (PDF/image) | **Unlimited** | Unlimited |
+| Ink colours | 12 | 12 |
+| Mobile | ✅ | ✅ |
+
+Export pe koi cap nahi hai — na free mein, na premium mein. Hum uske paise nahi lete.
+
+## Steps (2 minute)
+
+1. **NikNote kholo** — koi signup wall nahi, seedha editor khulta hai
+2. **Text type ya paste karo** — Hindi ya English, dono
+3. **Paper choose karo** — plain, ruled, graph, dotted, legal, vintage, kraft ya blueprint
+4. **Style chuno** — free mein ek style available hai
+5. **Export karo** — PDF ya PNG, 300 DPI, print-ready
+
+## Paper aur setting tips
+
+- **School assignment** → ruled paper, navy ink
+- **JEE/NEET notes** → graph paper, dark blue ink
+- **College practical** → plain paper, black ink
+- **Diagrams** → graph ya blueprint paper
+- **Margins** → 300 DPI pe 1-inch left margin rakho, spiral binding mein cutne se bachta hai
+
+## Kya ye print karna padta hai?
+
+Nahi. PDF kisi bhi cyber cafe se ₹5-10/page mein print ho jaata hai. Ya phone pe hi submit kar do — kaafi teachers ab PDF lete hain.
+
+Agar print karna hai: A4 pe print karo, "Fit to page" **off** rakho, warna handwriting stretch ho jaayegi.
+
+## Free tool kaise use karein bina paise ke
+
+Free tier mein ek style hai — wahi kaafi hai agar aapko sirf ek consistent handwriting chahiye. Ek notebook, ek style rakho. Zyada styles ki zaroorat tab padti hai jab different subjects ke liye different handwriting chahiye ho.
+
+**Try karo: [https://www.niknote.online](https://www.niknote.online)** ✍️`,
   },
   {
     slug: 'best-note-taking-app-india-2026',
@@ -606,7 +638,7 @@ OCR (Optical Character Recognition) technology se tumhare handwritten notes ka p
 - **PDF Support**: PDF upload karo, text extract karo
 - **Image Upload**: Phone se photo leke upload karo
 - **Batch Processing**: Multiple pages ek saath convert
-- **100% Free**: Basic conversions bilkul free
+- **Free tier**: Basic conversions bilkul free, koi card nahi
 
 ### Use Cases for Indian Students:
 1. **Assignment Digitization**: School assignments ko digital banao

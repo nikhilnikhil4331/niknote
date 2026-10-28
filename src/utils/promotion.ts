@@ -50,7 +50,7 @@ export function getPageSEO(page: string) {
   const pages: Record<string, { title: string; description: string; keywords: string[] }> = {
     home: {
       title: 'NikNote — AI Handwriting Notes for Indian Students | Free Study App',
-      description: 'Convert typed text into realistic handwritten notes. AI teacher explains concepts, creates notes, quizzes & flashcards. 16+ handwriting styles. 100% Free!',
+      description: 'Convert typed text into realistic handwritten notes. AI teacher explains concepts, creates notes, quizzes & flashcards. 16+ handwriting styles. Free to start.',
       keywords: ['handwriting notes', 'AI teacher', 'student app', 'free notes', 'NCERT'],
     },
     ai: {
@@ -116,12 +116,12 @@ Free app jahan:
 🔗 https://www.niknote.online`,
   ],
   telegram: [
-    `🚀 NikNote — India's #1 AI Study App!
+    `🚀 NikNote — AI Study App for Indian Students!
 
 ✍️ Text → Handwriting
-🤖 9 AI Agents (Teacher, Quiz, Notes)
+🤖 AI Teacher, Quiz, Notes, Flashcards
 📚 28+ Built-in Topics
-🆓 100% Free
+🆓 Free tier, no ads
 
 Try: https://www.niknote.online`,
   ],
@@ -131,21 +131,21 @@ Try: https://www.niknote.online`,
 ✍️ Text → Handwriting
 🤖 9 AI Teachers
 📝 Quiz + Flashcards
-🆓 100% Free
+🆓 Free tier, no ads
 
 Try now → https://www.niknote.online
 
 #NikNote #AIStudy #IndianStudents #EdTech #StudyApp`,
   ],
   reddit: [
-    `I built a free AI study app for Indian students - NikNote
+    `Free AI study app for Indian students - NikNote (made by an Indian dev)
 
 Features:
 - Convert typed text to 16+ handwriting styles
 - 9 AI agents (Teacher, Notes, Quiz, Flashcards, Mind Maps)
-- 28+ topics with instant answers (no internet needed!)
+- 28+ offline topics with instant answers
 - Exam-focused: NCERT, CBSE, ICSE patterns
-- 100% free, no ads
+- Free tier, no ads
 
 Link: https://www.niknote.online
 

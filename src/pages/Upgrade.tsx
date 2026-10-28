@@ -22,7 +22,12 @@ const plans = [
     period: '/week',
     icon: Zap,
     badge: 'Try First',
-    features: ['All AI features', '16+ handwriting styles', 'PDF export', 'Voice dictation'],
+    features: [
+      'All 16+ handwriting styles',
+      'AI notes, solver, flashcards, voice dictation',
+      'PDF, image and print-ready export',
+      'Works offline after first load',
+    ],
   },
   {
     code: 'monthly',
@@ -32,19 +37,33 @@ const plans = [
     icon: Star,
     popular: true,
     badge: 'Most Popular',
-    features: ['Everything in Student Pro', 'Priority AI responses', 'AI flashcards & quizzes', 'Early access to new features'],
+    features: [
+      'Everything in Student Pro',
+      'Billed monthly instead of weekly',
+      'Works out ~50% cheaper per week',
+      'Cancel yourself, any time',
+    ],
   },
 ];
 
+// TRUTH CHECK (2026-10-29). This page used to sell feature deltas that did not
+// exist: "Unlimited Exports" (exports were never capped for anyone) and
+// "Priority AI" (no priority queue was ever built). The list was then going to
+// be rewritten with the FREE_LIMITS numbers, but those are not enforced either:
+// incrementUsage() has no call site anywhere in the app, and FREE_TRIAL in
+// src/config/features.ts is true, which makes checkFeatureAccess() return
+// limit: Infinity for every visitor. So today every row below is free and
+// unlimited for everyone, paying or not. That is what this page says until the
+// limits are actually wired up.
 const allFeatures = [
-  { icon: Sparkles, text: 'AI Note Generator', desc: 'Unlimited AI notes' },
-  { icon: Brain, text: 'AI Solver', desc: 'Solve any problem' },
-  { icon: Star, text: 'AI Flashcards', desc: 'Auto study cards' },
-  { icon: BookOpen, text: 'Voice Dictation', desc: 'Speak to write' },
-  { icon: Crown, text: '16+ Handwriting Styles', desc: 'Your handwriting, AI-powered' },
-  { icon: Zap, text: 'Unlimited Exports', desc: 'PDF, image, share' },
-  { icon: Shield, text: 'Priority AI', desc: 'Faster responses' },
-  { icon: Sparkles, text: 'AI Text Tools', desc: 'Rewrite, summarize' },
+  { icon: Sparkles, text: 'AI Note Generator', free: true },
+  { icon: Brain, text: 'AI Solver', free: true },
+  { icon: Star, text: 'AI Flashcards', free: true },
+  { icon: BookOpen, text: 'Voice Dictation', free: true },
+  { icon: Crown, text: '16+ Handwriting Styles', free: true },
+  { icon: Shield, text: 'AI Text Tools', free: true },
+  { icon: Zap, text: 'Image → PDF', free: true },
+  { icon: CreditCard, text: 'PDF / image exports', free: true },
 ];
 
 const Upgrade = () => {
@@ -169,7 +188,7 @@ const Upgrade = () => {
                     <feature.icon className="w-4 h-4 text-primary" />
                   </div>
                   <div className="text-xs font-semibold leading-tight">{feature.text}</div>
-                  <div className="text-[10px] text-muted-foreground leading-tight">{feature.desc}</div>
+                  <div className="text-[10px] text-muted-foreground leading-tight">Free for everyone</div>
                 </motion.div>
               ))}
             </div>

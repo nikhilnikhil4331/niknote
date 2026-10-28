@@ -19,7 +19,7 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ variant = 'floating'
 
   const shareLinks = getShareLinks(
     'NikNote — Free AI Study App for Indian Students! 🎓',
-    'Check out NikNote! AI teacher, handwriting notes, quizzes & flashcards. 100% Free!'
+    'Check out NikNote! AI teacher, handwriting notes, quizzes & flashcards. Free to start.'
   );
 
   const handleCopy = async () => {
