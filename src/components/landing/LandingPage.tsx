@@ -11,7 +11,7 @@ import { CTASection } from './CTASection';
 import { DisclaimerBanner } from './DisclaimerBanner';
 import { LandingFooter } from './LandingFooter';
 import { ReferralWidget } from '@/components/promotion/ReferralWidget';
-import { UrgencyTimer } from '@/components/urgency/UrgencyTimer';
+import { TrustBar } from '@/components/premium/TrustBar';
 import { LiveActivityFeed } from '@/components/urgency/LiveActivityFeed';
 import { ExitIntentPopup } from '@/components/urgency/ExitIntentPopup';
 import { MobilePremiumBar } from '@/components/urgency/MobilePremiumBar';
@@ -37,7 +37,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   return (
     <div className="min-h-screen bg-background">
       {/* Urgency Banner at top */}
-      <UrgencyTimer variant="banner" />
+      <TrustBar variant="banner" />
 
       <LandingHeader 
         isDark={isDark} 
@@ -63,7 +63,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         
         {/* Urgency Card — between features and pricing for maximum conversion */}
         <div className="container mx-auto px-4 lg:px-6 max-w-lg py-6">
-          <UrgencyTimer variant="card" />
+          <TrustBar variant="card" />
         </div>
         
         {/* Referral Widget — between features and pricing for maximum visibility */}

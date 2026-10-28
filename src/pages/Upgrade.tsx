@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { usePremium } from '@/hooks/usePremium';
-import { UrgencyTimer } from '@/components/urgency/UrgencyTimer';
+import { TrustBar } from '@/components/premium/TrustBar';
 import { PlanArt } from '@/components/motion/FeatureArt';
 import { trackPremiumUpgradeClick } from '@/lib/tracking';
 
@@ -74,7 +74,7 @@ const Upgrade = () => {
       </header>
 
       <main className="container mx-auto px-4 py-5 max-w-4xl space-y-6">
-        <UrgencyTimer variant="card" />
+        <TrustBar variant="card" />
 
         <div className="text-center space-y-3">
           <div className="flex justify-center"><PlanArt /></div>
@@ -200,12 +200,13 @@ const Upgrade = () => {
               className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-5 border border-primary/20 text-center space-y-2"
             >
               <Users className="h-7 w-7 text-primary mx-auto" />
-              <h3 className="text-base font-bold">For Schools & Coaching Centers</h3>
+              <h3 className="text-base font-bold">For teachers &amp; institutions</h3>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                Custom plans starting ₹25,000/year. White-label option available.
+                Teacher plans from ₹999/year, tuition centres from ₹4,999/year, and a free
+                30-day pilot for one department.
               </p>
               <Button variant="outline" size="sm" className="rounded-xl" onClick={() => navigate('/schools')}>
-                View B2B Plans
+                See teacher plans
               </Button>
             </motion.div>
 

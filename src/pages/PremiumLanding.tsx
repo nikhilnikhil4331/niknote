@@ -142,11 +142,11 @@ const PremiumLanding: React.FC = () => {
           {/* Social proof */}
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="mt-12 flex items-center justify-center gap-6 text-sm text-white/30">
             <span className="flex items-center gap-1">
-              {[...Array(5)].map((_, i) => <span key={i} className="text-orange-400">★</span>)}
-              <span className="ml-1 text-white/50">4.9/5</span>
+              <strong className="text-white/70">16+</strong>
+              <span className="text-white/50">handwriting styles</span>
             </span>
             <span className="w-px h-4 bg-white/10" />
-            <span>Loved by <strong className="text-white/50">10,000+</strong> students</span>
+            <span><strong className="text-white/70">300</strong> <span className="text-white/50">DPI export</span></span>
           </motion.div>
         </motion.div>
 
