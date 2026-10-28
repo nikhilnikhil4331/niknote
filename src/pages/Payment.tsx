@@ -357,7 +357,18 @@ export default function PaymentPage() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-4 space-y-4 pb-28">
-        {/* Urgency Timer Card */}
+        {/* Launch honesty notice. FREE_TRIAL is on in src/config/features.ts and
+            incrementUsage() is never called, so a subscription today unlocks
+            nothing a free visitor does not already have. Taking money without
+            saying that out loud is the dark pattern this page just removed.
+            See BUSINESS-STATUS.md, Blocker 0. */}
+        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-3.5 py-3 text-[11px] leading-relaxed text-amber-900 dark:text-amber-200">
+          <strong className="font-semibold">Before you pay:</strong> every feature
+          is currently free for everyone during launch. Subscribing today
+          supports development, but it will not unlock anything you do not
+          already have. Free-tier limits switch on when the paid tier launches.
+        </div>
+
         <TrustBar variant="card" />
 
         {/* Social Proof Bar — Enhanced */}
@@ -367,9 +378,9 @@ export default function PaymentPage() {
           className="flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-primary/5 via-orange-500/5 to-pink-500/5 rounded-full text-xs font-medium border border-primary/10"
         >
           <ShieldCheck className="h-3.5 w-3.5 text-green-600" />
-          <span>Premium unlocks all 16+ handwriting styles</span>
+          <span>Cancel yourself, any time</span>
           <span className="text-muted-foreground">•</span>
-          <span className="text-green-600 font-semibold">₹49/week</span>
+          <span className="text-green-600 font-semibold">No countdown</span>
         </motion.div>
 
         {/* Premium Features Grid */}

@@ -511,25 +511,27 @@ CBSE students ke liye free AI homework helper — Hindi mein jawab deta hai!
 
 Website nahi, browser tab — kuch install karne ki zaroorat nahi hai.
 
-Lekin pehle ek honest baat: **16+ handwriting styles saare free nahi hain.** Free tier mein ek style milta hai. 16+ styles ke liye ₹49/week ya ₹99/month. Jo neeche likha hai, wahi milta hai.
+Lekin pehle ek honest baat, kyunki is page pe pehle jhooth likha tha.
 
-## Free tier mein kya milta hai (asli)
+**Aaj, launch ke dauran, sab kuch free hai.** Saare 16+ styles, unlimited exports, 12 ink colours, mobile — sab. Hum abhi subscription nahi bech rahe, kyunki pehle free tier ke limits sahi se set karne hain. Payment le kar kuch na dena galat hoga.
 
-| Cheez | Free | Premium |
-|-------|------|---------|
-| Handwriting styles | 1 | 16+ |
-| Exports (PDF/image) | **Unlimited** | Unlimited |
+## Aaj kya milta hai
+
+| Cheez | Aaj | Premium launch ke baad |
+|-------|-----|------------------------|
+| Handwriting styles | **Saare 16+ free** | 1 free, 16+ premium |
+| Exports (PDF/image) | Unlimited | Unlimited — hamesha free |
 | Ink colours | 12 | 12 |
 | Mobile | ✅ | ✅ |
 
-Export pe koi cap nahi hai — na free mein, na premium mein. Hum uske paise nahi lete.
+Export pe koi cap nahi hai, aur rahega bhi nahi — na free mein, na premium mein. Hum uske paise nahi lete.
 
 ## Steps (2 minute)
 
 1. **NikNote kholo** — koi signup wall nahi, seedha editor khulta hai
 2. **Text type ya paste karo** — Hindi ya English, dono
 3. **Paper choose karo** — plain, ruled, graph, dotted, legal, vintage, kraft ya blueprint
-4. **Style chuno** — free mein ek style available hai
+4. **Style chuno** — abhi saare 16+ styles khule hain
 5. **Export karo** — PDF ya PNG, 300 DPI, print-ready
 
 ## Paper aur setting tips
@@ -546,9 +548,9 @@ Nahi. PDF kisi bhi cyber cafe se ₹5-10/page mein print ho jaata hai. Ya phone 
 
 Agar print karna hai: A4 pe print karo, "Fit to page" **off** rakho, warna handwriting stretch ho jaayegi.
 
-## Free tool kaise use karein bina paise ke
+## Kaunsa style kab use karein
 
-Free tier mein ek style hai — wahi kaafi hai agar aapko sirf ek consistent handwriting chahiye. Ek notebook, ek style rakho. Zyada styles ki zaroorat tab padti hai jab different subjects ke liye different handwriting chahiye ho.
+Ek notebook, ek style — consistent rehta hai. Zyada styles ki zaroorat tab padti hai jab different subjects ke liye different handwriting chahiye ho (ya do log ek hi document banayein). Abhi sab free hain, to experiment kar lo.
 
 **Try karo: [https://www.niknote.online](https://www.niknote.online)** ✍️`,
   },
