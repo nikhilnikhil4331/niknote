@@ -115,7 +115,7 @@ Bilkul! NikNote specifically Indian students ke liye design kiya gaya hai:
 - Previous year questions ke liye **quiz generator** try karo
 
 ### Free hai kya?
-Haan! Basic features bilkul free hain. Unlimited pages ke liye Student Pro plan ₹99/month — ek chai se sasta!
+Haan. Pages ki koi limit nahi hai — 16+ handwriting styles, AI notes, PDF tools aur exports sab free hain. ₹99/month ka Premium sirf AI writing assistant, voice dictation, AI style matcher aur handwriting import ke liye hai.
 
 **Start free: https://www.niknote.online** ✨`,
   },
@@ -513,18 +513,21 @@ Website nahi, browser tab — kuch install karne ki zaroorat nahi hai.
 
 Lekin pehle ek honest baat, kyunki is page pe pehle jhooth likha tha.
 
-**Aaj, launch ke dauran, sab kuch free hai.** Saare 16+ styles, unlimited exports, 12 ink colours, mobile — sab. Hum abhi subscription nahi bech rahe, kyunki pehle free tier ke limits sahi se set karne hain. Payment le kar kuch na dena galat hoga.
+**Kya free hai aur kya nahi — saaf-saaf.** Bahut saari apps "free" likh kar andar se paise maangti hain. Yahan list hai:
 
-## Aaj kya milta hai
-
-| Cheez | Aaj | Premium launch ke baad |
-|-------|-----|------------------------|
-| Handwriting styles | **Saare 16+ free** | 1 free, 16+ premium |
-| Exports (PDF/image) | Unlimited | Unlimited — hamesha free |
+| Cheez | Free | Premium |
+|-------|------|---------|
+| Handwriting styles | **Saare 16+ free** | Saare 16+ |
+| Exports (PDF/PNG, 300 DPI) | Unlimited | Unlimited |
 | Ink colours | 12 | 12 |
-| Mobile | ✅ | ✅ |
+| AI notes, solver, flashcards | Free | Free |
+| PDF tools | Free | Free |
+| AI writing assistant | — | ✅ |
+| Voice dictation | — | ✅ |
+| AI style matcher | — | ✅ |
+| Handwriting import (photo → text) | — | ✅ |
 
-Export pe koi cap nahi hai, aur rahega bhi nahi — na free mein, na premium mein. Hum uske paise nahi lete.
+Exports pe koi cap nahi — na free mein, na premium mein. Hum uske paise nahi lete. Premium sirf un chaar tools ke liye hai jo neeche wali row mein hain.
 
 ## Steps (2 minute)
 

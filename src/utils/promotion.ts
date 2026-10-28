@@ -55,7 +55,7 @@ export function getPageSEO(page: string) {
     },
     ai: {
       title: 'NikNote AI Teacher — Learn Any Subject with AI | Free for Students',
-      description: '9 AI agents that teach, create notes, generate quizzes, make flashcards & mind maps. Works offline with 28+ built-in topics. Instant answers!',
+      description: 'AI agents that teach, create notes, generate quizzes, make flashcards & mind maps. Works offline with 28+ built-in topics. Instant answers!',
       keywords: ['AI teacher', 'AI tutor', 'quiz generator', 'flashcards', 'study AI'],
     },
     login: {
@@ -96,10 +96,10 @@ export const PROMO_MESSAGES = {
 
 Yeh app Indian students ke liye GAME CHANGER hai:
 ✅ Type karo → Handwriting mein convert
-✅ 9 AI Teachers — Explain, Notes, Quiz, Flashcards
+✅ AI Teacher — Explain, Notes, Quiz, Flashcards
 ✅ 28+ Topics instant answers (Newton, Photosynthesis, etc.)
 ✅ 16+ Handwriting styles
-✅ 100% FREE!
+✅ Free to start, no card
 
 👉 Try now: https://www.niknote.online
 
@@ -129,7 +129,7 @@ Try: https://www.niknote.online`,
     `📚 NikNote — AI Study App for Indian Students!
 
 ✍️ Text → Handwriting
-🤖 9 AI Teachers
+🤖 AI Teacher, Notes, Quiz, Flashcards
 📝 Quiz + Flashcards
 🆓 Free tier, no ads
 
@@ -142,7 +142,7 @@ Try now → https://www.niknote.online
 
 Features:
 - Convert typed text to 16+ handwriting styles
-- 9 AI agents (Teacher, Notes, Quiz, Flashcards, Mind Maps)
+- AI agents for teacher mode, notes, quizzes, flashcards and mind maps
 - 28+ offline topics with instant answers
 - Exam-focused: NCERT, CBSE, ICSE patterns
 - Free tier, no ads

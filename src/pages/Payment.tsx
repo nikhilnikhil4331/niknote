@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
   ArrowLeft, Check, Crown, Sparkles, CheckCircle, AlertCircle,
-  Loader2, CreditCard, Shield, ShieldCheck, Zap, Star, Clock
+  Loader2, CreditCard, Shield, ShieldCheck, Zap, Star, Clock,
+  Mic, Wand2, ScanLine
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -42,15 +43,14 @@ const plans: Plan[] = [
   },
 ];
 
+// The four tools the editor actually locks. The previous grid sold "Priority
+// AI" (never built), "Unlimited downloads" and paid handwriting styles (both
+// already free to everyone). See PricingPopup.tsx for the same list.
 const premiumFeatures = [
-  { icon: Sparkles, text: "AI Note Generator", desc: "Unlimited AI notes" },
-  { icon: Crown, text: "AI Solver", desc: "Solve any problem" },
-  { icon: Zap, text: "AI Flashcards", desc: "Auto study cards" },
-  { icon: Star, text: "Voice Dictation", desc: "Speak to write" },
-  { icon: Sparkles, text: "16+ Handwriting Styles", desc: "Your handwriting DNA" },
-  { icon: Crown, text: "PDF Export", desc: "Unlimited downloads" },
-  { icon: Zap, text: "Priority AI", desc: "Faster responses" },
-  { icon: Star, text: "AI Text Tools", desc: "Rewrite, summarize" },
+  { icon: Sparkles, text: "AI Writing Assistant", desc: "Rewrite, summarise, expand" },
+  { icon: Mic, text: "Voice Dictation", desc: "Speak instead of typing" },
+  { icon: Wand2, text: "AI Style Matcher", desc: "Match your real handwriting" },
+  { icon: ScanLine, text: "Handwriting Import", desc: "Photo of notes to text" },
 ];
 
 // Load Razorpay SDK dynamically — with mobile timeout
@@ -79,7 +79,7 @@ function loadRazorpayScript(): Promise<boolean> {
 }
 
 export default function PaymentPage() {
-  useDocumentTitle({ title: 'Go Premium — NikNote | ₹49/week Student Pro, ₹99/month Premium', description: 'Upgrade to NikNote Premium — Unlimited AI notes, 16+ handwriting styles, voice dictation, priority AI. Starting ₹49/week.' });
+  useDocumentTitle({ title: 'Go Premium — NikNote | ₹49/week Student Pro, ₹99/month Premium', description: 'NikNote Premium adds the AI writing assistant, voice dictation, AI style matching and handwriting import. ₹49/week or ₹99/month via UPI, cards or wallets.' });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
