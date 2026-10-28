@@ -21,106 +21,84 @@ import { trackClickCTA, trackGenerateLead } from '@/lib/tracking';
 
 const institutionPlans = [
   {
-    name: "School Starter",
-    price: "₹25,000",
+    name: "Teacher",
+    price: "₹999",
     period: "/year",
-    seats: "Up to 100 students",
+    seats: "1 teacher account",
     icon: School,
     color: "from-blue-500 to-indigo-600",
     features: [
-      "100 student seats",
-      "All premium features",
-      "Basic analytics dashboard",
-      "Email support",
-      "PDF export",
-      "Standard handwriting fonts",
+      "1 teacher login",
+      "Unlimited handwritten worksheets & answer keys",
+      "16+ handwriting styles",
+      "300 DPI print-ready PDF export",
+      "PDF merge / split / compress / e-sign tools",
+      "Works offline once installed",
     ]
   },
   {
-    name: "School Pro",
-    price: "₹75,000",
+    name: "Tuition Centre",
+    price: "₹4,999",
     period: "/year",
-    seats: "Up to 500 students",
+    seats: "Up to 5 teacher logins",
     icon: GraduationCap,
     popular: true,
     color: "from-purple-500 to-pink-600",
     features: [
-      "500 student seats",
-      "All premium features + AI",
-      "Advanced analytics & reports",
-      "Priority support",
-      "Custom branding (school logo)",
-      "All exam packs included",
-      "Teacher dashboard",
-      "Bulk student import",
+      "5 separate teacher logins",
+      "Everything in the Teacher plan",
+      "Question-paper and worksheet sets",
+      "30-minute onboarding call for your teachers",
+      "WhatsApp support on a real number",
+      "Annual invoice with GST details on request",
     ]
   },
   {
-    name: "Coaching Center",
-    price: "₹2,00,000",
-    period: "/year",
-    seats: "Up to 2,000 students",
+    name: "School / College Pilot",
+    price: "₹0",
+    period: "/30 days",
+    seats: "Up to 30 students",
     icon: Building2,
     color: "from-orange-500 to-red-600",
     features: [
-      "2,000 student seats",
-      "All premium + AI features",
-      "Full analytics suite",
-      "Dedicated account manager",
-      "White-label option",
-      "All exam packs (JEE/NEET/UPSC)",
-      "Custom content creation",
-      "API access",
-      "SSO integration",
-    ]
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    period: "",
-    seats: "Unlimited students",
-    icon: Crown,
-    color: "from-amber-500 to-yellow-600",
-    features: [
-      "Unlimited students",
-      "Everything in Coaching Center",
-      "On-premise deployment option",
-      "Custom SLA (99.9% uptime)",
-      "Dedicated support team",
-      "Custom AI model training",
-      "Multi-campus support",
-      "LMS integration",
-      "Data export & compliance",
-      "Quarterly business reviews",
+      "Free 30-day pilot for one department",
+      "30 student logins",
+      "We set it up with you on a call",
+      "No card, no contract, no auto-renewal",
+      "Feedback call on day 25",
+      "Continue only if it actually saves time",
     ]
   },
 ];
 
-const testimonials = [
+const notYetAvailable = [
+  "Teacher / admin dashboard",
+  "Bulk student import",
+  "Single sign-on (SSO)",
+  "White-label branding",
+  "LMS integration",
+  "Per-student analytics",
+];
+
+const honestNotes = [
   {
-    name: "Dr. Rajesh Sharma",
-    role: "Principal, Delhi Public School",
-    text: "NikNote has transformed how our students take notes. The AI-powered features help them learn faster and retain more.",
-    rating: 5,
+    title: "No invented case studies",
+    text: "NikNote is early. We will not put up logos, ratings or quotes from schools we have never worked with. What you see here is what exists today.",
   },
   {
-    name: "Priya Verma",
-    role: "Director, Kota Coaching Center",
-    text: "Our students love the handwriting feature — it makes their notes feel personal. The JEE/NEET packs are a game-changer.",
-    rating: 5,
+    title: "Start with a free pilot",
+    text: "Run it with one department for 30 days at no cost. If it does not save your teachers real time, walk away and keep your money.",
   },
   {
-    name: "Ankit Gupta",
-    role: "HOD Mathematics, IIT Delhi",
-    text: "The AI solver is incredibly accurate. Students can verify their work and learn from step-by-step solutions.",
-    rating: 5,
+    title: "You talk to the person who built it",
+    text: "Institution conversations go directly to Nikhil Jatav, the developer. No sales layer, no account manager you cannot reach.",
   },
 ];
 
 const faqs = [
   {
-    q: "How does NikNote work for schools?",
-    a: "We provide a branded platform for your school. Students get premium access, teachers get a dashboard to track progress, and administrators get analytics. Setup takes less than 48 hours."
+    q: "How does NikNote actually work for a teacher?",
+    a: "A teacher types or pastes questions and answers, picks a handwriting style, and exports print-ready handwritten pages as a PDF. It is used for worksheets, assignments, test papers and answer keys. There is no teacher dashboard or student analytics yet — we are being upfront about that."
   },
   {
     q: "Can students use NikNote on mobile?",
@@ -132,7 +110,7 @@ const faqs = [
   },
   {
     q: "Can we try before buying?",
-    a: "Yes! We offer a 14-day free trial for institutions. No credit card required. Set up your trial in minutes."
+    a: "Yes. We run a free 30-day pilot for one department, up to 30 students logins. No card, no contract and no auto-renewal. If it does not save your teachers time, you stop and owe nothing."
   },
   {
     q: "What about regional language support?",
@@ -145,7 +123,7 @@ const faqs = [
 ];
 
 const B2BPage = () => {
-  useDocumentTitle({ title: 'NikNote for Schools & Coaching | AI Learning Platform — Starting ₹25,000/year', description: 'NikNote for schools and coaching centers — AI-powered learning platform. 92% cheaper than printed notes. Teacher dashboard, student analytics. Starting ₹25,000/year.' });
+  useDocumentTitle({ title: 'NikNote for Teachers, Tuition Centres & Schools | Handwritten Worksheet Maker', description: 'Turn typed questions into realistic handwritten worksheets, assignments and answer keys in seconds. Teacher plans from ₹999/year. Free 30-day pilot for one department.' });
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', institution: '', students: '', message: '' });
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
@@ -249,7 +227,7 @@ const B2BPage = () => {
             className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8"
           >
             From handwriting to AI — give your students the smartest note-taking platform. 
-            Trusted by 2,500+ students. Built for Indian education.
+            Built by a developer who still answers his own support messages.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -282,9 +260,9 @@ const B2BPage = () => {
             className="mt-12 grid grid-cols-3 gap-6 max-w-md mx-auto"
           >
             {[
-              { value: "2,500+", label: "Students" },
-              { value: "99.9%", label: "Uptime" },
-              { value: "4.8★", label: "Rating" },
+              { value: "16+", label: "Handwriting styles" },
+              { value: "300", label: "DPI export" },
+              { value: "30", label: "Day free pilot" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-2xl font-bold text-primary">{stat.value}</div>
@@ -328,8 +306,8 @@ const B2BPage = () => {
       {/* Plans */}
       <section id="plans" className="py-16 px-4 bg-secondary/20">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-3">Institution Plans</h2>
-          <p className="text-center text-muted-foreground mb-10">Starting at just ₹25,000/year for 100 students</p>
+          <h2 className="text-2xl font-bold text-center mb-3">Plans for teachers and institutions</h2>
+          <p className="text-center text-muted-foreground mb-10">Start free for 30 days. Paid plans from ₹999/year per teacher.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {institutionPlans.map((plan, i) => (
               <motion.div
@@ -377,7 +355,7 @@ const B2BPage = () => {
                     variant={plan.popular ? 'default' : 'outline'}
                     onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
                   >
-                    {plan.price === 'Custom' ? 'Contact Sales' : 'Get Started'}
+                    {plan.price === '₹0' ? 'Start Free Pilot' : 'Request this plan'}
                   </Button>
                 </div>
               </motion.div>
@@ -393,32 +371,47 @@ const B2BPage = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Straight talk */}
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-10">What Educators Say</h2>
+          <h2 className="text-2xl font-bold text-center mb-3">Straight talk before you buy</h2>
+          <p className="text-center text-sm text-muted-foreground mb-10">
+            We would rather lose a sale than sell you something that does not exist yet.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {testimonials.map((t, i) => (
+            {honestNotes.map((n, i) => (
               <motion.div
-                key={t.name}
+                key={n.title}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
                 className="p-5 rounded-2xl bg-card border border-border/30"
               >
-                <div className="flex items-center gap-1 mb-3">
-                  {Array.from({ length: t.rating }).map((_, j) => (
-                    <Star key={j} className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">"{t.text}"</p>
-                <div>
-                  <div className="text-sm font-semibold">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.role}</div>
-                </div>
+                <div className="text-sm font-semibold mb-2">{n.title}</div>
+                <p className="text-sm text-muted-foreground">{n.text}</p>
               </motion.div>
             ))}
+          </div>
+
+          <div className="mt-8 p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5">
+            <div className="text-sm font-semibold text-amber-700 mb-2">
+              Not included in any plan today
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              These are on the roadmap. They are <strong>not</strong> part of what you are buying right now,
+              and we will not bill you for them.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {notYetAvailable.map((item) => (
+                <span
+                  key={item}
+                  className="text-xs px-2.5 py-1 rounded-full bg-background border border-border/50 text-muted-foreground"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -426,26 +419,29 @@ const B2BPage = () => {
       {/* ROI Calculator */}
       <section className="py-16 px-4 bg-secondary/20">
         <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-2xl font-bold mb-3">ROI Calculator</h2>
-          <p className="text-muted-foreground mb-6">See how much your institution saves with NikNote</p>
+          <h2 className="text-2xl font-bold mb-3">Teacher time saved</h2>
+          <p className="text-muted-foreground mb-6">The real saving is your teachers' evenings, not paper.</p>
           <div className="bg-card rounded-2xl border border-border/30 p-6 space-y-4">
             <div className="flex items-center justify-between text-sm">
-              <span>Traditional printed notes cost/student/year</span>
-              <span className="font-bold">₹2,000</span>
+              <span>Hand-copying a 2-page worksheet</span>
+              <span className="font-bold">~40 min</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span>NikNote cost/student/year (Pro Plan)</span>
-              <span className="font-bold text-primary">₹150</span>
+              <span>Same worksheet with NikNote</span>
+              <span className="font-bold text-primary">~2 min</span>
             </div>
             <div className="h-px bg-border" />
             <div className="flex items-center justify-between text-sm">
-              <span>Savings per student per year</span>
-              <span className="font-bold text-green-600">₹1,850 (92.5%)</span>
+              <span>Time saved per worksheet</span>
+              <span className="font-bold text-green-600">38 minutes</span>
             </div>
             <div className="flex items-center justify-between text-sm bg-green-500/10 p-3 rounded-xl">
-              <span>For 500 students — Annual Savings</span>
-              <span className="font-bold text-green-700 text-lg">₹9,25,000</span>
+              <span>3 worksheets a week, 40-week year</span>
+              <span className="font-bold text-green-700 text-lg">76 hours saved</span>
             </div>
+            <p className="text-[11px] text-muted-foreground pt-1">
+              Estimate, not a guarantee. Based on writing a worksheet by hand versus generating and printing it.
+            </p>
           </div>
         </div>
       </section>
