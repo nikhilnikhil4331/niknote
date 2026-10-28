@@ -59,11 +59,22 @@ source, not guessed.
 | I | Sidebar `/focus` entry + Premium card; new `pages/DesktopFocus.tsx` + route | `DesktopShell.tsx`, `App.tsx` |
 | J | QA: typecheck, lint, vitest, production build, visual screenshots (puppeteer available) | repo tooling |
 
-## 5. Verification checklist (run after implementation)
+## 5. Verification checklist — final status (2026-10-28)
 
-- [ ] Dial drag changes the same duration state as preset buttons + custom input (incl. crossing 12 o'clock without jumps).
-- [ ] Countdown accurate across background tabs (timestamp-derived).
-- [ ] Stopwatch laps correct; sessions saved once.
-- [ ] Notes/tasks/habits survive refresh; graphs update after recording a real session.
-- [ ] `npm run typecheck`, `npm run lint` (no new errors), `npm run test`, `npm run build` all pass.
-- [ ] Existing desktop pages (`/notebooks`, `/tasks`, `/calendar`…) unchanged in behaviour.
+- [x] Dial drag changes the same duration state as preset buttons + custom input (incl. crossing 12 o'clock without jumps) — `dialMath.ts` `unwrapDialAngle`, 15 unit tests; pointer + touch (Pointer Events) + keyboard (`role="slider"`, arrows/PageUp/Home/End).
+- [x] Countdown accurate across background tabs — timestamp-based (`endAt`), 250 ms UI ticks + `visibilitychange` re-sync.
+- [x] Stopwatch laps correct; sessions saved once — `lapDuration`/`lapExtremes` tested; recording deduped via instant key `${phase}|${sessionStartedAt}|${roundsDone}|${totalSec}` + store-level last-entry guard.
+- [x] Notes/tasks/habits survive refresh; graphs update after recording a real session — all stores localStorage-persisted; KPIs, week/month/year chart and donut aggregate `niknote.desktop.*` stores only; delta hidden when there is no real baseline.
+- [x] `npm run typecheck` (tsc, 0 errors), `npm run lint` (0 errors/0 warnings on all new/changed files — 371 lint errors elsewhere are pre-existing, verified at baseline commit), `npm run test` (**641/641**; the two dist-dependent suites only fail when `dist/` is absent and were green here because build ran first), `npm run build` (passes; 35 routes prerendered).
+- [x] Existing desktop pages unchanged in behaviour — additive props only; Notes/Calendar gained pin-ordering / focus-session items on top of the original flows.
+- [x] Guest + cloud login paths untouched (`useDesktopNotes` handoff identical); localStorage devices notes intact.
+
+## 6. Shipped beyond the table above
+
+- Sidebar custom Space management (hover kebab → rename/delete; defaults & note-backed folders protected).
+- Right rail: compact timer + Today's tasks (play-to-link with the timer) + habit rings + mini calendar dots.
+- Desktop `/focus` page with the full panel, settings, session history (delete), and task linking.
+- Tasks: undo-on-delete snackbar, tag/time chips, priority, inline add.
+- Calendar shows completed focus sessions (⏱ items) + day agenda totals.
+- ⌘K palette searches real content (notes open straight in the editor) only while typing.
+- Optional WebAudio completion chime (`src/lib/chime.ts`) behind the user setting.
