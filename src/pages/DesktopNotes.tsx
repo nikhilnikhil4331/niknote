@@ -9,7 +9,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Search, Plus, Table2, KanbanSquare, LayoutGrid, List, CalendarDays,
-  Star, MoreHorizontal, FileText, Pencil, FolderInput, Trash2, Zap, X,
+  Star, Pin, MoreHorizontal, FileText, Pencil, FolderInput, Trash2, Zap, X,
 } from 'lucide-react';
 import { DesktopShell } from '@/components/desktop/DesktopShell';
 import { NoteCard, StatusChip, EmptyState, STATUS_STYLE } from '@/components/desktop/widgets';
@@ -36,7 +36,7 @@ const DesktopNotes: React.FC = () => {
   const spaceParam = new URLSearchParams(search).get('space');
 
   const { active, trashed, loading, openNote, openNew, createNote, renameNote, moveToSpace, trashNote } = useDesktopNotes();
-  const { statusOf, isFav, setStatus, toggleFav, setPrevFolder } = useNoteMeta();
+  const { statusOf, isFav, isPinned, setStatus, toggleFav, togglePinned, setPrevFolder } = useNoteMeta();
 
   const folders = useMemo(
     () => Array.from(new Set(active.map((n) => n.folder).filter(Boolean) as string[])),
@@ -80,6 +80,12 @@ const DesktopNotes: React.FC = () => {
     }
     return list;
   }, [active, spaceParam, favOnly, query, isFav]);
+
+  /** Display order: pinned notes float to the top (kept stable otherwise). */
+  const displayOrdered = useMemo(
+    () => [...filtered].sort((a, b) => (isPinned(b.id) ? 1 : 0) - (isPinned(a.id) ? 1 : 0)),
+    [filtered, isPinned],
+  );
 
   const setSpace = (name: string | null) => {
     navigate(name ? `/notebooks?space=${encodeURIComponent(name)}` : '/notebooks', { replace: true });
@@ -148,6 +154,10 @@ const DesktopNotes: React.FC = () => {
         >
           <button onClick={() => { setMenuFor(null); void openNote(note); }}><FileText size={14} /> Open</button>
           <button onClick={() => { setMenuFor(null); openRename(note); }}><Pencil size={14} /> Rename</button>
+          <button onClick={() => togglePinned(note.id)}>
+            <Pin size={14} color={isPinned(note.id) ? '#D92C9B' : 'currentColor'} fill={isPinned(note.id) ? '#D92C9B' : 'none'} />
+            {isPinned(note.id) ? 'Unpin' : 'Pin to top'}
+          </button>
           <button onClick={() => toggleFav(note.id)}>
             <Star size={14} fill={isFav(note.id) ? '#F5A623' : 'none'} color={isFav(note.id) ? '#F5A623' : 'currentColor'} />
             {isFav(note.id) ? 'Remove favourite' : 'Add to favourites'}
@@ -207,7 +217,7 @@ const DesktopNotes: React.FC = () => {
           </tr>
         </thead>
         <tbody>
-          {filtered.map((n, i) => (
+          {displayOrdered.map((n, i) => (
             <tr key={n.id} onClick={() => void openNote(n)}>
               <td>
                 <span className="flex items-center gap-2.5 min-w-0">
@@ -313,9 +323,9 @@ const DesktopNotes: React.FC = () => {
 
   const renderGallery = () => (
     <div className="grid grid-cols-4 gap-4">
-      {filtered.map((n) => (
+      {displayOrdered.map((n) => (
         <div key={n.id} className="relative group">
-          <NoteCard note={n} fav={isFav(n.id)} onOpen={(note) => void openNote(note)} />
+          <NoteCard note={n} fav={isFav(n.id)} pinnedBadge={isPinned(n.id)} onOpen={(note) => void openNote(note)} />
           <span className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
             {menuBtn(n, true)}
           </span>
@@ -329,7 +339,7 @@ const DesktopNotes: React.FC = () => {
 
   const renderList = () => (
     <div className="nd-card divide-y" style={{ ['--tw-divide-opacity' as string]: 1 }}>
-      {filtered.map((n) => (
+      {displayOrdered.map((n) => (
         <div
           key={n.id}
           className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[#F8F7FF] transition-colors"

@@ -3,7 +3,7 @@
 // ============================================================
 
 import React from 'react';
-import { ArrowRight, Star } from 'lucide-react';
+import { ArrowRight, Pin, Star } from 'lucide-react';
 import type { DNote } from './notes';
 import { timeAgo, type TaskStatus } from './store';
 
@@ -113,18 +113,43 @@ export function PaperPreview({
 export function NoteCard({
   note,
   fav,
+  pinnedBadge,
+  listMode,
   onOpen,
   footerMeta,
 }: {
   note: DNote;
   fav?: boolean;
+  /** Show the magenta pin badge on the paper preview. */
+  pinnedBadge?: boolean;
+  /** Horizontal layout for the home list view. */
+  listMode?: boolean;
   onOpen: (n: DNote) => void;
   footerMeta?: React.ReactNode;
 }) {
   return (
-    <button className="nd-note-card" onClick={() => onOpen(note)} title={note.title}>
-      <PaperPreview title={note.title} preview={note.preview} cover={note.cover} idSeed={note.id} />
-      <div className="px-3.5 py-3">
+    <button
+      className="nd-note-card"
+      onClick={() => onOpen(note)}
+      title={note.title}
+      style={listMode ? { display: 'flex', alignItems: 'stretch' } : undefined}
+    >
+      <div style={listMode ? { width: 132, flex: 'none', position: 'relative' } : { position: 'relative' }}>
+        <PaperPreview title={note.title} preview={note.preview} cover={note.cover} idSeed={note.id} height={listMode ? 92 : 118} />
+        {pinnedBadge && (
+          <span
+            className="grid place-items-center rounded-full"
+            style={{
+              position: 'absolute', top: 8, left: 8, width: 22, height: 22,
+              background: '#fff', boxShadow: '0 2px 8px rgba(217,44,155,0.35)',
+            }}
+            aria-label="Pinned"
+          >
+            <Pin size={11} color="#D92C9B" fill="#D92C9B" />
+          </span>
+        )}
+      </div>
+      <div className="px-3.5 py-3" style={listMode ? { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' } : undefined}>
         <div className="flex items-center gap-1.5">
           <span
             className="text-[13px] font-semibold truncate"

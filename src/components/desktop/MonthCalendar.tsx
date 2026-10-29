@@ -11,7 +11,7 @@ export interface CalItem {
   title: string;
   date: string; // ISO or YYYY-MM-DD
   color: string;
-  kind: 'note' | 'task';
+  kind: 'note' | 'task' | 'focus';
 }
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -109,7 +109,7 @@ export const MonthCalendar: React.FC<{
                   title={it.title}
                   onClick={(e) => { e.stopPropagation(); onItemClick(it); }}
                 >
-                  {it.kind === 'task' ? '✓ ' : ''}{it.title}
+                  {it.kind === 'task' ? '✓ ' : it.kind === 'focus' ? '⏱ ' : ''}{it.title}
                 </div>
               ))}
               {dayItems.length > 3 && (

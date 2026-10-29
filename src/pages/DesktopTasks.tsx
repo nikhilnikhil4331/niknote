@@ -5,14 +5,26 @@
 // ============================================================
 
 import React, { useMemo, useState } from 'react';
-import { Plus, Check, Trash2, CalendarDays, ListChecks } from 'lucide-react';
+import { Plus, Check, Trash2, CalendarDays, ListChecks, Tag } from 'lucide-react';
 import { DesktopShell } from '@/components/desktop/DesktopShell';
 import { useDesktopNotes } from '@/components/desktop/notes';
-import { useTasks, TASK_COLUMNS, todayKey, type TaskStatus, type NikTask } from '@/components/desktop/store';
+import { useTasks, TASK_COLUMNS, TASK_TAGS, todayKey, type TaskStatus, type NikTask } from '@/components/desktop/store';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
+const tagColorOf = (name?: string) => TASK_TAGS.find((x) => x.name === name)?.color ?? '#766A86';
+
 const DesktopTasks: React.FC = () => {
-  const { tasks, addTask, updateTask, removeTask, toggleDone } = useTasks();
+  const { tasks, addTask, updateTask, removeTask, restoreTask, toggleDone } = useTasks();
+
+  /** Destructive action with a real undo path. */
+  const deleteTask = (t: NikTask) => {
+    removeTask(t.id);
+    toast(`Task deleted: “${t.title}”`, {
+      action: { label: 'Undo', onClick: () => restoreTask(t) },
+      duration: 5000,
+    });
+  };
   const { active, trashed } = useDesktopNotes();
 
   const [dragId, setDragId] = useState<string | null>(null);
@@ -132,13 +144,39 @@ const DesktopTasks: React.FC = () => {
                         )}
                         <button
                           className="nd-icon-btn !w-6 !h-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => removeTask(t.id)}
-                          title="Delete task"
+                          onClick={() => deleteTask(t)}
+                          title="Delete task (undo available)"
                         >
                           <Trash2 size={13} />
                         </button>
                       </div>
-                      <div className="flex items-center gap-2 mt-2 ml-[29px]">
+                      <div className="flex items-center gap-2 mt-2 ml-[29px] flex-wrap">
+                        {t.tag && (
+                          <span className="nd-tag" style={{ background: `${tagColorOf(t.tag)}1c`, color: tagColorOf(t.tag) }}>
+                            {t.tag}
+                          </span>
+                        )}
+                        {t.time && (
+                          <span className="text-[10.5px] font-bold tabular-nums" style={{ color: 'var(--nd-text-3)' }}>{t.time}</span>
+                        )}
+                        {!t.tag && !editingId && (
+                          <label
+                            className="relative inline-flex items-center gap-1 cursor-pointer text-[10.5px] font-semibold rounded-full px-2 py-[2px] opacity-0 group-hover:opacity-100 transition-opacity"
+                            style={{ background: '#F4F3FA', color: 'var(--nd-text-3)' }}
+                            title="Add category"
+                          >
+                            <Tag size={10} /> tag
+                            <select
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                              value=""
+                              aria-label={`Tag task ${t.title}`}
+                              onChange={(e) => updateTask(t.id, { tag: e.target.value || undefined })}
+                            >
+                              <option value="">No tag</option>
+                              {TASK_TAGS.map((x) => <option key={x.name} value={x.name}>{x.name}</option>)}
+                            </select>
+                          </label>
+                        )}
                         <label
                           className="relative inline-flex items-center gap-1 cursor-pointer text-[11px] font-semibold rounded-full px-2 py-[2px] transition-colors"
                           style={
