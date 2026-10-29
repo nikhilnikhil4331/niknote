@@ -109,16 +109,16 @@ export const ExitIntentPopup: React.FC = () => {
                   </div>
                 </div>
                 <h3 className="text-xl font-bold text-center text-foreground">
-                  Wait! 🎁 Special Offer
+                  Explore Premium
                 </h3>
               </div>
 
               {/* Content */}
               <div className="p-6 pt-2 space-y-4">
                 <p className="text-center text-sm text-muted-foreground">
-                  Premium features sirf <span className="font-bold text-foreground">₹49/week</span> mein.
+                  Premium features sirf <span className="font-bold text-foreground">₹49 for 7 days</span> mein.
                   <br />
-                  <span className="text-muted-foreground">Koi countdown nahi — jab chaho band kar do.</span>
+                  <span className="text-muted-foreground">One-time payment; automatic renewal nahi.</span>
                 </p>
 
                 {/* Quick benefits */}
@@ -139,12 +139,12 @@ export const ExitIntentPopup: React.FC = () => {
                 <button
                   onClick={() => {
                     setShow(false);
-                    navigate('/payment?plan=monthly');
+                    navigate('/payment?plan=weekly');
                   }}
                   className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 text-white font-semibold text-sm hover:from-orange-400 hover:via-pink-400 hover:to-purple-500 transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
                 >
                   <Zap className="h-4 w-4" />
-                  Unlock Premium — ₹49/week
+                  Unlock Premium — ₹49 for 7 days
                   <ArrowRight className="h-4 w-4" />
                 </button>
 
@@ -160,7 +160,7 @@ export const ExitIntentPopup: React.FC = () => {
                 </button>
 
                 <p className="text-center text-[10px] text-muted-foreground">
-                  🔒 Secured by Razorpay • Cancel anytime
+                  🔒 Secured by Razorpay • No automatic renewal
                 </p>
               </div>
             </div>

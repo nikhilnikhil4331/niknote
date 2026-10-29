@@ -164,23 +164,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             transition={{ duration: 0.6, delay: 0.5 }}
             className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} className="text-amber-400 text-sm">★</span>
-                ))}
-              </div>
-              <span className="text-sm font-medium text-foreground">4.9/5 Rating</span>
-            </div>
-            <div className="hidden sm:block w-px h-5 bg-border" />
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <BookOpen className="w-4 h-4 text-primary" />
-              <span>28+ subjects with AI explanations</span>
+              <span>AI explanations for study topics</span>
             </div>
             <div className="hidden sm:block w-px h-5 bg-border" />
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Brain className="w-4 h-4 text-purple-500" />
-              <span>Works without internet!</span>
+              <span>Some editing may work offline when cached</span>
             </div>
           </motion.div>
         </div>

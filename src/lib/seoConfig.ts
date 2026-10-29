@@ -166,7 +166,7 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
     path: '/schools',
     title: 'NikNote for Teachers & Tuition Centres — Handwritten Worksheet Maker',
     description:
-      'Turn typed questions into realistic handwritten worksheets, assignments and answer keys in minutes. Teacher plans from ₹999/year. Free 30-day pilot for one department.',
+      'Create handwritten worksheets and PDFs with the free editor. Ask about NikNote for your school or coaching centre.',
     canonicalPath: '/schools',
     robots: 'index, follow',
     pageType: 'b2b',

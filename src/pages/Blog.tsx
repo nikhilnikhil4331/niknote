@@ -38,7 +38,7 @@ function getContextualToolLinks(post: BlogPost): { label: string; to: string; de
     links.push({
       label: 'NikNote for Schools & Coaching',
       to: '/schools',
-      desc: 'Teacher plans from ₹999/year, tuition centres from ₹4,999/year, free 30-day pilot.',
+      desc: 'Explore the free editor and ask about your institution’s needs.',
     });
   } else {
     links.push({

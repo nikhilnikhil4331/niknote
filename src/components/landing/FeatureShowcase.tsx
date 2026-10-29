@@ -22,7 +22,7 @@ const features = [
   {
     icon: Brain,
     title: '🧠 AI Teacher (Hindi + English)',
-    description: 'Ask any doubt — Newton\'s laws, Photosynthesis, Algebra — get instant explanation in Hindi & English. Works WITHOUT internet!',
+    description: 'Ask study questions in Hindi or English. Cloud AI needs an internet connection.',
     badge: 'NEW',
     badgeColor: 'bg-purple-500',
   },
@@ -30,7 +30,7 @@ const features = [
     icon: Target,
     title: '📝 Quiz & Flashcard Generator',
     description: 'Enter any topic, get quiz questions + flashcards instantly. Exam revision ka best way! CBSE, JEE, NEET pattern.',
-    badge: 'POPULAR',
+    badge: 'STUDY',
     badgeColor: 'bg-red-500',
   },
   {
@@ -45,7 +45,7 @@ const features = [
   },
   {
     icon: FileText,
-    title: '📄 14 Paper Styles',
+    title: '📄 Paper Styles',
     description: 'Ruled, college-ruled, graph, dotted, plain, legal, and more. Exactly like your school/college notebooks!',
   },
   {
@@ -78,7 +78,7 @@ const features = [
   {
     icon: Mic,
     title: '🎤 Voice Dictation',
-    description: 'Speak your thoughts and watch them transform into handwritten notes in real time. Hindi voice bhi kaam karta hai!',
+    description: 'Dictate notes in supported browsers. Language availability depends on your browser and device.',
   },
   {
     icon: Sliders,

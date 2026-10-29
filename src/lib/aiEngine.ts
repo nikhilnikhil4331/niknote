@@ -164,11 +164,12 @@ export function saveCustomAIKeys(keys: AstaCustomKeys): void {
 
 function getEffectiveClientKeys(): { larprouter: string; groq: string; gemini: string; openai: string } {
   const custom = readCustomAIKeys();
-  const env = (import.meta as any)?.env || {};
-  let larprouter = cleanClientApiKey(custom.larprouterKey || env.VITE_LARPROUTER_KEY);
-  let groq = cleanClientApiKey(custom.groqKey || env.VITE_GROQ_KEY);
-  const gemini = cleanClientApiKey(custom.geminiKey || env.VITE_GEMINI_KEY);
-  let openai = cleanClientApiKey(custom.openaiKey || env.VITE_OPENAI_KEY);
+  // Provider credentials configured on the server must never be bundled into
+  // browser JavaScript. Only keys explicitly supplied by this user live here.
+  let larprouter = cleanClientApiKey(custom.larprouterKey);
+  let groq = cleanClientApiKey(custom.groqKey);
+  const gemini = cleanClientApiKey(custom.geminiKey);
+  let openai = cleanClientApiKey(custom.openaiKey);
 
   // Auto-route `lrsk-...` keys even if a user pasted them into OpenAI / Groq by mistake
   if (!larprouter && openai.startsWith('lrsk-')) {
@@ -372,7 +373,7 @@ const SANDBOX_HOST_PATTERN =
 export function getRemoteAstraGatewayUrl(): string | null {
   try {
     if (typeof (globalThis as any).vi !== 'undefined') return null;
-    const explicit = String((import.meta as any)?.env?.VITE_NIKAI_REMOTE_AI_URL || '').trim();
+    const explicit = String(import.meta.env.VITE_NIKAI_REMOTE_AI_URL || '').trim();
     if (explicit) return explicit;
 
     const cap = (globalThis as any)?.Capacitor;

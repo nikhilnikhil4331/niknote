@@ -1,106 +1,86 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+// The browser cannot choose the price or the owner of an order. Orders are
+// persisted before Checkout opens so a captured payment can be recovered even
+// when the browser never receives Razorpay's callback.
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
+const prices: Record<string, number> = { weekly: 4900, monthly: 9900 };
+const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+
+  const supabaseUrl = (Deno.env.get('SUPABASE_URL') || '').replace(/\/+$/, '');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+  const keyId = Deno.env.get('RAZORPAY_KEY_ID') || '';
+  const keySecret = Deno.env.get('RAZORPAY_KEY_SECRET') || '';
+  const mode = keyId.startsWith('rzp_live_') ? 'live' : keyId.startsWith('rzp_test_') ? 'test' : 'unconfigured';
+
+  // This reveals no credential or account data; it describes configuration,
+  // not provider validation or bank settlement.
+  if (req.method === 'GET') {
+    return reply({ mode, configured: Boolean(supabaseUrl && anonKey && serviceKey && keySecret && mode === 'live') });
+  }
+  if (req.method !== 'POST') return reply({ error: 'Method not allowed' }, 405);
+  if (!supabaseUrl || !anonKey || !serviceKey || !keySecret || mode !== 'live') {
+    return reply({ error: 'Live payments are not configured. No payment was attempted.' }, 503);
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const authorization = req.headers.get('Authorization') || '';
+    if (!/^Bearer\s+\S+$/i.test(authorization)) return reply({ error: 'Unauthorized' }, 401);
+    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { apikey: anonKey, Authorization: authorization },
+    });
+    if (!userRes.ok) return reply({ error: 'Unauthorized' }, 401);
+    const user = await userRes.json();
+    if (typeof user?.id !== 'string' || !user.id) return reply({ error: 'Unauthorized' }, 401);
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const razorpayKeyId = Deno.env.get("RAZORPAY_KEY_ID");
-    const razorpayKeySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+    const body = await req.json().catch(() => ({}));
+    const planCode = typeof body?.planCode === 'string' ? body.planCode : '';
+    const amount = prices[planCode];
+    if (!Object.hasOwn(prices, planCode) || !amount) return reply({ error: 'Invalid plan code' }, 400);
 
-    if (!razorpayKeyId || !razorpayKeySecret) {
-      console.error("Razorpay credentials not configured");
-      return new Response(JSON.stringify({ error: "Payment system not configured" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const adminHeaders = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
+    const since = new Date(Date.now() - 60_000).toISOString();
+    const existingUrl = `${supabaseUrl}/rest/v1/checkout_orders?select=order_id&user_id=eq.${encodeURIComponent(user.id)}&created_at=gte.${encodeURIComponent(since)}&limit=5`;
+    const existing = await fetch(existingUrl, { headers: adminHeaders });
+    if (!existing.ok) return reply({ error: 'Checkout is temporarily unavailable. No payment was attempted.' }, 503);
+    const recentOrders = await existing.json();
+    if (!Array.isArray(recentOrders)) return reply({ error: 'Checkout is temporarily unavailable. No payment was attempted.' }, 503);
+    if (recentOrders.length >= 5) return reply({ error: 'Too many checkout attempts. Please wait a minute.' }, 429);
 
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await adminClient.auth.getUser(token);
-
-    if (userError || !userData?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const userId = userData.user.id;
-    const userEmail = userData.user.email || "";
-
-    const body = await req.json();
-    const { planCode } = body;
-
-    if (!planCode || !["weekly", "monthly"].includes(planCode)) {
-      return new Response(JSON.stringify({ error: "Invalid plan code" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const amountInPaise = planCode === "weekly" ? 4900 : 9900;
-    const planLabel = planCode === "weekly" ? "Weekly" : "Monthly";
-
-    const credentials = base64Encode(`${razorpayKeyId}:${razorpayKeySecret}`);
-    const orderRes = await fetch("https://api.razorpay.com/v1/orders", {
-      method: "POST",
-      headers: {
-        "Authorization": `Basic ${credentials}`,
-        "Content-Type": "application/json",
-      },
+    const orderRes = await fetch('https://api.razorpay.com/v1/orders', {
+      method: 'POST',
+      headers: { Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        amount: amountInPaise,
-        currency: "INR",
-        receipt: `niknote_${userId.slice(0, 8)}_${Date.now()}`,
-        notes: {
-          user_id: userId,
-          plan_code: planCode,
-        },
+        amount, currency: 'INR', receipt: `nik_${user.id.slice(0, 8)}_${Date.now()}`,
+        notes: { user_id: user.id, plan_code: planCode },
       }),
     });
-
-    if (!orderRes.ok) {
-      const errBody = await orderRes.text();
-      console.error(`Razorpay order creation failed [${orderRes.status}]: ${errBody}`);
-      return new Response(JSON.stringify({ error: "Failed to create payment order" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!orderRes.ok) return reply({ error: 'Payment provider could not create an order. No payment was attempted.' }, 502);
+    const order = await orderRes.json();
+    if (typeof order?.id !== 'string' || !/^order_[A-Za-z0-9]+$/.test(order.id) || order.amount !== amount || order.currency !== 'INR') {
+      return reply({ error: 'Payment provider returned an invalid order. No payment was attempted.' }, 502);
     }
 
-    const order = await orderRes.json();
-    console.log(`Order created: ${order.id} for user ${userId}, plan: ${planCode}`);
+    const saved = await fetch(`${supabaseUrl}/rest/v1/checkout_orders`, {
+      method: 'POST',
+      headers: { ...adminHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ order_id: order.id, user_id: user.id, plan_code: planCode, amount_paise: amount }),
+    });
+    if (!saved.ok) return reply({ error: 'Checkout is temporarily unavailable. No payment was attempted.' }, 503);
 
-    return new Response(JSON.stringify({
-      orderId: order.id,
-      amount: amountInPaise,
-      currency: "INR",
-      keyId: razorpayKeyId,
-      planCode,
-      planLabel,
-      userEmail,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return reply({
+      orderId: order.id, amount, currency: 'INR', keyId, planCode,
+      planLabel: planCode === 'weekly' ? 'Weekly' : 'Monthly',
+      userEmail: typeof user.email === 'string' ? user.email : '',
     });
   } catch (error) {
-    console.error("Error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error('Order creation failed', error);
+    return reply({ error: 'Checkout is temporarily unavailable. No payment was attempted.' }, 503);
   }
 });

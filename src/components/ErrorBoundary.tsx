@@ -7,7 +7,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
 
-const isDev = typeof import.meta !== 'undefined' && import.meta.env?.DEV;
+const isDev = typeof import.meta !== 'undefined' && import.meta.env.DEV;
 
 interface Props {
   children: ReactNode;

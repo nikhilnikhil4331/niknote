@@ -12,7 +12,6 @@ import { DisclaimerBanner } from './DisclaimerBanner';
 import { LandingFooter } from './LandingFooter';
 import { ReferralWidget } from '@/components/promotion/ReferralWidget';
 import { TrustBar } from '@/components/premium/TrustBar';
-import { LiveActivityFeed } from '@/components/urgency/LiveActivityFeed';
 import { ExitIntentPopup } from '@/components/urgency/ExitIntentPopup';
 import { MobilePremiumBar } from '@/components/urgency/MobilePremiumBar';
 
@@ -83,7 +82,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </main>
 
       {/* Conversion urgency overlays */}
-      <LiveActivityFeed />
       <ExitIntentPopup />
       <MobilePremiumBar />
     </div>

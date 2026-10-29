@@ -30,7 +30,7 @@ const plans = [
   {
     name: 'Student Pro',
     price: '₹49',
-    period: '/week',
+    period: ' / 7 days',
     description: 'Try karke dekho! ☕',
     // Only the four tools the editor actually locks behind premiumLocked.
     // "Priority AI responses", "No watermark PDF" and paid handwriting styles
@@ -42,20 +42,20 @@ const plans = [
       '📷 Handwriting import — photo of notes to text',
       '📦 Plus everything in Free',
     ],
-    cta: 'Try ₹49/week',
+    cta: 'Try ₹49 for 7 days',
     highlighted: false,
     link: '/payment?plan=weekly',
   },
   {
     name: 'Premium',
     price: '₹99',
-    period: '/month',
-    description: 'Best value — ek chai se sasta! ☕',
+    period: ' / 30 days',
+    description: 'More time at a lower daily rate',
     features: [
       '📦 Everything in Student Pro',
-      '🗓️ Billed monthly, not weekly',
+      '🗓️ 30 days of access',
       '💰 About half the weekly rate',
-      '🚪 Cancel yourself, any time',
+      '🚪 One-time payment; no automatic renewal',
     ],
     cta: 'Get Premium 🔥',
     highlighted: true,
@@ -78,7 +78,7 @@ export const PricingTeaser: React.FC = () => {
         >
           <span className="text-sm font-semibold text-primary uppercase tracking-wider">Pricing</span>
           <h2 className="text-3xl sm:text-4xl font-bold mt-3 mb-4 text-foreground">
-            Simple Pricing — Ek Chai Se Sasta! ☕
+            Simple pricing, on your terms
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
             Free mein shuru karo, jab zaroorat ho tab upgrade karo. Hidden charges nahi!
@@ -102,7 +102,7 @@ export const PricingTeaser: React.FC = () => {
               {plan.highlighted && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-primary to-blue-600 text-white text-xs font-bold flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
-                  Most Popular
+                  Best value
                 </div>
               )}
 

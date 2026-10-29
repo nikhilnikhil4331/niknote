@@ -21,7 +21,7 @@ interface ValueProps {
   variant?: 'banner' | 'card' | 'inline';
 }
 
-const BANNER_TEXT = '₹49/week or ₹99/month · cancel anytime · UPI, cards & wallets via Razorpay';
+const BANNER_TEXT = '₹49 for 7 days or ₹99 for 30 days · one-time payment · no auto-renewal';
 const INLINE_TEXT = 'Secure checkout via Razorpay';
 
 export const TrustBar: React.FC<ValueProps> = ({ className = '', variant = 'banner' }) => {
@@ -60,8 +60,8 @@ export const TrustBar: React.FC<ValueProps> = ({ className = '', variant = 'bann
       <div className="flex items-start gap-2">
         <XCircle className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Cancel whenever you like from your account. If something breaks, email the developer
-          directly and you get your money back.
+          Access ends after the chosen period; there is no automatic renewal. Refund requests are
+          reviewed under our <a href="/refunds" className="underline">refund policy</a>.
         </p>
       </div>
     </div>

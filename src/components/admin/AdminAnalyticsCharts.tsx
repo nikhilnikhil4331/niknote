@@ -229,50 +229,6 @@ export const AdminAnalyticsCharts: React.FC<AdminAnalyticsChartsProps> = ({ data
           </Card>
         </motion.div>
 
-        {/* Payment Analytics */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Card className="rounded-xl">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-amber-500" />
-                Payments (Attempts vs Success)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[250px] sm:h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={filterByTimeRange(data.payments)}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-                    <XAxis 
-                      dataKey="date" 
-                      tick={{ fontSize: 11 }}
-                      tickFormatter={(value) => {
-                        const date = new Date(value);
-                        return `${date.getMonth() + 1}/${date.getDate()}`;
-                      }}
-                    />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Legend />
-                    <Bar dataKey="attempts" name="Attempts" fill="hsl(var(--muted-foreground))" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="success" name="Success" fill="hsl(142 76% 36%)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
         {/* Device Usage Pie Chart */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -328,71 +284,6 @@ export const AdminAnalyticsCharts: React.FC<AdminAnalyticsChartsProps> = ({ data
           </Card>
         </motion.div>
 
-        {/* Premium Trend Area Chart */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-        >
-          <Card className="rounded-xl">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <Users className="w-4 h-4 text-amber-500" />
-                Premium vs Free Users
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[250px] sm:h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={filterByTimeRange(data.premiumTrend)}>
-                    <defs>
-                      <linearGradient id="premiumGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(45 93% 47%)" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(45 93% 47%)" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="freeGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.2}/>
-                        <stop offset="95%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-                    <XAxis 
-                      dataKey="date" 
-                      tick={{ fontSize: 11 }}
-                      tickFormatter={(value) => {
-                        const date = new Date(value);
-                        return `${date.getMonth() + 1}/${date.getDate()}`;
-                      }}
-                    />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Legend />
-                    <Area 
-                      type="monotone" 
-                      dataKey="premium" 
-                      stroke="hsl(45 93% 47%)" 
-                      fill="url(#premiumGradient)"
-                      strokeWidth={2}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="free" 
-                      stroke="hsl(var(--muted-foreground))" 
-                      fill="url(#freeGradient)"
-                      strokeWidth={2}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
       </div>
     </div>
   );

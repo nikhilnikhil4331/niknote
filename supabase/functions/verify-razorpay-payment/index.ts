@@ -1,152 +1,155 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+// A callback alone is not a sale. Both callback verification and recovery
+// require an authenticated user, a provider-confirmed captured payment, the
+// original order's user/plan notes, the fixed INR amount, and the atomic
+// service-role-only activate_verified_purchase RPC.
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+const prices: Record<string, number> = { weekly: 4900, monthly: 9900 };
+const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
 
-// Plan period days
-const PLAN_PERIOD_DAYS: Record<string, number> = {
-  weekly: 7,
-  monthly: 30,
-  annual: 365,
-  lifetime: 36500, // 100 years = forever
-};
-
-async function hmacSha256(key: string, message: string): Promise<string> {
+async function validSignature(secret: string, orderId: string, paymentId: string, signature: string): Promise<boolean> {
+  if (!/^[a-f0-9]{64}$/i.test(signature)) return false;
   const encoder = new TextEncoder();
-  const keyData = encoder.encode(key);
-  const msgData = encoder.encode(message);
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
-  );
-  
-  const signature = await crypto.subtle.sign("HMAC", cryptoKey, msgData);
-  return Array.from(new Uint8Array(signature))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
+  const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const raw = await crypto.subtle.sign('HMAC', key, encoder.encode(`${orderId}|${paymentId}`));
+  const expected = Array.from(new Uint8Array(raw), (b) => b.toString(16).padStart(2, '0')).join('');
+  const supplied = signature.toLowerCase();
+  let mismatch = 0;
+  for (let i = 0; i < expected.length; i++) mismatch |= expected.charCodeAt(i) ^ supplied.charCodeAt(i);
+  return mismatch === 0;
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+function orderMatches(order: any, orderId: string, userId: string, planCode: string): boolean {
+  const amount = prices[planCode];
+  return Boolean(Object.hasOwn(prices, planCode) && amount && order?.id === orderId &&
+    order.amount === amount && order.currency === 'INR' &&
+    order.notes?.user_id === userId && order.notes?.plan_code === planCode);
+}
+
+function paymentMatches(payment: any, orderId: string, planCode: string): boolean {
+  const amount = prices[planCode];
+  return Boolean(amount && typeof payment?.id === 'string' && /^pay_[A-Za-z0-9]+$/.test(payment.id) &&
+    payment.order_id === orderId && payment.status === 'captured' &&
+    payment.amount === amount && payment.currency === 'INR' &&
+    Number(payment.amount_refunded || 0) === 0 && !['partial', 'full'].includes(payment.refund_status));
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  if (req.method !== 'POST') return reply({ error: 'Method not allowed' }, 405);
+  const supabaseUrl = (Deno.env.get('SUPABASE_URL') || '').replace(/\/+$/, '');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+  const keyId = Deno.env.get('RAZORPAY_KEY_ID') || '';
+  const secret = Deno.env.get('RAZORPAY_KEY_SECRET') || '';
+  if (!supabaseUrl || !anonKey || !serviceKey || !keyId.startsWith('rzp_live_') || !secret) {
+    return reply({ error: 'Live payment verification is unavailable. If charged, do not pay again; contact support.' }, 503);
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const authorization = req.headers.get('Authorization') || '';
+    if (!/^Bearer\s+\S+$/i.test(authorization)) return reply({ error: 'Unauthorized' }, 401);
+    const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: authorization } });
+    if (!userRes.ok) return reply({ error: 'Unauthorized' }, 401);
+    const user = await userRes.json();
+    if (typeof user?.id !== 'string' || !user.id) return reply({ error: 'Unauthorized' }, 401);
+    const body = await req.json().catch(() => ({}));
+    const adminHeaders = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
+    const providerHeaders = { Authorization: `Basic ${btoa(`${keyId}:${secret}`)}` };
+
+    async function provider(path: string): Promise<any> {
+      const res = await fetch(`https://api.razorpay.com/v1/${path}`, { headers: providerHeaders });
+      if (!res.ok) throw new Error('Provider confirmation unavailable');
+      return await res.json();
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const razorpayKeySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
-
-    if (!razorpayKeySecret) {
-      return new Response(JSON.stringify({ error: "Payment system not configured" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    async function activate(payment: any, orderId: string, planCode: string): Promise<void> {
+      const res = await fetch(`${supabaseUrl}/rest/v1/rpc/activate_verified_purchase`, {
+        method: 'POST', headers: { ...adminHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          _user_id: user.id, _payment_id: payment.id, _order_id: orderId,
+          _plan_code: planCode, _amount_paise: prices[planCode],
+        }),
       });
+      if (!res.ok || await res.json().catch(() => null) !== true) throw new Error('Activation failed');
+      // The RPC is idempotent even if this bookkeeping update fails.
+      const mark = await fetch(`${supabaseUrl}/rest/v1/checkout_orders?order_id=eq.${encodeURIComponent(orderId)}&user_id=eq.${encodeURIComponent(user.id)}`, {
+        method: 'PATCH',
+        headers: { ...adminHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'verified', verified_at: new Date().toISOString() }),
+      });
+      if (!mark.ok) console.error('Could not mark checkout order verified');
     }
 
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await adminClient.auth.getUser(token);
-
-    if (userError || !userData?.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (body?.recover === true) {
+      // Stored server-created orders permit recovery even without a callback or
+      // signature. Provider API authentication, order notes and captured status
+      // are all checked again; the client cannot choose another user's order.
+      const requestedOrderId = body?.orderId;
+      if (requestedOrderId !== undefined && (typeof requestedOrderId !== 'string' || !/^order_[A-Za-z0-9]+$/.test(requestedOrderId))) {
+        return reply({ error: 'Invalid order reference' }, 400);
+      }
+      const orderFilter = requestedOrderId
+        ? `&order_id=eq.${encodeURIComponent(requestedOrderId)}`
+        : '&order=created_at.desc&limit=10';
+      const query = `${supabaseUrl}/rest/v1/checkout_orders?select=order_id,plan_code,amount_paise&user_id=eq.${encodeURIComponent(user.id)}&status=eq.created${orderFilter}`;
+      const pendingRes = await fetch(query, { headers: adminHeaders });
+      if (!pendingRes.ok) throw new Error('Pending orders unavailable');
+      const pending = await pendingRes.json();
+      if (!Array.isArray(pending)) throw new Error('Pending orders unavailable');
+      const recovered: Array<{ paymentId: string; planCode: string }> = [];
+      let incomplete = false;
+      for (const record of pending) {
+        const orderId = record?.order_id;
+        const planCode = record?.plan_code;
+        if (typeof orderId !== 'string' || !/^order_[A-Za-z0-9]+$/.test(orderId) ||
+            typeof planCode !== 'string' || !Object.hasOwn(prices, planCode) || record.amount_paise !== prices[planCode]) continue;
+        try {
+          const order = await provider(`orders/${encodeURIComponent(orderId)}`);
+          if (!orderMatches(order, orderId, user.id, planCode)) continue;
+          const paymentList = await provider(`orders/${encodeURIComponent(orderId)}/payments`);
+          const payment = Array.isArray(paymentList?.items)
+            ? paymentList.items.find((item: any) => paymentMatches(item, orderId, planCode))
+            : null;
+          if (!payment) continue;
+          await activate(payment, orderId, planCode);
+          recovered.push({ paymentId: payment.id, planCode });
+        } catch (error) {
+          console.error('Could not check one pending order', error);
+          incomplete = true;
+        }
+      }
+      if (recovered.length) return reply({ success: true, recovered, incomplete });
+      if (incomplete) return reply({ error: 'Payment check is temporarily unavailable. If charged, do not pay again; retry or contact support.' }, 503);
+      return reply({ success: false, code: 'no_captured_payment', message: 'No captured payment found yet. If charged, do not pay again; retry or contact support.' });
     }
 
-    const userId = userData.user.id;
-
-    const body = await req.json();
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planCode } = body;
-
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !planCode) {
-      return new Response(JSON.stringify({ error: "Missing payment details" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const orderId = body?.razorpay_order_id;
+    const paymentId = body?.razorpay_payment_id;
+    const signature = body?.razorpay_signature;
+    const planCode = body?.planCode;
+    if (typeof orderId !== 'string' || !/^order_[A-Za-z0-9]+$/.test(orderId) ||
+        typeof paymentId !== 'string' || !/^pay_[A-Za-z0-9]+$/.test(paymentId) ||
+        typeof signature !== 'string' || typeof planCode !== 'string' || !Object.hasOwn(prices, planCode)) {
+      return reply({ error: 'Invalid payment details' }, 400);
     }
-
-    // Verify signature
-    const expectedSignature = await hmacSha256(
-      razorpayKeySecret,
-      `${razorpay_order_id}|${razorpay_payment_id}`
-    );
-
-    const expected = new TextEncoder().encode(expectedSignature);
-    const supplied = new TextEncoder().encode(String(razorpay_signature));
-    let mismatch = expected.length !== supplied.length;
-    for (let i = 0; i < expected.length; i++) mismatch = (supplied[i] !== expected[i]) || mismatch;
-    if (mismatch) {
-      console.error(`Signature mismatch for user ${userId}`);
-      return new Response(JSON.stringify({ error: "Payment verification failed" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!await validSignature(secret, orderId, paymentId, signature)) return reply({ error: 'Payment verification failed' }, 400);
+    const [order, payment] = await Promise.all([
+      provider(`orders/${encodeURIComponent(orderId)}`), provider(`payments/${encodeURIComponent(paymentId)}`),
+    ]);
+    if (!orderMatches(order, orderId, user.id, planCode) || payment?.id !== paymentId) {
+      return reply({ error: 'Purchase details do not match' }, 400);
     }
-
-    console.log(`Payment verified for user ${userId}, payment: ${razorpay_payment_id}, plan: ${planCode}`);
-
-    const credentials = btoa(`${Deno.env.get("RAZORPAY_KEY_ID")}:${razorpayKeySecret}`);
-    const paymentResponse = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(razorpay_payment_id)}`, { headers: { Authorization: `Basic ${credentials}` } });
-    const orderResponse = await fetch(`https://api.razorpay.com/v1/orders/${encodeURIComponent(razorpay_order_id)}`, { headers: { Authorization: `Basic ${credentials}` } });
-    if (!paymentResponse.ok || !orderResponse.ok) {
-      return new Response(JSON.stringify({ error: "Payment provider could not confirm purchase" }), {
-        status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!paymentMatches(payment, orderId, planCode)) {
+      return reply({ error: 'Payment has not been confirmed as captured. If charged, do not pay again; retry verification.' }, 409);
     }
-    const payment = await paymentResponse.json();
-    const order = await orderResponse.json();
-    const amount = planCode === "weekly" ? 4900 : planCode === "monthly" ? 9900 : 0;
-    if (!amount || payment.id !== razorpay_payment_id || payment.order_id !== razorpay_order_id || payment.status !== "captured" || payment.amount !== amount || payment.currency !== "INR" || order.id !== razorpay_order_id || order.amount !== amount || order.currency !== "INR" || order.notes?.user_id !== userId || order.notes?.plan_code !== planCode) {
-      return new Response(JSON.stringify({ error: "Purchase details do not match" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const { error: activationError } = await adminClient.rpc("activate_verified_purchase", {
-      _user_id: userId, _payment_id: razorpay_payment_id, _order_id: razorpay_order_id, _plan_code: planCode, _amount_paise: amount,
-    });
-    if (activationError) {
-      console.error("Failed to activate verified purchase:", activationError);
-      return new Response(JSON.stringify({ error: "Failed to activate subscription" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Record analytics event
-    try {
-      await adminClient.from("analytics_events").insert({
-        user_id: userId,
-        event_type: "payment_success",
-        event_data: {
-          plan_code: planCode,
-          payment_id: razorpay_payment_id,
-        },
-        created_at: new Date().toISOString(),
-      });
-    } catch (e) {
-      console.error("Failed to record analytics (non-critical):", e);
-    }
-
-    console.log(`Subscription activated for ${userId}, plan: ${planCode}`);
-
-    return new Response(JSON.stringify({ 
-      success: true, 
-      message: "Payment verified and subscription activated!",
-      planCode,
-      periodDays: PLAN_PERIOD_DAYS[planCode],
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    await activate(payment, orderId, planCode);
+    return reply({ success: true, planCode, periodDays: planCode === 'weekly' ? 7 : 30 });
   } catch (error) {
-    console.error("Error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error('Payment verification failed', error);
+    return reply({ error: 'Payment could not be verified yet. If charged, do not pay again; retry or contact support.' }, 503);
   }
 });

@@ -1,527 +1,303 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import {
-  ArrowLeft, Check, Crown, Sparkles, CheckCircle, AlertCircle,
-  Loader2, CreditCard, Shield, ShieldCheck, Zap, Star, Clock,
-  Mic, Wand2, ScanLine
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { usePremium } from "@/hooks/usePremium";
-import { TrustBar } from "@/components/premium/TrustBar";
-import { ThankYouBurst } from "@/components/motion/ThankYouBurst";
-import { PaymentArt } from "@/components/motion/FeatureArt";
-import { AnimatePresence } from "framer-motion";
-import { trackBeginCheckout, trackVerifiedPurchase } from "@/lib/tracking";
-import { trackCheckoutStarted, trackPaymentFailed, trackPaymentSucceeded } from "@/utils/analytics";
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Check, CheckCircle, CreditCard, Loader2, ShieldCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { GuestUpgradeCard } from '@/components/auth/GuestUpgradeCard';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePremiumContext } from '@/contexts/PremiumContext';
+import { usePremium } from '@/hooks/usePremium';
+import { supabase } from '@/integrations/supabase/client';
+import { trackBeginCheckout, trackVerifiedPurchase } from '@/lib/tracking';
+import { trackCheckoutStarted, trackPaymentFailed, trackPaymentSucceeded } from '@/utils/analytics';
+import { toast } from 'sonner';
 
-type PlanCode = "weekly" | "monthly";
-type PaymentStep = "select" | "processing" | "success" | "error";
+type PlanCode = 'weekly' | 'monthly';
+type Step = 'select' | 'processing' | 'pending' | 'success';
 
-interface Plan {
-  code: PlanCode;
-  label: string;
-  price: number;
-  period: string;
-  popular?: boolean;
-  badge?: string;
-  icon: any;
+const plans = {
+  weekly: { label: 'Student Pro', price: 49, duration: '7 days' },
+  monthly: { label: 'Premium', price: 99, duration: '30 days' },
+} satisfies Record<PlanCode, { label: string; price: number; duration: string }>;
+
+const pendingKey = (userId: string) => `niknote:checkout:pending:${userId}`;
+function rememberOrder(userId: string, orderId: string) {
+  try { localStorage.setItem(pendingKey(userId), orderId); } catch { /* server also keeps the order */ }
+}
+function rememberedOrder(userId: string): string | undefined {
+  try {
+    const id = localStorage.getItem(pendingKey(userId));
+    return id && /^order_[A-Za-z0-9]+$/.test(id) ? id : undefined;
+  } catch { return undefined; }
+}
+function forgetOrder(userId: string, orderId?: string) {
+  try {
+    if (!orderId || localStorage.getItem(pendingKey(userId)) === orderId) localStorage.removeItem(pendingKey(userId));
+  } catch { /* server is the source of truth */ }
 }
 
-const plans: Plan[] = [
-  {
-    code: "weekly", label: "Student Pro", price: 49, period: "/week",
-    icon: Zap, badge: "Try First"
-  },
-  {
-    code: "monthly", label: "Premium", price: 99, period: "/month",
-    popular: true, icon: Star, badge: "Most Popular"
-  },
-];
+async function functionError(error: unknown, fallback: string): Promise<string> {
+  const context = (error as { context?: Response })?.context;
+  try {
+    const data = await context?.clone().json();
+    if (typeof data?.error === 'string') return data.error;
+  } catch { /* use a safe message */ }
+  return fallback;
+}
 
-// The four tools the editor actually locks. The previous grid sold "Priority
-// AI" (never built), "Unlimited downloads" and paid handwriting styles (both
-// already free to everyone). See PricingPopup.tsx for the same list.
-const premiumFeatures = [
-  { icon: Sparkles, text: "AI Writing Assistant", desc: "Rewrite, summarise, expand" },
-  { icon: Mic, text: "Voice Dictation", desc: "Speak instead of typing" },
-  { icon: Wand2, text: "AI Style Matcher", desc: "Match your real handwriting" },
-  { icon: ScanLine, text: "Handwriting Import", desc: "Photo of notes to text" },
-];
-
-// Load Razorpay SDK dynamically — with mobile timeout
 function loadRazorpayScript(): Promise<boolean> {
+  if ((window as any).Razorpay) return Promise.resolve(true);
   return new Promise((resolve) => {
-    if ((window as any).Razorpay) {
-      resolve(true);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => {
-      console.error("Razorpay script failed to load");
-      resolve(false);
-    };
-    // Mobile timeout — if script doesn't load in 15 seconds, fail gracefully
-    const timeout = setTimeout(() => {
-      console.warn("Razorpay load timed out (slow network)");
-      resolve(false);
-    }, 15000);
-    script.onload = () => { clearTimeout(timeout); resolve(true); };
-    script.onerror = () => { clearTimeout(timeout); resolve(false); };
+    const script = document.createElement('script');
+    const timer = setTimeout(() => resolve(false), 15000);
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => { clearTimeout(timer); resolve(true); };
+    script.onerror = () => { clearTimeout(timer); resolve(false); };
     document.body.appendChild(script);
   });
 }
 
 export default function PaymentPage() {
-  useDocumentTitle({ title: 'Go Premium — NikNote | ₹49/week Student Pro, ₹99/month Premium', description: 'NikNote Premium adds the AI writing assistant, voice dictation, AI style matching and handwriting import. ₹49/week or ₹99/month via UPI, cards or wallets.' });
+  useDocumentTitle({ title: 'NikNote Premium — ₹49 for 7 days or ₹99 for 30 days', description: 'One-time access to NikNote Premium. No automatic renewal.' });
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { user, loading: authLoading } = useAuth();
-  const { refresh: refreshPremium, isPremium } = usePremium();
-
-  const initialPlan = (searchParams.get("plan") as PlanCode) || "monthly";
-  const [selectedPlan, setSelectedPlan] = useState<PlanCode>(initialPlan);
-  const [paymentStep, setPaymentStep] = useState<PaymentStep>("select");
+  const [params] = useSearchParams();
+  const { user, isGuest, loading: authLoading } = useAuth();
+  const { isPremium, refresh: refreshPremium } = usePremium();
+  const { refresh: refreshPremiumContext } = usePremiumContext();
+  const [selected, setSelected] = useState<PlanCode>(params.get('plan') === 'weekly' ? 'weekly' : 'monthly');
+  const [step, setStep] = useState<Step>('select');
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [verificationPending, setVerificationPending] = useState(false);
-
-  const plan = plans.find((p) => p.code === selectedPlan) ?? plans[1];
+  const [checking, setChecking] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
+  const plan = plans[selected];
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      toast.error("Please sign in to subscribe");
-      navigate("/auth?redirect=/payment");
-    }
+    if (!authLoading && !user) navigate('/auth?redirect=/payment');
   }, [authLoading, user, navigate]);
 
-  const handlePay = async () => {
-    if (!user) {
-      toast.error("Pehle sign in karo!");
-      navigate("/auth?redirect=/payment");
-      return;
-    }
+  const refreshAccess = async () => {
+    // The editor reads the context; other surfaces use the standalone hook.
+    // Refresh both after the server has atomically activated the purchase.
+    await Promise.all([refreshPremium(), refreshPremiumContext()]);
+    window.dispatchEvent(new Event('niknote:subscription-updated'));
+  };
 
-    // Check if session is valid before proceeding
+  const recordVerified = (paymentId: string, planCode: PlanCode, orderId?: string) => {
+    const purchasedPlan = plans[planCode];
+    trackVerifiedPurchase({ transactionId: paymentId, orderId, planCode, planName: purchasedPlan.label, value: purchasedPlan.price, currency: 'INR' });
+    trackPaymentSucceeded(planCode);
+  };
+
+  const checkPreviousPayment = async () => {
+    if (!user || checking) return;
+    setChecking(true);
+    setNotice('');
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        toast.error("Session expired! Please sign in again.");
-        navigate("/auth?redirect=/payment");
+      // The server queries only orders it created for this signed-in user and
+      // verifies capture directly with Razorpay. This never opens a checkout.
+      let { data, error } = await supabase.functions.invoke('verify-razorpay-payment', { body: { recover: true } });
+      if (error) throw new Error(await functionError(error, 'Could not check payment right now. If charged, do not pay again.'));
+      const savedOrder = rememberedOrder(user.id);
+      if (!data?.success && savedOrder) {
+        const specific = await supabase.functions.invoke('verify-razorpay-payment', { body: { recover: true, orderId: savedOrder } });
+        if (specific.error) throw new Error(await functionError(specific.error, 'Could not check payment right now. If charged, do not pay again.'));
+        data = specific.data;
+      }
+      await refreshAccess();
+      if (data?.success && Array.isArray(data.recovered) && data.recovered.length) {
+        for (const item of data.recovered) {
+          if (typeof item.paymentId === 'string' && (item.planCode === 'weekly' || item.planCode === 'monthly')) {
+            recordVerified(item.paymentId, item.planCode);
+          }
+        }
+        if (!data.incomplete) forgetOrder(user.id);
+        setStep('success');
+        toast.success('Payment verified and premium activated.');
+        if (data.incomplete) toast.warning('Some other orders could not be checked. Please check again later.');
+      } else {
+        setNotice('No pending captured payment was found yet. If money was deducted, do not pay again; retry later or contact support with your payment reference.');
+      }
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not check payment. If charged, do not pay again.');
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const handlePay = async () => {
+    if (!user || step === 'processing' || checking) return;
+    setNotice('');
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData?.session) {
+        setNotice('A connected account is needed for checkout. Reconnect or sign in before paying.');
         return;
       }
     } catch {
-      toast.error("Network error. Internet check karo aur try again.");
+      setNotice('Could not check your session. Reconnect before paying.');
       return;
     }
-
-    const loaded = await loadRazorpayScript();
-    if (!loaded) {
-      toast.error("Payment system load nahi ho paya. Internet check karo aur dobara try karo.");
-      return;
-    }
-
-    setVerificationPending(false);
-    setCheckoutOpen(false);
-    setPaymentStep("processing");
-
+    setStep('processing');
     try {
-      const { data, error } = await supabase.functions.invoke("create-razorpay-order", {
-        body: { planCode: selectedPlan },
-      });
-
-      if (error) {
-        const errMsg = error.message || error.toString();
-        console.error("Create order error:", errMsg);
-        // If edge function not found, show specific error
-        if (errMsg.includes("not found") || errMsg.includes("NOT_FOUND") || errMsg.includes("FunctionsHttpError")) {
-          throw new Error("Payment system abhi setup ho rha hai. 2-3 minute mein try karo.");
-        }
-        throw new Error(errMsg || "Failed to create order");
+      const loaded = await loadRazorpayScript();
+      if (!loaded) throw new Error('Could not load Razorpay checkout. Please check your connection.');
+      const { data, error } = await supabase.functions.invoke('create-razorpay-order', { body: { planCode: selected } });
+      if (error) throw new Error(await functionError(error, 'Could not create a payment order. No payment was attempted.'));
+      if (!data?.orderId || !/^order_[A-Za-z0-9]+$/.test(data.orderId) ||
+          typeof data.keyId !== 'string' || !data.keyId.startsWith('rzp_live_') ||
+          data.amount !== plan.price * 100 || data.currency !== 'INR') {
+        throw new Error('Payment order was incomplete. No payment was attempted.');
       }
-
-      if (!data?.orderId || !data?.keyId) {
-        throw new Error("Payment response incomplete. Dobara try karo.");
-      }
-
+      rememberOrder(user.id, data.orderId);
       const options = {
-        key: data.keyId,
-        amount: data.amount,
-        currency: data.currency || "INR",
-        name: "NikNote",
-        description: `${data.planLabel || selectedPlan} Premium Plan`,
-        order_id: data.orderId,
-        prefill: {
-          email: data.userEmail || user.email || "",
-          name: user.user_metadata?.full_name || "",
-        },
-        notes: {
-          plan_code: selectedPlan,
-          user_id: user.id,
-        },
-        theme: {
-          color: "#6366f1",
-        },
-        // Mobile-friendly: send additional details for better UX
-        config: {
-          display: {
-            language: 'en-IN',
-            blocks: {
-              amount: { text: `₹${plan.price} ${plan.period}` }
-            }
-          }
-        },
+        key: data.keyId, amount: data.amount, currency: 'INR', name: 'NikNote',
+        description: `${plan.label} — ${plan.duration} of access`, order_id: data.orderId,
+        prefill: { email: isGuest ? '' : (data.userEmail || user.email || ''), name: user.user_metadata?.full_name || '' },
+        theme: { color: '#6366f1' },
         handler: async (response: any) => {
           setCheckoutOpen(false);
+          const paymentId = typeof response?.razorpay_payment_id === 'string' ? response.razorpay_payment_id : '';
+          setPaymentReference(paymentId);
           try {
-            if (!response.razorpay_payment_id) {
-              throw new Error("No payment ID received");
-            }
-
-            const { data: verifyData, error: verifyError } = await supabase.functions.invoke("verify-razorpay-payment", {
+            const { data: verified, error: verifyError } = await supabase.functions.invoke('verify-razorpay-payment', {
               body: {
-                razorpay_order_id: response.razorpay_order_id || data.orderId,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature || "",
-                planCode: selectedPlan,
+                razorpay_order_id: response?.razorpay_order_id || data.orderId,
+                razorpay_payment_id: paymentId,
+                razorpay_signature: response?.razorpay_signature || '',
+                planCode: selected,
               },
             });
-
-            if (verifyError || !verifyData?.success) {
-              throw new Error("Payment could not be verified. Contact support@niknote.online with your payment ID; do not pay again yet.");
-            }
-
-            trackVerifiedPurchase({
-              transactionId: response.razorpay_payment_id,
-              orderId: response.razorpay_order_id || data.orderId,
-              planCode: selectedPlan,
-              planName: plan.label,
-              value: plan.price,
-              currency: data.currency || "INR",
-            });
-
-            trackPaymentSucceeded(selectedPlan);
-
-            await refreshPremium();
-            setPaymentStep("success");
-            toast.success("🎉 Payment successful! Premium activated!");
-            setTimeout(() => navigate("/"), 2500);
-          } catch (err) {
-            console.error("Verification error:", err);
-            trackPaymentFailed(selectedPlan, "verification_failed");
-            setVerificationPending(true);
-            setPaymentStep("error");
-            toast.error(err instanceof Error ? err.message : "Payment verification failed. Contact support@niknote.online before retrying.");
+            if (verifyError || !verified?.success) throw new Error('Payment confirmation is pending.');
+            recordVerified(paymentId, selected, data.orderId);
+            forgetOrder(user.id, data.orderId);
+            await refreshAccess();
+            setStep('success');
+            toast.success('Payment verified and premium activated.');
+          } catch {
+            // A timeout or delayed capture is not a failed payment. Never send
+            // the customer back to the pay button without a recovery option.
+            setStep('pending');
+            setNotice('If money was deducted, do not pay again. Check the payment below or contact support.');
           }
         },
         modal: {
           ondismiss: () => {
             setCheckoutOpen(false);
-            setPaymentStep("select");
-            toast.info("Payment cancel ho gaya. Koi baat nahi!");
+            setStep('select');
+            setNotice('Checkout closed. If money was deducted, check the previous payment before trying again.');
           },
         },
       };
-
       const rzp = new (window as any).Razorpay(options);
-      rzp.on("payment.failed", (response: any) => {
-        console.error("Payment failed:", response.error);
-        trackPaymentFailed(selectedPlan, "provider_failed");
-        setPaymentStep("error");
-        const failMsg = response.error?.description || "Payment fail ho gaya";
-        toast.error(failMsg + ". Dobara try karo!");
+      rzp.on('payment.failed', (response: any) => {
+        const reference = response?.error?.metadata?.payment_id;
+        if (typeof reference === 'string') setPaymentReference(reference);
+        setCheckoutOpen(false);
+        trackPaymentFailed(selected, 'provider_failed');
+        setStep('pending');
+        setNotice('Payment was not confirmed. If money was deducted, do not pay again; check the previous payment.');
       });
       setCheckoutOpen(true);
-      trackBeginCheckout({
-        planCode: selectedPlan,
-        planName: plan.label,
-        value: plan.price,
-        currency: data.currency || "INR",
-      });
-      trackCheckoutStarted(selectedPlan);
+      trackBeginCheckout({ planCode: selected, planName: plan.label, value: plan.price, currency: 'INR' });
+      trackCheckoutStarted(selected);
       rzp.open();
-    } catch (err) {
-      console.error("Payment error:", err);
-      setPaymentStep("error");
-      const msg = err instanceof Error ? err.message : "Something went wrong";
-      toast.error(msg + ". Dobara try karo!");
+    } catch (error) {
+      setCheckoutOpen(false);
+      setStep('select');
+      setNotice(error instanceof Error ? error.message : 'Checkout is temporarily unavailable. No payment was attempted.');
     }
-  };
-
-  const handleRetry = () => {
-    setPaymentStep("select");
   };
 
   if (authLoading || !user) return null;
 
-  // Success Screen
-  if (paymentStep === "success") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-green-50/20 to-primary/5 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", duration: 0.6 }}
-          className="text-center space-y-6 max-w-sm"
-        >
-          <ThankYouBurst title="Thank you!" subtitle="Premium activated — all features unlocked. Go create magic! ✨" />
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
-          >
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Redirecting...
-          </motion.div>
-        </motion.div>
-      </div>
-    );
+  const recovery = (
+    <div className="space-y-2">
+      <Button variant="outline" className="w-full rounded-xl" disabled={checking || step === 'processing'} onClick={checkPreviousPayment}>
+        {checking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {checking ? 'Checking payment…' : 'Already paid? Check payment'}
+      </Button>
+      <p className="text-center text-xs text-muted-foreground">This checks your existing order; it will not charge you again.</p>
+    </div>
+  );
+
+  if (step === 'success') {
+    return <main className="min-h-screen flex items-center justify-center p-6 bg-background"><div className="max-w-sm text-center space-y-4">
+      <CheckCircle className="h-14 w-14 mx-auto text-green-600" />
+      <h1 className="text-2xl font-bold">Payment verified</h1>
+      <p className="text-sm text-muted-foreground">Premium is active on this account.</p>
+      <Button onClick={() => navigate('/')} className="rounded-xl">Go to editor</Button>
+    </div></main>;
   }
 
-  // Error Screen
-  if (paymentStep === "error") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-destructive/5 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-center space-y-6 max-w-sm"
-        >
-          <div className="w-20 h-20 mx-auto rounded-full bg-destructive/10 flex items-center justify-center">
-            <AlertCircle className="w-10 h-10 text-destructive" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground mb-2">{verificationPending ? "Verification Pending" : "Payment Failed"}</h1>
-            <p className="text-muted-foreground text-sm">
-              {verificationPending ? "If your account was charged, do not pay again. Contact support@niknote.online with your payment ID." : "Your payment couldn't be processed. Please try again."}
-            </p>
-          </div>
-          {verificationPending ? <Button onClick={() => navigate("/")} className="rounded-xl">Back to Editor</Button> : <Button onClick={handleRetry} className="rounded-xl">Try Again</Button>}
-        </motion.div>
-      </div>
-    );
+  if (step === 'pending') {
+    return <main className="min-h-screen flex items-center justify-center p-6 bg-background"><div className="max-w-sm w-full text-center space-y-4">
+      <ShieldCheck className="h-14 w-14 mx-auto text-amber-600" />
+      <h1 className="text-xl font-bold">Payment confirmation pending</h1>
+      <p role="status" className="text-sm text-muted-foreground">{notice}</p>
+      {paymentReference && <p className="text-xs break-all">Payment reference: {paymentReference}</p>}
+      {recovery}
+      <p className="text-xs text-muted-foreground">Need help? <a className="underline" href="mailto:support@niknote.online">support@niknote.online</a></p>
+      <Button variant="ghost" onClick={() => navigate('/')}>Back to editor</Button>
+    </div></main>;
   }
 
   if (isPremium) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background">
-        <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40 h-14 sm:h-16">
-          <div className="max-w-lg mx-auto px-4 h-full flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full h-9 w-9">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-base font-semibold">You're Premium! 🎉</h1>
-          </div>
-        </header>
-        <main className="max-w-lg mx-auto px-4 py-8 text-center space-y-6">
-          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-xl">
-            <Crown className="h-10 w-10 text-primary-foreground" />
-          </div>
-          <h2 className="text-xl font-bold">Premium Active ✨</h2>
-          <p className="text-muted-foreground">All features unlocked! Keep creating amazing notes.</p>
-          <Button onClick={() => navigate("/")} className="rounded-xl">Go to Editor</Button>
-        </main>
-      </div>
-    );
+    return <main className="min-h-screen flex items-center justify-center p-6 bg-background"><div className="max-w-sm w-full text-center space-y-4">
+      <CheckCircle className="h-14 w-14 mx-auto text-green-600" />
+      <h1 className="text-xl font-bold">Premium is active</h1>
+      <p className="text-sm text-muted-foreground">Your paid access is linked to this account.</p>
+      {notice && <p role="status" className="text-xs text-muted-foreground">{notice}</p>}
+      {recovery}
+      <Button onClick={() => navigate('/')} className="rounded-xl">Go to editor</Button>
+    </div></main>;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <AnimatePresence>
-        {paymentStep === "processing" && !checkoutOpen && (
-          <motion.div role="status" aria-live="polite" className="fixed inset-0 z-[80] grid place-items-center bg-background/80 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div className="text-center space-y-3"><div className="flex justify-center"><PaymentArt /></div><p className="font-semibold text-foreground">Securely processing your payment…</p><p className="text-xs text-muted-foreground">Don't close this page.</p></div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40 h-14 sm:h-16">
-        <div className="max-w-lg mx-auto px-4 h-full flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-full h-9 w-9">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-base sm:text-lg font-semibold truncate">Go Premium ✨</h1>
-            <p className="text-xs text-muted-foreground truncate">Unlock everything</p>
-          </div>
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center flex-shrink-0">
-            <Crown className="h-5 w-5 text-primary-foreground" />
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-background to-primary/5 pb-32">
+      <header className="sticky top-0 z-40 bg-background/95 border-b border-border/40">
+        <div className="max-w-lg mx-auto px-4 h-16 flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Go back"><ArrowLeft className="h-5 w-5" /></Button>
+          <div><h1 className="font-semibold">Go Premium</h1><p className="text-xs text-muted-foreground">Choose the access period that suits you</p></div>
         </div>
       </header>
-
-      <main className="max-w-lg mx-auto px-4 py-4 space-y-4 pb-28">
-        {/* What the money actually buys. Earlier revisions of this page sold
-            "Priority AI" and "Unlimited Exports", neither of which was ever
-            built; this list is the set of features the editor genuinely locks
-            behind `premiumLocked`. See src/components/premium/PricingPopup.tsx
-            for the single source of that list. */}
-        <div className="rounded-2xl border border-border/60 bg-card px-3.5 py-3">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            What you unlock
-          </p>
-          <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11.5px] leading-snug">
-            {[
-              'AI writing assistant',
-              'Voice dictation',
-              'AI style matcher',
-              'Handwriting import',
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-1.5 text-foreground">
-                <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600" />
-                {item}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-2 text-[10.5px] leading-relaxed text-muted-foreground">
-            Handwriting styles, AI notes, PDF tools and exports stay free.
-          </p>
-        </div>
-
-        <TrustBar variant="card" />
-
-        {/* Social Proof Bar — Enhanced */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-primary/5 via-orange-500/5 to-pink-500/5 rounded-full text-xs font-medium border border-primary/10"
-        >
-          <ShieldCheck className="h-3.5 w-3.5 text-green-600" />
-          <span>Cancel yourself, any time</span>
-          <span className="text-muted-foreground">•</span>
-          <span className="text-green-600 font-semibold">No countdown</span>
-        </motion.div>
-
-        {/* Premium Features Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card rounded-2xl p-4 border border-border/50 shadow-lg"
-        >
-          <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Premium Features
-          </h2>
-          <div className="grid grid-cols-2 gap-2">
-            {premiumFeatures.map((feature, i) => (
-              <motion.div
-                key={feature.text}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="flex items-start gap-2 p-2 rounded-lg bg-secondary/30"
-              >
-                <feature.icon className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <div className="text-xs font-medium leading-tight">{feature.text}</div>
-                  <div className="text-[10px] text-muted-foreground leading-tight">{feature.desc}</div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Plan Selection */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-3"
-        >
-          <h2 className="text-sm font-semibold text-foreground px-1">Choose Plan</h2>
+      <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
+        <section className="rounded-2xl bg-card border border-border/60 p-5 space-y-3">
+          <h2 className="font-semibold">Choose your one-time pass</h2>
           <div className="grid grid-cols-2 gap-3">
-            {plans.map((p) => (
-              <button
-                key={p.code}
-                onClick={() => setSelectedPlan(p.code)}
-                className={`relative p-4 rounded-xl border-2 transition-all duration-200 text-left ${
-                  selectedPlan === p.code
-                    ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
-                    : "border-border/50 bg-card hover:border-border"
-                }`}
-              >
-                {p.badge && (
-                  <span className={`absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-semibold px-2.5 py-0.5 rounded-full whitespace-nowrap ${
-                    p.popular ? 'bg-primary text-primary-foreground' : 'bg-orange-500/10 text-orange-600'
-                  }`}>
-                    {p.badge}
-                  </span>
-                )}
-                <div className="flex items-center gap-1.5 mb-1">
-                  <p.icon className={`h-3.5 w-3.5 ${selectedPlan === p.code ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <span className="text-xs font-medium">{p.label}</span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-bold">₹{p.price}</span>
-                  <span className="text-xs text-muted-foreground">{p.period}</span>
-                </div>
-                {selectedPlan === p.code && (
-                  <div className="absolute top-3 right-3 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary-foreground" />
-                  </div>
-                )}
+            {(Object.keys(plans) as PlanCode[]).map((code) => (
+              <button key={code} type="button" onClick={() => setSelected(code)} aria-pressed={selected === code}
+                className={`rounded-xl border-2 p-4 text-left ${selected === code ? 'border-primary bg-primary/5' : 'border-border/50'}`}>
+                <span className="block text-xs text-muted-foreground">{plans[code].label}</span>
+                <span className="block text-2xl font-bold">₹{plans[code].price}</span>
+                <span className="text-xs text-muted-foreground">{plans[code].duration} access</span>
               </button>
             ))}
           </div>
-        </motion.div>
-
-        {/* Referral Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="p-4 rounded-xl bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/20"
-        >
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
-              <Crown className="h-4 w-4 text-green-600" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-green-700">Share & Get FREE Premium! 🎁</div>
-              <div className="text-[10px] text-green-600/70">3 friends share = 7 days FREE premium</div>
-            </div>
-          </div>
-        </motion.div>
+          <p className="text-xs text-muted-foreground">One payment, no automatic renewal. Access ends after {plan.duration}; pay again only if you want more time.</p>
+        </section>
+        <section className="rounded-2xl bg-card border border-border/60 p-5 space-y-3">
+          <h2 className="font-semibold">Premium tools</h2>
+          <ul className="grid grid-cols-2 gap-2 text-sm">
+            {['AI writing assistant', 'Voice dictation', 'AI style matcher', 'Handwriting import'].map((item) => <li key={item} className="flex gap-2"><Check className="h-4 w-4 text-green-600 shrink-0" />{item}</li>)}
+          </ul>
+          <p className="text-xs text-muted-foreground">Voice dictation depends on browser support; AI tools require an internet connection. Handwriting styles, AI notes, PDF tools and exports remain free.</p>
+        </section>
+        {isGuest && <section role="note" className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+          <p className="text-sm font-medium">Protect your paid access</p>
+          <p className="text-xs text-muted-foreground">You are using a guest workspace. If browser data is cleared, it may be difficult to recover it. Save it with an email and password before paying.</p>
+          <GuestUpgradeCard />
+        </section>}
+        <p className="text-xs text-muted-foreground flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0" />Razorpay handles payment details. <a className="underline" href="/refunds">Refund policy</a></p>
+        {notice && <p role="status" className="rounded-xl bg-amber-500/10 p-3 text-sm">{notice}</p>}
+        {recovery}
       </main>
-
-      {/* Sticky Pay Button */}
-      <div className="fixed bottom-0 inset-x-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/40 p-4">
+      <div className="fixed bottom-0 inset-x-0 z-40 bg-background/95 border-t border-border/40 p-4">
         <div className="max-w-lg mx-auto space-y-2">
-          {/* Urgency inline */}
-          <TrustBar variant="inline" className="justify-center" />
-          <Button
-            onClick={handlePay}
-            disabled={paymentStep === "processing"}
-            className="w-full h-14 rounded-2xl text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 transition-all duration-300"
-          >
-            {paymentStep === "processing" ? (
-              <>
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <CreditCard className="h-5 w-5 mr-2" />
-                Pay ₹{plan.price} — {plan.label} Plan
-              </>
-            )}
+          <Button onClick={handlePay} disabled={step === 'processing' || checking} className="w-full h-12 rounded-xl font-semibold">
+            {step === 'processing' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{checkoutOpen ? 'Checkout open…' : 'Preparing checkout…'}</> : <><CreditCard className="h-4 w-4 mr-2" />Pay ₹{plan.price} for {plan.duration}</>}
           </Button>
-          <div className="flex items-center justify-center gap-3 text-[10px] text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Shield className="h-3 w-3" />
-              Secured by Razorpay
-            </span>
-            <span>•</span>
-            <span>UPI, Cards, Wallets</span>
-            <span>•</span>
-            <span>Cancel Anytime</span>
-          </div>
+          <p className="text-center text-xs text-muted-foreground">One-time payment · no automatic renewal</p>
         </div>
       </div>
     </div>

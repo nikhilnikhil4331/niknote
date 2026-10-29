@@ -370,7 +370,7 @@ export const PricingPopup: React.FC = () => {
               </button>
 
               <p className="mt-1 pb-1 text-center text-[10.5px] leading-relaxed text-muted-foreground">
-                Razorpay · UPI, cards &amp; wallets · Cancel yourself, any time
+                Razorpay checkout · No automatic renewal
                 <br />
                 No countdown, no fake discount.
               </p>

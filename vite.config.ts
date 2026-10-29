@@ -89,6 +89,18 @@ function niknoteLocalAIPlugin(): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   return {
+  // Only explicitly public settings are exposed by Vite. Provider secrets may
+  // still have historical VITE_* names in the hosting environment; never
+  // expose them, even if a client module accidentally reads import.meta.env.
+  envPrefix: [
+    'VITE_SUPABASE_URL',
+    'VITE_SUPABASE_PUBLISHABLE_KEY',
+    'VITE_SUPABASE_ANON_KEY',
+    'VITE_GA_MEASUREMENT_ID',
+    'VITE_META_PIXEL_ID',
+    'VITE_GSC_VERIFICATION',
+    'VITE_NIKAI_REMOTE_AI_URL',
+  ],
   server: {
     host: "0.0.0.0",
     port: 8080,
