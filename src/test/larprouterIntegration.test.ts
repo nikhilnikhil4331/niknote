@@ -329,6 +329,33 @@ describe('NikAI /api/ai LarpRouter gateway routing & resilience', () => {
     expect(json.content).toBe('Answered by Claude pool!');
     expect(json.provider).toBe('larprouter');
   });
+
+  it('sends stream: true to LarpRouter during GET /api/ai?probe=1 and collects SSE answer cleanly', async () => {
+    let probeUpstreamBody: any = null;
+    globalThis.fetch = vi.fn(async (_input: any, init?: RequestInit) => {
+      probeUpstreamBody = JSON.parse(String(init?.body || '{}'));
+      return new Response(
+        buildOpenAISSEBody([{ content: '<think>checking...</think>' }, { content: 'OK' }]),
+        { status: 200, headers: { 'Content-Type': 'text/event-stream' } }
+      );
+    }) as unknown as typeof fetch;
+
+    const res = await apiHandler(
+      new Request('http://localhost/api/ai?probe=1', {
+        method: 'GET',
+        headers: { 'X-LarpRouter-Key': 'lrsk-probe-sse-test' },
+      })
+    );
+    expect(res.status).toBe(200);
+    expect(probeUpstreamBody.stream).toBe(true);
+    expect(probeUpstreamBody.temperature).toBeUndefined();
+    const json = await res.json();
+    expect(json.ok).toBe(true);
+    expect(json.probe.ok).toBe(true);
+    expect(json.probe.provider).toBe('larprouter');
+    expect(json.probe.model).toBe('deepseek-v4.1-flash');
+    expect(json.probe.answer).toBe('OK');
+  });
 });
 
 describe('Client aiEngine & Checkup LarpRouter integration', () => {
