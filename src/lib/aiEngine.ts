@@ -2,6 +2,7 @@
 // NikAI — Unified Astra Neural Core Engine
 // Powers NikAI (/ai), Inline Editor AI, @AI Mentions,
 // Persistent Session Memory, Smart Notes & Live Quizzes.
+// Primary Frontier Router: LarpRouter (https://larprouter.com/v1)
 // ============================================================
 
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +24,8 @@ export type AstaModelChoice =
   | 'astra-flash'
   | 'astra-vision'
   | 'astra-coder';
+
+export const LARPROUTER_DEFAULT_BASE_URL = 'https://larprouter.com/v1';
 
 // ── Mode / model normalisation ──
 // The UI (and older stored threads) can use short ids like `tutor`, `writing`,
@@ -58,6 +61,10 @@ const MODEL_ALIASES: Record<string, AstaModelChoice> = {
   vision: 'astra-vision',
   coder: 'astra-coder',
   code: 'astra-coder',
+  deepseek: 'astra-auto',
+  kimi: 'astra-pro',
+  glm: 'astra-coder',
+  larprouter: 'astra-auto',
 };
 
 export function resolveAstaModel(model?: string | null): AstaModelChoice {
@@ -81,6 +88,7 @@ export interface AstaChatTurn {
 }
 
 export interface AstaCustomKeys {
+  larprouterKey?: string;
   groqKey?: string;
   geminiKey?: string;
   openaiKey?: string;
@@ -113,15 +121,25 @@ export interface AstaResult {
 
 const KEYS_STORAGE_KEY = 'niknote.ai.keys.v1';
 
+export function cleanClientApiKey(raw?: string | null): string {
+  if (!raw || typeof raw !== 'string') return '';
+  return raw
+    .trim()
+    .replace(/^["']+|["']+$/g, '')
+    .replace(/^(?:bearer|x-api-key:?)\s+/i, '')
+    .trim();
+}
+
 export function readCustomAIKeys(): AstaCustomKeys {
   try {
     const raw = localStorage.getItem(KEYS_STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     return {
-      groqKey: typeof parsed.groqKey === 'string' ? parsed.groqKey.trim() : '',
-      geminiKey: typeof parsed.geminiKey === 'string' ? parsed.geminiKey.trim() : '',
-      openaiKey: typeof parsed.openaiKey === 'string' ? parsed.openaiKey.trim() : '',
+      larprouterKey: cleanClientApiKey(parsed.larprouterKey),
+      groqKey: cleanClientApiKey(parsed.groqKey),
+      geminiKey: cleanClientApiKey(parsed.geminiKey),
+      openaiKey: cleanClientApiKey(parsed.openaiKey),
     };
   } catch {
     return {};
@@ -130,29 +148,49 @@ export function readCustomAIKeys(): AstaCustomKeys {
 
 export function saveCustomAIKeys(keys: AstaCustomKeys): void {
   try {
-    localStorage.setItem(KEYS_STORAGE_KEY, JSON.stringify({
-      groqKey: (keys.groqKey || '').trim(),
-      geminiKey: (keys.geminiKey || '').trim(),
-      openaiKey: (keys.openaiKey || '').trim(),
-    }));
+    localStorage.setItem(
+      KEYS_STORAGE_KEY,
+      JSON.stringify({
+        larprouterKey: cleanClientApiKey(keys.larprouterKey),
+        groqKey: cleanClientApiKey(keys.groqKey),
+        geminiKey: cleanClientApiKey(keys.geminiKey),
+        openaiKey: cleanClientApiKey(keys.openaiKey),
+      })
+    );
   } catch {
     // ignore storage quota errors
   }
 }
 
-function getEffectiveClientKeys(): { groq: string; gemini: string; openai: string } {
+function getEffectiveClientKeys(): { larprouter: string; groq: string; gemini: string; openai: string } {
   const custom = readCustomAIKeys();
   const env = (import.meta as any)?.env || {};
-  return {
-    groq: (custom.groqKey || env.VITE_GROQ_KEY || '').trim(),
-    gemini: (custom.geminiKey || env.VITE_GEMINI_KEY || '').trim(),
-    openai: (custom.openaiKey || env.VITE_OPENAI_KEY || '').trim(),
-  };
+  let larprouter = cleanClientApiKey(custom.larprouterKey || env.VITE_LARPROUTER_KEY);
+  let groq = cleanClientApiKey(custom.groqKey || env.VITE_GROQ_KEY);
+  const gemini = cleanClientApiKey(custom.geminiKey || env.VITE_GEMINI_KEY);
+  let openai = cleanClientApiKey(custom.openaiKey || env.VITE_OPENAI_KEY);
+
+  // Auto-route `lrsk-...` keys even if a user pasted them into OpenAI / Groq by mistake
+  if (!larprouter && openai.startsWith('lrsk-')) {
+    larprouter = openai;
+    openai = '';
+  } else if (openai.startsWith('lrsk-')) {
+    openai = '';
+  }
+  if (!larprouter && groq.startsWith('lrsk-')) {
+    larprouter = groq;
+    groq = '';
+  } else if (groq.startsWith('lrsk-')) {
+    groq = '';
+  }
+
+  return { larprouter, groq, gemini, openai };
 }
 
 export async function probeAstaProviders(): Promise<{ cloudReady: boolean; providers: string[] }> {
   const localKeys = getEffectiveClientKeys();
   const active = new Set<string>();
+  if (localKeys.larprouter) active.add('NikAI Astra LarpRouter 1M');
   if (localKeys.openai) active.add('NikAI Astra OpenAI Core');
   if (localKeys.groq) active.add('NikAI Astra Turbo 120B');
   if (localKeys.gemini) active.add('NikAI Astra Vision 2.5');
@@ -162,6 +200,7 @@ export async function probeAstaProviders(): Promise<{ cloudReady: boolean; provi
     const res = await fetch(probeUrl, { method: 'GET' });
     if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
       const data = await res.json();
+      if (data?.providers?.larprouter) active.add('NikAI Astra LarpRouter 1M');
       if (data?.providers?.openai) active.add('NikAI Astra OpenAI Core');
       if (data?.providers?.groq) active.add('NikAI Astra Turbo 120B');
       if (data?.providers?.gemini) active.add('NikAI Astra Vision 2.5');
@@ -184,7 +223,7 @@ export async function probeAstaProviders(): Promise<{ cloudReady: boolean; provi
 
 const CLIENT_SYSTEM_PROMPTS: Record<AstaMode, string> = {
   auto: `You are **NikAI** (powered by **Astra Neural Core**), NikNote's single unified AI intelligence. Match user language (English / Hinglish / Hindi). Give complete, crystal-clear structured Markdown answers with headings, **bold terms**, tables, code/formula blocks, and \`> 💡 Pro-Tips\` ready for 1-tap Handwriting conversion.`,
-  deep: `You are **NikAI Astra Pro** — reason step by step from first principles, check every equation and edge case, and highlight the final answer clearly.`,
+  deep: `You are **NikAI Astra Pro** — reason step by step from first principles, verify every equation and edge case, and highlight the final answer clearly.`,
   teacher: `You are **NikAI Master Guru** — explain with: 1) Intuition & real-life analogy, 2) Step-by-Step Breakdown, 3) Formulas/Rules, 4) Worked Example, 5) > 💡 Exam Pro-Tip.`,
   solver: `You are **NikAI Step-by-Step Solver** — present Given → Formula/Concept → Step-by-Step Working → Verification → ✅ Final Answer → ⚡ Shortcut Trick.`,
   code: `You are **NikAI Astra Coder** — write clean, complete, production-ready fenced code blocks with explanations, edge cases, and Time/Space Complexity.`,
@@ -227,9 +266,21 @@ export function generateFollowUpSuggestions(query: string, mode: AstaMode): stri
 function buildGatewayRequest(opts: AstaStreamOptions, memoryContext: string): RequestInit {
   const custom = readCustomAIKeys();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (custom.groqKey) headers['X-Groq-Key'] = custom.groqKey;
+  let larpKey = custom.larprouterKey || '';
+  let groqKey = custom.groqKey || '';
+  let openaiKey = custom.openaiKey || '';
+  if (!larpKey && openaiKey.startsWith('lrsk-')) {
+    larpKey = openaiKey;
+    openaiKey = '';
+  }
+  if (!larpKey && groqKey.startsWith('lrsk-')) {
+    larpKey = groqKey;
+    groqKey = '';
+  }
+  if (larpKey) headers['X-LarpRouter-Key'] = larpKey;
+  if (groqKey) headers['X-Groq-Key'] = groqKey;
   if (custom.geminiKey) headers['X-Gemini-Key'] = custom.geminiKey;
-  if (custom.openaiKey) headers['X-OpenAI-Key'] = custom.openaiKey;
+  if (openaiKey) headers['X-OpenAI-Key'] = openaiKey;
 
   return {
     method: 'POST',
@@ -315,25 +366,15 @@ async function tryServerlessStream(
 }
 
 // ── Tier 1.5: Remote NikAI gateway (dev / preview only) ──
-// A local dev server or an Arena/E2B preview sandbox has no provider API keys,
-// so `/api/ai` answers 503. In that case we relay the exact same streaming
-// request to the production gateway (which has the keys) instead of dropping
-// the user into the template-only offline brain. Never used on the real site.
 const SANDBOX_HOST_PATTERN =
   /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])$|\.(e2b\.app|e2b\.dev|lovable\.dev|lovableproject\.com)$/i;
 
 export function getRemoteAstraGatewayUrl(): string | null {
   try {
-    // Unit tests must stay deterministic (no live network calls), so the relay is
-    // opt-in there via an explicit URL.
     if (typeof (globalThis as any).vi !== 'undefined') return null;
     const explicit = String((import.meta as any)?.env?.VITE_NIKAI_REMOTE_AI_URL || '').trim();
     if (explicit) return explicit;
 
-    // The Android/iOS app ships without provider keys (they must never be baked
-    // into an APK), so native builds always talk to the production gateway.
-    // Checking Capacitor directly also covers webviews whose origin is not the
-    // usual https://localhost (e.g. a custom androidScheme).
     const cap = (globalThis as any)?.Capacitor;
     const native = Boolean(
       cap && (typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : cap.getPlatform?.() !== 'web')
@@ -364,40 +405,36 @@ async function tryRemoteGatewayStream(
   return { ...out, provider: out.provider || 'cloud' };
 }
 
-// ── Tier 2: Direct Browser Cloud Stream (OpenAI / Groq / Gemini) ──
+// ── Tier 2: Direct Browser Cloud Stream (LarpRouter / OpenAI / Groq / Gemini) ──
 async function tryDirectCloudStream(
   opts: AstaStreamOptions,
   memoryContext: string
 ): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
   const keys = getEffectiveClientKeys();
-  if (!keys.groq && !keys.gemini && !keys.openai) return null;
+  if (!keys.larprouter && !keys.groq && !keys.gemini && !keys.openai) return null;
 
   const mode = opts.mode || 'auto';
+  const maxCtx = keys.larprouter || keys.gemini ? 36000 : 12000;
   const sys = [
     CLIENT_SYSTEM_PROMPTS[mode] || CLIENT_SYSTEM_PROMPTS.auto,
-    memoryContext ? `\n\nActive User Memory & Previous Sessions:\n${memoryContext.slice(0, 5000)}` : '',
-    opts.noteContext?.trim() ? `\n\nAttached Note Context:\n${opts.noteContext.slice(0, 12000)}` : '',
+    memoryContext ? `\n\nActive User Memory & Previous Sessions:\n${memoryContext.slice(0, 6000)}` : '',
+    opts.noteContext?.trim() ? `\n\nAttached Note Context:\n${opts.noteContext.slice(0, maxCtx)}` : '',
   ].join('');
 
   const turns = opts.messages.filter((m) => m.role !== 'system');
   const hasImages = turns.some((m) => m.images && m.images.length > 0);
-  const preferGemini = hasImages || opts.model === 'astra-vision' || (!keys.openai && !keys.groq && Boolean(keys.gemini));
+  const preferGemini =
+    hasImages ||
+    opts.model === 'astra-vision' ||
+    (!keys.larprouter && !keys.openai && !keys.groq && Boolean(keys.gemini));
 
-  const tryOpenAIOrGroq = async (useOpenAI: boolean) => {
-    const key = useOpenAI ? keys.openai : keys.groq;
-    if (!key) return null;
-    const url = useOpenAI
-      ? 'https://api.openai.com/v1/chat/completions'
-      : 'https://api.groq.com/openai/v1/chat/completions';
-    const upstreamModel = useOpenAI
-      ? 'gpt-4o'
-      : hasImages
-        ? 'meta-llama/llama-4-scout-17b-16e-instruct'
-        : opts.model === 'astra-pro' || mode === 'deep'
-          ? 'openai/gpt-oss-120b'
-          : 'openai/gpt-oss-20b';
-    const label = opts.model === 'astra-pro' || mode === 'deep' ? 'NikAI Astra Pro' : 'NikAI Astra Core';
-
+  const streamOpenAICompatible = async (
+    provider: 'larprouter' | 'openai' | 'groq',
+    key: string,
+    url: string,
+    upstreamModel: string,
+    label: string
+  ) => {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
@@ -405,8 +442,8 @@ async function tryDirectCloudStream(
       body: JSON.stringify({
         model: upstreamModel,
         stream: true,
-        temperature: 0.55,
-        max_tokens: 4096,
+        temperature: mode === 'code' || mode === 'solver' ? 0.35 : 0.55,
+        max_tokens: provider === 'larprouter' ? 6144 : 4096,
         messages: [
           { role: 'system', content: sys },
           ...turns.map((m) =>
@@ -424,13 +461,57 @@ async function tryDirectCloudStream(
       }),
     });
     if (!res.ok || !res.body) return null;
-    opts.onMeta?.({ model: label, provider: useOpenAI ? 'openai' : 'groq' });
+    opts.onMeta?.({ model: label, provider });
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
-    let content = '';
+    let rawContent = '';
+    let emittedLen = 0;
     let thinking = '';
+    let insideThink = false;
+
+    const processTextChunk = (delta: string) => {
+      rawContent += delta;
+      // Handle optional `<think>...</think>` blocks cleanly
+      if (rawContent.startsWith('<think>') || insideThink) {
+        const closeIdx = rawContent.indexOf('</think>');
+        if (closeIdx === -1) {
+          insideThink = true;
+          const nextThought = rawContent.slice(7);
+          const diff = nextThought.slice(thinking.length);
+          if (diff) {
+            thinking = nextThought;
+            opts.onThinking?.(diff, thinking);
+          }
+          return;
+        }
+        insideThink = false;
+        const fullThought = rawContent.slice(7, closeIdx);
+        if (fullThought.length > thinking.length) {
+          const diff = fullThought.slice(thinking.length);
+          thinking = fullThought;
+          opts.onThinking?.(diff, thinking);
+        }
+        const cleanBody = rawContent.slice(closeIdx + 8).replace(/^\r?\n+/, '');
+        if (cleanBody.length > emittedLen) {
+          const token = cleanBody.slice(emittedLen);
+          emittedLen = cleanBody.length;
+          opts.onToken?.(token, cleanBody);
+        }
+        return;
+      }
+
+      if (rawContent.length < 7 && '<think>'.startsWith(rawContent)) {
+        return;
+      }
+      if (rawContent.length > emittedLen) {
+        const token = rawContent.slice(emittedLen);
+        emittedLen = rawContent.length;
+        opts.onToken?.(token, rawContent);
+      }
+    };
+
     try {
       while (true) {
         const { value, done } = await reader.read();
@@ -445,15 +526,75 @@ async function tryDirectCloudStream(
           if (!d || d === '[DONE]') continue;
           try {
             const p = JSON.parse(d)?.choices?.[0]?.delta;
-            if (p?.reasoning) { thinking += p.reasoning; opts.onThinking?.(p.reasoning, thinking); }
-            if (p?.content) { content += p.content; opts.onToken?.(p.content, content); }
-          } catch { /* skip */ }
+            const reasoning = p?.reasoning ?? p?.reasoning_content;
+            if (reasoning) {
+              thinking += reasoning;
+              opts.onThinking?.(reasoning, thinking);
+            }
+            if (p?.content) processTextChunk(p.content);
+          } catch {
+            /* skip partial chunk */
+          }
         }
       }
     } finally {
       reader.releaseLock();
     }
-    return content.trim() ? { content, thinking, model: label, provider: useOpenAI ? 'openai' : 'groq' } : null;
+
+    const finalClean = rawContent.replace(/<think>[\s\S]*?<\/think>\s*/gi, '').trim();
+    return finalClean ? { content: finalClean, thinking, model: label, provider } : null;
+  };
+
+  const tryLarpRouter = async () => {
+    if (!keys.larprouter) return null;
+    const url = `${LARPROUTER_DEFAULT_BASE_URL}/chat/completions`;
+    const modelCandidates: Array<{ id: string; label: string }> =
+      opts.model === 'astra-pro' || mode === 'deep' || mode === 'solver'
+        ? [
+            { id: 'kimi-k3.1-pro', label: 'NikAI Astra Pro · Kimi K3.1' },
+            { id: 'deepseek-v4.1-flash', label: 'NikAI Astra Pro · DeepSeek V4.1' },
+            { id: 'glm-5.3-flash', label: 'NikAI Astra · GLM-5.3' },
+          ]
+        : opts.model === 'astra-coder' || mode === 'code'
+          ? [
+              { id: 'glm-5.3', label: 'NikAI Astra Coder · GLM-5.3' },
+              { id: 'deepseek-v4.1-flash', label: 'NikAI Astra Coder · DeepSeek V4.1' },
+              { id: 'glm-5.3-flash', label: 'NikAI Astra Coder · GLM-5.3' },
+            ]
+          : [
+              { id: 'deepseek-v4.1-flash', label: 'NikAI Astra · DeepSeek V4.1' },
+              { id: 'glm-5.3-flash', label: 'NikAI Astra · GLM-5.3' },
+            ];
+
+    for (const candidate of modelCandidates) {
+      const out = await streamOpenAICompatible(
+        'larprouter',
+        keys.larprouter,
+        url,
+        candidate.id,
+        candidate.label
+      ).catch(() => null);
+      if (out) return out;
+    }
+    return null;
+  };
+
+  const tryOpenAIOrGroq = async (useOpenAI: boolean) => {
+    const key = useOpenAI ? keys.openai : keys.groq;
+    if (!key) return null;
+    const url = useOpenAI
+      ? 'https://api.openai.com/v1/chat/completions'
+      : 'https://api.groq.com/openai/v1/chat/completions';
+    const upstreamModel = useOpenAI
+      ? 'gpt-4o'
+      : hasImages
+        ? 'meta-llama/llama-4-scout-17b-16e-instruct'
+        : opts.model === 'astra-pro' || mode === 'deep'
+          ? 'openai/gpt-oss-120b'
+          : 'openai/gpt-oss-20b';
+    const label = opts.model === 'astra-pro' || mode === 'deep' ? 'NikAI Astra Pro' : 'NikAI Astra Core';
+
+    return streamOpenAICompatible(useOpenAI ? 'openai' : 'groq', key, url, upstreamModel, label);
   };
 
   const tryGemini = async () => {
@@ -508,11 +649,18 @@ async function tryDirectCloudStream(
             const parts = JSON.parse(d)?.candidates?.[0]?.content?.parts || [];
             for (const p of parts) {
               if (typeof p?.text === 'string') {
-                if (p.thought) { thinking += p.text; opts.onThinking?.(p.text, thinking); }
-                else { content += p.text; opts.onToken?.(p.text, content); }
+                if (p.thought) {
+                  thinking += p.text;
+                  opts.onThinking?.(p.text, thinking);
+                } else {
+                  content += p.text;
+                  opts.onToken?.(p.text, content);
+                }
               }
             }
-          } catch { /* skip */ }
+          } catch {
+            /* skip */
+          }
         }
       }
     } finally {
@@ -524,11 +672,13 @@ async function tryDirectCloudStream(
   if (preferGemini) {
     return (
       (await tryGemini().catch(() => null)) ||
+      (await tryLarpRouter().catch(() => null)) ||
       (await tryOpenAIOrGroq(true).catch(() => null)) ||
       (await tryOpenAIOrGroq(false).catch(() => null))
     );
   }
   return (
+    (await tryLarpRouter().catch(() => null)) ||
     (await tryOpenAIOrGroq(true).catch(() => null)) ||
     (await tryOpenAIOrGroq(false).catch(() => null)) ||
     (await tryGemini().catch(() => null))
@@ -551,8 +701,16 @@ async function trySupabaseEdge(
       quiz: 'quiz',
       write: 'notes',
     };
+    const custom = readCustomAIKeys();
+    const extraHeaders: Record<string, string> = {};
+    if (custom.larprouterKey) extraHeaders['x-larprouter-key'] = custom.larprouterKey;
+    if (custom.groqKey) extraHeaders['x-groq-key'] = custom.groqKey;
+    if (custom.geminiKey) extraHeaders['x-gemini-key'] = custom.geminiKey;
+    if (custom.openaiKey) extraHeaders['x-openai-key'] = custom.openaiKey;
+
     const combinedContext = [memoryContext, opts.noteContext].filter(Boolean).join('\n\n');
     const { data, error } = await supabase.functions.invoke('openai-brain', {
+      headers: extraHeaders,
       body: {
         messages: opts.messages.map((m) => ({ role: m.role, content: m.content })),
         agentType: modeMap[opts.mode || 'auto'] || 'teacher',
@@ -560,11 +718,18 @@ async function trySupabaseEdge(
       },
     });
     if (error || !data) return null;
-    const text = (data.content || data.response || '').trim();
+    const text = String(data.content || data.response || '')
+      .replace(/<think>[\s\S]*?<\/think>\s*/gi, '')
+      .trim();
     if (!text) return null;
-    opts.onMeta?.({ model: 'NikAI Astra Edge', provider: data.provider || 'supabase' });
+    opts.onMeta?.({ model: data.model || 'NikAI Astra Edge', provider: data.provider || 'supabase' });
     opts.onToken?.(text, text);
-    return { content: text, thinking: '', model: 'NikAI Astra Edge', provider: data.provider || 'supabase' };
+    return {
+      content: text,
+      thinking: '',
+      model: data.model || 'NikAI Astra Edge',
+      provider: data.provider || 'supabase',
+    };
   } catch {
     return null;
   }
@@ -579,9 +744,10 @@ function solveMathExpression(input: string): string | null {
     const c = Number(quad[3]);
     if (Number.isFinite(a) && a !== 0 && Number.isFinite(b) && Number.isFinite(c)) {
       const D = b * b - 4 * a * c;
-      const roots = D >= 0
-        ? `x₁ = ${((-b + Math.sqrt(D)) / (2 * a)).toFixed(4).replace(/\.?0+$/, '')},  x₂ = ${((-b - Math.sqrt(D)) / (2 * a)).toFixed(4).replace(/\.?0+$/, '')}`
-        : `Complex roots: x = ${(-b / (2 * a)).toFixed(3)} ± ${(Math.sqrt(-D) / (2 * a)).toFixed(3)}i`;
+      const roots =
+        D >= 0
+          ? `x₁ = ${((-b + Math.sqrt(D)) / (2 * a)).toFixed(4).replace(/\.?0+$/, '')},  x₂ = ${((-b - Math.sqrt(D)) / (2 * a)).toFixed(4).replace(/\.?0+$/, '')}`
+          : `Complex roots: x = ${(-b / (2 * a)).toFixed(3)} ± ${(Math.sqrt(-D) / (2 * a)).toFixed(3)}i`;
       return `## Quadratic Equation Step-by-Step Solution
 
 ### 1. Given Equation
@@ -664,8 +830,6 @@ export async function streamAstaAI(opts: AstaStreamOptions): Promise<AstaResult>
   const mode = resolveAstaMode(opts.mode);
   const memoryContext = opts.memoryContext ?? buildNikAIMemoryPrompt(opts.threadId);
 
-  // Canonical ids only — the gateway rejects unknown mode/model ids by silently
-  // falling back to the generic route, which used to drop Deep/Pro/Vision.
   const request: AstaStreamOptions = { ...opts, mode, model: resolveAstaModel(opts.model) };
 
   const result =

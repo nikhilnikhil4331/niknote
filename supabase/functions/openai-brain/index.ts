@@ -4,7 +4,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-groq-key, x-gemini-key, x-openai-key, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-larprouter-key, x-groq-key, x-gemini-key, x-openai-key, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const AGENT_PROMPTS: Record<string, string> = {
@@ -35,6 +35,8 @@ serve(async (req) => {
       noteContext,
     } = body || {};
 
+    const larprouterKey = (req.headers.get("x-larprouter-key") || Deno.env.get("LARPROUTER_API_KEY") || Deno.env.get("VITE_LARPROUTER_KEY") || "").trim();
+    const larprouterBaseUrl = (Deno.env.get("LARPROUTER_BASE_URL") || "https://larprouter.com/v1").replace(/\/+$/, "");
     const groqKey = req.headers.get("x-groq-key") || Deno.env.get("GROQ_API_KEY") || Deno.env.get("VITE_GROQ_KEY") || "";
     const geminiKey = req.headers.get("x-gemini-key") || Deno.env.get("GEMINI_API_KEY") || Deno.env.get("VITE_GEMINI_KEY") || "";
     const openaiKey = req.headers.get("x-openai-key") || Deno.env.get("OPENAI_API_KEY") || "";
@@ -42,7 +44,7 @@ serve(async (req) => {
 
     const sys = [
       systemPrompt || AGENT_PROMPTS[agentType] || AGENT_PROMPTS.teacher,
-      noteContext ? `\nAttached Note Context:\n${String(noteContext).slice(0, 12000)}` : "",
+      noteContext ? `\nAttached Note Context:\n${String(noteContext).slice(0, larprouterKey ? 36000 : 12000)}` : "",
     ].join("");
 
     const chatMessages = Array.isArray(incomingMessages) && incomingMessages.length > 0
@@ -58,6 +60,31 @@ serve(async (req) => {
     const fullMessages = chatMessages[0]?.role === "system"
       ? chatMessages
       : [{ role: "system", content: sys }, ...chatMessages];
+
+    // 0. Try LarpRouter (1M-context frontier models: DeepSeek V4.1, GLM-5.3, Kimi K3.1)
+    if (larprouterKey && mode !== "vision") {
+      const larpModels = agentType === "code"
+        ? ["glm-5.3", "deepseek-v4.1-flash", "glm-5.3-flash"]
+        : agentType === "research" || agentType === "assignment"
+          ? ["kimi-k3.1-pro", "deepseek-v4.1-flash", "glm-5.3-flash"]
+          : ["deepseek-v4.1-flash", "glm-5.3-flash"];
+      for (const model of larpModels) {
+        const r = await fetch(`${larprouterBaseUrl}/chat/completions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${larprouterKey}` },
+          body: JSON.stringify({ model, messages: fullMessages, temperature: 0.5, max_tokens: 4096 }),
+        }).catch(() => null);
+        if (r?.ok) {
+          const d = await r.json();
+          const rawContent = String(d?.choices?.[0]?.message?.content || "");
+          const content = rawContent.replace(/<think>[\s\S]*?<\/think>\s*/gi, "").trim();
+          if (content) return Response.json({ content, response: content, result: content, model, provider: "larprouter" }, { headers: corsHeaders });
+        }
+        if (r && (r.status === 401 || (r.status === 402 && (model === "deepseek-v4.1-flash" || model === "glm-5.3-flash")))) {
+          break;
+        }
+      }
+    }
 
     // 1. Try Groq (ultra-fast ~300 tok/s)
     if (groqKey) {
