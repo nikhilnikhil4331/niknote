@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-larprouter-key, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 // Rate limiting configuration
@@ -120,29 +120,49 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const LARPROUTER_API_KEY = (req.headers.get("x-larprouter-key") || Deno.env.get("LARPROUTER_API_KEY") || "").trim();
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY") || "";
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") || "";
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
+
+    if (!LARPROUTER_API_KEY && !GROQ_API_KEY && !OPENAI_API_KEY && !LOVABLE_API_KEY) {
+      throw new Error("No AI provider key configured (LARPROUTER_API_KEY / GROQ_API_KEY)");
     }
 
     const userPrompt = mode === 'generate' 
       ? `Write about the following topic: ${text}`
       : `Process the following text: ${text}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const upstreamUrl = LARPROUTER_API_KEY
+      ? "https://larprouter.com/v1/chat/completions"
+      : GROQ_API_KEY
+        ? "https://api.groq.com/openai/v1/chat/completions"
+        : OPENAI_API_KEY
+          ? "https://api.openai.com/v1/chat/completions"
+          : "https://ai.gateway.lovable.dev/v1/chat/completions";
+    const upstreamKey = LARPROUTER_API_KEY || GROQ_API_KEY || OPENAI_API_KEY || LOVABLE_API_KEY;
+    const upstreamModel = LARPROUTER_API_KEY
+      ? "deepseek-v4.1-flash"
+      : GROQ_API_KEY
+        ? "llama-3.3-70b-versatile"
+        : OPENAI_API_KEY
+          ? "gpt-4o-mini"
+          : "google/gemini-3-flash-preview";
+
+    const response = await fetch(upstreamUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${upstreamKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: upstreamModel,
         messages: [
           { role: "system", content: systemPrompt || "You are a helpful writing assistant." },
           { role: "user", content: userPrompt }
         ],
         stream: true,
-        max_tokens: 1000,
+        max_tokens: 2048,
       }),
     });
 

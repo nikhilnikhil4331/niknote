@@ -9,7 +9,7 @@
 // ============================================================
 
 import { addWatermark, countPdfPages } from '@/lib/pdfTools';
-import { getRemoteAstraGatewayUrl } from '@/lib/aiEngine';
+import { getRemoteAstraGatewayUrl, readCustomAIKeys } from '@/lib/aiEngine';
 
 export type CheckStatus = 'ok' | 'warn' | 'fail';
 
@@ -53,7 +53,7 @@ export function isNativeApp(): boolean {
 /** `{groq:true, gemini:false}` → `groq ✓ · gemini ✕` */
 export function formatProviders(providers: Record<string, boolean> | null | undefined): string {
   if (!providers || typeof providers !== 'object') return 'providers unknown';
-  const keys = ['groq', 'gemini', 'openai'];
+  const keys = ['larprouter', 'groq', 'gemini', 'openai'];
   const parts = keys.filter((key) => key in providers).map((key) => `${key} ${providers[key] ? '✓' : '✕'}`);
   return parts.length > 0 ? parts.join(' · ') : 'koi provider nahi';
 }
@@ -81,8 +81,20 @@ export async function checkAi(timeoutMs = 20000): Promise<CheckResult> {
     //    One GET, no stream, and it names the model that answered.
     let providers = '';
     let probe: ProbePayload | undefined;
+    const customKeys = readCustomAIKeys();
+    const customHeaders: Record<string, string> = {};
+    if (customKeys.larprouterKey) customHeaders['X-LarpRouter-Key'] = customKeys.larprouterKey;
+    if (customKeys.groqKey) customHeaders['X-Groq-Key'] = customKeys.groqKey;
+    if (customKeys.geminiKey) customHeaders['X-Gemini-Key'] = customKeys.geminiKey;
+    if (customKeys.openaiKey) customHeaders['X-OpenAI-Key'] = customKeys.openaiKey;
+    const hasCustomHeaders = Object.keys(customHeaders).length > 0;
+
     try {
-      const res = await fetch(`${url}?probe=1`, { method: 'GET', signal: controller.signal });
+      const res = await fetch(`${url}?probe=1`, {
+        method: 'GET',
+        ...(hasCustomHeaders ? { headers: customHeaders } : {}),
+        signal: controller.signal,
+      });
       if (res.ok) {
         const payload = (await res.json()) as HealthPayload & { probe?: ProbePayload };
         providers = formatProviders(payload?.providers);
@@ -96,7 +108,7 @@ export async function checkAi(timeoutMs = 20000): Promise<CheckResult> {
       // Older deployment (no ?probe) — test the exact call the chat makes.
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...customHeaders },
         body: JSON.stringify({
           messages: [{ role: 'user', content: 'Reply with exactly one word: OK' }],
           mode: 'auto',
@@ -118,11 +130,14 @@ export async function checkAi(timeoutMs = 20000): Promise<CheckResult> {
     if (!probe.ok) {
       const firstError = probe.errors?.[0] || 'koi provider jawab nahi de raha';
       const noKeys = firstError.includes('no_provider_configured');
+      const noCredit = firstError.includes('402') || firstError.includes('insufficient_credit');
       return finish(
-        'fail',
+        noCredit ? 'warn' : 'fail',
         noKeys
-          ? `${where} par koi AI key set nahi hai — Vercel env me GROQ_API_KEY / GEMINI_API_KEY daalo`
-          : `${where} tak pahunch gaya par model ne jawab nahi diya · ${providers} · ${firstError.slice(0, 90)}`
+          ? `${where} par koi AI key set nahi hai — Vercel env me LARPROUTER_API_KEY / GROQ_API_KEY / GEMINI_API_KEY daalo`
+          : noCredit
+            ? `${where} · ${providers} · LarpRouter key active hai par balance $0.00 (insufficient_credit) hai`
+            : `${where} tak pahunch gaya par model ne jawab nahi diya · ${providers} · ${firstError.slice(0, 90)}`
       );
     }
 

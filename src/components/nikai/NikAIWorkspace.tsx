@@ -188,9 +188,10 @@ const MODEL_OPTIONS: Array<{
   label: string;
   badge: string;
 }> = [
-  { id: 'astra-auto', label: 'Astra Neural Auto', badge: 'Auto Best Routing' },
-  { id: 'astra-pro', label: 'Astra Pro 120B', badge: 'Deep Reasoning' },
-  { id: 'astra-flash', label: 'Astra Flash', badge: 'Instant Speed' },
+  { id: 'astra-auto', label: 'Astra Neural Auto', badge: 'Smart Multi-Model · 1M Context' },
+  { id: 'astra-pro', label: 'Astra Pro', badge: 'Deep Reasoning · Kimi K3.1 / GLM-5.3' },
+  { id: 'astra-coder', label: 'Astra Coder', badge: 'Code & DSA · GLM-5.3 / DeepSeek V4.1' },
+  { id: 'astra-flash', label: 'Astra Flash', badge: 'Instant Speed · DeepSeek V4.1' },
   { id: 'astra-vision', label: 'Astra Vision 2.5', badge: 'Diagrams & Scans' },
 ];
 
@@ -444,9 +445,15 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   const [implementingId, setImplementingId] = useState<string | null>(null);
 
   const customKeys = readCustomAIKeys();
+  const [larprouterInput, setLarprouterInput] = useState(customKeys.larprouterKey || '');
   const [groqInput, setGroqInput] = useState(customKeys.groqKey || '');
   const [geminiInput, setGeminiInput] = useState(customKeys.geminiKey || '');
   const [openaiInput, setOpenaiInput] = useState(customKeys.openaiKey || '');
+  const [testingKeys, setTestingKeys] = useState(false);
+  const [keyTestStatus, setKeyTestStatus] = useState<{
+    tone: 'ok' | 'warn' | 'err';
+    message: string;
+  } | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
   const scrollEndRef = useRef<HTMLDivElement | null>(null);
@@ -477,7 +484,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       setAttachedNote({
         id: 'active-editor-note',
         title: noteTitle || 'Current Note',
-        preview: noteContent.slice(0, 6000),
+        preview: noteContent.slice(0, 24000),
       });
     }
   }, [noteTitle, noteContent]);
@@ -552,7 +559,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
               collected.push({
                 id: String(item.id || Math.random()),
                 title: String(item.title || 'Untitled Note'),
-                preview: String(text).slice(0, 6000),
+                preview: String(text).slice(0, 24000),
               });
             }
           }
@@ -567,7 +574,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
               collected.push({
                 id: String(item.id || Math.random()),
                 title: String(item.title || 'Workspace Note'),
-                preview: String(item.content || '').slice(0, 6000),
+                preview: String(item.content || '').slice(0, 24000),
               });
             }
           }
@@ -1360,12 +1367,13 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                       type="button"
                       onClick={() => {
                         setModelMenuOpen(false);
+                        setKeyTestStatus(null);
                         setKeysModalOpen(true);
                       }}
                       className="w-full px-3 py-2 rounded-xl text-left text-xs font-medium text-[#5B4E89] hover:bg-[#F8F6FE] flex items-center gap-2"
                     >
                       <KeyRound className="w-3.5 h-3.5 text-[#7C3AED]" />
-                      <span>Custom Cloud API Keys…</span>
+                      <span>LarpRouter / Cloud API Keys…</span>
                     </button>
                   </div>
                 )}
@@ -1934,7 +1942,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
 
                     {composerModelMenuOpen && (
                       <div
-                        className="absolute bottom-10 left-0 w-56 rounded-2xl bg-white border border-[#EAE6F7] shadow-xl p-1.5 z-50 text-xs"
+                        className="absolute bottom-10 left-0 w-60 rounded-2xl bg-white border border-[#EAE6F7] shadow-xl p-1.5 z-50 text-xs"
                         onMouseLeave={() => setComposerModelMenuOpen(false)}
                       >
                         {MODEL_OPTIONS.map((opt) => (
@@ -1951,12 +1959,30 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                                 : 'text-[#312D4B] hover:bg-[#F8F6FE] font-medium'
                             }`}
                           >
-                            <span>{opt.label}</span>
+                            <div>
+                              <div>{opt.label}</div>
+                              <div className="text-[10px] text-[#8A84A6] font-normal">
+                                {opt.badge}
+                              </div>
+                            </div>
                             {modelChoice === opt.id && (
                               <Check className="w-3.5 h-3.5 text-[#7C3AED]" />
                             )}
                           </button>
                         ))}
+                        <div className="my-1 border-t border-[#F1EFF9]" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setComposerModelMenuOpen(false);
+                            setKeyTestStatus(null);
+                            setKeysModalOpen(true);
+                          }}
+                          className="w-full px-3 py-2 rounded-xl text-left text-xs font-medium text-[#5B4E89] hover:bg-[#F8F6FE] flex items-center gap-2"
+                        >
+                          <KeyRound className="w-3.5 h-3.5 text-[#7C3AED]" />
+                          <span>LarpRouter / Cloud API Keys…</span>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -2248,16 +2274,27 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             </div>
 
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  OpenAI API Key (Optional)
-                </label>
+              <div className="rounded-xl border border-purple-200 bg-purple-50/55 p-3">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <label className="block text-xs font-bold text-purple-950">
+                    LarpRouter API Key (Recommended · 1M Context)
+                  </label>
+                  <span className="rounded-full bg-purple-600/10 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+                    larprouter.com/v1
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 mb-2">
+                  Routes DeepSeek V4.1, GLM-5.3, Kimi K3.1 Pro & MiniMax M3.1 via one key.
+                </p>
                 <input
                   type="password"
-                  value={openaiInput}
-                  onChange={(e) => setOpenaiInput(e.target.value)}
-                  placeholder="sk-..."
-                  className="w-full px-3 py-2 rounded-xl border border-purple-200 text-xs focus:outline-none focus:border-purple-500"
+                  value={larprouterInput}
+                  onChange={(e) => {
+                    setLarprouterInput(e.target.value);
+                    setKeyTestStatus(null);
+                  }}
+                  placeholder="lrsk-..."
+                  className="w-full px-3 py-2 rounded-xl border border-purple-300 bg-white text-xs focus:outline-none focus:border-purple-600"
                 />
               </div>
 
@@ -2268,7 +2305,10 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 <input
                   type="password"
                   value={groqInput}
-                  onChange={(e) => setGroqInput(e.target.value)}
+                  onChange={(e) => {
+                    setGroqInput(e.target.value);
+                    setKeyTestStatus(null);
+                  }}
                   placeholder="gsk_..."
                   className="w-full px-3 py-2 rounded-xl border border-purple-200 text-xs focus:outline-none focus:border-purple-500"
                 />
@@ -2281,39 +2321,129 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 <input
                   type="password"
                   value={geminiInput}
-                  onChange={(e) => setGeminiInput(e.target.value)}
+                  onChange={(e) => {
+                    setGeminiInput(e.target.value);
+                    setKeyTestStatus(null);
+                  }}
                   placeholder="AIza..."
                   className="w-full px-3 py-2 rounded-xl border border-purple-200 text-xs focus:outline-none focus:border-purple-500"
                 />
               </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  OpenAI API Key (Optional)
+                </label>
+                <input
+                  type="password"
+                  value={openaiInput}
+                  onChange={(e) => {
+                    setOpenaiInput(e.target.value);
+                    setKeyTestStatus(null);
+                  }}
+                  placeholder="sk-..."
+                  className="w-full px-3 py-2 rounded-xl border border-purple-200 text-xs focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              {keyTestStatus && (
+                <div
+                  className={`rounded-xl px-3 py-2 text-[11.5px] font-medium border ${
+                    keyTestStatus.tone === 'ok'
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                      : keyTestStatus.tone === 'warn'
+                        ? 'bg-amber-50 border-amber-200 text-amber-800'
+                        : 'bg-rose-50 border-rose-200 text-rose-800'
+                  }`}
+                >
+                  {keyTestStatus.message}
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex items-center justify-between gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => setKeysModalOpen(false)}
-                className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  saveCustomAIKeys({
-                    groqKey: groqInput,
-                    geminiKey: geminiInput,
-                    openaiKey: openaiInput,
-                  });
-                  setKeysModalOpen(false);
-                  toast.success('NikAI Cloud keys saved');
+                disabled={testingKeys}
+                onClick={async () => {
+                  setTestingKeys(true);
+                  setKeyTestStatus(null);
+                  try {
+                    const headers: Record<string, string> = {};
+                    if (larprouterInput.trim()) headers['X-LarpRouter-Key'] = larprouterInput.trim();
+                    if (groqInput.trim()) headers['X-Groq-Key'] = groqInput.trim();
+                    if (geminiInput.trim()) headers['X-Gemini-Key'] = geminiInput.trim();
+                    if (openaiInput.trim()) headers['X-OpenAI-Key'] = openaiInput.trim();
+                    const res = await fetch('/api/ai?probe=1', { method: 'GET', headers });
+                    const data = await res.json();
+                    const probe = data?.probe;
+                    if (probe?.ok) {
+                      setKeyTestStatus({
+                        tone: 'ok',
+                        message: `Connected: ${probe.provider} · ${probe.model} (${probe.ms} ms)`,
+                      });
+                    } else {
+                      const errText = (probe?.errors || []).join(' | ');
+                      if (errText.includes('402') || errText.includes('insufficient_credit')) {
+                        setKeyTestStatus({
+                          tone: 'warn',
+                          message:
+                            'LarpRouter key active hai, par account balance $0.00 (insufficient_credit) hai — larprouter.com par credit add karein ya fallback key jodein.',
+                        });
+                      } else if (errText.includes('no_provider_configured')) {
+                        setKeyTestStatus({
+                          tone: 'warn',
+                          message: 'Koi API key enter nahi hui — upar lrsk-... key paste karein.',
+                        });
+                      } else {
+                        setKeyTestStatus({
+                          tone: 'err',
+                          message: `Connection check failed: ${(probe?.errors?.[0] || 'Unknown error').slice(0, 120)}`,
+                        });
+                      }
+                    }
+                  } catch (err: any) {
+                    setKeyTestStatus({
+                      tone: 'err',
+                      message: `Could not reach /api/ai: ${String(err?.message || 'network error')}`,
+                    });
+                  } finally {
+                    setTestingKeys(false);
+                  }
                 }}
-                className="px-4 py-2 rounded-xl text-white text-xs font-bold"
-                style={{
-                  background: 'linear-gradient(95deg, #7C3AED, #EC4899)',
-                }}
+                className="px-3 py-2 rounded-xl border border-purple-200 text-xs font-semibold text-purple-700 hover:bg-purple-50 disabled:opacity-50"
               >
-                Save Keys
+                {testingKeys ? 'Testing…' : 'Test Connection'}
               </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setKeysModalOpen(false)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    saveCustomAIKeys({
+                      larprouterKey: larprouterInput,
+                      groqKey: groqInput,
+                      geminiKey: geminiInput,
+                      openaiKey: openaiInput,
+                    });
+                    setKeysModalOpen(false);
+                    toast.success('NikAI Cloud keys saved');
+                  }}
+                  className="px-4 py-2 rounded-xl text-white text-xs font-bold"
+                  style={{
+                    background: 'linear-gradient(95deg, #7C3AED, #EC4899)',
+                  }}
+                >
+                  Save Keys
+                </button>
+              </div>
             </div>
           </div>
         </div>

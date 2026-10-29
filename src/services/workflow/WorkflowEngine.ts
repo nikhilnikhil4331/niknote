@@ -376,7 +376,24 @@ export class WorkflowEngine {
     const prompt = this.interpolateTemplate(config.userPrompt || '', inputs);
     const systemPrompt = this.interpolateTemplate(config.systemPrompt || '', inputs);
 
-    // Call Supabase edge function or OpenAI API
+    // 1. Route through unified NikAI Astra Neural Core (/api/ai -> LarpRouter / Cloud)
+    try {
+      const { streamAstaAI } = await import('@/lib/aiEngine');
+      const result = await streamAstaAI({
+        messages: [
+          ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+          { role: 'user' as const, content: prompt },
+        ],
+        mode: 'auto',
+      });
+      if (result.content && result.provider !== 'local') {
+        return result.content;
+      }
+    } catch {
+      // fall through to Supabase openai-brain fallback
+    }
+
+    // 2. Fallback to Supabase edge function
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openai-brain`, {
       method: 'POST',
       headers: {
@@ -388,7 +405,7 @@ export class WorkflowEngine {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt },
         ],
-        model: config.model || 'gpt-4o',
+        model: config.model || 'deepseek-v4.1-flash',
         temperature: config.temperature ?? 0.7,
         max_tokens: config.maxTokens ?? 2048,
       }),
