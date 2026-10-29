@@ -400,7 +400,7 @@ const Index = () => {
         if (daysSincePrompt >= 7) {
           setTimeout(() => {
             toast('Share NikNote with friends? 🎁', {
-              description: '3 friends = 7 days FREE Premium!',
+              description: 'Share the free editor with someone who may find it useful.',
               duration: 8000,
               action: {
                 label: 'Share 📱',
@@ -991,13 +991,13 @@ const Index = () => {
       // 🎯 VIRAL GROWTH: Prompt sharing after successful PDF export
       setTimeout(() => {
         toast('Share NikNote with friends? 🎓', {
-          description: '3 friends share = 7 days FREE Premium!',
+          description: 'Share the free editor with your classmates.',
           duration: 8000,
           action: {
             label: 'WhatsApp Share 📱',
             onClick: () => {
               const msg = encodeURIComponent(
-                `🎓 NikNote — Free AI Study App! ✨\n\n✍️ Handwriting notes (16+ styles)\n🧠 AI Teacher (Hindi!)\n📝 Quiz + Flashcards generator\n\nDownload FREE: https://www.niknote.online\n3 dosto ko bhejo — Premium free! 🎁`
+                `🎓 NikNote — Free AI Study App! ✨\n\n✍️ Handwriting notes (16+ styles)\n🧠 AI Teacher (Hindi!)\n📝 Quiz + Flashcards generator\n\nDownload FREE: https://www.niknote.online`
               );
               window.open(`https://wa.me/?text=${msg}`, '_blank');
               try {

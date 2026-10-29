@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Upload, Loader2, Camera, X, FileText, Check, AlertTriangle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
+import { requestPaidHandwritingVision } from '@/lib/paidHandwritingVision';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -69,13 +69,7 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
   const [pages, setPages] = useState<PageResult[]>([]);
 
   const ocrCall = async (imageBase64: string) => {
-    const { data, error } = await supabase.functions.invoke('extract-handwriting-text', { body: { imageBase64, retryAttempt: 0 } });
-    if (error) {
-      const status = (error as any)?.context?.status ?? (error as any)?.status;
-      let msg = error.message;
-      try { msg = (await (error as any).context?.json())?.error || msg; } catch { /* keep */ }
-      throw Object.assign(new Error(msg), { status });
-    }
+    const data = await requestPaidHandwritingVision('ocr', imageBase64);
     if (!data?.success) throw Object.assign(new Error(data?.error || 'Text unclear on this page'), { status: 422 });
     return data.lines as string[];
   };
@@ -125,19 +119,7 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('extract-handwriting-text', {
-        body: { imageBase64, retryAttempt },
-      });
-
-      if (error) {
-        const status = (error as unknown as { status?: number })?.status;
-        if (status === 401) {
-          toast.error('Please login first');
-          navigate('/login');
-          return;
-        }
-        throw new Error(error.message || 'Extraction failed');
-      }
+      const data = await requestPaidHandwritingVision('ocr', imageBase64);
 
       const result = data as OCRResult;
       setOcrResult(result);

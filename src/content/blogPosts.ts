@@ -366,74 +366,32 @@ Notebooks create karo, pages add karo — sab offline.
 - Payment
 - Blog
 
-But basic note-taking + handwriting + PDF = **100% offline!**
+Some cached editing features may work offline after the app has loaded; availability depends on the device and browser. AI, cloud sync and payments require internet.
 
 **Install NikNote: https://www.niknote.online** 📱`,
   },
   {
     slug: 'school-management-software-india',
     title: 'Best School Management Software India 2026 — NikNote for Schools & Coaching',
-    excerpt: 'Teachers aur tuition centres ke liye NikNote — typed worksheet 2 minute mein handwritten ban jaata hai. ₹999/year se, 30 din free pilot. Jo abhi nahi hai, wo bechte nahi.',
+    excerpt: 'Teachers aur tuition centres ke liye NikNote: free handwriting editor aur PDF export. Institution ki zaroorat ke liye sampark karein.',
     category: 'B2B',
     readTime: '7 min',
     tags: ['school software', 'coaching center', 'EdTech', 'B2B', 'institution'],
     content: `# NikNote for Schools & Coaching Centers 🏫
 
-India ke teachers aur tuition centres ke liye ek simple tool — aur ek honest price list.
+Teachers aur tuition centres typed material ko handwriting styles mein badal kar PDF bana sakte hain.
 
-> **Note:** Is article ka pehla version "teacher dashboard", "white-label", "SSO", "bulk CSV import" aur ₹25,000–₹2,00,000/year ke plans advertise karta tha. **Wo features banaye hi nahi gaye the.** Humne use theek kar diya hai. Jo neeche likha hai, wahi aaj sach mein milta hai.
+## Aaj kya available hai?
 
-## Asli problem kya hai?
+- Free editor, handwriting styles aur PDF export
+- PDF tools aur AI study features; AI ke liye internet zaroori hai
+- Individual Premium pass: ₹49 for 7 days ya ₹99 for 30 days, one-time payment; automatic renewal nahi
 
-Ek teacher ko 2-page ka worksheet haath se likhne mein **~40 minute** lagte hain.
+## Jo abhi available nahi hai
 
-Hafte mein 3 worksheet × 40 hafte = **~76 ghante saal mein**, sirf copy karne mein.
+Teacher/admin dashboard, bulk student import, single sign-on, white-label branding, LMS integration aur per-student analytics abhi included nahi hain.
 
-Yeh paisa ka problem nahi hai. Yeh teacher ke evening ka problem hai.
-
-## NikNote kya karta hai (aaj)
-
-- ✅ **Typed worksheet → handwritten page** — 16+ styles, ruled/graph/plain paper, 300 DPI print-ready PDF
-- ✅ **PDF tools** — merge, split, compress, OCR, e-sign — sab browser mein, file upload ke bina
-- ✅ **AI help** — Hindi/English explanations, quizzes, flashcards
-- ✅ **Offline** — ek baar install karo, bina internet chalta hai
-
-## Plans (jo aaj exist karte hain)
-
-| Plan | Price | Logins | Kya milta hai |
-|------|-------|--------|---------------|
-| Teacher | ₹999/yr | 1 | Unlimited worksheets, 16+ styles, 300 DPI export, PDF tools |
-| Tuition Centre | ₹4,999/yr | 5 | Teacher plan ×5, question-paper sets, onboarding call |
-| School / College Pilot | ₹0 / 30 din | 30 students | Ek department ke liye free pilot, no card, no contract |
-
-## Jo abhi nahi hai
-
-Yeh roadmap pe hain. Inke paise nahi liye jaate:
-
-- Teacher / admin dashboard
-- Bulk student import
-- SSO
-- White-label branding
-- LMS integration
-- Per-student analytics
-
-## Time bachat ka hisaab
-
-- Worksheet haath se: ~40 min
-- NikNote se: ~2 min
-- Bachat per worksheet: ~38 min
-- 3 worksheet/hafta × 40 hafte = **~76 ghante saal mein**
-
-*(Yeh estimate hai, guarantee nahi.)*
-
-## Shuru kaise karein
-
-1. Free 30-day pilot request karo — card nahi chahiye
-2. Hum call pe saath set up karte hain
-3. Day 25 pe feedback call
-4. Kaam aaya to continue karo, warna band — koi auto-renewal nahi
-
-**Free pilot: https://www.niknote.online/schools** 🏫`,
+Pehle free editor try karein. School ya coaching ki requirements ke liye [institution inquiry](/schools) bhejein.`,
   },
   {
     slug: 'upsc-preparation-ai-notes',

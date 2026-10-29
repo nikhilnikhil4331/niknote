@@ -388,7 +388,7 @@ async function main() {
         '@type': 'Offer',
         price: '0',
         priceCurrency: 'INR',
-        description: 'Free tier available; paid plans start at ₹49/week.',
+        description: 'Free tier available; one-time Premium passes start at ₹49 for 7 days.',
       },
       author: { '@type': 'Person', name: AUTHOR },
     };

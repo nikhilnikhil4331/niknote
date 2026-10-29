@@ -22,7 +22,7 @@ const faqs = [
   },
   {
     question: 'Is NikNote free to use?',
-    answer: 'Yes, you can start using NikNote for free without a credit card, including instant guest workspace access. Handwriting styles, AI notes, PDF tools and exports are free for everyone. Paid plans — Student Pro (₹49/week) and Premium (₹99/month) — unlock the AI writing assistant, voice dictation, AI style matching and handwriting import.',
+    answer: 'Yes, you can start using NikNote for free without a credit card, including instant guest workspace access. Handwriting styles, AI notes, PDF tools and exports are free for everyone. Paid plans — Student Pro (₹49 for 7 days) and Premium (₹99 for 30 days) — unlock the AI writing assistant, voice dictation, AI style matching and handwriting import.',
   },
   {
     question: 'How does the Hindi + English AI Study Assistant (NikAI) work?',
@@ -38,7 +38,7 @@ const faqs = [
   },
   {
     question: 'Which payment methods are supported?',
-    answer: 'Subscriptions are processed securely via Razorpay in INR and support UPI, debit/credit cards, and popular wallets. NikNote never stores your card number or UPI PIN.',
+    answer: 'One-time payments are processed via Razorpay in INR. Each pass lasts 7 or 30 days and does not renew automatically. Available payment methods are shown at checkout; NikNote never stores your card number or UPI PIN.',
   },
 ];
 

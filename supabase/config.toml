@@ -19,3 +19,9 @@ project_id = "ievggapvfidhygkhtkug"
     verify_jwt = false
   [functions.secure-image-upload]
     verify_jwt = false
+
+  [functions.handwriting-vision]
+    verify_jwt = true
+
+[functions.sales-overview]
+verify_jwt = true

@@ -43,10 +43,11 @@ interface TrackingConfig {
 }
 
 function readEnvConfig(): TrackingConfig {
-  const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
+  // Refer to public identifiers individually: reading the whole Vite env
+  // object would embed every VITE_* variable in the browser bundle.
   return {
-    gaMeasurementId: (env.VITE_GA_MEASUREMENT_ID ?? '').trim(),
-    metaPixelId: (env.VITE_META_PIXEL_ID ?? '').trim(),
+    gaMeasurementId: (import.meta.env.VITE_GA_MEASUREMENT_ID ?? '').trim(),
+    metaPixelId: (import.meta.env.VITE_META_PIXEL_ID ?? '').trim(),
   };
 }
 

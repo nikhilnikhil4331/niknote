@@ -1,122 +1,75 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// Public inquiry form. The service role saves one durable lead; no personal
+// contact details are copied into analytics or application logs.
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-api-version, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const clean = (value: unknown, max = 200) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-function clean(v: unknown, max = 200): string {
-  return typeof v === "string" ? v.trim().slice(0, max) : "";
+function inferSegment(institution: string, students: number | null): string {
+  const name = institution.toLowerCase();
+  if (/coaching|institute|academy|classes|tuition|tutorial/.test(name)) return 'coaching';
+  if (/college|university|polytechnic/.test(name)) return 'college';
+  if (/school/.test(name)) return 'school';
+  if (students && students <= 60) return 'teacher';
+  return 'unknown';
 }
 
-function inferSegment(institution: string, students: string, plan: string): string {
-  const hay = `${institution} ${plan}`.toLowerCase();
-  if (/coaching|institute|academy|classes|tuition|tutorial/.test(hay)) return "coaching";
-  if (/college|university|polytechnic/.test(hay)) return "college";
-  if (/school/.test(hay)) return "school";
-  const n = Number(students);
-  if (Number.isFinite(n) && n > 0 && n <= 60) return "teacher";
-  return "unknown";
-}
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  if (req.method !== 'POST') return reply({ error: 'Method not allowed' }, 405);
+  const supabaseUrl = (Deno.env.get('SUPABASE_URL') || '').replace(/\/+$/, '');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+  if (!supabaseUrl || !serviceKey) return reply({ error: 'Inquiry service unavailable. Please email support.' }, 503);
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
+  let body: any;
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-
-    const body = await req.json();
-    const name = clean(body.name, 120);
-    const email = clean(body.email, 200).toLowerCase();
-    const phone = clean(body.phone, 30);
-    const institution = clean(body.institution, 160);
-    const message = clean(body.message, 2000);
-    const plan = clean(body.plan, 60);
-    const studentsRaw = clean(String(body.students ?? ""), 20);
-    const students = /^\d{1,6}$/.test(studentsRaw) ? Number(studentsRaw) : null;
-
-    if (!name || !institution || !EMAIL_RE.test(email)) {
-      return new Response(
-        JSON.stringify({ error: "A valid name, institution and email are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    const raw = await req.text();
+    if (raw.length > 12000) return reply({ error: 'Inquiry is too long' }, 413);
+    body = JSON.parse(raw);
+  } catch {
+    return reply({ error: 'Invalid inquiry' }, 400);
+  }
+  try {
+    const name = clean(body?.name, 120);
+    const email = clean(body?.email, 200).toLowerCase();
+    const institution = clean(body?.institution, 160);
+    const phone = clean(body?.phone, 30);
+    const message = clean(body?.message, 2000);
+    const rawStudents = clean(String(body?.students ?? ''), 20);
+    const students = /^\d{1,6}$/.test(rawStudents) && Number(rawStudents) > 0 ? Number(rawStudents) : null;
+    if (!name || !institution || !emailPattern.test(email)) {
+      return reply({ error: 'A valid name, institution and email are required' }, 400);
     }
 
-    const segment = inferSegment(institution, studentsRaw, plan);
-
-    // Durable pipeline record. This is the system of record for sales follow-up.
-    const { data: lead, error: leadError } = await adminClient
-      .from("sales_leads")
-      .upsert(
-        {
-          name,
-          email,
-          phone: phone || null,
-          institution,
-          segment,
-          students,
-          message: message || null,
-          plan: plan || null,
-          source: "website",
-          stage: "new",
-        },
-        { onConflict: "email,institution", ignoreDuplicates: true },
-      )
-      .select("id")
-      .maybeSingle();
-
-    if (leadError) {
-      // Never silently swallow this: a lost lead is lost revenue.
-      console.error("sales_leads insert failed:", leadError);
-    }
-
-    // Keep the legacy event trail so existing dashboards keep working.
-    const { error: eventError } = await adminClient.from("analytics_events").insert({
-      event_type: "b2b_lead",
-      event_data: {
-        name,
-        email,
-        phone,
-        institution,
-        students: studentsRaw,
-        plan,
-        segment,
-        lead_id: lead?.id ?? null,
-        source: "niknote_website",
-        timestamp: new Date().toISOString(),
+    const res = await fetch(`${supabaseUrl}/rest/v1/sales_leads?on_conflict=email,institution&select=id`, {
+      method: 'POST',
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=ignore-duplicates,return=representation',
       },
-    });
-    if (eventError) console.error("Analytics save error:", eventError);
-
-    if (leadError) {
-      return new Response(
-        JSON.stringify({ error: "Could not save your details. Please email us directly." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    console.log(`B2B LEAD stored: ${name} | ${institution} | ${segment} | ${email}`);
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "Received. We will reply within one working day.",
-        leadId: lead?.id ?? null,
+      body: JSON.stringify({
+        name, email, institution, phone: phone || null, message: message || null,
+        students, segment: inferSegment(institution, students),
+        plan: 'institution_inquiry', source: 'website', stage: 'new',
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  } catch (error) {
-    console.error("Error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    });
+    if (!res.ok) {
+      console.error('Could not save institution inquiry', res.status);
+      return reply({ error: 'Could not save your inquiry. Please email support.' }, 503);
+    }
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length !== 1) {
+      // The old message was not changed: do not claim a repeat inquiry was saved.
+      return reply({ error: 'An inquiry already exists for this email and institution. Please email support to add details.' }, 409);
+    }
+    return reply({ success: true, message: 'Inquiry received.' });
+  } catch {
+    return reply({ error: 'Could not save your inquiry. Please email support.' }, 503);
   }
 });

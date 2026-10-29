@@ -15,14 +15,14 @@ interface StreakReward {
   label: string;
   description: string;
   claimed: boolean;
-  type: 'free_premium_day' | 'ai_credits' | 'style_unlock';
+  type: 'milestone';
 }
 
 const DEFAULT_REWARDS: StreakReward[] = [
-  { days: 3, label: '3-Day Streak! 🔥', description: '1 Free AI Note Credit', claimed: false, type: 'ai_credits' },
-  { days: 7, label: 'Week Warrior! 💪', description: '1 Day Free Premium', claimed: false, type: 'free_premium_day' },
-  { days: 14, label: '2 Weeks! 🌟', description: '2 AI Credits + Style Unlock', claimed: false, type: 'style_unlock' },
-  { days: 30, label: 'Monthly Master! 👑', description: '3 Days Free Premium', claimed: false, type: 'free_premium_day' },
+  { days: 3, label: '3-Day Streak! 🔥', description: 'A three-day study milestone', claimed: false, type: 'milestone' },
+  { days: 7, label: 'Week Warrior! 💪', description: 'One week of consistent study', claimed: false, type: 'milestone' },
+  { days: 14, label: '2 Weeks! 🌟', description: 'Two weeks of consistent study', claimed: false, type: 'milestone' },
+  { days: 30, label: 'Monthly Master! 👑', description: 'A month of consistent study', claimed: false, type: 'milestone' },
 ];
 
 const STREAK_KEY = 'niknote_streak_data';
@@ -31,7 +31,12 @@ export const useStudyStreak = () => {
   const [streakData, setStreakData] = useState<StreakData>(() => {
     try {
       const saved = localStorage.getItem(STREAK_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const previous = JSON.parse(saved);
+        return { ...previous, rewards: DEFAULT_REWARDS.map((reward) => ({
+          ...reward, claimed: Boolean(previous.rewards?.find((item: StreakReward) => item.days === reward.days)?.claimed),
+        })) };
+      }
     } catch {}
     return {
       currentStreak: 0,
@@ -236,7 +241,7 @@ export const StudyStreakWidget: React.FC = () => {
                     className="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white font-semibold text-sm flex items-center justify-center gap-2"
                   >
                     <Gift className="h-4 w-4" />
-                    Claim Reward!
+                    Nice!
                   </button>
                   <button
                     onClick={() => {

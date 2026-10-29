@@ -1,73 +1,64 @@
 // ============================================================
 // NikNote 4.0 — B2B / Institution Landing Page
 // For Schools, Coaching Centers, Colleges
-// This is the ₹5 Crore revenue engine
 // ============================================================
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { supabase } from '@/integrations/supabase/client';
 
-import React, { useState, useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
-  Building2, Users, GraduationCap, BookOpen, Brain, Shield,
-  CheckCircle2, Phone, Mail, Globe, BarChart3, Clock, Star,
-  Crown, Zap, ArrowRight, MessageSquare, Award, TrendingUp,
-  School, Calculator, ChevronDown, ChevronUp
+  Building2, GraduationCap, BookOpen, Brain, Shield,
+  CheckCircle2, Clock, Zap, ArrowRight, School, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { trackClickCTA, trackGenerateLead } from '@/lib/tracking';
+import { trackGenerateLead } from '@/lib/tracking';
 
 const institutionPlans = [
   {
-    name: "Teacher",
-    price: "₹999",
-    period: "/year",
-    seats: "1 teacher account",
+    name: "Free editor",
+    price: "Free",
+    period: "",
+    seats: "For individual teachers and students",
     icon: School,
     color: "from-blue-500 to-indigo-600",
+    action: "editor",
     features: [
-      "1 teacher login",
-      "Unlimited handwritten worksheets & answer keys",
-      "16+ handwriting styles",
-      "300 DPI print-ready PDF export",
-      "PDF merge / split / compress / e-sign tools",
-      "Works offline once installed",
-    ]
+      "Create handwritten worksheets and notes",
+      "Choose handwriting styles and export PDFs",
+      "Use a guest workspace without a card",
+    ],
   },
   {
-    name: "Tuition Centre",
-    price: "₹4,999",
-    period: "/year",
-    seats: "Up to 5 teacher logins",
+    name: "Individual Premium",
+    price: "₹49",
+    period: "/ 7 days",
+    seats: "For one account; ₹99 for 30 days is also available",
     icon: GraduationCap,
-    popular: true,
+    highlighted: true,
     color: "from-purple-500 to-pink-600",
+    action: "premium",
     features: [
-      "5 separate teacher logins",
-      "Everything in the Teacher plan",
-      "Question-paper and worksheet sets",
-      "30-minute onboarding call for your teachers",
-      "WhatsApp support on a real number",
-      "Annual invoice with GST details on request",
-    ]
+      "AI writing assistant and voice dictation",
+      "AI style matcher and handwriting import",
+      "One-time payment; no automatic renewal",
+    ],
   },
   {
-    name: "School / College Pilot",
-    price: "₹0",
-    period: "/30 days",
-    seats: "Up to 30 students",
+    name: "Schools & coaching",
+    price: "Enquire",
+    period: "",
+    seats: "Discuss your institution's needs",
     icon: Building2,
     color: "from-orange-500 to-red-600",
+    action: "contact",
     features: [
-      "Free 30-day pilot for one department",
-      "30 student logins",
-      "We set it up with you on a call",
-      "No card, no contract, no auto-renewal",
-      "Feedback call on day 25",
-      "Continue only if it actually saves time",
-    ]
+      "Tell us about your teachers and students",
+      "Individual accounts and the free editor are available today",
+      "Bulk administration and student analytics are not available yet",
+    ],
   },
 ];
 
@@ -86,8 +77,8 @@ const honestNotes = [
     text: "NikNote is early. We will not put up logos, ratings or quotes from schools we have never worked with. What you see here is what exists today.",
   },
   {
-    title: "Start with a free pilot",
-    text: "Run it with one department for 30 days at no cost. If it does not save your teachers real time, walk away and keep your money.",
+    title: "Try the free editor",
+    text: "Teachers can start with handwriting styles and PDF export without a payment. Contact us to discuss institution requirements.",
   },
   {
     title: "You talk to the person who built it",
@@ -102,15 +93,15 @@ const faqs = [
   },
   {
     q: "Can students use NikNote on mobile?",
-    a: "Yes! NikNote works on any device — mobile, tablet, or desktop. It's a Progressive Web App that works offline too."
+    a: "NikNote supports modern mobile and desktop browsers. Some cached editing features may work offline after loading; AI and cloud features require an internet connection."
   },
   {
     q: "Is student data safe?",
-    a: "Absolutely. We comply with Indian data protection laws. All data is encrypted and stored on secure servers. We never sell or share student data."
+    a: "Please review the NikNote privacy policy before submitting personal or student data. Features that use AI or cloud sync require internet services."
   },
   {
     q: "Can we try before buying?",
-    a: "Yes. We run a free 30-day pilot for one department, up to 30 students logins. No card, no contract and no auto-renewal. If it does not save your teachers time, you stop and owe nothing."
+    a: "Yes. You can use the free editor without a card. Individual Premium passes are optional and do not renew automatically."
   },
   {
     q: "What about regional language support?",
@@ -118,59 +109,38 @@ const faqs = [
   },
   {
     q: "Do you offer discounts for government schools?",
-    a: "Yes, we offer 50% discount for government schools and NGOs. Contact us for details."
+    a: "Please contact us about your institution's needs. No institutional discount is advertised here."
   },
 ];
 
 const B2BPage = () => {
-  useDocumentTitle({ title: 'NikNote for Teachers, Tuition Centres & Schools | Handwritten Worksheet Maker', description: 'Turn typed questions into realistic handwritten worksheets, assignments and answer keys in seconds. Teacher plans from ₹999/year. Free 30-day pilot for one department.' });
+  useDocumentTitle({ title: 'NikNote for Teachers, Tuition Centres & Schools | Handwritten Worksheet Maker', description: 'Create handwritten worksheets and PDFs with the free editor. Ask about NikNote for your school or coaching centre.' });
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', institution: '', students: '', message: '' });
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submissionFailed, setSubmissionFailed] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
+    setSubmissionFailed(false);
     try {
-      // Save lead to Supabase via edge function
-      const { error } = await supabase.functions.invoke('b2b-lead', {
-        body: {
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          institution: formData.institution,
-          students: formData.students,
-          message: formData.message,
-          plan: 'school_pro',
-        },
+      const { data, error } = await supabase.functions.invoke('b2b-lead', {
+        body: { ...formData, plan: 'institution_inquiry' },
       });
-
-      if (error) {
-        console.error('B2B lead error:', error);
-      }
-
-      // Also open mailto as backup notification
-      const subject = encodeURIComponent(`NikNote B2B Inquiry - ${formData.institution}`);
-      const body = encodeURIComponent(
-        `Name: ${formData.name}\nEmail: ${formData.email}\nPhone: ${formData.phone}\nInstitution: ${formData.institution}\nStudents: ${formData.students}\nMessage: ${formData.message}`
-      );
-      window.open(`mailto:nikhilnikhil4331@gmail.com?subject=${subject}&body=${body}`, '_blank');
-
+      if (error || data?.success !== true) throw new Error('Inquiry was not saved');
       trackGenerateLead({
-        planName: 'school_pro',
+        planName: 'institution_inquiry',
         conversionSource: 'schools_form',
         pageType: 'b2b',
       });
-      toast.success("Thank you! We'll contact you within 24 hours 🎉");
+      toast.success('Inquiry received. Thank you for contacting us.');
     } catch (err) {
-      console.error('Submit error:', err);
-      // Fallback: just mailto
-      const subject = encodeURIComponent(`NikNote B2B Inquiry - ${formData.institution}`);
-      const body = encodeURIComponent(`Name: ${formData.name}\nEmail: ${formData.email}\nPhone: ${formData.phone}\nInstitution: ${formData.institution}\nStudents: ${formData.students}\nMessage: ${formData.message}`);
-      window.open(`mailto:nikhilnikhil4331@gmail.com?subject=${subject}&body=${body}`, '_blank');
-      toast.success("Thank you! We'll contact you soon 🎉");
+      console.error('Could not save institution inquiry:', err);
+      setSubmissionFailed(true);
+      toast.error('Could not save your inquiry. Please email us instead.');
     } finally {
       setSubmitting(false);
     }
@@ -226,9 +196,8 @@ const B2BPage = () => {
             transition={{ delay: 0.2 }}
             className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8"
           >
-            A teacher hand-copies a 2-page worksheet in about 40 minutes.
-            NikNote does it in about two, at 300 DPI, ready to print.
-            Built by one developer in India who still answers his own support messages.
+            Create worksheets and notes with handwriting styles, then export them to PDF.
+            Start with the free editor and contact us about your institution's needs.
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -241,7 +210,7 @@ const B2BPage = () => {
               className="rounded-xl text-base px-8 h-12"
               onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
             >
-              Request Free Pilot
+              Contact us
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
             <Button
@@ -261,9 +230,9 @@ const B2BPage = () => {
             className="mt-12 grid grid-cols-3 gap-6 max-w-md mx-auto"
           >
             {[
-              { value: "16+", label: "Handwriting styles" },
-              { value: "300", label: "DPI export" },
-              { value: "30", label: "Day free pilot" },
+              { value: "Free", label: "Editor and PDF export" },
+              { value: "7 days", label: "Student Pro pass" },
+              { value: "30 days", label: "Premium pass" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-2xl font-bold text-primary">{stat.value}</div>
@@ -277,14 +246,14 @@ const B2BPage = () => {
       {/* Key Benefits */}
       <section className="py-16 px-4">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-10">Why Institutions Choose NikNote</h2>
+          <h2 className="text-2xl font-bold text-center mb-10">Tools for educators</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: BookOpen, title: "Handwritten worksheets", desc: "Type a worksheet once, get realistic handwriting on ruled, graph or plain paper at 300 DPI. Print and hand it out." },
-              { icon: Brain, title: "AI help that works", desc: "Hindi and English explanations, quizzes and flashcards. Verified live in production — no setup needed." },
-              { icon: Shield, title: "Files stay on the device", desc: "PDF merge, split, compress and OCR run in the browser. Students' files are not uploaded to a server." },
-              { icon: Clock, title: "Works offline", desc: "Install once as an app. It keeps working when the classroom Wi-Fi does not." },
-              { icon: Zap, title: "Any device", desc: "Phone, tablet or laptop. No install, no IT ticket, no per-seat setup." },
+              { icon: BookOpen, title: "Handwritten worksheets", desc: "Type notes, choose a handwriting style and export pages to PDF." },
+              { icon: Brain, title: "AI study help", desc: "Explore explanations, quizzes and flashcards. AI features need an internet connection." },
+              { icon: Shield, title: "Browser PDF tools", desc: "Merge, split and edit PDFs in your browser; review the privacy policy for cloud features." },
+              { icon: Clock, title: "Work across sessions", desc: "Use the editor on a compatible browser; cloud sync requires internet." },
+              { icon: Zap, title: "Mobile and desktop", desc: "Use NikNote on a modern phone, tablet or computer." },
               { icon: CheckCircle2, title: "Honest scope", desc: "We sell only what ships today. No dashboard we have not built, and no feature you would have to wait for." },
             ].map((item, i) => (
               <motion.div
@@ -308,7 +277,7 @@ const B2BPage = () => {
       <section id="plans" className="py-16 px-4 bg-secondary/20">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-3">Plans for teachers and institutions</h2>
-          <p className="text-center text-muted-foreground mb-10">Start free for 30 days. Paid plans from ₹999/year per teacher.</p>
+          <p className="text-center text-muted-foreground mb-10">Start with the free editor or choose an individual, one-time Premium pass.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {institutionPlans.map((plan, i) => (
               <motion.div
@@ -318,10 +287,10 @@ const B2BPage = () => {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
                 className={`relative bg-card rounded-2xl border-2 overflow-hidden ${
-                  plan.popular ? 'border-primary shadow-xl shadow-primary/10' : 'border-border/30'
+                  plan.highlighted ? 'border-primary shadow-xl shadow-primary/10' : 'border-border/30'
                 }`}
               >
-                {plan.popular && (
+                {plan.highlighted && (
                   <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-purple-600" />
                 )}
                 <div className="p-6">
@@ -333,9 +302,9 @@ const B2BPage = () => {
                       <h3 className="font-bold">{plan.name}</h3>
                       <div className="text-xs text-muted-foreground">{plan.seats}</div>
                     </div>
-                    {plan.popular && (
+                    {plan.highlighted && (
                       <span className="ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary text-primary-foreground">
-                        Popular
+                        Optional
                       </span>
                     )}
                   </div>
@@ -352,11 +321,11 @@ const B2BPage = () => {
                     ))}
                   </ul>
                   <Button
-                    className={`w-full rounded-xl ${plan.popular ? 'bg-gradient-to-r from-primary to-primary/80' : ''}`}
-                    variant={plan.popular ? 'default' : 'outline'}
-                    onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
+                    className={`w-full rounded-xl ${plan.highlighted ? 'bg-gradient-to-r from-primary to-primary/80' : ''}`}
+                    variant={plan.highlighted ? 'default' : 'outline'}
+                    onClick={() => plan.action === 'editor' ? navigate('/studio') : plan.action === 'premium' ? navigate('/payment?plan=weekly') : document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
                   >
-                    {plan.price === '₹0' ? 'Start Free Pilot' : 'Request this plan'}
+                    {plan.action === 'editor' ? 'Open free editor' : plan.action === 'premium' ? 'Choose Premium' : 'Contact us'}
                   </Button>
                 </div>
               </motion.div>
@@ -410,36 +379,6 @@ const B2BPage = () => {
         </div>
       </section>
 
-      {/* ROI Calculator */}
-      <section className="py-16 px-4 bg-secondary/20">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-2xl font-bold mb-3">Teacher time saved</h2>
-          <p className="text-muted-foreground mb-6">The real saving is your teachers' evenings, not paper.</p>
-          <div className="bg-card rounded-2xl border border-border/30 p-6 space-y-4">
-            <div className="flex items-center justify-between text-sm">
-              <span>Hand-copying a 2-page worksheet</span>
-              <span className="font-bold">~40 min</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span>Same worksheet with NikNote</span>
-              <span className="font-bold text-primary">~2 min</span>
-            </div>
-            <div className="h-px bg-border" />
-            <div className="flex items-center justify-between text-sm">
-              <span>Time saved per worksheet</span>
-              <span className="font-bold text-green-600">38 minutes</span>
-            </div>
-            <div className="flex items-center justify-between text-sm bg-green-500/10 p-3 rounded-xl">
-              <span>3 worksheets a week, 40-week year</span>
-              <span className="font-bold text-green-700 text-lg">76 hours saved</span>
-            </div>
-            <p className="text-[11px] text-muted-foreground pt-1">
-              Estimate, not a guarantee. Based on writing a worksheet by hand versus generating and printing it.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* FAQ */}
       <section className="py-16 px-4">
         <div className="max-w-2xl mx-auto">
@@ -474,12 +413,12 @@ const B2BPage = () => {
       <section id="contact" className="py-16 px-4 bg-gradient-to-br from-primary/5 to-purple-500/5">
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-3">Get Started Today</h2>
-          <p className="text-center text-muted-foreground mb-8">Free 30-day pilot for one department. No card, no contract, no auto-renewal.</p>
+          <p className="text-center text-muted-foreground mb-8">Tell us what your teachers or students need. The free editor is available now.</p>
           <form onSubmit={handleSubmit} className="bg-card rounded-2xl border border-border/30 p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Name *</label>
-                <input
+                <label htmlFor="inquiry-name" className="text-xs font-medium text-muted-foreground mb-1 block">Name *</label>
+                <input id="inquiry-name"
                   required
                   value={formData.name}
                   onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -488,8 +427,8 @@ const B2BPage = () => {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Email *</label>
-                <input
+                <label htmlFor="inquiry-email" className="text-xs font-medium text-muted-foreground mb-1 block">Email *</label>
+                <input id="inquiry-email"
                   required
                   type="email"
                   value={formData.email}
@@ -501,8 +440,8 @@ const B2BPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Phone</label>
-                <input
+                <label htmlFor="inquiry-phone" className="text-xs font-medium text-muted-foreground mb-1 block">Phone</label>
+                <input id="inquiry-phone"
                   value={formData.phone}
                   onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                   className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm"
@@ -510,23 +449,21 @@ const B2BPage = () => {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Number of Students</label>
-                <select
+                <label htmlFor="inquiry-students" className="text-xs font-medium text-muted-foreground mb-1 block">Number of Students</label>
+                <input id="inquiry-students"
+                  type="number"
+                  min="1"
+                  max="999999"
                   value={formData.students}
                   onChange={e => setFormData(prev => ({ ...prev, students: e.target.value }))}
                   className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm"
-                >
-                  <option value="">Select</option>
-                  <option value="1-100">1-100</option>
-                  <option value="100-500">100-500</option>
-                  <option value="500-2000">500-2000</option>
-                  <option value="2000+">2000+</option>
-                </select>
+                  placeholder="Optional"
+                />
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Institution Name *</label>
-              <input
+              <label htmlFor="inquiry-institution" className="text-xs font-medium text-muted-foreground mb-1 block">Institution Name *</label>
+              <input id="inquiry-institution"
                 required
                 value={formData.institution}
                 onChange={e => setFormData(prev => ({ ...prev, institution: e.target.value }))}
@@ -535,8 +472,8 @@ const B2BPage = () => {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Message</label>
-              <textarea
+              <label htmlFor="inquiry-message" className="text-xs font-medium text-muted-foreground mb-1 block">Message</label>
+              <textarea id="inquiry-message"
                 value={formData.message}
                 onChange={e => setFormData(prev => ({ ...prev, message: e.target.value }))}
                 className="w-full h-24 px-3 py-2 rounded-lg border border-border bg-background text-sm resize-none"
@@ -548,11 +485,16 @@ const B2BPage = () => {
               disabled={submitting}
               className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-primary to-primary/80"
             >
-              {submitting ? "Submitting..." : "Request Free Pilot"}
+              {submitting ? "Submitting..." : "Contact us"}
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
+            {submissionFailed && (
+              <p role="alert" className="text-xs text-center text-destructive">
+                Your inquiry was not saved. Please <a className="underline" href={`mailto:support@niknote.online?subject=${encodeURIComponent('NikNote institution inquiry')}&body=${encodeURIComponent(`Name: ${formData.name}\nInstitution: ${formData.institution}\nMessage: ${formData.message}`)}`}>email support</a> instead.
+              </p>
+            )}
             <p className="text-xs text-muted-foreground text-center">
-              We'll respond within 24 hours. No spam, ever.
+              Your details are used to respond to this inquiry.
             </p>
           </form>
         </div>

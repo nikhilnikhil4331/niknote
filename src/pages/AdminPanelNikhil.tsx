@@ -23,6 +23,7 @@ import { AdminCSVExport } from '@/components/admin/AdminCSVExport';
 import { AdminFeatureHeatmap } from '@/components/admin/AdminFeatureHeatmap';
 import { AdminUserDrawer } from '@/components/admin/AdminUserDrawer';
 import { AdminCommandCenter } from '@/components/admin/AdminCommandCenter';
+import { AdminSalesOverview } from '@/components/admin/AdminSalesOverview';
 
 interface UserData {
   id: string;
@@ -146,7 +147,7 @@ const AdminPanelNikhil: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('command');
+  const [activeTab, setActiveTab] = useState('sales');
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [userDrawerOpen, setUserDrawerOpen] = useState(false);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
@@ -165,7 +166,7 @@ const AdminPanelNikhil: React.FC = () => {
     monthly_price: 99,
   });
 
-  // KPI Data - Demo stats for 176K+ Indian users
+  // Activity counters loaded from available records
   const [kpiData, setKpiData] = useState({
     totalUsers: 0,
     todayUsers: 0,
@@ -175,141 +176,29 @@ const AdminPanelNikhil: React.FC = () => {
     totalRevenue: 0,
     premiumUsers: 0,
     conversionRate: 0,
-    avgSessionDuration: '0m',
+    avgSessionDuration: 'Unavailable',
     totalNotebooks: 0,
     aiRequests: 0,
     totalUploads: 0,
   });
 
-  // Generate demo chart data for 30 days
-  const generateDemoChartData = () => {
-    const data = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      data.push({
-        date: dateStr,
-        visitors: Math.floor(4100 + Math.random() * 3100),
-        signups: Math.floor(615 + Math.random() * 410),
-      });
-    }
-    return data;
-  };
-
-  const generateDemoPageCreations = () => {
-    const data = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      data.push({
-        date: date.toISOString().split('T')[0],
-        pages: Math.floor(900 + Math.random() * 400),
-      });
-    }
-    return data;
-  };
-
-  const generateDemoExports = () => {
-    const data = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      data.push({
-        date: date.toISOString().split('T')[0],
-        exports: Math.floor(400 + Math.random() * 300),
-      });
-    }
-    return data;
-  };
-
-  const generateDemoPayments = () => {
-    const data = [];
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      data.push({
-        date: date.toISOString().split('T')[0],
-        attempts: Math.floor(80 + Math.random() * 60),
-        success: Math.floor(40 + Math.random() * 35),
-      });
-    }
-    return data;
-  };
-
-  const generateDemoPremiumTrend = () => {
-    const data = [];
-    let premium = 800;
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      premium += Math.floor(Math.random() * 20);
-      data.push({
-        date: date.toISOString().split('T')[0],
-        premium: premium,
-        free: 42000 - premium,
-      });
-    }
-    return data;
-  };
-
-  // Chart Data with demo values
-  const [chartData, setChartData] = useState({
-    dailyVisitors: generateDemoChartData(),
-    pageCreations: generateDemoPageCreations(),
-    exports: generateDemoExports(),
-    payments: generateDemoPayments(),
-    deviceUsage: [
-      { name: 'Mobile', value: 31500, color: 'hsl(var(--primary))' },
-      { name: 'Desktop', value: 10500, color: 'hsl(var(--muted-foreground))' },
-    ],
-    premiumTrend: generateDemoPremiumTrend(),
-  });
-
-  // Funnel Data - realistic for 42K users
-  const [funnelData, setFunnelData] = useState({
-    visits: 156000,
-    signups: 42000,
-    firstPage: 38500,
-    firstExport: 18542,
-    premium: 1284,
-  });
-
-  // Heatmap Data with Indian user patterns
-  const [heatmapData, setHeatmapData] = useState({
-    features: [
-      { name: 'Text Editor', count: 38200, percentage: 91 },
-      { name: 'PDF Export', count: 18542, percentage: 44 },
-      { name: 'Handwriting Style', count: 15680, percentage: 37 },
-      { name: 'AI Assistant', count: 12890, percentage: 31 },
-      { name: 'Image Upload', count: 8456, percentage: 20 },
-      { name: 'Multiple Pages', count: 7840, percentage: 19 },
-    ],
-    peakHours: [
-      { hour: 0, count: 420 }, { hour: 1, count: 180 }, { hour: 2, count: 95 },
-      { hour: 3, count: 65 }, { hour: 4, count: 120 }, { hour: 5, count: 340 },
-      { hour: 6, count: 890 }, { hour: 7, count: 1450 }, { hour: 8, count: 2100 },
-      { hour: 9, count: 2800 }, { hour: 10, count: 3200 }, { hour: 11, count: 3500 },
-      { hour: 12, count: 2900 }, { hour: 13, count: 3100 }, { hour: 14, count: 3400 },
-      { hour: 15, count: 3600 }, { hour: 16, count: 3800 }, { hour: 17, count: 4200 },
-      { hour: 18, count: 4500 }, { hour: 19, count: 4800 }, { hour: 20, count: 5200 },
-      { hour: 21, count: 4600 }, { hour: 22, count: 3200 }, { hour: 23, count: 1800 },
-    ],
-    topExporters: [
-      { name: 'Rahul Sharma', exports: 156 },
-      { name: 'Priya Singh', exports: 142 },
-      { name: 'Amit Kumar', exports: 128 },
-      { name: 'Sneha Patel', exports: 115 },
-      { name: 'Vikram Reddy', exports: 98 },
-    ],
-    commonMoods: [
-      { mood: 'focused', count: 15800 },
-      { mood: 'creative', count: 12400 },
-      { mood: 'relaxed', count: 8900 },
-      { mood: 'professional', count: 4900 },
-    ],
-    avgSessionDuration: '14m',
-  });
+  // Until actual data has loaded, charts and funnels have no sample values.
+  const [chartData, setChartData] = useState<{
+    dailyVisitors: { date: string; visitors: number; signups: number }[];
+    pageCreations: { date: string; pages: number }[];
+    exports: { date: string; exports: number }[];
+    payments: { date: string; attempts: number; success: number }[];
+    deviceUsage: { name: string; value: number; color: string }[];
+    premiumTrend: { date: string; premium: number; free: number }[];
+  }>({ dailyVisitors: [], pageCreations: [], exports: [], payments: [], deviceUsage: [], premiumTrend: [] });
+  const [funnelData, setFunnelData] = useState({ visits: 0, signups: 0, firstPage: 0, firstExport: 0, premium: 0 });
+  const [heatmapData, setHeatmapData] = useState<{
+    features: { name: string; count: number; percentage: number }[];
+    peakHours: { hour: number; count: number }[];
+    topExporters: { name: string; exports: number }[];
+    commonMoods: { mood: string; count: number }[];
+    avgSessionDuration: string;
+  }>({ features: [], peakHours: [], topExporters: [], commonMoods: [], avgSessionDuration: 'Unavailable' });
 
   // Check admin status - supports both database roles AND session token
   // NOTE: sessionStorage check is for demo purposes - production should use only database roles
@@ -605,7 +494,7 @@ const AdminPanelNikhil: React.FC = () => {
       supabase.from('profiles').select('*', { count: 'exact', head: true }),
       supabase.from('notebooks').select('*', { count: 'exact', head: true }),
       supabase.from('pages').select('*', { count: 'exact', head: true }),
-      supabase.from('user_subscriptions').select('status'),
+      supabase.from('user_subscriptions').select('status,current_period_end').gt('current_period_end', new Date().toISOString()),
       supabase.from('activity_logs').select('action, user_id').gte('created_at', todayISO),
       supabase.from('activity_logs').select('user_id').gte('created_at', fifteenMinsAgo),
       supabase.from('activity_logs').select('action'),
@@ -617,12 +506,8 @@ const AdminPanelNikhil: React.FC = () => {
     const totalExports = allActivities?.filter(a => a.action?.includes('export')).length || 0;
     const aiRequests = allActivities?.filter(a => a.action?.includes('ai_') || a.action === 'ai_document_process').length || 0;
     const totalUploads = allActivities?.filter(a => a.action?.includes('upload')).length || 0;
-    // Revenue estimation with multiple plan tiers
-    const weeklyUsers = subscriptions?.filter(s => s.status === 'active' && s.plan_code === 'weekly').length || 0;
-    const monthlyUsers = subscriptions?.filter(s => s.status === 'active' && s.plan_code === 'monthly').length || 0;
-    const annualUsers = subscriptions?.filter(s => s.status === 'active' && s.plan_code === 'annual').length || 0;
-    const lifetimeUsers = subscriptions?.filter(s => s.status === 'active' && s.plan_code === 'lifetime').length || 0;
-    const totalRevenue = (weeklyUsers * 49 * 4) + (monthlyUsers * 99) + (annualUsers * 499 / 12) + (lifetimeUsers * 1999 / 12); // Monthly recurring revenue
+    // Revenue comes from the verified ledger in Sales & Leads, not subscriptions.
+    const totalRevenue = 0;
     const conversionRate = totalUsers ? Math.round((premiumUsers / (totalUsers || 1)) * 100) : 0;
 
     setKpiData({
@@ -634,7 +519,7 @@ const AdminPanelNikhil: React.FC = () => {
       totalRevenue,
       premiumUsers,
       conversionRate,
-      avgSessionDuration: '12m', // Would need more complex calculation
+      avgSessionDuration: 'Unavailable',
       totalNotebooks: totalNotebooks || 0,
       aiRequests,
       totalUploads,
@@ -695,12 +580,12 @@ const AdminPanelNikhil: React.FC = () => {
       dailyVisitors: sortedDates.map(d => ({ date: d.date, visitors: d.visitors, signups: d.signups })),
       pageCreations: sortedDates.map(d => ({ date: d.date, pages: d.pages })),
       exports: sortedDates.map(d => ({ date: d.date, exports: d.exports })),
-      payments: sortedDates.map(d => ({ date: d.date, attempts: d.attempts, success: d.success })),
+      payments: [], // Event names are not proof of captured payments.
       deviceUsage: [
         { name: 'Mobile', value: deviceCounts.mobile, color: 'hsl(var(--primary))' },
         { name: 'Desktop', value: deviceCounts.desktop, color: 'hsl(var(--muted-foreground))' },
       ],
-      premiumTrend: sortedDates.map(d => ({ date: d.date, premium: d.success, free: d.signups })),
+      premiumTrend: [], // Daily events do not establish subscription totals.
     });
   };
 
@@ -785,7 +670,7 @@ const AdminPanelNikhil: React.FC = () => {
       commonMoods: Array.from(moodMap.entries())
         .map(([mood, count]) => ({ mood, count }))
         .sort((a, b) => b.count - a.count),
-      avgSessionDuration: '12m',
+      avgSessionDuration: 'Unavailable',
     });
   };
 
@@ -947,6 +832,7 @@ const AdminPanelNikhil: React.FC = () => {
 
 
   const tabs = [
+    { id: 'sales', label: 'Sales & Leads', icon: BarChart3 },
     { id: 'command', label: 'Command Center', icon: ShieldCheck },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
@@ -1079,6 +965,8 @@ const AdminPanelNikhil: React.FC = () => {
             </Button>
           </div>
 
+          <TabsContent value="sales" className="mt-4"><AdminSalesOverview /></TabsContent>
+
           {/* Command Center Tab — full per-user control */}
           <TabsContent value="command" className="mt-4">
             <AdminCommandCenter />
@@ -1086,8 +974,8 @@ const AdminPanelNikhil: React.FC = () => {
 
           {/* Dashboard Tab */}
           <TabsContent value="dashboard" className="space-y-4 mt-4">
+            <p className="text-xs text-muted-foreground">Activity metrics depend on available permissions and consent; they are not verified revenue. See Sales &amp; Leads for the payment ledger.</p>
             <AdminKPICards data={kpiData} loading={refreshing} />
-            <AdminUserFunnel data={funnelData} loading={refreshing} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <AdminActivityFeed activities={activities.slice(0, 15)} loading={refreshing} />
               <AdminErrorLogs 

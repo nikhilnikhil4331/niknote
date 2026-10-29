@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Upload, Loader2, Camera, X, Sparkles, Check, RotateCcw, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { NoteSettings, HandwritingFont, InkColor, FONT_OPTIONS } from '@/types/notes';
-import { supabase } from '@/integrations/supabase/client';
+import { requestPaidHandwritingVision } from '@/lib/paidHandwritingVision';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHandwritingDNAOptional } from '@/contexts/HandwritingDNAContext';
 import { useNavigate } from 'react-router-dom';
@@ -40,7 +40,7 @@ const ANALYSIS_MESSAGES = [
   { icon: '📸', text: 'Reading your handwriting...' },
   { icon: '🔍', text: 'Analyzing letter shapes & connections...' },
   { icon: '📐', text: 'Measuring slant & spacing...' },
-  { icon: '✒️', text: 'Detecting pen pressure patterns...' },
+  { icon: '✒️', text: 'Estimating visible stroke weight...' },
   { icon: '✨', text: 'Creating your personal style...' },
 ];
 
@@ -97,19 +97,7 @@ export const HandwritingAnalyzer: React.FC<HandwritingAnalyzerProps> = ({ onAppl
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('analyze-handwriting', {
-        body: { imageBase64 },
-      });
-
-      if (error) {
-        const status = (error as unknown as { status?: number })?.status;
-        if (status === 401) {
-          toast.error('Please login first');
-          navigate('/login');
-          return;
-        }
-        throw new Error(error.message || 'Analysis failed');
-      }
+      const data = await requestPaidHandwritingVision('style', imageBase64);
 
       setAnalysisResult(data as AnalysisResult);
       setStep('result');
@@ -328,7 +316,7 @@ export const HandwritingAnalyzer: React.FC<HandwritingAnalyzerProps> = ({ onAppl
               <ParameterMeter label="Font" value={fontLabel} />
               <ParameterMeter label="Size" value={`${analysisResult.fontSize}px`} />
               <ParameterMeter label="Slant" value={`${analysisResult.slant > 0 ? '+' : ''}${analysisResult.slant}°`} />
-              <ParameterMeter label="Pressure" value={`${Math.round(analysisResult.penPressureFeel * 100)}%`} />
+              <ParameterMeter label="Stroke look" value={`${Math.round(analysisResult.penPressureFeel * 100)}%`} />
               <ParameterMeter label="Ink" value={analysisResult.inkColor} />
               <ParameterMeter label="Thickness" value={`${analysisResult.strokeThickness.toFixed(1)}`} />
             </div>

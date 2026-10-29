@@ -1,10 +1,8 @@
 // Guards against selling things that do not exist.
 //
 // Every one of these phrases was live on niknote.online at some point and was
-// false. Several cost real credibility: a customer paid ₹49 for "Priority AI"
-// responses from a queue that was never built, and /schools advertised a
-// ₹2,00,000/year plan with a teacher dashboard, SSO and white-label that had no
-// code behind them.
+// false or unverified, including a Priority AI queue that was never built and
+// institutional features or prices that were not backed by the checkout.
 //
 // Copy moves fast and nobody re-reads a pricing page before shipping, so this
 // test reads the source files and fails when a banned claim creeps back in. It
@@ -53,7 +51,7 @@ const BANNED: { pattern: RegExp; why: string }[] = [
   },
   {
     pattern: /2,?500\+\s*(students|users)/i,
-    why: 'There are five real accounts. This number was invented.',
+    why: 'The claimed student count has not been verified.',
   },
   {
     pattern: /\b4\.8\s*(⭐|★|stars?)/i,
@@ -65,7 +63,7 @@ const BANNED: { pattern: RegExp; why: string }[] = [
   },
   {
     pattern: /₹\s?25,?000\/?(year|yr)|₹\s?2,?00,?000|₹\s?75,?000/i,
-    why: 'These B2B tiers are not purchasable. Real plans are ₹999 and ₹4,999.',
+    why: 'These B2B tiers are not purchasable through the existing checkout.',
   },
   {
     pattern: /white-?label/i,
@@ -97,7 +95,7 @@ const BANNED: { pattern: RegExp; why: string }[] = [
   },
   {
     pattern: /thousands of students|join thousands/i,
-    why: 'Five real accounts. This is invented social proof.',
+    why: 'The claimed social proof has not been verified.',
   },
   {
     pattern: /clone your handwriting/i,
@@ -200,5 +198,22 @@ describe('the premium list matches what the editor actually locks', () => {
     const upgrade = read('src/pages/Upgrade.tsx');
     expect(upgrade).toContain('Premium only');
     expect(upgrade).toContain('Free for everyone');
+  });
+});
+
+
+describe('checkout and active acquisition surfaces are consistent', () => {
+  it('does not mount fabricated activity or advertise unverified annual institution tiers', () => {
+    expect(read('src/components/landing/LandingPage.tsx')).not.toContain('LiveActivityFeed');
+    for (const file of ['src/pages/B2BLanding.tsx', 'src/pages/Upgrade.tsx', 'src/pages/Blog.tsx', 'src/lib/seoConfig.ts', 'src/content/blogPosts.ts']) {
+      expect(read(file)).not.toMatch(/₹999\s*\/(?:year|yr)|₹4,999\s*\/(?:year|yr)|50% discount|free 30-day pilot/i);
+    }
+  });
+
+  it('makes the weekly offer open the weekly checkout and discloses one-time terms', () => {
+    expect(read('src/components/urgency/ExitIntentPopup.tsx')).toContain('/payment?plan=weekly');
+    const checkout = read('src/pages/Payment.tsx');
+    expect(checkout).toContain('no automatic renewal');
+    expect(checkout).toContain('If money was deducted, do not pay again');
   });
 });

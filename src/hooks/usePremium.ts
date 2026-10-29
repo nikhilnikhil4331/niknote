@@ -127,6 +127,14 @@ export function usePremium() {
     fetchUsage();
   }, [fetchSubscription, fetchUsage]);
 
+  // Every mounted premium surface should refresh after a verified purchase,
+  // not only the instance that happened to render the checkout page.
+  useEffect(() => {
+    const onSubscriptionUpdated = () => { void fetchSubscription(); };
+    window.addEventListener('niknote:subscription-updated', onSubscriptionUpdated);
+    return () => window.removeEventListener('niknote:subscription-updated', onSubscriptionUpdated);
+  }, [fetchSubscription]);
+
   // Check if a feature is accessible
   const checkFeatureAccess = useCallback(
     (feature: PremiumFeature): { allowed: boolean; used: number; limit: number } => {

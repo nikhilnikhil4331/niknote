@@ -46,10 +46,10 @@ export const MobilePremiumBar: React.FC = () => {
                 <Crown className="h-3.5 w-3.5 text-amber-300 flex-shrink-0" />
                 <span className="text-white text-xs font-bold">Unlock ALL Features</span>
               </div>
-              <p className="text-white/70 text-[10px]">AI Notes + 16+ Styles + Quiz — ₹49/week</p>
+              <p className="text-white/70 text-[10px]">AI writing + voice dictation — ₹49 for 7 days</p>
             </div>
             <button
-              onClick={() => navigate('/payment?plan=monthly')}
+              onClick={() => navigate('/payment?plan=weekly')}
               className="flex-shrink-0 px-4 py-2 rounded-full bg-white text-primary font-bold text-xs flex items-center gap-1 shadow-lg active:scale-95 transition-transform"
             >
               <Zap className="h-3 w-3" />

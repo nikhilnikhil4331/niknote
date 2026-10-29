@@ -19,7 +19,7 @@ const plans = [
     code: 'weekly',
     label: 'Student Pro',
     price: 49,
-    period: '/week',
+    period: ' / 7 days',
     icon: Zap,
     badge: 'Try First',
     features: [
@@ -33,15 +33,15 @@ const plans = [
     code: 'monthly',
     label: 'Premium',
     price: 99,
-    period: '/month',
+    period: ' / 30 days',
     icon: Star,
     popular: true,
-    badge: 'Most Popular',
+    badge: 'Best value',
     features: [
       'Everything in Student Pro',
-      'Billed monthly instead of weekly',
+      '30 days of access',
       'About half the weekly rate',
-      'Cancel yourself, any time',
+      'One-time payment; no automatic renewal',
     ],
   },
 ];
@@ -71,7 +71,7 @@ const allFeatures = [
 ];
 
 const Upgrade = () => {
-  useDocumentTitle({ title: 'Upgrade to Premium — NikNote | AI Study App', description: 'Unlock all NikNote premium features — AI notes, handwriting, quizzes, flashcards. Starting ₹49/week.' });
+  useDocumentTitle({ title: 'Upgrade to Premium — NikNote | AI Study App', description: 'One-time Premium access for ₹49 per 7 days or ₹99 per 30 days; no automatic renewal.' });
   const navigate = useNavigate();
   const { isPremium } = usePremium();
   const [selected, setSelected] = React.useState<'weekly' | 'monthly'>('monthly');
@@ -103,7 +103,7 @@ const Upgrade = () => {
           <div className="flex justify-center"><PlanArt /></div>
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-primary/10 via-orange-500/10 to-pink-500/10 text-xs sm:text-sm font-medium border border-primary/10">
             <Flame className="h-4 w-4 text-orange-500" />
-            Student Pro ₹49/week · Premium ₹99/month
+            Student Pro ₹49 for 7 days · Premium ₹99 for 30 days
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             {isPremium ? "You're Premium! 🎉" : 'Unlock Your Full Potential'}
@@ -231,8 +231,7 @@ const Upgrade = () => {
               <Users className="h-7 w-7 text-primary mx-auto" />
               <h3 className="text-base font-bold">For teachers &amp; institutions</h3>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                Teacher plans from ₹999/year, tuition centres from ₹4,999/year, and a free
-                30-day pilot for one department.
+                Explore the free editor and contact us about your institution’s needs.
               </p>
               <Button variant="outline" size="sm" className="rounded-xl" onClick={() => navigate('/schools')}>
                 See teacher plans
@@ -241,8 +240,8 @@ const Upgrade = () => {
 
             <div className="flex items-center justify-center gap-4 text-[11px] text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1"><Shield className="h-3.5 w-3.5" /> Secured by Razorpay</span>
-              <span>UPI · Cards · Wallets</span>
-              <span>Cancel Anytime</span>
+              <span>Payment methods shown at checkout</span>
+              <span>No automatic renewal</span>
             </div>
           </>
         )}
