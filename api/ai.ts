@@ -145,6 +145,67 @@ export function stripThinkTags(raw: string): { content: string; thinking: string
 }
 
 /**
+ * Consume an OpenAI-compatible response that may arrive either as an SSE stream
+ * (`data: {...}\n\n` — LarpRouter's native gateway mode) or as a standard JSON
+ * completion payload, returning clean `{ content, thinking }`.
+ */
+async function consumeOpenAICompletion(res: Response): Promise<{ content: string; thinking: string }> {
+  const raw = await res.text();
+  const contentType = (res.headers.get('content-type') || '').toLowerCase();
+  const trimmed = raw.trimStart();
+
+  if (contentType.includes('text/event-stream') || trimmed.startsWith('data:')) {
+    const contentChunks: string[] = [];
+    const thinkingChunks: string[] = [];
+    const splitter = createThinkTagSplitter(
+      (t) => thinkingChunks.push(t),
+      (c) => contentChunks.push(c)
+    );
+
+    for (const rawLine of raw.split('\n')) {
+      const line = rawLine.trim();
+      if (!line.startsWith('data:')) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === '[DONE]') continue;
+      try {
+        const parsed = JSON.parse(payload);
+        const deltaObj = parsed?.choices?.[0]?.delta;
+        const reasoning = deltaObj?.reasoning ?? deltaObj?.reasoning_content;
+        if (typeof reasoning === 'string' && reasoning.length > 0) {
+          thinkingChunks.push(reasoning);
+        }
+        const text = deltaObj?.content;
+        if (typeof text === 'string' && text.length > 0) {
+          splitter.push(text);
+        }
+      } catch {
+        // ignore partial/comment lines
+      }
+    }
+    splitter.flush();
+    return {
+      content: contentChunks.join('').trim(),
+      thinking: thinkingChunks.join('').trim(),
+    };
+  }
+
+  try {
+    const json: any = JSON.parse(raw);
+    const rawContent = String(json?.choices?.[0]?.message?.content ?? '');
+    const { content, thinking } = stripThinkTags(rawContent);
+    const extraThinking = String(
+      json?.choices?.[0]?.message?.reasoning ?? json?.choices?.[0]?.message?.reasoning_content ?? ''
+    ).trim();
+    return {
+      content,
+      thinking: [extraThinking, thinking].filter(Boolean).join('\n\n'),
+    };
+  } catch {
+    return stripThinkTags(raw);
+  }
+}
+
+/**
  * Stateful streaming splitter for `<think>...</think>` tags across arbitrary SSE
  * token boundaries. Normal text that does not begin with `<` passes through with
  * zero buffering latency.
@@ -353,6 +414,11 @@ const MODEL_TTL_MS = 5 * 60 * 1000;
 const LARP_PAID_402_CACHE = new Map<string, number>();
 const LARP_PAID_402_TTL_MS = 2 * 60 * 1000;
 
+// Short-lived per-model cooldown when a LarpRouter upstream supplier returns 503
+// (`upstream_failed`) so active chat turns skip degraded routes immediately.
+const LARP_MODEL_503_CACHE = new Map<string, number>();
+const LARP_MODEL_503_TTL_MS = 45 * 1000;
+
 const LARPROUTER_FREE_TIER_MODELS = new Set(['deepseek-v4.1-flash', 'glm-5.3-flash']);
 
 const PREFERRED_MODELS: Record<ProviderId, string[]> = {
@@ -377,6 +443,7 @@ const PREFERRED_MODELS: Record<ProviderId, string[]> = {
   ],
   groq: [
     'openai/gpt-oss-120b',
+    'qwen/qwen3.8-27b',
     'openai/gpt-oss-20b',
     'llama-3.3-70b-versatile',
     'llama-3.1-8b-instant',
@@ -398,7 +465,7 @@ const VISION_HINTS = ['vision', 'vl', 'scout', 'maverick', 'flash', 'gpt-4o', 'g
 function isChatModel(id: string): boolean {
   if (!id) return false;
   if (
-    /embed|whisper|tts|audio|moderation|dall-e|stable-diffusion|rerank|imagen|veo|sora|realtime|guard|ocr|orpheus|lyria|nano-banana|transcribe|computer-use|robotics|image/i.test(
+    /embed|whisper|tts|audio|moderation|dall-e|stable-diffusion|rerank|imagen|veo|sora|realtime|guard|safeguard|ocr|orpheus|lyria|nano-banana|transcribe|computer-use|robotics|image/i.test(
       id
     )
   ) {
@@ -521,6 +588,7 @@ async function runProbe(
   if (larprouterKey) {
     attempts.push({ provider: 'larprouter', model: 'deepseek-v4.1-flash' });
     attempts.push({ provider: 'larprouter', model: 'glm-5.3-flash' });
+    attempts.push({ provider: 'larprouter', model: 'deepseek-v4.1-flash-fast' });
   }
   if (groqKey) attempts.push({ provider: 'groq', model: 'openai/gpt-oss-20b' });
   if (geminiKey) attempts.push({ provider: 'gemini', model: 'gemini-2.5-flash' });
@@ -583,23 +651,32 @@ async function runProbe(
       } else {
         const key = keys[attempt.provider];
         const base = getOpenAICompatibleBaseUrl(attempt.provider, larprouterBaseUrl);
+        // LarpRouter's OpenAI gateway streams over SSE (`stream: true` per docs);
+        // Groq/OpenAI probes can use plain JSON (`stream: false`).
+        const reqPayload =
+          attempt.provider === 'larprouter'
+            ? {
+                model: attempt.model,
+                messages: [{ role: 'user', content: prompt }],
+                stream: true,
+              }
+            : {
+                model: attempt.model,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 512,
+                temperature: 0,
+                stream: false,
+              };
         const res = await fetch(`${base}/chat/completions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
           signal,
-          body: JSON.stringify({
-            model: attempt.model,
-            messages: [{ role: 'user', content: prompt }],
-            max_tokens: 512,
-            temperature: 0,
-            stream: false,
-          }),
+          body: JSON.stringify(reqPayload),
         });
         status = res.status;
         if (res.ok) {
-          const json: any = await res.json();
-          const rawContent = String(json?.choices?.[0]?.message?.content ?? '');
-          answer = stripThinkTags(rawContent).content || 'OK';
+          const parsed = await consumeOpenAICompletion(res);
+          answer = parsed.content || 'OK';
           return ok(attempt.provider, attempt.model, answer);
         }
         const errBody = (await res.text().catch(() => '')).slice(0, 140);
@@ -985,7 +1062,13 @@ export default async function handler(req: Request): Promise<Response> {
 
   for (let idx = 0; idx < candidates.length; idx++) {
     const candidate = candidates[idx];
-    if (candidate.provider === 'larprouter' && abortLarpRouterForRequest) continue;
+    if (candidate.provider === 'larprouter') {
+      if (abortLarpRouterForRequest) continue;
+      const degradedAt = LARP_MODEL_503_CACHE.get(candidate.model) || 0;
+      if (degradedAt && Date.now() - degradedAt < LARP_MODEL_503_TTL_MS && idx < candidates.length - 1) {
+        continue;
+      }
+    }
 
     const systemInstruction = buildSystemForProvider(candidate.provider);
 
@@ -1015,6 +1098,8 @@ export default async function handler(req: Request): Promise<Response> {
         ];
 
         const maxTokens = candidate.provider === 'larprouter' && isDeepOutputMode ? 6144 : 4096;
+        // LarpRouter's OpenAI gateway is SSE-streaming-first (`stream: true` per docs)
+        const upstreamStream = candidate.provider === 'larprouter' ? true : wantStream;
 
         const upstream = await fetch(url, {
           method: 'POST',
@@ -1026,7 +1111,7 @@ export default async function handler(req: Request): Promise<Response> {
           body: JSON.stringify({
             model: candidate.model,
             messages: oaMessages,
-            stream: wantStream,
+            stream: upstreamStream,
             temperature: mode === 'code' || mode === 'solver' ? 0.35 : 0.6,
             max_tokens: maxTokens,
           }),
@@ -1051,6 +1136,9 @@ export default async function handler(req: Request): Promise<Response> {
               }
               continue;
             }
+            if (upstream.status >= 500) {
+              LARP_MODEL_503_CACHE.set(candidate.model, Date.now());
+            }
           }
 
           if (upstream.status === 404 || (candidate.provider === 'larprouter' && upstream.status === 400 && !hasImages)) {
@@ -1060,15 +1148,11 @@ export default async function handler(req: Request): Promise<Response> {
         }
 
         if (!wantStream) {
-          const json = await upstream.json();
-          const rawContent = String(json?.choices?.[0]?.message?.content ?? '');
-          const { content, thinking } = stripThinkTags(rawContent);
-          const extraThinking =
-            json?.choices?.[0]?.message?.reasoning ?? json?.choices?.[0]?.message?.reasoning_content ?? '';
+          const { content, thinking } = await consumeOpenAICompletion(upstream);
           return new Response(
             JSON.stringify({
               content,
-              thinking: [extraThinking, thinking].filter(Boolean).join('\n\n'),
+              thinking,
               model: candidate.label,
               provider: candidate.provider,
             }),
