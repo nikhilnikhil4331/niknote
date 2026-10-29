@@ -149,7 +149,7 @@ export function useDesktopNotes() {
         updatedAt: nb.updated_at,
         createdAt: nb.created_at,
         isLocal: guest, // useNotebooks already serves local rows for guests
-        trashed: nb.folder === TRASH_FOLDER,
+        trashed: nb.folder === TRASH_FOLDER || !!(nb as { trashedAt?: string | null }).trashedAt,
         preview: nb.description || '',
         raw: nb,
       });
