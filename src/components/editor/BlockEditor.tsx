@@ -415,9 +415,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
           setAiOpen(true);
         }}
         aria-label="Ask NikAI"
-        className="fixed z-40 bottom-24 right-4 sm:bottom-6 sm:right-6 h-14 w-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-xl shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-transform"
+        className="fixed z-40 bottom-24 right-4 sm:bottom-6 sm:right-6 h-14 w-14 rounded-full bg-gradient-to-br from-nk-purple to-nk-rose text-white shadow-xl shadow-[color:hsl(var(--primary)/0.25)] flex items-center justify-center active:scale-95 transition-transform"
       >
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white">
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-surface">
           <img
             src="/nikai-mark.png"
             alt=""
@@ -598,7 +598,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             placeholder={getPlaceholder(block.type)}
             rows={1}
             className={cn(
-              "flex-1 bg-transparent border-0 outline-none resize-none py-1.5 px-1 placeholder:text-muted-foreground/40 leading-relaxed w-full overflow-hidden",
+              "flex-1 bg-transparent border-0 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] resize-none py-1.5 px-1 placeholder:text-muted-foreground/40 leading-relaxed w-full overflow-hidden",
               getBlockTextClass(block.type)
             )}
           />
@@ -621,23 +621,23 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             </div>
           )}
           {block.type === 'equation' && block.content && (
-            <div className="mt-1 p-2 rounded-lg bg-indigo-50/50 border border-indigo-100 font-mono text-sm text-indigo-800">
+            <div className="mt-1 p-2 rounded-lg bg-[color:hsl(var(--primary)/0.5)] border border-[color:hsl(var(--primary)/0.3)] font-mono text-sm text-fg-primary">
               ∑ {block.content}
             </div>
           )}
           {block.type === 'bookmark' && (block.url || block.content) && (
             <div className="mt-1 p-2 rounded-lg border border-border/30 bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer max-w-md">
-              <div className="text-xs font-medium text-primary truncate">{block.content || 'Bookmark'}</div>
+              <div className="text-xs font-medium text-accent-rose truncate">{block.content || 'Bookmark'}</div>
               {block.url && <div className="text-[10px] text-muted-foreground truncate">🔗 {block.url}</div>}
               {!block.url && <div className="text-[10px] text-muted-foreground">Paste URL in the text field</div>}
             </div>
           )}
           {block.type === 'code' && block.content && (
-            <div className="mt-1 p-3 rounded-lg bg-slate-900 text-green-400 font-mono text-xs max-w-lg overflow-x-auto">
-              <div className="flex items-center gap-1 mb-1 text-slate-500">
-                <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+            <div className="mt-1 p-3 rounded-lg bg-nk-midnight text-success font-mono text-xs max-w-lg overflow-x-auto">
+              <div className="flex items-center gap-1 mb-1 text-fg-muted">
+                <span className="w-2 h-2 rounded-full bg-error"></span>
+                <span className="w-2 h-2 rounded-full bg-nk-warm-600"></span>
+                <span className="w-2 h-2 rounded-full bg-success"></span>
                 <span className="ml-2 text-[10px]">{block.language || 'code'}</span>
               </div>
               <pre className="whitespace-pre-wrap">{block.content}</pre>
@@ -666,9 +666,9 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             </div>
           )}
           {block.type === 'mermaid' && block.content && (
-            <div className="mt-1 p-3 rounded-lg bg-teal-50/50 border border-teal-100 font-mono text-[11px] text-teal-800">
+            <div className="mt-1 p-3 rounded-lg bg-[color:hsl(var(--success)/0.5)] border border-[color:hsl(var(--success)/0.4)] font-mono text-[11px] text-success">
               📊 {block.content.split('\n')[0]}
-              {block.content.split('\n').length > 1 && <span className="text-teal-500 ml-1">({block.content.split('\n').length} lines)</span>}
+              {block.content.split('\n').length > 1 && <span className="text-success ml-1">({block.content.split('\n').length} lines)</span>}
             </div>
           )}
           {block.type === 'video' && (
@@ -684,16 +684,16 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             </div>
           )}
           {block.type === 'ai-generated' && (
-            <div className="mt-1 p-3 rounded-lg bg-gradient-to-r from-purple-50/50 to-indigo-50/50 border border-purple-100">
-              <div className="flex items-center gap-1.5 text-xs text-purple-600">
+            <div className="mt-1 p-3 rounded-lg bg-gradient-to-r from-nk-purple/50 to-nk-rose/50 border border-[color:hsl(var(--primary)/0.3)]">
+              <div className="flex items-center gap-1.5 text-xs text-accent-cool">
                 <span>✨</span>
                 <span className="font-medium">AI Generated</span>
               </div>
-              {block.content && <p className="text-xs text-purple-800 mt-1">{block.content}</p>}
+              {block.content && <p className="text-xs text-fg-primary mt-1">{block.content}</p>}
             </div>
           )}
           {block.type === 'pdf' && (
-            <div className="mt-1 p-3 rounded-lg border border-border/30 bg-red-50/50 text-center max-w-md">
+            <div className="mt-1 p-3 rounded-lg border border-border/30 bg-[color:hsl(var(--error)/0.5)] text-center max-w-md">
               <span className="text-2xl">📄</span>
               <p className="text-xs text-muted-foreground mt-1">PDF embed — paste URL</p>
             </div>
@@ -707,8 +707,8 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             <FlashcardBlock block={block} onUpdate={onBlockUpdate} />
           )}
           {block.type === 'synced' && (
-            <div className="mt-1 p-2 rounded-lg bg-blue-50/50 border border-blue-100">
-              <span className="text-xs text-blue-600">🔄 Synced Block</span>
+            <div className="mt-1 p-2 rounded-lg bg-[color:hsl(var(--accent-cool-hsl)/0.5)] border border-[color:hsl(var(--accent-cool-hsl)/0.35)]">
+              <span className="text-xs text-accent-cool">🔄 Synced Block</span>
             </div>
           )}
 
@@ -719,7 +719,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
                 initial={{ opacity: 0, y: 4, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 4, scale: 0.95 }}
-                className="absolute left-0 top-full mt-1 z-50 bg-white/95 backdrop-blur-xl rounded-xl border border-white/30 shadow-lg p-2 flex gap-1"
+                className="absolute left-0 top-full mt-1 z-50 bg-surface/95 backdrop-blur-xl rounded-xl border border-[color:var(--nk-glass-border)] shadow-lg p-2 flex gap-1"
               >
                 {LINE_INK_COLORS.map((ink) => (
                   <button
@@ -859,7 +859,7 @@ const getBlockTextClass = (type: BlockType): string => {
     case 'quote': return 'text-base italic text-muted-foreground';
     case 'callout': return 'text-sm bg-accent/30 rounded-lg px-2 py-1';
     case 'code': return 'text-sm font-mono bg-muted/50 rounded px-2 py-1';
-    case 'equation': return 'text-sm font-mono bg-indigo-50 rounded px-2 py-1';
+    case 'equation': return 'text-sm font-mono bg-[color:hsl(var(--primary)/0.12)] rounded px-2 py-1';
     case 'toggle': return 'text-sm font-medium';
     case 'todo': return 'text-sm';
     default: return 'text-sm';

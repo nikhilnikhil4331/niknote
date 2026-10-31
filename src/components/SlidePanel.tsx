@@ -73,7 +73,7 @@ export const SlidePanel: React.FC<SlidePanelProps> = ({
             animate="visible"
             exit="exit"
             onClick={handleClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-[color:var(--nk-scrim)] backdrop-blur-sm z-40"
           />
 
           {/* Panel */}

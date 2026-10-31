@@ -45,13 +45,13 @@ const AchievementsPage: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200/50 dark:border-orange-800/30 p-5"
+          className="rounded-2xl bg-gradient-to-br from-nk-warm-700 to-nk-rose dark:from-nk-warm-700/30 dark:to-nk-rose/30 border border-[color:hsl(var(--accent-warm-hsl)/0.5)] dark:border-[color:hsl(var(--accent-warm-hsl)/0.3)] p-5"
         >
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <Flame className="w-6 h-6 text-orange-500" />
-                <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">{streak.currentStreak}</span>
+                <Flame className="w-6 h-6 text-accent-warm" />
+                <span className="text-2xl font-bold text-accent-warm dark:text-accent-warm">{streak.currentStreak}</span>
               </div>
               <p className="text-sm font-medium text-foreground">Day Streak</p>
               <p className="text-xs text-muted-foreground mt-0.5">Longest: {streak.longestStreak} days</p>
@@ -63,8 +63,8 @@ const AchievementsPage: React.FC = () => {
                   className={cn(
                     "w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold",
                     i < streak.currentStreak % 7
-                      ? "bg-orange-500 text-white"
-                      : "bg-orange-100 dark:bg-orange-900/30 text-orange-300"
+                      ? "bg-nk-warm-600 text-white"
+                      : "bg-[color:hsl(var(--accent-warm-hsl)/0.16)] dark:bg-nk-warm-600/30 text-accent-warm"
                   )}
                 >
                   {['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}

@@ -6,7 +6,8 @@ import {
   User, Brain, FileText, Download, Calendar,
   ArrowLeft, Loader2, FileOutput, ChevronRight, Sparkles,
   LogOut, Crown, Settings, Monitor, Smartphone, Tablet,
-  Mail, History, PenTool, Image, FileImage, RefreshCw
+  Mail, History, PenTool, Image, FileImage, RefreshCw,
+  Moon, Sun, Palette, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +19,9 @@ import { toast } from 'sonner';
 import { usePremium } from '@/hooks/usePremium';
 import { ReferralWidget } from '@/components/promotion/ReferralWidget';
 import { StudyStreakWidget } from '@/components/gamification/StudyStreak';
+import { useDarkMode } from '@/hooks/useDarkMode';
+import { useUITheme, UI_THEMES } from '@/utils/uiThemes';
+import { cn } from '@/lib/utils';
 
 interface ActivityItem {
   id: string;
@@ -71,6 +75,8 @@ const deviceIcons: Record<string, React.ComponentType<{ className?: string }>> =
 export default function AccountPage() {
   const { user, loading: authLoading, signOut } = useAuth();
   const { isPremium } = usePremium();
+  const { isDark, toggle: toggleTheme } = useDarkMode();
+  const { theme: workspaceTheme, setTheme: setWorkspaceTheme } = useUITheme();
   const navigate = useNavigate();
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -190,7 +196,7 @@ export default function AccountPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 className="w-8 h-8 animate-spin text-accent-rose" />
       </div>
     );
   }
@@ -267,7 +273,7 @@ export default function AccountPage() {
                     <Button 
                       size="sm" 
                       onClick={() => navigate('/payment')}
-                      className="mt-3 gap-2 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 hover:from-orange-400 hover:via-pink-400 hover:to-purple-500 text-white font-bold shadow-lg shadow-purple-500/20"
+                      className="mt-3 gap-2 bg-gradient-to-r from-nk-warm-700 via-nk-rose to-nk-purple hover:from-nk-warm-700 hover:via-nk-rose hover:to-nk-purple text-white font-bold shadow-lg shadow-[color:hsl(var(--primary)/0.25)]"
                     >
                       <Crown className="w-4 h-4" />
                       Upgrade to Premium — ₹49/week
@@ -296,7 +302,7 @@ export default function AccountPage() {
             <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 hover:shadow-lg hover:shadow-primary/10 transition-shadow">
               <CardContent className="p-4 sm:p-5 text-center">
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                  <Brain className="w-6 h-6 text-primary" />
+                  <Brain className="w-6 h-6 text-accent-rose" />
                 </div>
                 <p className="text-3xl font-bold">{stats.totalAiRequests}</p>
                 <p className="text-xs text-muted-foreground mt-1">AI Requests</p>
@@ -309,10 +315,10 @@ export default function AccountPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <Card className="border-2 border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-emerald-500/10 hover:shadow-lg hover:shadow-emerald-500/10 transition-shadow">
+            <Card className="border-2 border-[color:hsl(var(--success)/0.2)] bg-gradient-to-br from-success/5 to-success/70/10 hover:shadow-lg hover:shadow-nk-sm transition-shadow">
               <CardContent className="p-4 sm:p-5 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
-                  <Download className="w-6 h-6 text-emerald-500" />
+                <div className="w-12 h-12 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-3">
+                  <Download className="w-6 h-6 text-success" />
                 </div>
                 <p className="text-3xl font-bold">{stats.totalExports}</p>
                 <p className="text-xs text-muted-foreground mt-1">Exports</p>
@@ -325,10 +331,10 @@ export default function AccountPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="border-2 border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-blue-500/10 hover:shadow-lg hover:shadow-blue-500/10 transition-shadow">
+            <Card className="border-2 border-[color:hsl(var(--accent-cool-hsl)/0.2)] bg-gradient-to-br from-nk-purple/5 to-nk-rose/10 hover:shadow-lg hover:shadow-nk-sm transition-shadow">
               <CardContent className="p-4 sm:p-5 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto mb-3">
-                  <FileImage className="w-6 h-6 text-blue-500" />
+                <div className="w-12 h-12 rounded-2xl bg-[color:hsl(var(--accent-cool-hsl)/0.1)] flex items-center justify-center mx-auto mb-3">
+                  <FileImage className="w-6 h-6 text-accent-cool" />
                 </div>
                 <p className="text-3xl font-bold">{stats.totalUploads}</p>
                 <p className="text-xs text-muted-foreground mt-1">Uploads</p>
@@ -341,10 +347,10 @@ export default function AccountPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
           >
-            <Card className="border-2 border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-purple-500/10 hover:shadow-lg hover:shadow-purple-500/10 transition-shadow">
+            <Card className="border-2 border-primary/20 bg-gradient-to-br from-nk-purple/5 to-nk-rose/10 hover:shadow-lg hover:shadow-[color:hsl(var(--primary)/0.25)] transition-shadow">
               <CardContent className="p-4 sm:p-5 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-3">
-                  <FileText className="w-6 h-6 text-purple-500" />
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                  <FileText className="w-6 h-6 text-accent-cool" />
                 </div>
                 <p className="text-3xl font-bold">{stats.totalNotebooks}</p>
                 <p className="text-xs text-muted-foreground mt-1">Notebooks</p>
@@ -362,7 +368,7 @@ export default function AccountPage() {
           <Card className="border-2">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
-                <Calendar className="w-5 h-5 text-primary" />
+                <Calendar className="w-5 h-5 text-accent-rose" />
                 Activity Timeline
               </CardTitle>
             </CardHeader>
@@ -409,7 +415,7 @@ export default function AccountPage() {
                         className="flex items-start gap-4 p-4 rounded-2xl hover:bg-muted/40 transition-colors group"
                       >
                         <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/15 transition-colors">
-                          <IconComponent className="w-5 h-5 text-primary" />
+                          <IconComponent className="w-5 h-5 text-accent-rose" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -447,6 +453,92 @@ export default function AccountPage() {
           </Card>
         </motion.div>
 
+        {/* Appearance Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="border-2 overflow-hidden">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Palette className="w-5 h-5 text-accent-rose" />
+                Appearance
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">Theme</p>
+                <div className="grid grid-cols-2 gap-2" role="group" aria-label="Theme">
+                  {[
+                    { value: 'light' as const, label: 'Daylight', icon: Sun, hint: 'Warm paper white' },
+                    { value: 'dark' as const, label: 'Sunset Plum Night', icon: Moon, hint: 'Midnight plum' },
+                  ].map((option) => {
+                    const active = (option.value === 'dark') === isDark;
+                    const Icon = option.icon;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => { if (!active) toggleTheme(); }}
+                        className={cn(
+                          'flex items-center gap-3 rounded-2xl border p-3 text-left transition-colors nk-focus-ring',
+                          active
+                            ? 'border-primary/45 bg-primary/10 text-fg-primary'
+                            : 'border-subtle bg-surface hover:bg-surface-hover text-fg-secondary',
+                        )}
+                      >
+                        <span className={cn('grid h-9 w-9 place-items-center rounded-xl', active ? 'bg-primary/15 text-accent-rose' : 'bg-surface-secondary text-fg-muted')}>
+                          <Icon className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-semibold">{option.label}</span>
+                          <span className="block text-[11px] text-fg-muted">{option.hint}</span>
+                        </span>
+                        {active && <Check className="ml-auto h-4 w-4 text-accent-rose" aria-hidden="true" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground">Workspace style</p>
+                  <button type="button" onClick={() => navigate('/')} className="text-[11px] font-semibold text-accent-rose hover:underline">
+                    Open editor
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="group" aria-label="Workspace style">
+                  {UI_THEMES.map((t) => {
+                    const active = t.value === workspaceTheme;
+                    return (
+                      <button
+                        key={t.value}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setWorkspaceTheme(t.value)}
+                        title={t.desc}
+                        className={cn(
+                          'flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition-colors nk-focus-ring',
+                          active
+                            ? 'border-primary/45 bg-primary/10 text-fg-primary'
+                            : 'border-subtle bg-surface hover:bg-surface-hover text-fg-secondary',
+                        )}
+                      >
+                        <span aria-hidden="true" className="text-base">{t.emoji}</span>
+                        <span className="truncate text-xs font-medium">{t.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-[11px] text-fg-muted">Every style keeps the Sunset Plum palette — only the surface texture changes.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* AI Settings Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -456,7 +548,7 @@ export default function AccountPage() {
           <Card className="border-2 overflow-hidden">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Sparkles className="w-5 h-5 text-purple-500" />
+                <Sparkles className="w-5 h-5 text-accent-cool" />
                 AI Settings
               </CardTitle>
             </CardHeader>
@@ -473,12 +565,12 @@ export default function AccountPage() {
                     value={openaiKey}
                     onChange={(e) => setOpenaiKey(e.target.value)}
                     placeholder="sk-..."
-                    className="flex-1 h-10 px-3 rounded-xl bg-muted/30 border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+                    className="flex-1 h-10 px-3 rounded-xl bg-muted/30 border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                   <Button
                     size="sm"
                     onClick={handleSaveApiKey}
-                    className="rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4"
+                    className="rounded-xl bg-gradient-to-r from-nk-purple to-nk-rose text-white px-4"
                   >
                     Save
                   </Button>
@@ -488,22 +580,22 @@ export default function AccountPage() {
                 </p>
               </div>
 
-              <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
-                <h4 className="text-xs font-semibold text-purple-900 mb-1">🧠 Current AI Status</h4>
+              <div className="p-3 rounded-xl bg-[color:hsl(var(--primary)/0.12)] border border-[color:hsl(var(--primary)/0.3)]">
+                <h4 className="text-xs font-semibold text-fg-primary mb-1">🧠 Current AI Status</h4>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${openaiKey ? 'bg-green-500' : 'bg-amber-500'}`} />
-                    <span className="text-[11px] text-purple-800">
+                    <div className={`w-2 h-2 rounded-full ${openaiKey ? 'bg-success' : 'bg-nk-warm-600'}`} />
+                    <span className="text-[11px] text-fg-primary">
                       {openaiKey ? 'Full AI Mode — Unlimited responses' : 'Local Mode — 20+ built-in topics + smart templates'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-[11px] text-purple-800">9 AI Agents active (Teacher, Notes, Quiz, etc.)</span>
+                    <div className="w-2 h-2 rounded-full bg-success" />
+                    <span className="text-[11px] text-fg-primary">9 AI Agents active (Teacher, Notes, Quiz, etc.)</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-[11px] text-purple-800">Hinglish support enabled</span>
+                    <div className="w-2 h-2 rounded-full bg-success" />
+                    <span className="text-[11px] text-fg-primary">Hinglish support enabled</span>
                   </div>
                 </div>
               </div>
@@ -512,7 +604,7 @@ export default function AccountPage() {
                 <h4 className="text-xs font-semibold mb-1">📚 Built-in Topics (No API needed)</h4>
                 <div className="flex flex-wrap gap-1">
                   {['Newton\'s Laws', 'Photosynthesis', 'Pythagoras', 'Thermodynamics', 'Gravity', 'Electricity', 'Cell Biology', 'Periodic Table', 'Trigonometry', 'Quadratic', 'Probability', 'Chemical Reactions', 'Algebra', 'Digestion', 'Magnetism', 'Light & Optics', 'Indian History', 'English Grammar', 'Ecology', 'Statistics', 'Work & Energy', 'Acids & Bases', 'Sound', 'Coordinate Geometry', 'Reproduction', 'Force & Pressure', 'Programming', 'Constitution'].map(t => (
-                    <span key={t} className="px-2 py-0.5 rounded-full text-[10px] bg-primary/5 text-primary border border-primary/10">{t}</span>
+                    <span key={t} className="px-2 py-0.5 rounded-full text-[10px] bg-primary/5 text-accent-rose border border-primary/10">{t}</span>
                   ))}
                 </div>
               </div>

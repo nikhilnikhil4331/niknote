@@ -26,16 +26,16 @@ interface AdminStatsCardsProps {
 }
 
 const statsConfig = [
-  { key: 'totalUsers', label: 'Total Users', icon: Users, color: 'bg-blue-500/10 text-blue-500' },
-  { key: 'premiumUsers', label: 'Premium Users', icon: Crown, color: 'bg-amber-500/10 text-amber-500' },
-  { key: 'activeUsers', label: 'Active Today', icon: Activity, color: 'bg-green-500/10 text-green-500' },
-  { key: 'todayVisits', label: 'Today Visits', icon: Eye, color: 'bg-purple-500/10 text-purple-500' },
-  { key: 'todaySignups', label: 'Signups Today', icon: UserPlus, color: 'bg-emerald-500/10 text-emerald-500' },
-  { key: 'todayLogins', label: 'Logins Today', icon: LogIn, color: 'bg-cyan-500/10 text-cyan-500' },
-  { key: 'totalNotebooks', label: 'Total Notebooks', icon: BookOpen, color: 'bg-indigo-500/10 text-indigo-500' },
-  { key: 'totalPages', label: 'Total Pages', icon: FileText, color: 'bg-pink-500/10 text-pink-500' },
-  { key: 'todayExports', label: 'Exports Today', icon: Download, color: 'bg-orange-500/10 text-orange-500' },
-  { key: 'paymentAttempts', label: 'Payment Attempts', icon: CreditCard, color: 'bg-red-500/10 text-red-500' },
+  { key: 'totalUsers', label: 'Total Users', icon: Users, color: 'bg-[color:hsl(var(--accent-cool-hsl)/0.1)] text-accent-cool' },
+  { key: 'premiumUsers', label: 'Premium Users', icon: Crown, color: 'bg-nk-warm-600/10 text-accent-warm' },
+  { key: 'activeUsers', label: 'Active Today', icon: Activity, color: 'bg-success/10 text-success' },
+  { key: 'todayVisits', label: 'Today Visits', icon: Eye, color: 'bg-primary/10 text-accent-cool' },
+  { key: 'todaySignups', label: 'Signups Today', icon: UserPlus, color: 'bg-success/10 text-success' },
+  { key: 'todayLogins', label: 'Logins Today', icon: LogIn, color: 'bg-[color:hsl(var(--accent-cool-hsl)/0.1)] text-accent-cool' },
+  { key: 'totalNotebooks', label: 'Total Notebooks', icon: BookOpen, color: 'bg-primary/10 text-accent-cool' },
+  { key: 'totalPages', label: 'Total Pages', icon: FileText, color: 'bg-primary/10 text-accent-rose' },
+  { key: 'todayExports', label: 'Exports Today', icon: Download, color: 'bg-nk-warm-600/10 text-accent-warm' },
+  { key: 'paymentAttempts', label: 'Payment Attempts', icon: CreditCard, color: 'bg-error/10 text-error' },
 ];
 
 export const AdminStatsCards: React.FC<AdminStatsCardsProps> = ({ stats, loading }) => {

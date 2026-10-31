@@ -59,7 +59,7 @@ export default function AdminLogin() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-surface-hover via-surface-hover to-surface-hover flex items-center justify-center p-4">
       {/* Background pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMSIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
       
@@ -70,19 +70,19 @@ export default function AdminLogin() {
         className="relative w-full max-w-md"
       >
         {/* Card */}
-        <div className="bg-slate-800/50 backdrop-blur-2xl border border-slate-700/50 rounded-3xl p-8 shadow-2xl">
+        <div className="bg-[color:hsl(var(--background-secondary-hsl))] backdrop-blur-2xl border border-active/50 rounded-3xl p-8 shadow-2xl">
           {/* Header */}
           <div className="text-center mb-8">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 400 }}
-              className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-500/25"
+              className="w-20 h-20 rounded-2xl bg-gradient-to-br from-error to-nk-rose flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-500/25"
             >
               <Shield className="w-10 h-10 text-white" />
             </motion.div>
             <h1 className="text-2xl font-bold text-white mb-2">Admin Access</h1>
-            <p className="text-slate-400 text-sm">Restricted area. Authorized personnel only.</p>
+            <p className="text-fg-muted/70 text-sm">Restricted area. Authorized personnel only.</p>
           </div>
 
           {/* Form */}
@@ -91,7 +91,7 @@ export default function AdminLogin() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm"
+                className="flex items-center gap-2 p-3 rounded-xl bg-error/10 border border-[color:hsl(var(--error)/0.2)] text-error text-sm"
               >
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 {error}
@@ -99,42 +99,42 @@ export default function AdminLogin() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-slate-300 text-sm font-medium">
+              <Label htmlFor="username" className="text-fg-muted/70 text-sm font-medium">
                 Username
               </Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-muted" />
                 <Input
                   id="username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="admin"
-                  className="pl-11 h-12 bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 rounded-xl focus:border-red-500 focus:ring-red-500/20"
+                  className="pl-11 h-12 bg-nk-midnight/50 border-active text-white placeholder:text-fg-muted rounded-xl focus:border-[color:hsl(var(--error)/0.4)] focus:ring-error/20"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-300 text-sm font-medium">
+              <Label htmlFor="password" className="text-fg-muted/70 text-sm font-medium">
                 Password
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-muted" />
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter admin password"
-                  className="pl-11 pr-11 h-12 bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 rounded-xl focus:border-red-500 focus:ring-red-500/20"
+                  className="pl-11 pr-11 h-12 bg-nk-midnight/50 border-active text-white placeholder:text-fg-muted rounded-xl focus:border-[color:hsl(var(--error)/0.4)] focus:ring-error/20"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg-muted/70 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -144,7 +144,7 @@ export default function AdminLogin() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-12 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-semibold shadow-lg shadow-red-500/25 transition-all duration-200"
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-error to-nk-rose hover:from-error hover:to-nk-rose text-white font-semibold shadow-lg shadow-red-500/25 transition-all duration-200"
             >
               {isLoading ? (
                 <>
@@ -161,8 +161,8 @@ export default function AdminLogin() {
           </form>
 
           {/* Footer */}
-          <div className="mt-6 pt-6 border-t border-slate-700/50 text-center">
-            <p className="text-slate-500 text-xs">
+          <div className="mt-6 pt-6 border-t border-active/50 text-center">
+            <p className="text-fg-muted text-xs">
               This area is monitored. Unauthorized access attempts will be logged.
             </p>
           </div>
@@ -173,7 +173,7 @@ export default function AdminLogin() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="mt-4 flex items-center justify-center gap-2 text-slate-500 text-sm"
+          className="mt-4 flex items-center justify-center gap-2 text-fg-muted text-sm"
         >
           <Shield className="w-4 h-4" />
           <span>Secured Connection</span>

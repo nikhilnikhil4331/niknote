@@ -67,7 +67,7 @@ async function restoreFromSupabase(userId: string, now = new Date()): Promise<Ro
       const t = typeOf(r.name);
       return {
         id: r.id, name: r.name,
-        category: 'other', icon: r.emoji || '✅', color: ['#8b5cf6', '#ec4899', '#0ea5e9', '#22c55e'][i % 4],
+        category: 'other', icon: r.emoji || '✅', color: ['#7C5F9E', '#A34054', '#7C5F9E', '#157F52'][i % 4],
         type: t, target: t === 'water' ? 8 : t === 'sleep' ? 8 : t === 'minutes' ? 30 : 1,
         days: Array.isArray(r.days) && r.days.length ? r.days : [0, 1, 2, 3, 4, 5, 6],
         reminderOn: false, reminders: [], createdAt: r.created_at || toDay(now), archived: r.archived === true,
@@ -175,7 +175,7 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
     setState(s => ({ ...s, unlocked: [...new Set([...s.unlocked, ...fresh])] }));
     const a = ACHIEVEMENTS.find(x => x.id === fresh[fresh.length - 1]);
     if (a) {
-      if (!reduced) celebrate({ particleCount: 90, spread: 75, origin: { y: 0.7 }, colors: [a.color, '#fbbf24', '#ffffff'] });
+      if (!reduced) celebrate({ particleCount: 90, spread: 75, origin: { y: 0.7 }, colors: [a.color, '#ED9E59', '#ffffff'] });
       toast.success(`${a.icon} Achievement unlocked: ${a.name}!`);
     }
   }, [unlockedIds, reduced]);
@@ -258,7 +258,7 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
     }
     setEntry(habit, d, habit.target);
     haptic('success');
-    if (!reduced) celebrate({ particleCount: 42, spread: 60, origin: { y: 0.72 }, colors: [habit.color, '#ec4899', '#ffffff'] });
+    if (!reduced) celebrate({ particleCount: 42, spread: 60, origin: { y: 0.72 }, colors: [habit.color, '#A34054', '#ffffff'] });
     toast.success(`${habit.icon} ${habit.name} — done for the day`);
   }, [setEntry, reduced]);
 

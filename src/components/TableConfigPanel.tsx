@@ -70,7 +70,7 @@ export const TableConfigPanel: React.FC<TableConfigPanelProps> = ({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Grid3X3 className="w-4 h-4 text-primary" />
+          <Grid3X3 className="w-4 h-4 text-accent-rose" />
           <Label className="text-sm font-medium">Insert Table</Label>
         </div>
         <Switch

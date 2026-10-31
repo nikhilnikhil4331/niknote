@@ -18,7 +18,7 @@ export const CTASection: React.FC<CTASectionProps> = ({ onStartWriting }) => {
   return (
     <section className="py-24 relative overflow-hidden">
       {/* Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-nk-rose/10" />
 
       {/* Animated Background Orbs */}
       <motion.div
@@ -58,7 +58,7 @@ export const CTASection: React.FC<CTASectionProps> = ({ onStartWriting }) => {
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 text-foreground">
             Ab Padhai Ko Banayo
             <br />
-            <span className="bg-gradient-to-r from-primary via-blue-500 to-accent bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-nk-lilac to-nk-rose bg-clip-text text-transparent">
               Smart & Fun! 🚀
             </span>
           </h2>
@@ -73,7 +73,7 @@ export const CTASection: React.FC<CTASectionProps> = ({ onStartWriting }) => {
             <Button
               size="lg"
               onClick={onStartWriting}
-              className="group h-14 px-8 text-base font-semibold rounded-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-500 text-white shadow-lg shadow-primary/25 hover:shadow-xl transition-all duration-300 hover:scale-105"
+              className="group h-14 px-8 text-base font-semibold rounded-full bg-gradient-to-r from-primary to-nk-rose hover:from-primary/90 hover:to-nk-rose text-white shadow-lg shadow-primary/25 hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
               <Zap className="w-5 h-5 mr-2" />
               Start Free — Abhi Try Karo!
@@ -84,7 +84,7 @@ export const CTASection: React.FC<CTASectionProps> = ({ onStartWriting }) => {
               size="lg"
               variant="outline"
               onClick={handleWhatsAppShare}
-              className="group h-14 px-8 text-base font-semibold rounded-full border-2 border-green-500 text-green-600 hover:bg-green-50 transition-all duration-300 hover:scale-105"
+              className="group h-14 px-8 text-base font-semibold rounded-full border-2 border-[color:hsl(var(--success)/0.4)] text-success hover:bg-[color:hsl(var(--success)/0.14)] transition-all duration-300 hover:scale-105"
             >
               <MessageCircle className="w-5 h-5 mr-2" />
               Share on WhatsApp 📱

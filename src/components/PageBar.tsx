@@ -142,7 +142,7 @@ export const PageBar: React.FC<PageBarProps> = ({
               variant="outline"
               size="sm"
               onClick={onAddPage}
-              className="h-7 sm:h-9 gap-1 sm:gap-1.5 rounded-lg sm:rounded-xl border-dashed border-primary/50 text-primary hover:bg-primary/10 hover:border-primary px-1.5 sm:px-2"
+              className="h-7 sm:h-9 gap-1 sm:gap-1.5 rounded-lg sm:rounded-xl border-dashed border-primary/50 text-accent-rose hover:bg-primary/10 hover:border-primary px-1.5 sm:px-2"
             >
               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline text-xs">New</span>

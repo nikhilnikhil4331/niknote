@@ -182,7 +182,7 @@ export default function PagePanel({ open, onClose, doc, docKey, pages, pageIndex
       <button
         type="button"
         aria-label="Close pages"
-        className="fixed inset-0 z-40 bg-black/35 lg:hidden"
+        className="fixed inset-0 z-40 bg-[color:var(--nk-scrim)] lg:hidden"
         onClick={onClose}
       />
       <aside
@@ -197,7 +197,7 @@ export default function PagePanel({ open, onClose, doc, docKey, pages, pageIndex
             type="button"
             onClick={onClose}
             aria-label="Close pages panel"
-            className="ml-auto grid h-9 w-9 place-items-center rounded-full hover:bg-black/5"
+            className="ml-auto grid h-9 w-9 place-items-center rounded-full hover:bg-surface-hover"
           >
             <X className="h-4 w-4" />
           </button>
@@ -286,11 +286,11 @@ export default function PagePanel({ open, onClose, doc, docKey, pages, pageIndex
       {/* Page actions sheet */}
       {menuIndex !== null && (
         <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={`Page ${menuIndex + 1} actions`}>
-          <button type="button" aria-label="Close page actions" className="absolute inset-0 bg-black/40" onClick={() => setMenuFor(null)} />
+          <button type="button" aria-label="Close page actions" className="absolute inset-0 bg-[color:var(--nk-scrim)]" onClick={() => setMenuFor(null)} />
           <div className="pdfs-sheet pdfs-bar relative w-full max-w-sm rounded-t-3xl p-3 sm:rounded-3xl" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
             <div className="flex items-center px-2 pb-1 pt-1">
               <h3 className="text-sm font-bold">Page {menuIndex + 1} of {pages.length}</h3>
-              <button type="button" aria-label="Close" onClick={() => setMenuFor(null)} className="ml-auto grid h-9 w-9 place-items-center rounded-full hover:bg-black/5">
+              <button type="button" aria-label="Close" onClick={() => setMenuFor(null)} className="ml-auto grid h-9 w-9 place-items-center rounded-full hover:bg-surface-hover">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -311,7 +311,7 @@ export default function PagePanel({ open, onClose, doc, docKey, pages, pageIndex
                     row.run();
                     setMenuFor(null);
                   }}
-                  className="flex min-h-12 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-semibold hover:bg-black/5 disabled:opacity-40"
+                  className="flex min-h-12 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-semibold hover:bg-surface-hover disabled:opacity-40"
                 >
                   <Icon className="h-[18px] w-[18px]" style={{ color: 'var(--pdfs-text-2)' }} />
                   {row.label}

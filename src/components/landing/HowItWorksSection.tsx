@@ -40,7 +40,7 @@ export const HowItWorksSection: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <span className="text-sm font-semibold text-primary uppercase tracking-wider">How It Works</span>
+          <span className="text-sm font-semibold text-accent-rose uppercase tracking-wider">How It Works</span>
           <h2 className="text-3xl sm:text-4xl font-bold mt-3 mb-4 text-foreground">
             4 Simple Steps — Smart Notes Ready! 🚀
           </h2>
@@ -65,8 +65,8 @@ export const HowItWorksSection: React.FC = () => {
               )}
 
               {/* Step number + icon */}
-              <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 mb-6">
-                <step.icon className="w-8 h-8 text-primary" />
+              <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/10 to-nk-rose/10 border border-primary/20 mb-6">
+                <step.icon className="w-8 h-8 text-accent-rose" />
                 <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shadow-lg">
                   {step.number}
                 </span>
@@ -92,7 +92,7 @@ export const HowItWorksSection: React.FC = () => {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2">
             {['📝 Type/Paste', '🎨 16+ Styles', '🧠 AI Help', '📥 PDF Export', '📱 WhatsApp Share'].map((tag) => (
-              <span key={tag} className="px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-xs font-medium text-primary">
+              <span key={tag} className="px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-xs font-medium text-accent-rose">
                 {tag}
               </span>
             ))}

@@ -21,7 +21,7 @@ const BLOCKS = [
   { id: 'night', label: 'Night', emoji: '🌙' },
 ];
 const MOODS = ['😄', '🙂', '😐', '😢', '😡'];
-const PRIORITY: Record<string, string> = { high: 'bg-rose-500', medium: 'bg-amber-500', low: 'bg-emerald-500' };
+const PRIORITY: Record<string, string> = { high: 'bg-primary', medium: 'bg-nk-warm-600', low: 'bg-success' };
 
 type Habit = { id: string; name: string; emoji: string; block: string; days: number[]; archived: boolean };
 const WEEK = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -216,17 +216,17 @@ export default function RoutineTracker() {
       {/* Wellness row */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 [&>*]:min-w-0">
         <div className="col-span-2 rounded-3xl border border-border bg-card p-4 pb-7">
-          <div className="flex items-center gap-2 text-sm font-medium mb-2"><Droplet className="w-4 h-4 text-sky-500" />Water</div>
-          <WaterGlass glasses={w.water} goal={waterGoal} onChange={n => { haptic(n > w.water ? 'light' : 'selection'); if (n >= waterGoal && w.water < waterGoal) { haptic('success'); confetti({ particleCount: 60, spread: 60, colors: ['#38bdf8', '#0ea5e9', '#ffffff'] }); } saveWellness({ water: n }); }} />
+          <div className="flex items-center gap-2 text-sm font-medium mb-2"><Droplet className="w-4 h-4 text-accent-cool" />Water</div>
+          <WaterGlass glasses={w.water} goal={waterGoal} onChange={n => { haptic(n > w.water ? 'light' : 'selection'); if (n >= waterGoal && w.water < waterGoal) { haptic('success'); confetti({ particleCount: 60, spread: 60, colors: ['#A688C9', '#7C5F9E', '#ffffff'] }); } saveWellness({ water: n }); }} />
         </div>
         <div className="rounded-3xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2 text-sm font-medium"><Moon className="w-4 h-4 text-indigo-500" />Sleep</div>
+          <div className="flex items-center gap-2 text-sm font-medium"><Moon className="w-4 h-4 text-accent-cool" />Sleep</div>
           <input type="range" min={0} max={12} step={0.5} value={w.sleep_hours} onChange={e => setWeek(p => ({ ...p, [today]: { ...w, sleep_hours: Number(e.target.value) } }))}
             onPointerUp={() => saveWellness({})} className="w-full mt-4 accent-primary" aria-label="Sleep hours" />
           <p className="text-xs text-muted-foreground mt-1">{w.sleep_hours} hours</p>
         </div>
         <div className="rounded-3xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2 text-sm font-medium"><Dumbbell className="w-4 h-4 text-orange-500" />Exercise</div>
+          <div className="flex items-center gap-2 text-sm font-medium"><Dumbbell className="w-4 h-4 text-accent-warm" />Exercise</div>
           <div className="flex flex-wrap gap-1 mt-3">
             {[10, 20, 30].map(m => <button key={m} onClick={() => { haptic('light'); saveWellness({ exercise_minutes: w.exercise_minutes + m }); }} className="px-2 py-1 rounded-lg bg-muted text-xs font-medium active:scale-90">+{m}m</button>)}
           </div>
@@ -272,15 +272,15 @@ export default function RoutineTracker() {
                       return (
                         <motion.div key={h.id} layout className="flex items-center gap-3 p-2.5 rounded-2xl bg-muted/40">
                           <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleHabit(h)} aria-label={`Mark ${h.name}`}
-                            className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition ${done ? 'bg-emerald-500 border-emerald-500' : 'border-border'}`}>
+                            className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition ${done ? 'bg-success border-[color:hsl(var(--success)/0.4)]' : 'border-border'}`}>
                             <AnimatePresence>{done && <motion.span initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0 }}><Check className="w-4 h-4 text-white" strokeWidth={3} /></motion.span>}</AnimatePresence>
                           </motion.button>
                           <span className="text-lg">{h.emoji}</span>
                           <span className={`flex-1 min-w-0 text-sm ${done ? 'line-through text-muted-foreground' : ''}`}><span className="block truncate">{h.name}</span><span className="block text-[11px] text-muted-foreground">{h.days?.length === 7 || !h.days?.length ? 'Every day' : h.days.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(' · ')}{restDay && !done ? ' — rest day today' : ''}</span></span>
                           {streak > 0 && (
-                            <motion.span animate={{ scale: [1, 1.15, 1] }} transition={{ repeat: Infinity, duration: 1.4 }} className="text-xs font-bold text-orange-600">🔥 {streak}</motion.span>
+                            <motion.span animate={{ scale: [1, 1.15, 1] }} transition={{ repeat: Infinity, duration: 1.4 }} className="text-xs font-bold text-accent-warm">🔥 {streak}</motion.span>
                           )}
-                          <button onClick={() => archiveHabit(h)} className="h-9 px-2 text-xs font-medium text-primary" aria-label={h.archived ? 'Restore habit' : 'Archive habit'}>{h.archived ? 'Restore' : 'Archive'}</button><button onClick={() => delHabit(h.id)} className="h-9 w-9 grid place-items-center text-muted-foreground" aria-label="Delete habit"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => archiveHabit(h)} className="h-9 px-2 text-xs font-medium text-accent-rose" aria-label={h.archived ? 'Restore habit' : 'Archive habit'}>{h.archived ? 'Restore' : 'Archive'}</button><button onClick={() => delHabit(h.id)} className="h-9 w-9 grid place-items-center text-muted-foreground" aria-label="Delete habit"><Trash2 className="w-4 h-4" /></button>
                         </motion.div>
                       );
                     })}
@@ -288,7 +288,7 @@ export default function RoutineTracker() {
                 </div>
               );
             })}
-            {habits.some(h => h.archived) && <button onClick={() => setShowArchived(v => !v)} className="text-xs font-medium text-primary underline">{showArchived ? 'Show active habits' : `Show archived (${habits.filter(h => h.archived).length})`}</button>}
+            {habits.some(h => h.archived) && <button onClick={() => setShowArchived(v => !v)} className="text-xs font-medium text-accent-rose underline">{showArchived ? 'Show active habits' : `Show archived (${habits.filter(h => h.archived).length})`}</button>}
             {!habits.length && <p className="text-sm text-muted-foreground">Add your first habit, like “Drink water” or “Read 10 pages”.</p>}
           </div>
         </Panel>

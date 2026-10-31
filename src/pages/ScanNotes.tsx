@@ -244,7 +244,7 @@ export default function ScanNotes() {
         <section className="rounded-3xl border border-border bg-card p-4 shadow-sm">
           {!preview ? (
             <div className="py-2 text-center">
-              <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+              <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-accent-rose">
                 <ScanText className="h-7 w-7" />
               </div>
               <p className="text-sm font-semibold">Apne handwritten notes ki photo lo</p>
@@ -264,9 +264,9 @@ export default function ScanNotes() {
           ) : (
             <div>
               <div className="relative overflow-hidden rounded-2xl border border-border">
-                <img src={preview} alt="Handwritten notes" className="max-h-[46dvh] w-full object-contain bg-white" />
+                <img src={preview} alt="Handwritten notes" className="max-h-[46dvh] w-full object-contain bg-surface" />
                 <button type="button" aria-label="Remove photo" onClick={() => { setPreview(null); setText(null); setResultMeta(null); }}
-                  className="absolute right-2 top-2 grid h-9 w-9 place-items-center rounded-full bg-black/55 text-white">
+                  className="absolute right-2 top-2 grid h-9 w-9 place-items-center rounded-full bg-nk-midnight/60 text-white">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -318,7 +318,7 @@ export default function ScanNotes() {
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold">Typed notes</h2>
               {resultMeta && (
-                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10.5px] font-bold text-primary">
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10.5px] font-bold text-accent-rose">
                   {resultMeta.source === 'ai' ? 'NikAI' : 'On-device OCR'}
                   {resultMeta.confidence !== null ? ` · ${resultMeta.confidence}% sure` : ''}
                 </span>
@@ -330,11 +330,11 @@ export default function ScanNotes() {
             </div>
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Note ka title…"
               aria-label="Note title"
-              className="mt-3 min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold outline-none focus:border-primary" />
+              className="mt-3 min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] focus:border-primary" />
             <textarea value={text} onChange={(e) => setText(e.target.value)} rows={10}
               aria-label="Scanned text — yahan theek kar sakte ho"
               placeholder="Yahan typed text aayega — koi line galat padhi ho to yahin theek kar lo."
-              className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] leading-relaxed outline-none focus:border-primary" />
+              className="mt-2 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-[14px] leading-relaxed outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] focus:border-primary" />
             <p className="mt-1 text-[11px] text-muted-foreground">
               Har line alag block banegi — notebook me jaakar handwriting style bhi laga sakte ho.
             </p>

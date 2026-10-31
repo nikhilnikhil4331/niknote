@@ -291,7 +291,7 @@ export async function addWatermark(
   if (!text) throw new Error('Watermark text is empty');
   const doc = await loadPdf(bytes);
   const font = await standardFont(doc, options.bold ?? false);
-  const color = colorOf(options.color || '#ef4444');
+  const color = colorOf(options.color || '#A62B36');
   const opacity = Math.min(1, Math.max(0.02, options.opacity ?? 0.18));
   const angle = Number.isFinite(options.angle) ? Number(options.angle) : 45;
   const position = options.position || 'center';

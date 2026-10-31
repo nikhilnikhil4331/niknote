@@ -58,15 +58,15 @@ const BLOCK_CONFIG: Record<string, { icon: string; placeholder: string; textClas
   bullet: { icon: '•', placeholder: 'List item', textClass: '' },
   numbered: { icon: '1.', placeholder: 'List item', textClass: '' },
   todo: { icon: '☐', placeholder: 'To-do', textClass: '' },
-  quote: { icon: '❝', placeholder: 'Quote', textClass: 'italic text-gray-600' },
-  callout: { icon: '💡', placeholder: 'Callout', textClass: 'bg-amber-50/80 rounded-lg px-3 py-1.5 border border-amber-200/50' },
-  code: { icon: '<>', placeholder: 'Code', textClass: 'font-mono bg-gray-100 rounded-lg px-3 py-1.5 text-xs border border-gray-200/50' },
+  quote: { icon: '❝', placeholder: 'Quote', textClass: 'italic text-fg-secondary' },
+  callout: { icon: '💡', placeholder: 'Callout', textClass: 'bg-[color:hsl(var(--accent-warm-hsl)/0.8)] rounded-lg px-3 py-1.5 border border-[color:hsl(var(--accent-warm-hsl)/0.5)]' },
+  code: { icon: '<>', placeholder: 'Code', textClass: 'font-mono bg-muted rounded-lg px-3 py-1.5 text-xs border border-subtle/50' },
   toggle: { icon: '▶', placeholder: 'Toggle heading...', textClass: 'font-medium' },
-  equation: { icon: '∑', placeholder: 'LaTeX equation...', textClass: 'font-mono bg-indigo-50/80 rounded-lg px-3 border border-indigo-200/50' },
+  equation: { icon: '∑', placeholder: 'LaTeX equation...', textClass: 'font-mono bg-[color:hsl(var(--primary)/0.8)] rounded-lg px-3 border border-[color:hsl(var(--primary)/0.5)]' },
   divider: { icon: '—', placeholder: '', textClass: '' },
   image: { icon: '🖼️', placeholder: 'Paste image URL...', textClass: '' },
   bookmark: { icon: '🔗', placeholder: 'Paste URL...', textClass: '' },
-  'ai-generated': { icon: '✨', placeholder: 'AI will generate...', textClass: 'bg-violet-50/60 rounded-lg px-3 border border-violet-200/50' },
+  'ai-generated': { icon: '✨', placeholder: 'AI will generate...', textClass: 'bg-[color:hsl(var(--primary)/0.6)] rounded-lg px-3 border border-[color:hsl(var(--primary)/0.5)]' },
   mermaid: { icon: '🔀', placeholder: 'Mermaid diagram...', textClass: 'font-mono text-xs' },
   table: { icon: '📊', placeholder: '', textClass: '' },
   video: { icon: '🎥', placeholder: 'Video URL...', textClass: '' },
@@ -75,9 +75,9 @@ const BLOCK_CONFIG: Record<string, { icon: string; placeholder: string; textClas
   file: { icon: '📎', placeholder: 'File attachment URL...', textClass: '' },
   embed: { icon: '📦', placeholder: 'Embed URL...', textClass: '' },
   column: { icon: '▦', placeholder: 'Multi-column layout', textClass: '' },
-  'table_of_contents': { icon: '📑', placeholder: 'Auto Table of Contents', textClass: 'text-sm text-gray-500 italic' },
+  'table_of_contents': { icon: '📑', placeholder: 'Auto Table of Contents', textClass: 'text-sm text-fg-muted italic' },
   mention: { icon: '@', placeholder: '@mention...', textClass: '' },
-  comment: { icon: '💬', placeholder: 'Comment...', textClass: 'text-sm text-gray-500 bg-yellow-50/60 rounded-lg px-2 border border-yellow-200/50' },
+  comment: { icon: '💬', placeholder: 'Comment...', textClass: 'text-sm text-fg-muted bg-[color:hsl(var(--accent-warm-hsl)/0.6)] rounded-lg px-2 border border-[color:hsl(var(--accent-warm-hsl)/0.5)]' },
 };
 
 // @ AI actions
@@ -630,12 +630,12 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
   return (
     <div ref={editorRef} className="notion-editor relative" style={{ touchAction: 'manipulation' }} role="textbox" aria-label="NikNote Block Editor" aria-multiline="true">
       {/* Shortcut hints */}
-      <div className={cn("flex items-center gap-2 mb-2 text-[11px] text-gray-400", isMobile ? "px-2" : "px-1")}>
-        <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono font-semibold text-gray-500">/</kbd> Commands</span>
-        <span className="text-gray-300">•</span>
-        <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-indigo-50 rounded text-[10px] font-mono font-semibold text-indigo-500">@</kbd> AI</span>
-        <span className="text-gray-300">•</span>
-        <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-violet-50 rounded text-[10px] font-mono font-semibold text-violet-500">#</kbd> Tags</span>
+      <div className={cn("flex items-center gap-2 mb-2 text-[11px] text-fg-muted/70", isMobile ? "px-2" : "px-1")}>
+        <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono font-semibold text-fg-muted">/</kbd> Commands</span>
+        <span className="text-fg-muted/70">•</span>
+        <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-[color:hsl(var(--primary)/0.12)] rounded text-[10px] font-mono font-semibold text-accent-cool">@</kbd> AI</span>
+        <span className="text-fg-muted/70">•</span>
+        <span className="flex items-center gap-1"><kbd className="px-1.5 py-0.5 bg-[color:hsl(var(--primary)/0.12)] rounded text-[10px] font-mono font-semibold text-accent-cool">#</kbd> Tags</span>
       </div>
 
       {/* ===== BLOCKS ===== */}
@@ -652,9 +652,9 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
             return (
               <div key={block.id} className="group relative py-2 px-3">
                 <div className="flex items-center gap-2">
-                  <hr className="flex-1 border-t border-gray-200" />
-                  <button onClick={() => removeBlock(block.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-50 transition-all" style={{ touchAction: 'manipulation', cursor: 'pointer' }}>
-                    <Trash2 className="w-3 h-3 text-gray-400" />
+                  <hr className="flex-1 border-t border-subtle" />
+                  <button onClick={() => removeBlock(block.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-[color:hsl(var(--error)/0.14)] transition-all" style={{ touchAction: 'manipulation', cursor: 'pointer' }}>
+                    <Trash2 className="w-3 h-3 text-fg-muted/70" />
                   </button>
                 </div>
               </div>
@@ -664,7 +664,7 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
           return (
             <div key={block.id} data-block-id={block.id} data-block-type={block.type}>
               <div
-                className={cn("nn-block-row group relative flex items-start gap-0 rounded-lg transition-colors duration-150", isMobile ? "min-h-[48px] py-2 px-2" : "min-h-[28px] py-1 px-1", isFocused && "bg-indigo-50/30")}
+                className={cn("nn-block-row group relative flex items-start gap-0 rounded-lg transition-colors duration-150", isMobile ? "min-h-[48px] py-2 px-2" : "min-h-[28px] py-1 px-1", isFocused && "bg-[color:hsl(var(--primary)/0.3)]")}
                 style={{ paddingLeft: indentPx + (isMobile ? 8 : 4), touchAction: 'manipulation' }}
                 onClick={() => setFocusedBlockId(block.id)}
                 onContextMenu={(e) => handleContextMenu(e, block.id)}
@@ -675,10 +675,10 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                     onMouseDown={preventFocusSteal}
                     onClick={(e) => { e.stopPropagation(); setShowInlineColor(showInlineColor === block.id ? null : block.id); }}
                     aria-label="Change block ink" title="Change block ink"
-                    className="p-1 rounded-md active:bg-gray-100 transition-colors"
+                    className="p-1 rounded-md active:bg-muted transition-colors"
                     style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
                   >
-                    <div className="w-3 h-3 rounded-full border border-white/40 shadow-sm" style={{ backgroundColor: inkData?.hex || '#1a1a2e' }} />
+                    <div className="w-3 h-3 rounded-full border border-[color:var(--nk-glass-border)] shadow-sm" style={{ backgroundColor: inkData?.hex || '#1a1a2e' }} />
                   </button>
                 </div>
 
@@ -686,15 +686,15 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                 <div className="nn-block-prefix flex items-center justify-center w-6 flex-shrink-0 mt-1">
                   {block.type === 'todo' ? (
                     <Button variant="ghost" size="icon" aria-label={`Complete ${block.content || 'task'}`} aria-pressed={Boolean(block.checked)} onMouseDown={preventFocusSteal} onClick={() => updateBlock(block.id, { checked: !block.checked })} className="flex items-center justify-center active:scale-90 transition-transform" style={{ touchAction: 'manipulation', cursor: 'pointer' }} tabIndex={-1}>
-                      <div className={cn("w-[18px] h-[18px] rounded-md border-2 transition-colors flex items-center justify-center", block.checked ? "bg-indigo-500 border-indigo-500 text-white" : "border-gray-300")}>{block.checked && <Check className="w-3 h-3" />}</div>
+                      <div className={cn("w-[18px] h-[18px] rounded-md border-2 transition-colors flex items-center justify-center", block.checked ? "bg-primary border-primary text-white" : "border-active")}>{block.checked && <Check className="w-3 h-3" />}</div>
                     </Button>
                   ) : block.type === 'toggle' ? (
-                    <button onMouseDown={preventFocusSteal} onClick={() => updateBlock(block.id, { collapsed: !block.collapsed })} className="hover:bg-gray-100 rounded p-0.5 active:scale-90 transition-transform" style={{ touchAction: 'manipulation', cursor: 'pointer' }} tabIndex={-1}>
-                      <div style={{ transform: block.collapsed ? 'rotate(0deg)' : 'rotate(90deg)', transition: 'transform 0.15s' }}><ChevronRight className="w-3.5 h-3.5 text-gray-400" /></div>
+                    <button onMouseDown={preventFocusSteal} onClick={() => updateBlock(block.id, { collapsed: !block.collapsed })} className="hover:bg-muted rounded p-0.5 active:scale-90 transition-transform" style={{ touchAction: 'manipulation', cursor: 'pointer' }} tabIndex={-1}>
+                      <div style={{ transform: block.collapsed ? 'rotate(0deg)' : 'rotate(90deg)', transition: 'transform 0.15s' }}><ChevronRight className="w-3.5 h-3.5 text-fg-muted/70" /></div>
                     </button>
-                  ) : block.type === 'bullet' ? <span className="w-1.5 h-1.5 rounded-full bg-gray-500" />
-                  : block.type === 'numbered' ? <span className="text-[11px] text-gray-400 font-medium">{idx + 1}.</span>
-                  : block.type === 'quote' ? <div className="flex items-stretch h-5 mr-1"><div className="w-[3px] rounded-full bg-indigo-400" /></div>
+                  ) : block.type === 'bullet' ? <span className="w-1.5 h-1.5 rounded-full bg-muted" />
+                  : block.type === 'numbered' ? <span className="text-[11px] text-fg-muted/70 font-medium">{idx + 1}.</span>
+                  : block.type === 'quote' ? <div className="flex items-stretch h-5 mr-1"><div className="w-[3px] rounded-full bg-primary" /></div>
                   : block.type === 'callout' ? <span className="text-sm">{block.emoji || '💡'}</span>
                   : block.type === 'ai-generated' ? <span className="text-sm">✨</span>
                   : null}
@@ -702,7 +702,7 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
 
                 {/* Content */}
                 <div className="flex-1 relative min-w-0">
-                  {isTyping && <div className="absolute -top-1 -right-1 z-10"><div className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: inkData?.hex || '#6366f1' }} /></div>}
+                  {isTyping && <div className="absolute -top-1 -right-1 z-10"><div className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: inkData?.hex || '#7C5F9E' }} /></div>}
 
                   <textarea
                     ref={(el) => setRef(block.id, el)}
@@ -714,17 +714,17 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                     onClick={(e) => { e.stopPropagation(); setFocusedBlockId(block.id); }}
                     placeholder={isMobile && block.type === 'text' ? 'Write here…' : config.placeholder}
                     rows={1}
-                    className={cn("flex-1 bg-transparent border-0 outline-none resize-none py-1 px-1 leading-relaxed w-full overflow-hidden", isMobile ? "min-h-[48px] text-[16px] py-3 px-2 leading-7 text-gray-900" : "text-sm text-gray-900", block.checked && "line-through text-gray-400", config.textClass)}
-                    style={{ color: inkData?.hex || '#111827', caretColor: '#6366f1', WebkitUserSelect: 'text', userSelect: 'text', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                    className={cn("flex-1 bg-transparent border-0 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] resize-none py-1 px-1 leading-relaxed w-full overflow-hidden", isMobile ? "min-h-[48px] text-[16px] py-3 px-2 leading-7 text-fg-primary" : "text-sm text-fg-primary", block.checked && "line-through text-fg-muted/70", config.textClass)}
+                    style={{ color: inkData?.hex || '#111827', caretColor: '#7C5F9E', WebkitUserSelect: 'text', userSelect: 'text', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                     autoComplete="off" autoCorrect="on" autoCapitalize="sentences" spellCheck={true}
                   />
 
                   {/* Block previews */}
-                  {block.type === 'code' && block.content && <div className="mt-1 p-3 rounded-xl bg-gray-900 text-green-400 font-mono text-[11px] max-w-sm overflow-x-auto"><pre className="whitespace-pre-wrap">{block.content}</pre></div>}
-                  {block.type === 'equation' && block.content && <div className="mt-1 p-2 rounded-xl bg-indigo-50 border border-indigo-200 font-mono text-xs text-indigo-800">{block.content}</div>}
-                  {block.type === 'bookmark' && (block.url || block.content) && <div className="mt-1 p-2.5 rounded-xl border border-gray-200 bg-gray-50 max-w-sm"><div className="text-[12px] font-medium text-indigo-600 truncate">{block.content || 'Bookmark'}</div>{block.url && <div className="text-[10px] text-gray-400 truncate">🔗 {block.url}</div>}</div>}
-                  {block.type === 'table' && block.tableData && <div className="mt-1 rounded-xl border border-gray-200 overflow-hidden max-w-sm"><table className="w-full text-[10px]"><thead><tr className="bg-gray-50">{block.tableData.headers.map((h,i) => <th key={i} className="px-2 py-1.5 text-left border-r border-gray-100 last:border-r-0 font-medium">{h}</th>)}</tr></thead><tbody>{block.tableData.rows.map((row,i) => <tr key={i} className="border-t border-gray-100">{row.map((cell,j) => <td key={j} className="px-2 py-1.5 border-r border-gray-100 last:border-r-0">{cell.content}</td>)}</tr>)}</tbody></table></div>}
-                  {block.type === 'image' && block.url && <div className="mt-1 rounded-xl overflow-hidden border border-gray-200 max-w-sm"><img src={block.url} alt="" className="w-full object-cover max-h-36" /></div>}
+                  {block.type === 'code' && block.content && <div className="mt-1 p-3 rounded-xl bg-nk-midnight text-success font-mono text-[11px] max-w-sm overflow-x-auto"><pre className="whitespace-pre-wrap">{block.content}</pre></div>}
+                  {block.type === 'equation' && block.content && <div className="mt-1 p-2 rounded-xl bg-[color:hsl(var(--primary)/0.12)] border border-[color:hsl(var(--primary)/0.3)] font-mono text-xs text-fg-primary">{block.content}</div>}
+                  {block.type === 'bookmark' && (block.url || block.content) && <div className="mt-1 p-2.5 rounded-xl border border-subtle bg-muted max-w-sm"><div className="text-[12px] font-medium text-accent-cool truncate">{block.content || 'Bookmark'}</div>{block.url && <div className="text-[10px] text-fg-muted/70 truncate">🔗 {block.url}</div>}</div>}
+                  {block.type === 'table' && block.tableData && <div className="mt-1 rounded-xl border border-subtle overflow-hidden max-w-sm"><table className="w-full text-[10px]"><thead><tr className="bg-muted">{block.tableData.headers.map((h,i) => <th key={i} className="px-2 py-1.5 text-left border-r border-subtle last:border-r-0 font-medium">{h}</th>)}</tr></thead><tbody>{block.tableData.rows.map((row,i) => <tr key={i} className="border-t border-subtle">{row.map((cell,j) => <td key={j} className="px-2 py-1.5 border-r border-subtle last:border-r-0">{cell.content}</td>)}</tr>)}</tbody></table></div>}
+                  {block.type === 'image' && block.url && <div className="mt-1 rounded-xl overflow-hidden border border-subtle max-w-sm"><img src={block.url} alt="" className="w-full object-cover max-h-36" /></div>}
                   
                   {/* AI Generated block — PREMIUM styled */}
                   {block.type === 'ai-generated' && block.content && block.content.startsWith('⏳') && (
@@ -734,16 +734,16 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         </div>
                         <div className="flex-1">
-                          <span className="ai-loading-pulse text-[13px] font-semibold text-violet-700">{block.content.replace('⏳ ', '')}</span>
+                          <span className="ai-loading-pulse text-[13px] font-semibold text-fg-secondary">{block.content.replace('⏳ ', '')}</span>
                         </div>
                       </div>
                       <div className="px-4 py-5 flex items-center gap-3">
                         <div className="flex gap-1">
-                          <div className="w-2 h-2 rounded-full bg-violet-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <div className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <div className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
                         </div>
-                        <span className="text-[12px] text-gray-400">AI apna jaadu kar raha hai ✨</span>
+                        <span className="text-[12px] text-fg-muted/70">AI apna jaadu kar raha hai ✨</span>
                       </div>
                     </div>
                   )}
@@ -752,32 +752,32 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                       <div className="ai-response-header flex items-center gap-2.5 px-4 py-2.5">
                         <div className="ai-badge w-6 h-6 rounded-lg flex items-center justify-center text-white text-[11px] font-bold shadow-sm">✨</div>
                         <div className="flex-1 min-w-0">
-                          <span className="text-[12px] font-bold text-violet-700">AI Response</span>
-                          {block.aiModel && <span className="text-[10px] text-violet-400 ml-1.5">• {block.aiModel}</span>}
+                          <span className="text-[12px] font-bold text-fg-secondary">AI Response</span>
+                          {block.aiModel && <span className="text-[10px] text-accent-cool ml-1.5">• {block.aiModel}</span>}
                         </div>
                         <div className="flex items-center gap-1">
-                      <button onMouseDown={preventFocusSteal} onClick={() => { try { navigator.clipboard.writeText(block.content).catch(() => {}); toast.success('Copied! 📋'); } catch { const ta = document.createElement('textarea'); ta.value = block.content; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast.success('Copied! 📋'); } }} className="ai-action-btn p-1.5 rounded-lg" style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }} title="Copy"><Copy className="w-3.5 h-3.5 text-violet-400" /></button>
-                          <button onMouseDown={preventFocusSteal} onClick={() => { updateBlock(block.id, { type: 'text' }); toast.success('Text block mein convert ho gaya'); }} className="ai-action-btn p-1.5 rounded-lg" style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }} title="Convert to text"><X className="w-3.5 h-3.5 text-violet-400" /></button>
+                      <button onMouseDown={preventFocusSteal} onClick={() => { try { navigator.clipboard.writeText(block.content).catch(() => {}); toast.success('Copied! 📋'); } catch { const ta = document.createElement('textarea'); ta.value = block.content; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast.success('Copied! 📋'); } }} className="ai-action-btn p-1.5 rounded-lg" style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }} title="Copy"><Copy className="w-3.5 h-3.5 text-accent-cool" /></button>
+                          <button onMouseDown={preventFocusSteal} onClick={() => { updateBlock(block.id, { type: 'text' }); toast.success('Text block mein convert ho gaya'); }} className="ai-action-btn p-1.5 rounded-lg" style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }} title="Convert to text"><X className="w-3.5 h-3.5 text-accent-cool" /></button>
                         </div>
                       </div>
-                      <div className="ai-response-content px-4 py-3 text-[14px] text-gray-800 leading-relaxed whitespace-pre-wrap">
+                      <div className="ai-response-content px-4 py-3 text-[14px] text-fg-primary leading-relaxed whitespace-pre-wrap">
                         {block.content.split('\n').map((line, i) => {
-                          if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className="font-bold text-[15px] mt-3 mb-1 text-gray-900">{line.replace(/\*\*/g, '')}</p>;
-                          if (line.startsWith('### ')) return <h4 key={i} className="font-bold text-[14px] mt-3 mb-1 text-indigo-900">{line.replace(/^###\s/, '')}</h4>;
-                          if (line.startsWith('## ')) return <h3 key={i} className="font-bold text-[15px] mt-3 mb-1 text-violet-900">{line.replace(/^##\s/, '')}</h3>;
+                          if (line.startsWith('**') && line.endsWith('**')) return <p key={i} className="font-bold text-[15px] mt-3 mb-1 text-fg-primary">{line.replace(/\*\*/g, '')}</p>;
+                          if (line.startsWith('### ')) return <h4 key={i} className="font-bold text-[14px] mt-3 mb-1 text-fg-primary">{line.replace(/^###\s/, '')}</h4>;
+                          if (line.startsWith('## ')) return <h3 key={i} className="font-bold text-[15px] mt-3 mb-1 text-fg-primary">{line.replace(/^##\s/, '')}</h3>;
                           if (line.startsWith('- **') || line.startsWith('- ')) {
                             const text = line.replace(/^[-•]\s/, '');
                             const parts = text.split(/\*\*/);
                             return (
                               <div key={i} className="flex gap-2.5 ml-0.5 mt-1.5 items-start">
-                                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0 mt-2" />
-                                <span className="flex-1">{parts.map((part, pi) => pi % 2 === 1 ? <strong key={pi} className="text-gray-900">{part}</strong> : <span key={pi}>{part}</span>)}</span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-2" />
+                                <span className="flex-1">{parts.map((part, pi) => pi % 2 === 1 ? <strong key={pi} className="text-fg-primary">{part}</strong> : <span key={pi}>{part}</span>)}</span>
                               </div>
                             );
                           }
-                          if (/^\d+\.\s/.test(line)) return <p key={i} className="ml-5 mt-1 text-gray-700">{line}</p>;
+                          if (/^\d+\.\s/.test(line)) return <p key={i} className="ml-5 mt-1 text-fg-primary">{line}</p>;
                           if (!line.trim()) return <div key={i} className="h-2" />;
-                          return <p key={i} className="mt-1 text-gray-700">{line}</p>;
+                          return <p key={i} className="mt-1 text-fg-primary">{line}</p>;
                         })}
                       </div>
                     </div>
@@ -786,14 +786,14 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
 
                 {/* Delete */}
                 <div className={cn("nn-block-delete flex items-center flex-shrink-0 mt-1", isMobile ? "opacity-40" : "opacity-0 group-hover:opacity-100")}>
-                  <button onMouseDown={preventFocusSteal} onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }} aria-label="Delete block" title="Delete block" className="p-1.5 rounded-lg active:bg-red-50 transition-colors" style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}><Trash2 className="w-3.5 h-3.5 text-gray-400" /></button>
+                  <button onMouseDown={preventFocusSteal} onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }} aria-label="Delete block" title="Delete block" className="p-1.5 rounded-lg active:bg-[color:hsl(var(--error)/0.14)] transition-colors" style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}><Trash2 className="w-3.5 h-3.5 text-fg-muted/70" /></button>
                 </div>
 
                 {/* Inline color picker */}
                 {showInlineColor === block.id && (
-                  <div data-inline-color className="absolute left-4 top-full mt-1 z-50 bg-white rounded-xl border border-gray-200 shadow-xl p-2 flex gap-1 flex-wrap max-w-[240px]" style={{ touchAction: 'manipulation' }}>
+                  <div data-inline-color className="absolute left-4 top-full mt-1 z-50 bg-surface rounded-xl border border-subtle shadow-xl p-2 flex gap-1 flex-wrap max-w-[240px]" style={{ touchAction: 'manipulation' }}>
                     {LINE_INK_COLORS.map((ink) => (
-                      <button key={ink.value} onMouseDown={preventFocusSteal} onClick={() => { updateBlock(block.id, { color: ink.value }); onColorChange?.(ink.value); setShowInlineColor(null); }} className={cn("w-7 h-7 rounded-full border-2 transition-transform active:scale-110", blockColor === ink.value ? "border-indigo-500 scale-110 ring-2 ring-indigo-200" : "border-transparent")} style={{ backgroundColor: ink.hex, touchAction: 'manipulation', cursor: 'pointer' }} title={ink.label} />
+                      <button key={ink.value} onMouseDown={preventFocusSteal} onClick={() => { updateBlock(block.id, { color: ink.value }); onColorChange?.(ink.value); setShowInlineColor(null); }} className={cn("w-7 h-7 rounded-full border-2 transition-transform active:scale-110", blockColor === ink.value ? "border-primary scale-110 ring-2 ring-primary" : "border-transparent")} style={{ backgroundColor: ink.hex, touchAction: 'manipulation', cursor: 'pointer' }} title={ink.label} />
                     ))}
                   </div>
                 )}
@@ -811,16 +811,16 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                         toast.error('Pehle apna sawaal likho!');
                       }
                     }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-violet-500 to-indigo-600 text-white text-xs font-semibold shadow-md hover:shadow-lg active:scale-95 transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-nk-purple to-nk-rose text-white text-xs font-semibold shadow-md hover:shadow-lg active:scale-95 transition-all"
                     style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     Generate ✨
                   </button>
-                  <span className="text-[10px] text-gray-400">ya Ctrl+Enter dabao</span>
+                  <span className="text-[10px] text-fg-muted/70">ya Ctrl+Enter dabao</span>
                   <button
                     onClick={() => { setPendingAI(null); updateBlock(block.id, { content: block.content.replace(/^[^\s]+\s+[^\s]+\s*→\s*/, '') }); }}
-                    className="text-[10px] text-gray-400 hover:text-red-500 ml-2"
+                    className="text-[10px] text-fg-muted/70 hover:text-error ml-2"
                   >
                     Cancel
                   </button>
@@ -838,7 +838,7 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
 
       {/* ===== SLASH COMMAND MENU ===== */}
       {slashMenu && groupedSlash.length > 0 && (
-        <div data-menu-popup role="listbox" aria-label="Block type commands" className="fixed z-[9999] w-[280px] max-h-[350px] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-2xl"
+        <div data-menu-popup role="listbox" aria-label="Block type commands" className="fixed z-[9999] w-[280px] max-h-[350px] overflow-y-auto rounded-xl border border-subtle bg-surface shadow-2xl"
           style={{
             bottom: isMobile ? '60px' : undefined,
             top: isMobile ? undefined : Math.max(60, Math.min(window.innerHeight * 0.2, window.innerHeight - 400)),
@@ -846,31 +846,31 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
             touchAction: 'manipulation',
           }}
         >
-          <div className="sticky top-0 bg-white px-3 py-2 border-b border-gray-100 flex items-center gap-2 z-10">
-            <Slash className="w-3.5 h-3.5 text-indigo-500" />
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Block Types</span>
-            {slashMenu.query && <span className="text-[10px] text-indigo-500 font-mono">/{slashMenu.query}</span>}
-            <kbd className="ml-auto text-[9px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">ESC</kbd>
+          <div className="sticky top-0 bg-surface px-3 py-2 border-b border-subtle flex items-center gap-2 z-10">
+            <Slash className="w-3.5 h-3.5 text-accent-cool" />
+            <span className="text-[11px] font-bold text-fg-muted uppercase tracking-wider">Block Types</span>
+            {slashMenu.query && <span className="text-[10px] text-accent-cool font-mono">/{slashMenu.query}</span>}
+            <kbd className="ml-auto text-[9px] font-mono text-fg-muted/70 bg-muted px-1.5 py-0.5 rounded">ESC</kbd>
           </div>
           {groupedSlash.map((group) => {
             const catInfo = CATEGORY_LABELS[group.category] || { label: group.category, emoji: '📦' };
             return (
               <div key={group.category}>
-                <div className="px-3 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider">{catInfo.emoji} {catInfo.label}</div>
+                <div className="px-3 py-1 text-[9px] font-bold text-fg-muted/70 uppercase tracking-wider">{catInfo.emoji} {catInfo.label}</div>
                 {group.commands.map((cmd) => (
                   <button key={cmd.id}
                     type="button"
                     onPointerDown={(e) => e.preventDefault()}
                     onClick={() => handleSlashSelect(cmd.id)}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-indigo-50 active:bg-indigo-100 transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[color:hsl(var(--primary)/0.12)] active:bg-[color:hsl(var(--primary)/0.12)] transition-colors"
                     style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
                   >
-                    <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 text-sm">{cmd.icon}</div>
-                    <div className="flex-1 min-w-0"><div className="text-[13px] font-medium truncate">{cmd.label}</div><div className="text-[10px] text-gray-400 truncate">{cmd.description}</div></div>
-                    {cmd.shortcut && <kbd className="text-[9px] font-mono text-gray-400 bg-gray-100 px-1 py-0.5 rounded">{cmd.shortcut}</kbd>}
+                    <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 text-sm">{cmd.icon}</div>
+                    <div className="flex-1 min-w-0"><div className="text-[13px] font-medium truncate">{cmd.label}</div><div className="text-[10px] text-fg-muted/70 truncate">{cmd.description}</div></div>
+                    {cmd.shortcut && <kbd className="text-[9px] font-mono text-fg-muted/70 bg-muted px-1 py-0.5 rounded">{cmd.shortcut}</kbd>}
                   </button>
                 ))}
-                <div className="h-px bg-gray-100 my-1 mx-3" />
+                <div className="h-px bg-muted my-1 mx-3" />
               </div>
             );
           })}
@@ -879,7 +879,7 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
 
       {/* ===== @ MENTION MENU ===== */}
       {mentionMenu && filteredMentions.length > 0 && (
-        <div data-menu-popup role="listbox" aria-label="AI actions and mentions" className="fixed z-[9999] w-[280px] max-h-[350px] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-2xl"
+        <div data-menu-popup role="listbox" aria-label="AI actions and mentions" className="fixed z-[9999] w-[280px] max-h-[350px] overflow-y-auto rounded-xl border border-subtle bg-surface shadow-2xl"
           style={{
             bottom: isMobile ? '60px' : undefined,
             top: isMobile ? undefined : Math.max(60, Math.min(window.innerHeight * 0.2, window.innerHeight - 380)),
@@ -887,45 +887,45 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
             touchAction: 'manipulation',
           }}
         >
-          <div className="sticky top-0 bg-white px-3 py-2 border-b border-gray-100 flex items-center gap-2 z-10">
-            <AtSign className="w-3.5 h-3.5 text-indigo-500" />
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">AI & Mentions</span>
-            {mentionMenu.query && <span className="text-[10px] text-indigo-500 font-mono">@{mentionMenu.query}</span>}
-            <kbd className="ml-auto text-[9px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">ESC</kbd>
+          <div className="sticky top-0 bg-surface px-3 py-2 border-b border-subtle flex items-center gap-2 z-10">
+            <AtSign className="w-3.5 h-3.5 text-accent-cool" />
+            <span className="text-[11px] font-bold text-fg-muted uppercase tracking-wider">AI & Mentions</span>
+            {mentionMenu.query && <span className="text-[10px] text-accent-cool font-mono">@{mentionMenu.query}</span>}
+            <kbd className="ml-auto text-[9px] font-mono text-fg-muted/70 bg-muted px-1.5 py-0.5 rounded">ESC</kbd>
           </div>
           
           {filteredMentions.filter(i => i.category === 'ai').length > 0 && (
             <div className="py-1">
-              <div className="px-3 py-1 text-[9px] font-bold text-violet-500 uppercase tracking-wider">✨ AI Actions</div>
+              <div className="px-3 py-1 text-[9px] font-bold text-accent-cool uppercase tracking-wider">✨ AI Actions</div>
               {filteredMentions.filter(i => i.category === 'ai').map(item => (
                 <button key={item.id}
                   type="button"
                   onPointerDown={(e) => e.preventDefault()}
                   onClick={() => handleMentionSelect(item.id)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-indigo-50 active:bg-indigo-100 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[color:hsl(var(--primary)/0.12)] active:bg-[color:hsl(var(--primary)/0.12)] transition-colors"
                   style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center text-base flex-shrink-0">{item.icon}</div>
-                  <div className="flex-1 min-w-0"><div className="text-[13px] font-semibold text-gray-900">{item.label}</div><div className="text-[11px] text-gray-400">{item.desc}</div></div>
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                  <div className="w-8 h-8 rounded-lg bg-[color:hsl(var(--primary)/0.12)] border border-[color:hsl(var(--primary)/0.3)] flex items-center justify-center text-base flex-shrink-0">{item.icon}</div>
+                  <div className="flex-1 min-w-0"><div className="text-[13px] font-semibold text-fg-primary">{item.label}</div><div className="text-[11px] text-fg-muted/70">{item.desc}</div></div>
+                  <ChevronRight className="w-3.5 h-3.5 text-fg-muted/70 flex-shrink-0" />
                 </button>
               ))}
             </div>
           )}
           
           {filteredMentions.filter(i => i.category === 'insert').length > 0 && (
-            <div className="py-1 border-t border-gray-100">
-              <div className="px-3 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-wider">Quick Insert</div>
+            <div className="py-1 border-t border-subtle">
+              <div className="px-3 py-1 text-[9px] font-bold text-fg-muted/70 uppercase tracking-wider">Quick Insert</div>
               {filteredMentions.filter(i => i.category === 'insert').map(item => (
                 <button key={item.id}
                   type="button"
                   onPointerDown={(e) => e.preventDefault()}
                   onClick={() => handleMentionSelect(item.id)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted active:bg-muted transition-colors"
                   style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center text-base flex-shrink-0">{item.icon}</div>
-                  <div className="flex-1 min-w-0"><div className="text-[13px] font-medium text-gray-700">{item.label}</div><div className="text-[11px] text-gray-400">{item.desc}</div></div>
+                  <div className="w-8 h-8 rounded-lg bg-muted border border-subtle flex items-center justify-center text-base flex-shrink-0">{item.icon}</div>
+                  <div className="flex-1 min-w-0"><div className="text-[13px] font-medium text-fg-primary">{item.label}</div><div className="text-[11px] text-fg-muted/70">{item.desc}</div></div>
                 </button>
               ))}
             </div>
@@ -935,7 +935,7 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
 
       {/* ===== # HASHTAG MENU ===== */}
       {hashtagMenu && filteredHashtags.length > 0 && (
-        <div data-menu-popup role="listbox" aria-label="Topic tags" className="fixed z-[9999] w-[280px] max-h-[350px] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-2xl"
+        <div data-menu-popup role="listbox" aria-label="Topic tags" className="fixed z-[9999] w-[280px] max-h-[350px] overflow-y-auto rounded-xl border border-subtle bg-surface shadow-2xl"
           style={{
             bottom: isMobile ? '60px' : undefined,
             top: isMobile ? undefined : Math.max(60, Math.min(window.innerHeight * 0.2, window.innerHeight - 380)),
@@ -943,11 +943,11 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
             touchAction: 'manipulation',
           }}
         >
-          <div className="sticky top-0 bg-white px-3 py-2 border-b border-gray-100 flex items-center gap-2 z-10">
-            <Hash className="w-3.5 h-3.5 text-indigo-500" />
-            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Topic Tags</span>
-            {hashtagMenu.query && <span className="text-[10px] text-indigo-500 font-mono">#{hashtagMenu.query}</span>}
-            <kbd className="ml-auto text-[9px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">ESC</kbd>
+          <div className="sticky top-0 bg-surface px-3 py-2 border-b border-subtle flex items-center gap-2 z-10">
+            <Hash className="w-3.5 h-3.5 text-accent-cool" />
+            <span className="text-[11px] font-bold text-fg-muted uppercase tracking-wider">Topic Tags</span>
+            {hashtagMenu.query && <span className="text-[10px] text-accent-cool font-mono">#{hashtagMenu.query}</span>}
+            <kbd className="ml-auto text-[9px] font-mono text-fg-muted/70 bg-muted px-1.5 py-0.5 rounded">ESC</kbd>
           </div>
           <div className="py-1">
             {filteredHashtags.map(item => (
@@ -955,11 +955,11 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                 type="button"
                 onPointerDown={(e) => e.preventDefault()}
                 onClick={() => handleHashtagSelect(item.id)}
-                className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-indigo-50 active:bg-indigo-100 transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[color:hsl(var(--primary)/0.12)] active:bg-[color:hsl(var(--primary)/0.12)] transition-colors"
                 style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
               >
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-base flex-shrink-0">{item.icon}</div>
-                <div className="flex-1 min-w-0"><div className="text-[13px] font-semibold text-gray-900"><span className="text-indigo-400">#</span>{item.label}</div><div className="text-[11px] text-gray-400">{item.desc}</div></div>
+                <div className="w-8 h-8 rounded-lg bg-[color:hsl(var(--primary)/0.12)] border border-[color:hsl(var(--primary)/0.3)] flex items-center justify-center text-base flex-shrink-0">{item.icon}</div>
+                <div className="flex-1 min-w-0"><div className="text-[13px] font-semibold text-fg-primary"><span className="text-accent-cool">#</span>{item.label}</div><div className="text-[11px] text-fg-muted/70">{item.desc}</div></div>
               </button>
             ))}
           </div>

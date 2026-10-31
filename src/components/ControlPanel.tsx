@@ -108,10 +108,10 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 
         <Accordion type="multiple" defaultValue={["ai-analyzer", "typography", "ink-paper"]} className="space-y-2">
           {/* AI Handwriting Analyzer */}
-          <AccordionItem value="ai-analyzer" className="border border-border/50 rounded-xl px-4 overflow-hidden bg-gradient-to-br from-primary/5 to-accent/5">
+          <AccordionItem value="ai-analyzer" className="border border-border/50 rounded-xl px-4 overflow-hidden bg-gradient-to-br from-primary/5 to-nk-rose/5">
             <AccordionTrigger className="py-3 hover:no-underline">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-nk-rose flex items-center justify-center">
                   <Wand2 className="w-3.5 h-3.5 text-white" />
                 </div>
                 <div className="text-left">
@@ -130,7 +130,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                     <div className="rounded-2xl border border-border/60 bg-background/80 backdrop-blur p-4 w-full">
                       <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <Lock className="h-4 w-4 text-primary" />
+                          <Lock className="h-4 w-4 text-accent-rose" />
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-foreground">Premium feature</p>
@@ -161,15 +161,15 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
 
           {/* Handwriting Text Importer */}
           {onImportText && (
-            <AccordionItem value="text-importer" className="border border-border/50 rounded-xl px-4 overflow-hidden bg-gradient-to-br from-accent/5 to-primary/5">
+            <AccordionItem value="text-importer" className="border border-border/50 rounded-xl px-4 overflow-hidden bg-gradient-to-br from-nk-amber/5 to-primary/5">
               <AccordionTrigger className="py-3 hover:no-underline">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent to-primary flex items-center justify-center">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-nk-amber to-primary flex items-center justify-center">
                     <Upload className="w-3.5 h-3.5 text-white" />
                   </div>
                   <div className="text-left">
                     <span className="font-medium text-sm">Import Handwriting</span>
-                    <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded-full">OCR</span>
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-primary/20 text-accent-rose rounded-full">OCR</span>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -183,7 +183,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                       <div className="rounded-2xl border border-border/60 bg-background/80 backdrop-blur p-4 w-full">
                         <div className="flex items-center gap-2">
                           <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Lock className="h-4 w-4 text-primary" />
+                            <Lock className="h-4 w-4 text-accent-rose" />
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-foreground">Premium feature</p>
@@ -210,7 +210,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             <AccordionTrigger className="py-3 hover:no-underline">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Type className="w-3.5 h-3.5 text-primary" />
+                  <Type className="w-3.5 h-3.5 text-accent-rose" />
                 </div>
                 <span className="font-medium text-sm">Typography</span>
               </div>
@@ -229,7 +229,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <Label className="control-label mb-0">Font Size</Label>
-                    <span className="text-xs font-medium text-primary">{settings.fontSize}px</span>
+                    <span className="text-xs font-medium text-accent-rose">{settings.fontSize}px</span>
                   </div>
                   <Slider
                     value={[settings.fontSize]}
@@ -244,7 +244,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <Label className="control-label mb-0">Line Spacing</Label>
-                    <span className="text-xs font-medium text-primary">{settings.lineSpacing}px</span>
+                    <span className="text-xs font-medium text-accent-rose">{settings.lineSpacing}px</span>
                   </div>
                   <Slider
                     value={[settings.lineSpacing]}
@@ -259,7 +259,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <Label className="control-label mb-0">Word Spacing</Label>
-                    <span className="text-xs font-medium text-primary">{settings.wordSpacing}px</span>
+                    <span className="text-xs font-medium text-accent-rose">{settings.wordSpacing}px</span>
                   </div>
                   <Slider
                     value={[settings.wordSpacing]}
@@ -398,7 +398,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             <AccordionTrigger className="py-3 hover:no-underline">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Layout className="w-3.5 h-3.5 text-primary" />
+                  <Layout className="w-3.5 h-3.5 text-accent-rose" />
                 </div>
                 <span className="font-medium text-sm">Page Margins</span>
               </div>
@@ -409,7 +409,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                   <div key={side}>
                     <div className="flex justify-between items-center mb-1.5">
                       <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold capitalize">{side}</Label>
-                      <span className="text-[10px] font-medium text-primary">{settings.margins[side]}px</span>
+                      <span className="text-[10px] font-medium text-accent-rose">{settings.margins[side]}px</span>
                     </div>
                     <Slider
                       value={[settings.margins[side]]}
@@ -449,7 +449,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             <AccordionTrigger className="py-3 hover:no-underline">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <ImageIcon className="w-3.5 h-3.5 text-primary" />
+                  <ImageIcon className="w-3.5 h-3.5 text-accent-rose" />
                 </div>
                 <span className="font-medium text-sm">Diagrams & Images</span>
               </div>
@@ -506,7 +506,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
             <AccordionTrigger className="py-3 hover:no-underline">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <FileText className="w-3.5 h-3.5 text-primary" />
+                  <FileText className="w-3.5 h-3.5 text-accent-rose" />
                 </div>
                 <span className="font-medium text-sm">Header & Footer</span>
               </div>

@@ -13,6 +13,7 @@ import { TrackerShell, Panel } from '@/components/trackers/TrackerShell';
 import { SemiCircularDial, type DialItem } from '@/components/dial/SemiCircularDial';
 import { EXPENSE_CATEGORIES, CURRENCIES, formatMoney, accountBalances, cashflow, ACCOUNTS, toDay, splitBill, billStatus, topCategories, dailyCashSeries } from '@/lib/trackers';
 import { syncLocalMoneyToCloud } from '@/lib/cloudSyncEngine';
+import { NKProgressBar } from '@/components/nk';
 
 type Tx = { id: string; kind: string; amount: number; category: string; note: string; occurred_on: string; account: string; to_account: string | null };
 type Goal = { id: string; name: string; target: number; saved: number };
@@ -334,15 +335,15 @@ export default function MoneyTracker() {
       {/* Summary */}
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {[
-          { label: 'Income', value: income, tone: 'text-emerald-600' },
-          { label: 'Spent', value: expense, tone: 'text-rose-600' },
+          { label: 'Income', value: income, tone: 'text-success' },
+          { label: 'Spent', value: expense, tone: 'text-accent-rose' },
           { label: 'Balance', value: income - expense, tone: 'text-foreground' },
         ].map((c, i) => (
           <motion.div key={c.label} initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: i * 0.08 }}
             whileHover={{ rotateX: 4, rotateY: -4, scale: 1.02 }} style={{ transformPerspective: 600 }}
             className="rounded-3xl border border-border bg-card p-3 sm:p-5 shadow-sm min-w-0">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Coins className="w-4 h-4" style={{ color: c.tone.startsWith('text-emerald') ? '#059669' : c.tone.startsWith('text-rose') ? '#e11d48' : undefined, opacity: 0.7 }} />
+              <Coins className="w-4 h-4" style={{ color: c.tone.startsWith('text-success') ? 'hsl(var(--success))' : c.tone.startsWith('text-accent-rose') ? 'hsl(var(--accent-rose-hsl))' : undefined, opacity: 0.7 }} />
               {c.label}
             </div>
             <p className={`text-base sm:text-2xl font-bold mt-1 truncate ${c.tone}`}>{formatMoney(c.value, currency)}</p>
@@ -361,7 +362,7 @@ export default function MoneyTracker() {
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-2xl bg-muted/50 p-3">
                 <p className="text-xs text-muted-foreground">Net cashflow ({range})</p>
-                <p className={`text-xl font-bold ${net < 0 ? 'text-destructive' : 'text-emerald-600'}`}>{net >= 0 ? '+' : '−'}{formatMoney(Math.abs(net), currency)}</p>
+                <p className={`text-xl font-bold ${net < 0 ? 'text-destructive' : 'text-success'}`}>{net >= 0 ? '+' : '−'}{formatMoney(Math.abs(net), currency)}</p>
                 <p className="text-[11px] text-muted-foreground">{net >= 0 ? 'You saved this much' : 'You spent more than you earned'}</p>
               </div>
               <div className="rounded-2xl bg-muted/50 p-3">
@@ -408,7 +409,7 @@ export default function MoneyTracker() {
           <div className="flex gap-2 mb-3">
             {['expense', 'income', 'transfer'].map(k => (
               <button key={k} onClick={() => setForm(f => ({ ...f, kind: k }))}
-                className={`flex-1 py-2 rounded-xl text-sm font-semibold capitalize active:scale-95 transition ${form.kind === k ? (k === 'income' ? 'bg-emerald-500/15 text-emerald-700' : 'bg-rose-500/15 text-rose-700') : 'bg-muted text-muted-foreground'}`}>{k}</button>
+                className={`flex-1 py-2 rounded-xl text-sm font-semibold capitalize active:scale-95 transition ${form.kind === k ? (k === 'income' ? 'bg-success/15 text-success' : 'bg-primary/15 text-accent-rose') : 'bg-muted text-muted-foreground'}`}>{k}</button>
             ))}
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -438,7 +439,7 @@ export default function MoneyTracker() {
           )}
           <motion.button whileTap={{ scale: 0.94 }} onClick={addTx}
             className="mt-4 w-full h-11 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2"><Plus className="w-4 h-4" />Add</motion.button>
-          <label className={`mt-2 w-full h-11 rounded-xl border-2 border-dashed border-primary/40 text-primary font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition ${scanning ? 'opacity-60 pointer-events-none' : ''}`}>
+          <label className={`mt-2 w-full h-11 rounded-xl border-2 border-dashed border-primary/40 text-accent-rose font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition ${scanning ? 'opacity-60 pointer-events-none' : ''}`}>
             {scanning ? <><Loader2 className="w-4 h-4 animate-spin" />Reading receipt…</> : <><Camera className="w-4 h-4" />Scan receipt photo</>}
             <input ref={scanRef} type="file" accept="image/png,image/jpeg,image/webp" capture="environment" className="hidden" onChange={e => { scanReceipt(e.target.files?.[0]); e.target.value = ''; }} />
           </label>
@@ -456,10 +457,13 @@ export default function MoneyTracker() {
             <input inputMode="decimal" value={budget || ''} placeholder="Set budget" onChange={e => setBudget(Number(e.target.value) || 0)}
               onBlur={() => saveSettings({ monthly_budget: budget })} className="flex-1 min-w-0 h-11 rounded-xl border border-border bg-background px-3 text-sm" />
           </div>
-          <div className="mt-4 h-4 rounded-full bg-muted overflow-hidden">
-            <motion.div initial={{ width: 0 }} animate={{ width: `${budgetPct}%` }} transition={{ type: 'spring', stiffness: 60 }}
-              className={`h-full rounded-full ${budgetPct > 90 ? 'bg-rose-500' : budgetPct > 70 ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-          </div>
+          <NKProgressBar
+            className="mt-4"
+            value={Math.min(100, budgetPct)}
+            tone={budgetPct > 90 ? 'primary' : budgetPct > 70 ? 'amber' : 'success'}
+            size="lg"
+            aria-label="Monthly budget used"
+          />
           <p className="text-sm text-muted-foreground mt-2">
             {budget > 0 ? `${formatMoney(monthSpend, currency)} of ${formatMoney(budget, currency)} spent this month` : 'Set a budget to track this month’s spending'}
           </p>
@@ -476,7 +480,7 @@ export default function MoneyTracker() {
       </div>
 
       <Panel id="panel-graphs" title="Graphs" action={<div className="nn-chart-tabs" role="group" aria-label="Choose graph">{([['flow', 'Flow'], ['balance', 'Balance'], ['compare', 'Compare']] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={chart === k} onClick={() => { haptic('selection'); setChart(k); }}>{l}</button>)}</div>}>
-        {series.every(r => !r.income && !r.expense) ? <p className="text-sm text-muted-foreground py-10 text-center flex items-center justify-center gap-1.5">Add a transaction to see your graph grow <Sparkles className="w-4 h-4 text-primary shrink-0" aria-hidden="true" /></p> : (
+        {series.every(r => !r.income && !r.expense) ? <p className="text-sm text-muted-foreground py-10 text-center flex items-center justify-center gap-1.5">Add a transaction to see your graph grow <Sparkles className="w-4 h-4 text-accent-rose shrink-0" aria-hidden="true" /></p> : (
         <motion.div key={chart + range} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="h-60">
           <ResponsiveContainer>
             {chart === 'compare' ? (
@@ -531,7 +535,7 @@ export default function MoneyTracker() {
                   <div className="flex justify-between text-sm"><span className="font-medium">{g.name}{pct >= 100 && ' 🎉'}</span>
                     <span className="text-muted-foreground">{formatMoney(g.saved, currency)} / {formatMoney(g.target, currency)}</span></div>
                   <div className="h-3 rounded-full bg-muted mt-1.5 overflow-hidden">
-                    <motion.div animate={{ width: `${pct}%` }} className="h-full bg-gradient-to-r from-primary to-accent rounded-full" />
+                    <motion.div animate={{ width: `${pct}%` }} className="h-full bg-gradient-to-r from-primary to-nk-rose rounded-full" />
                   </div>
                   <div className="flex gap-2 mt-2">
                     {[100, 500, 1000].map(a => <button key={a} onClick={() => addToGoal(g, a)} className="px-2.5 py-1 rounded-lg bg-muted text-xs font-medium active:scale-90">+{a}</button>)}
@@ -567,7 +571,7 @@ export default function MoneyTracker() {
         <div className="space-y-2">
           {bills.map(b => {
             const st = billStatus(b);
-            const tone = st === 'paid' ? 'text-emerald-600' : st === 'overdue' ? 'text-rose-600' : st === 'soon' ? 'text-amber-600' : 'text-muted-foreground';
+            const tone = st === 'paid' ? 'text-success' : st === 'overdue' ? 'text-accent-rose' : st === 'soon' ? 'text-accent-warm' : 'text-muted-foreground';
             const label = st === 'paid' ? 'Paid this month' : st === 'overdue' ? 'Overdue' : st === 'soon' ? 'Due soon' : `Due on ${b.due_day}`;
             return (
               <motion.div key={b.id} layout className="flex items-center gap-3 p-3 rounded-2xl bg-muted/40">
@@ -576,7 +580,7 @@ export default function MoneyTracker() {
                   <p className="text-sm font-medium truncate">{b.name}{b.amount > 0 && ` · ${formatMoney(b.amount, currency)}`}</p>
                   <p className={`text-xs font-medium ${tone}`}>{label}</p>
                 </div>
-                {st !== 'paid' && <button onClick={() => payBill(b)} className="px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-700 text-xs font-semibold flex items-center gap-1 active:scale-90"><CheckCircle2 className="w-3.5 h-3.5" />Paid</button>}
+                {st !== 'paid' && <button onClick={() => payBill(b)} className="px-3 py-1.5 rounded-lg bg-success/15 text-success text-xs font-semibold flex items-center gap-1 active:scale-90"><CheckCircle2 className="w-3.5 h-3.5" />Paid</button>}
                 <button onClick={() => delBill(b.id)} className="p-1 text-muted-foreground" aria-label="Delete bill"><Trash2 className="w-4 h-4" /></button>
               </motion.div>
             );
@@ -610,8 +614,8 @@ export default function MoneyTracker() {
                     <p className="text-sm font-medium truncate">{t.note || t.category}</p>
                     <p className="text-xs text-muted-foreground">{t.kind === 'transfer' ? `${t.account} → ${t.to_account}` : `${t.category} · ${t.account || 'Cash'}`} · {t.occurred_on}</p>
                   </div>
-                  <span className={`font-semibold text-sm ${t.kind === 'income' ? 'text-emerald-600' : t.kind === 'transfer' ? 'text-muted-foreground' : 'text-rose-600'}`}>{t.kind === 'income' ? '+' : t.kind === 'transfer' ? '⇄ ' : '−'}{formatMoney(t.amount, currency)}</span>
-                  <button onClick={() => editTx(t)} className="h-9 px-2 text-xs font-medium text-primary" aria-label="Edit entry">Edit</button><button onClick={() => delTx(t.id)} className="h-9 w-9 grid place-items-center text-muted-foreground" aria-label="Delete entry"><Trash2 className="w-4 h-4" /></button>
+                  <span className={`font-semibold text-sm ${t.kind === 'income' ? 'text-success' : t.kind === 'transfer' ? 'text-muted-foreground' : 'text-accent-rose'}`}>{t.kind === 'income' ? '+' : t.kind === 'transfer' ? '⇄ ' : '−'}{formatMoney(t.amount, currency)}</span>
+                  <button onClick={() => editTx(t)} className="h-9 px-2 text-xs font-medium text-accent-rose" aria-label="Edit entry">Edit</button><button onClick={() => delTx(t.id)} className="h-9 w-9 grid place-items-center text-muted-foreground" aria-label="Delete entry"><Trash2 className="w-4 h-4" /></button>
                 </motion.div>
               );
             })}
@@ -629,11 +633,11 @@ export default function MoneyTracker() {
           centerLabel="Open money quick actions"
           align="right"
           items={[
-            { id: 'expense', label: 'Add expense', icon: TrendingDown, tint: '#e11d48', onSelect: () => { setForm(f => ({ ...f, kind: 'expense' })); focusPanel('panel-tx', amountRef); } },
-            { id: 'income', label: 'Add income', icon: TrendingUp, tint: '#059669', onSelect: () => { setForm(f => ({ ...f, kind: 'income' })); focusPanel('panel-tx', amountRef); } },
-            { id: 'receipt', label: 'Scan receipt', icon: Camera, tint: '#0ea5e9', onSelect: () => scanRef.current?.click() },
-            { id: 'budget', label: 'Budget', icon: PiggyBank, tint: '#7c3aed', onSelect: () => focusPanel('panel-budget') },
-            { id: 'goals', label: 'Goals', icon: Target, tint: '#f59e0b', onSelect: () => focusPanel('panel-goals') },
+            { id: 'expense', label: 'Add expense', icon: TrendingDown, tint: '#A34054', onSelect: () => { setForm(f => ({ ...f, kind: 'expense' })); focusPanel('panel-tx', amountRef); } },
+            { id: 'income', label: 'Add income', icon: TrendingUp, tint: 'hsl(var(--success))', onSelect: () => { setForm(f => ({ ...f, kind: 'income' })); focusPanel('panel-tx', amountRef); } },
+            { id: 'receipt', label: 'Scan receipt', icon: Camera, tint: '#7C5F9E', onSelect: () => scanRef.current?.click() },
+            { id: 'budget', label: 'Budget', icon: PiggyBank, tint: '#7C5F9E', onSelect: () => focusPanel('panel-budget') },
+            { id: 'goals', label: 'Goals', icon: Target, tint: '#C4762F', onSelect: () => focusPanel('panel-goals') },
             { id: 'bills', label: 'Bills', icon: ReceiptText, tint: '#64748b', onSelect: () => focusPanel('panel-bills') },
             { id: 'report', label: 'PDF report', icon: FileDown, tint: '#334155', onSelect: exportPdf },
           ]}

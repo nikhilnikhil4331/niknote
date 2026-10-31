@@ -1221,7 +1221,7 @@ export default function PdfStudio() {
         }}
       >
         <header className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: '1px solid var(--pdfs-border)', background: 'var(--pdfs-surface)' }}>
-          <Link to="/hub" aria-label="Back to documents" className="grid h-10 w-10 place-items-center rounded-full hover:bg-black/5">
+          <Link to="/hub" aria-label="Back to documents" className="grid h-10 w-10 place-items-center rounded-full hover:bg-surface-hover">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div className="min-w-0">
@@ -1306,11 +1306,11 @@ export default function PdfStudio() {
       {/* Header */}
       <header className="z-40 shrink-0" style={{ borderBottom: '1px solid var(--pdfs-border)', background: 'var(--pdfs-surface)', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="flex items-center gap-1 px-2 py-1.5 sm:px-3">
-          <Link to="/hub" aria-label="Back to documents" className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-black/5">
+          <Link to="/hub" aria-label="Back to documents" className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-surface-hover">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <button type="button" onClick={() => setPanelOpen((v) => !v)} aria-label="Toggle pages panel" aria-pressed={panelOpen}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-black/5"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-surface-hover"
             style={panelOpen ? { color: 'var(--pdfs-accent)' } : undefined}>
             <PanelLeft className="h-5 w-5" />
           </button>
@@ -1321,29 +1321,29 @@ export default function PdfStudio() {
           </div>
 
           <button type="button" onClick={undo} disabled={past.length === 0} aria-label="Undo" title="Undo (Ctrl+Z)"
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-black/5 disabled:opacity-35">
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-surface-hover disabled:opacity-35">
             <Undo2 className="h-[18px] w-[18px]" />
           </button>
           <button type="button" onClick={redo} disabled={future.length === 0} aria-label="Redo" title="Redo (Ctrl+Shift+Z)"
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-black/5 disabled:opacity-35">
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-surface-hover disabled:opacity-35">
             <Redo2 className="h-[18px] w-[18px]" />
           </button>
           <button type="button" onClick={() => setSearchOpen((v) => !v)} aria-label="Search in document" aria-pressed={searchOpen}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-black/5"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-surface-hover"
             style={searchOpen ? { color: 'var(--pdfs-accent)' } : undefined}>
             <Search className="h-[18px] w-[18px]" />
           </button>
 
           {/* Zoom cluster */}
           <div className="relative hidden shrink-0 items-center rounded-full border sm:flex" style={{ borderColor: 'var(--pdfs-border)' }}>
-            <button type="button" onClick={() => setZoom((z) => clampZoom(z / 1.25))} aria-label="Zoom out" className="grid h-9 w-9 place-items-center rounded-full hover:bg-black/5">
+            <button type="button" onClick={() => setZoom((z) => clampZoom(z / 1.25))} aria-label="Zoom out" className="grid h-9 w-9 place-items-center rounded-full hover:bg-surface-hover">
               <ZoomOut className="h-4 w-4" />
             </button>
             <button type="button" onClick={() => setZoomMenu((v) => (v === 'cluster' ? null : 'cluster'))} aria-haspopup="menu" aria-expanded={zoomMenu === 'cluster'}
               className="min-h-9 w-[52px] text-center text-[12px] font-bold" aria-label={`Zoom ${zoomPercent} percent — open zoom menu`}>
               {zoomPercent}%
             </button>
-            <button type="button" onClick={() => setZoom((z) => clampZoom(z * 1.25))} aria-label="Zoom in" className="grid h-9 w-9 place-items-center rounded-full hover:bg-black/5">
+            <button type="button" onClick={() => setZoom((z) => clampZoom(z * 1.25))} aria-label="Zoom in" className="grid h-9 w-9 place-items-center rounded-full hover:bg-surface-hover">
               <ZoomIn className="h-4 w-4" />
             </button>
             {zoomMenu === 'cluster' && (
@@ -1374,7 +1374,7 @@ export default function PdfStudio() {
 
           <div className="relative shrink-0">
             <button type="button" onClick={() => setMenuOpen((v) => !v)} aria-label="More actions" aria-haspopup="menu" aria-expanded={menuOpen}
-              className="grid h-10 w-10 place-items-center rounded-full hover:bg-black/5">
+              className="grid h-10 w-10 place-items-center rounded-full hover:bg-surface-hover">
               <MoreVertical className="h-5 w-5" />
             </button>
             {menuOpen && (
@@ -1408,7 +1408,7 @@ export default function PdfStudio() {
                 onChange={(e) => { setSearchQuery(e.target.value); setSearched(false); }}
                 placeholder="Find text in this PDF…"
                 aria-label="Search text"
-                className="w-full bg-transparent text-sm outline-none"
+                className="w-full bg-transparent text-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]"
               />
               {searchBusy && <Loader2 className="h-4 w-4 animate-spin" />}
             </div>
@@ -1503,7 +1503,7 @@ export default function PdfStudio() {
                             }}
                             placeholder="Type here…"
                             aria-label="Text annotation"
-                            className="min-h-[40px] min-w-[180px] rounded-lg border-2 bg-white/95 px-2 py-1 shadow-lg outline-none"
+                            className="min-h-[40px] min-w-[180px] rounded-lg border-2 bg-white/95 px-2 py-1 shadow-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]"
                             style={{
                               borderColor: 'var(--pdfs-accent)',
                               color: inkColor,
@@ -1538,7 +1538,7 @@ export default function PdfStudio() {
                                 if (e.key === 'Escape') setEditDraft(null);
                               }}
                               aria-label="Edit PDF text"
-                              className="rounded-lg border-2 bg-white/95 px-1.5 py-0.5 shadow-lg outline-none"
+                              className="rounded-lg border-2 bg-white/95 px-1.5 py-0.5 shadow-lg outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]"
                               style={{
                                 borderColor: 'var(--pdfs-accent)',
                                 color: inkColor,
@@ -1581,7 +1581,7 @@ export default function PdfStudio() {
           <div className={`absolute z-20 ${tool !== 'select' || selected ? 'max-sm:hidden' : ''}`} style={{ left: 14, bottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)' }}>
             <div className="pdfs-bar flex items-center gap-0.5 rounded-full py-1 pl-1 pr-1">
               <button type="button" onClick={goPrev} disabled={pageIndex === 0} aria-label="Previous page"
-                className="grid h-10 w-9 place-items-center rounded-full hover:bg-black/5 disabled:opacity-35">
+                className="grid h-10 w-9 place-items-center rounded-full hover:bg-surface-hover disabled:opacity-35">
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button type="button" onClick={() => setGoToOpen(true)} aria-label="Go to page"
@@ -1589,7 +1589,7 @@ export default function PdfStudio() {
                 {pageLabel(pageIndex, pages.length)}
               </button>
               <button type="button" onClick={goNext} disabled={pageIndex >= pages.length - 1} aria-label="Next page"
-                className="grid h-10 w-9 place-items-center rounded-full hover:bg-black/5 disabled:opacity-35">
+                className="grid h-10 w-9 place-items-center rounded-full hover:bg-surface-hover disabled:opacity-35">
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
@@ -1697,7 +1697,7 @@ export default function PdfStudio() {
       {/* Password prompt while a doc is already open */}
       {loadState === 'password' && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-          <button type="button" aria-label="Cancel" className="absolute inset-0 bg-black/45" onClick={() => setLoadState('idle')} />
+          <button type="button" aria-label="Cancel" className="absolute inset-0 bg-[color:var(--nk-scrim)]" onClick={() => setLoadState('idle')} />
           <div className="pdfs-bar pdfs-sheet relative w-full max-w-sm rounded-3xl p-5">
             <PasswordPrompt
               fileName={pendingFileRef.current?.name || 'PDF'}
@@ -1738,7 +1738,7 @@ function MenuRow({ label, icon: Icon, onClick, href }: {
   onClick: () => void;
   href?: string;
 }) {
-  const cls = 'flex min-h-11 w-full items-center gap-2.5 rounded-xl px-2.5 text-left text-[13px] font-semibold hover:bg-black/5';
+  const cls = 'flex min-h-11 w-full items-center gap-2.5 rounded-xl px-2.5 text-left text-[13px] font-semibold hover:bg-surface-hover';
   if (href) {
     return (
       <Link to={href} className={cls} role="menuitem" onClick={onClick}>
@@ -1775,7 +1775,7 @@ function ZoomMenu({ onClose, onPreset, floating }: {
         className={`pdfs-bar pdfs-fade-in z-50 w-52 rounded-2xl p-1.5 ${floating ? 'fixed right-3 top-16' : 'absolute right-0 top-12'}`}>
         {rows.map((r) => (
           <button key={r.label} type="button" role="menuitem" onClick={() => onPreset(r.value)}
-            className="flex min-h-10 w-full items-center rounded-xl px-2.5 text-left text-[13px] font-semibold hover:bg-black/5">
+            className="flex min-h-10 w-full items-center rounded-xl px-2.5 text-left text-[13px] font-semibold hover:bg-surface-hover">
             {r.label}
           </button>
         ))}
@@ -1809,7 +1809,7 @@ function PasswordPrompt({ fileName, wrong, busy, onSubmit, onCancel }: {
         onChange={(e) => setPw(e.target.value)}
         placeholder="PDF password"
         aria-label="PDF password"
-        className="mt-3 min-h-11 w-full rounded-xl border px-3 text-sm outline-none"
+        className="mt-3 min-h-11 w-full rounded-xl border px-3 text-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]"
         style={{ borderColor: 'var(--pdfs-border)', background: 'var(--pdfs-surface)' }}
       />
       <div className="mt-3 flex gap-2">
@@ -1834,7 +1834,7 @@ function GoToPageSheet({ count, current, onClose, onGo }: {
   const parsed = parsePageInput(draft, count);
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label="Go to page">
-      <button type="button" aria-label="Close" className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <button type="button" aria-label="Close" className="absolute inset-0 bg-[color:var(--nk-scrim)]" onClick={onClose} />
       <form
         className="pdfs-bar pdfs-sheet relative w-full max-w-xs rounded-t-3xl p-4 sm:rounded-3xl"
         onSubmit={(e) => { e.preventDefault(); if (parsed !== null) onGo(parsed); }}
@@ -1847,7 +1847,7 @@ function GoToPageSheet({ count, current, onClose, onGo }: {
             value={draft}
             onChange={(e) => setDraft(e.target.value.replace(/[^0-9]/g, ''))}
             aria-label="Page number"
-            className="min-h-11 w-20 rounded-xl border px-3 text-center text-base font-bold outline-none"
+            className="min-h-11 w-20 rounded-xl border px-3 text-center text-base font-bold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]"
             style={{ borderColor: 'var(--pdfs-border)', background: 'var(--pdfs-surface)' }}
           />
           <span className="text-sm font-medium" style={{ color: 'var(--pdfs-text-2)' }}>of {count}</span>
@@ -1872,7 +1872,7 @@ function ConfirmSheet({ title, body, confirmLabel, onCancel, onConfirm }: {
 }) {
   return (
     <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center" role="alertdialog" aria-modal="true" aria-label={title}>
-      <button type="button" aria-label="Cancel" className="absolute inset-0 bg-black/40" onClick={onCancel} />
+      <button type="button" aria-label="Cancel" className="absolute inset-0 bg-[color:var(--nk-scrim)]" onClick={onCancel} />
       <div className="pdfs-bar pdfs-sheet relative w-full max-w-sm rounded-t-3xl p-4 sm:rounded-3xl" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
         <h3 className="text-[15px] font-bold">{title}</h3>
         <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: 'var(--pdfs-text-2)' }}>{body}</p>
@@ -2183,11 +2183,11 @@ function SignatureModal({ onClose, onSaved, onChange }: {
 
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Your signature">
-      <button type="button" aria-label="Close" className="absolute inset-0 bg-black/45" onClick={onClose} />
+      <button type="button" aria-label="Close" className="absolute inset-0 bg-[color:var(--nk-scrim)]" onClick={onClose} />
       <div className="pdfs-bar pdfs-sheet relative w-full max-w-lg rounded-3xl p-5">
         <div className="mb-1 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-base font-bold"><Type className="h-4 w-4" style={{ color: 'var(--pdfs-accent)' }} /> Your signature</h3>
-          <button type="button" onClick={onClose} aria-label="Close" className="grid h-10 w-10 place-items-center rounded-full hover:bg-black/5">
+          <button type="button" onClick={onClose} aria-label="Close" className="grid h-10 w-10 place-items-center rounded-full hover:bg-surface-hover">
             <X className="h-5 w-5" />
           </button>
         </div>

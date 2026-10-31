@@ -54,15 +54,15 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-3 border-b border-gray-100">
+      <div className="p-3 border-b border-subtle">
         <button
           onClick={() => setExpanded(!expanded)}
           className="w-full flex items-center gap-2"
         >
-          {expanded ? <ChevronDown className="w-3 h-3 text-gray-400" /> : <ChevronRight className="w-3 h-3 text-gray-400" />}
-          <Link2 className="w-3.5 h-3.5 text-indigo-500" />
-          <span className="text-[11px] font-semibold text-gray-700">Backlinks</span>
-          <span className="text-[9px] text-gray-400 tabular-nums">{backlinks.length}</span>
+          {expanded ? <ChevronDown className="w-3 h-3 text-fg-muted/70" /> : <ChevronRight className="w-3 h-3 text-fg-muted/70" />}
+          <Link2 className="w-3.5 h-3.5 text-accent-cool" />
+          <span className="text-[11px] font-semibold text-fg-primary">Backlinks</span>
+          <span className="text-[9px] text-fg-muted/70 tabular-nums">{backlinks.length}</span>
         </button>
       </div>
 
@@ -77,12 +77,12 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
             {/* Search */}
             <div className="px-3 py-2">
               <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300" />
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-fg-muted/70" />
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filter backlinks..."
-                  className="w-full text-[10px] bg-gray-50 rounded-lg pl-7 pr-3 py-1.5 border border-gray-200 focus:border-indigo-300 outline-none"
+                  className="w-full text-[10px] bg-muted rounded-lg pl-7 pr-3 py-1.5 border border-subtle focus:border-[color:hsl(var(--primary)/0.3)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]"
                 />
               </div>
             </div>
@@ -91,9 +91,9 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
             <div className="px-3 pb-3 space-y-1.5">
               {filtered.length === 0 ? (
                 <div className="text-center py-4">
-                  <Link2 className="w-6 h-6 text-gray-200 mx-auto mb-1" />
-                  <p className="text-[10px] text-gray-400">No backlinks yet</p>
-                  <p className="text-[9px] text-gray-300">Other pages will appear here when they link to this page</p>
+                  <Link2 className="w-6 h-6 text-fg-muted/70 mx-auto mb-1" />
+                  <p className="text-[10px] text-fg-muted/70">No backlinks yet</p>
+                  <p className="text-[9px] text-fg-muted/70">Other pages will appear here when they link to this page</p>
                 </div>
               ) : (
                 filtered.map((bl, i) => (
@@ -103,17 +103,17 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.02 }}
                     onClick={() => onNavigate(bl.fromPageId)}
-                    className="w-full text-left p-2.5 rounded-lg hover:bg-gray-50 border border-gray-100 hover:border-gray-200 transition-all group"
+                    className="w-full text-left p-2.5 rounded-lg hover:bg-muted border border-subtle hover:border-subtle transition-all group"
                   >
                     <div className="flex items-center gap-1.5 mb-1">
                       <span className="text-sm">{bl.fromPageIcon || '📄'}</span>
-                      <span className="text-[11px] font-medium text-gray-800 truncate flex-1">{bl.fromPageTitle}</span>
-                      <ExternalLink className="w-2.5 h-2.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <span className="text-[11px] font-medium text-fg-primary truncate flex-1">{bl.fromPageTitle}</span>
+                      <ExternalLink className="w-2.5 h-2.5 text-fg-muted/70 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                    <p className="text-[10px] text-gray-400 line-clamp-2 leading-relaxed">
+                    <p className="text-[10px] text-fg-muted/70 line-clamp-2 leading-relaxed">
                       ...{bl.contextText.slice(0, 100)}...
                     </p>
-                    <span className="text-[8px] text-gray-300 mt-1 block">{formatTime(bl.timestamp)}</span>
+                    <span className="text-[8px] text-fg-muted/70 mt-1 block">{formatTime(bl.timestamp)}</span>
                   </motion.button>
                 ))
               )}
@@ -121,7 +121,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
 
             {/* AI suggest */}
             <div className="px-3 pb-3">
-              <button className="w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[9px] font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors">
+              <button className="w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[9px] font-medium text-accent-cool bg-[color:hsl(var(--primary)/0.12)] hover:bg-[color:hsl(var(--primary)/0.12)] transition-colors">
                 <Sparkles className="w-3 h-3" /> AI find related pages
               </button>
             </div>
@@ -177,19 +177,19 @@ export const MentionDropdown: React.FC<MentionDropdownProps> = ({
       initial={{ opacity: 0, y: 4, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed z-50 w-[220px] max-h-[200px] overflow-y-auto rounded-xl border border-gray-200/80 bg-white/95 backdrop-blur-xl shadow-lg py-1"
+      className="fixed z-50 w-[220px] max-h-[200px] overflow-y-auto rounded-xl border border-subtle/80 bg-surface/95 backdrop-blur-xl shadow-lg py-1"
       style={{ top: position.top, left: position.left }}
     >
       {filtered.map(item => (
         <button
           key={item.id}
           onClick={() => { onSelect(item); onClose(); }}
-          className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-indigo-50 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-[color:hsl(var(--primary)/0.12)] transition-colors"
         >
           <span className="text-sm">{item.icon}</span>
           <div className="flex-1 min-w-0">
-            <div className="text-[11px] font-medium text-gray-800 truncate">{item.label}</div>
-            <div className="text-[9px] text-gray-400">{item.description}</div>
+            <div className="text-[11px] font-medium text-fg-primary truncate">{item.label}</div>
+            <div className="text-[9px] text-fg-muted/70">{item.description}</div>
           </div>
         </button>
       ))}

@@ -55,7 +55,7 @@ export function FocusTimerScreen({ go }: { go: (s: { name: string; id?: string }
       addFocusSession();
       const n = (state.focus[toDay(new Date())] ?? 0) + 1;
       haptic('success');
-      if (!reduced) confetti({ particleCount: 90, spread: 74, origin: { y: 0.65 }, colors: ['#9333ea', '#ec4899', '#f97316', '#ffffff'] });
+      if (!reduced) confetti({ particleCount: 90, spread: 74, origin: { y: 0.65 }, colors: ['#7C5F9E', '#A34054', '#D9822F', '#ffffff'] });
       toast.success(n === 4 ? '4 focus sessions — a legendary day! 🏆' : 'Focus session done — break time ☕');
       setPhase('break');
       setRemaining(brk);
@@ -126,7 +126,7 @@ export function FocusTimerScreen({ go }: { go: (s: { name: string; id?: string }
             <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
               <defs>
                 <linearGradient id="nnh-focus-grad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#9333ea" /><stop offset="55%" stopColor="#ec4899" /><stop offset="100%" stopColor="#ff7a8a" />
+                  <stop offset="0%" stopColor="#7C5F9E" /><stop offset="55%" stopColor="#A34054" /><stop offset="100%" stopColor="#ff7a8a" />
                 </linearGradient>
               </defs>
               <circle cx="50" cy="50" r={R} fill="none" stroke="var(--nnh-line)" strokeWidth="6" />

@@ -147,7 +147,7 @@ export default function RadialTools({
             {!open && tool !== 'select' && (
               <span
                 className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2"
-                style={{ background: '#22c55e', borderColor: 'var(--pdfs-surface)' }}
+                style={{ background: '#157F52', borderColor: 'var(--pdfs-surface)' }}
                 aria-hidden
               />
             )}

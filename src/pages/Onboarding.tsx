@@ -123,7 +123,7 @@ export default function OnboardingPage() {
       {/* Progress bar */}
       <div className="h-1 bg-muted">
         <motion.div
-          className="h-full bg-gradient-to-r from-primary to-primary/70"
+          className="h-full bg-gradient-to-r from-primary to-primary-active/70"
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.4 }}
         />
@@ -156,7 +156,7 @@ export default function OnboardingPage() {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", delay: 0.2 }}
-                  className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-xl shadow-primary/20"
+                  className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-primary to-primary-active/60 flex items-center justify-center shadow-xl shadow-primary/20"
                 >
                   <Sparkles className="w-10 h-10 text-primary-foreground" />
                 </motion.div>
@@ -168,7 +168,7 @@ export default function OnboardingPage() {
                 </div>
                 <Button
                   onClick={next}
-                  className="w-full h-14 rounded-2xl text-base font-semibold bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/20"
+                  className="w-full h-14 rounded-2xl text-base font-semibold bg-gradient-to-r from-primary to-primary-active/80 shadow-lg shadow-primary/20"
                 >
                   Let's Get Started <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
@@ -198,13 +198,13 @@ export default function OnboardingPage() {
                       }`}
                     >
                       <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <uc.icon className="w-6 h-6 text-primary" />
+                        <uc.icon className="w-6 h-6 text-accent-rose" />
                       </div>
                       <div>
                         <div className="font-semibold text-sm">{uc.label}</div>
                         <div className="text-xs text-muted-foreground">{uc.desc}</div>
                       </div>
-                      {useCase === uc.id && <Check className="w-5 h-5 text-primary ml-auto" />}
+                      {useCase === uc.id && <Check className="w-5 h-5 text-accent-rose ml-auto" />}
                     </button>
                   ))}
                 </div>
@@ -220,13 +220,13 @@ export default function OnboardingPage() {
                 </div>
                 <div className="space-y-3">
                   {[
-                    { id: "cbse", icon: BookOpen, label: "📚 CBSE Board", desc: "Class 9-12, NCERT pattern", color: "bg-blue-500/10 text-blue-600" },
-                    { id: "icse", icon: BookOpen, label: "📖 ICSE/ISC Board", desc: "CISCE curriculum", color: "bg-purple-500/10 text-purple-600" },
-                    { id: "jee", icon: Trophy, label: "🎯 JEE (Main + Advanced)", desc: "IIT engineering entrance", color: "bg-red-500/10 text-red-600" },
-                    { id: "neet", icon: Star, label: "🏥 NEET", desc: "Medical entrance exam", color: "bg-green-500/10 text-green-600" },
-                    { id: "upsc", icon: Briefcase, label: "🏛️ UPSC Civil Services", desc: "IAS, IPS, IFS preparation", color: "bg-amber-500/10 text-amber-600" },
-                    { id: "state", icon: School, label: "🏫 State Board", desc: "UP, Bihar, MP, Rajasthan, etc.", color: "bg-teal-500/10 text-teal-600" },
-                    { id: "other", icon: Zap, label: "📋 Other / College", desc: "B.Tech, B.Sc, MBA, etc.", color: "bg-gray-500/10 text-gray-600" },
+                    { id: "cbse", icon: BookOpen, label: "📚 CBSE Board", desc: "Class 9-12, NCERT pattern", color: "bg-[color:hsl(var(--accent-cool-hsl)/0.1)] text-accent-cool" },
+                    { id: "icse", icon: BookOpen, label: "📖 ICSE/ISC Board", desc: "CISCE curriculum", color: "bg-primary/10 text-accent-cool" },
+                    { id: "jee", icon: Trophy, label: "🎯 JEE (Main + Advanced)", desc: "IIT engineering entrance", color: "bg-error/10 text-error" },
+                    { id: "neet", icon: Star, label: "🏥 NEET", desc: "Medical entrance exam", color: "bg-success/10 text-success" },
+                    { id: "upsc", icon: Briefcase, label: "🏛️ UPSC Civil Services", desc: "IAS, IPS, IFS preparation", color: "bg-nk-warm-600/10 text-accent-warm" },
+                    { id: "state", icon: School, label: "🏫 State Board", desc: "UP, Bihar, MP, Rajasthan, etc.", color: "bg-success/10 text-success" },
+                    { id: "other", icon: Zap, label: "📋 Other / College", desc: "B.Tech, B.Sc, MBA, etc.", color: "bg-muted/10 text-fg-secondary" },
                   ].map((exam) => (
                     <button
                       key={exam.id}
@@ -244,7 +244,7 @@ export default function OnboardingPage() {
                         <div className="font-semibold text-sm">{exam.label}</div>
                         <div className="text-xs text-muted-foreground">{exam.desc}</div>
                       </div>
-                      {examBoard === exam.id && <Check className="w-5 h-5 text-primary ml-auto" />}
+                      {examBoard === exam.id && <Check className="w-5 h-5 text-accent-rose ml-auto" />}
                     </button>
                   ))}
                 </div>
@@ -254,7 +254,7 @@ export default function OnboardingPage() {
             {/* STEP 4: Handwriting */}
             {step === "handwriting" && (
               <div className="space-y-6 text-center">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-nk-warm-700 to-nk-rose flex items-center justify-center shadow-lg">
                   <Camera className="w-8 h-8 text-white" />
                 </div>
                 <div>
@@ -275,7 +275,7 @@ export default function OnboardingPage() {
                     onChange={handleHandwritingUpload}
                     disabled={uploading}
                   />
-                  <div className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 text-white font-semibold flex items-center justify-center gap-2 cursor-pointer hover:opacity-90 transition-opacity shadow-lg">
+                  <div className="w-full h-14 rounded-2xl bg-gradient-to-r from-nk-warm-700 to-nk-rose text-white font-semibold flex items-center justify-center gap-2 cursor-pointer hover:opacity-90 transition-opacity shadow-lg">
                     {uploading ? (
                       <>
                         <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}>
@@ -300,7 +300,7 @@ export default function OnboardingPage() {
             {/* STEP 5: AI Demo */}
             {step === "ai-demo" && (
               <div className="space-y-6 text-center">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-nk-purple to-nk-rose flex items-center justify-center shadow-lg">
                   <Wand2 className="w-8 h-8 text-white" />
                 </div>
                 <div>
@@ -318,7 +318,7 @@ export default function OnboardingPage() {
                 <Button
                   onClick={handleAIDemo}
                   disabled={loading || !aiTopic.trim()}
-                  className="w-full h-14 rounded-2xl text-base font-semibold bg-gradient-to-r from-violet-500 to-indigo-600 text-white shadow-lg"
+                  className="w-full h-14 rounded-2xl text-base font-semibold bg-gradient-to-r from-nk-purple to-nk-rose text-white shadow-lg"
                 >
                   {loading ? (
                     <>
@@ -375,7 +375,7 @@ export default function OnboardingPage() {
                 </div>
                 <Button
                   onClick={finishOnboarding}
-                  className="w-full h-14 rounded-2xl text-base font-semibold bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/20"
+                  className="w-full h-14 rounded-2xl text-base font-semibold bg-gradient-to-r from-primary to-primary-active/80 shadow-lg shadow-primary/20"
                 >
                   Got It! Let me explore 🚀
                 </Button>

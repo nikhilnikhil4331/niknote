@@ -35,10 +35,10 @@ export const AdminFeatureHeatmap: React.FC<AdminFeatureHeatmapProps> = ({
   const maxHourCount = Math.max(...peakHours.map(h => h.count), 1);
 
   const getHeatColor = (percentage: number): string => {
-    if (percentage > 75) return 'bg-red-500';
-    if (percentage > 50) return 'bg-orange-500';
-    if (percentage > 25) return 'bg-yellow-500';
-    return 'bg-green-500';
+    if (percentage > 75) return 'bg-error';
+    if (percentage > 50) return 'bg-nk-warm-600';
+    if (percentage > 25) return 'bg-nk-warm-600';
+    return 'bg-success';
   };
 
   const formatHour = (hour: number): string => {
@@ -76,7 +76,7 @@ export const AdminFeatureHeatmap: React.FC<AdminFeatureHeatmapProps> = ({
         <Card className="rounded-xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <Flame className="w-4 h-4 text-orange-500" />
+              <Flame className="w-4 h-4 text-accent-warm" />
               Most Used Features
             </CardTitle>
           </CardHeader>
@@ -119,7 +119,7 @@ export const AdminFeatureHeatmap: React.FC<AdminFeatureHeatmapProps> = ({
         <Card className="rounded-xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <Clock className="w-4 h-4 text-blue-500" />
+              <Clock className="w-4 h-4 text-accent-cool" />
               Peak Usage Hours
             </CardTitle>
           </CardHeader>
@@ -127,10 +127,10 @@ export const AdminFeatureHeatmap: React.FC<AdminFeatureHeatmapProps> = ({
             <div className="grid grid-cols-6 gap-1">
               {peakHours.map((hour, index) => {
                 const intensity = hour.count / maxHourCount;
-                const bgColor = intensity > 0.75 ? 'bg-red-500' 
-                  : intensity > 0.5 ? 'bg-orange-500'
-                  : intensity > 0.25 ? 'bg-yellow-500'
-                  : intensity > 0 ? 'bg-green-500/50'
+                const bgColor = intensity > 0.75 ? 'bg-error' 
+                  : intensity > 0.5 ? 'bg-nk-warm-600'
+                  : intensity > 0.25 ? 'bg-nk-warm-600'
+                  : intensity > 0 ? 'bg-success/50'
                   : 'bg-secondary';
                 
                 return (
@@ -151,10 +151,10 @@ export const AdminFeatureHeatmap: React.FC<AdminFeatureHeatmapProps> = ({
               <span>Low activity</span>
               <div className="flex gap-1">
                 <div className="w-4 h-2 rounded bg-secondary" />
-                <div className="w-4 h-2 rounded bg-green-500/50" />
-                <div className="w-4 h-2 rounded bg-yellow-500" />
-                <div className="w-4 h-2 rounded bg-orange-500" />
-                <div className="w-4 h-2 rounded bg-red-500" />
+                <div className="w-4 h-2 rounded bg-success/50" />
+                <div className="w-4 h-2 rounded bg-nk-warm-600" />
+                <div className="w-4 h-2 rounded bg-nk-warm-600" />
+                <div className="w-4 h-2 rounded bg-error" />
               </div>
               <span>High activity</span>
             </div>
@@ -171,7 +171,7 @@ export const AdminFeatureHeatmap: React.FC<AdminFeatureHeatmapProps> = ({
         <Card className="rounded-xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-purple-500" />
+              <TrendingUp className="w-4 h-4 text-accent-cool" />
               Top Exporting Users
             </CardTitle>
           </CardHeader>
@@ -187,9 +187,9 @@ export const AdminFeatureHeatmap: React.FC<AdminFeatureHeatmapProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      index === 0 ? 'bg-amber-500 text-white' : 
-                      index === 1 ? 'bg-gray-400 text-white' : 
-                      index === 2 ? 'bg-amber-700 text-white' : 
+                      index === 0 ? 'bg-nk-warm-600 text-white' : 
+                      index === 1 ? 'bg-muted text-white' : 
+                      index === 2 ? 'bg-nk-warm-600 text-white' : 
                       'bg-secondary'
                     }`}>
                       {index + 1}
@@ -216,7 +216,7 @@ export const AdminFeatureHeatmap: React.FC<AdminFeatureHeatmapProps> = ({
         <Card className="rounded-xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <Zap className="w-4 h-4 text-cyan-500" />
+              <Zap className="w-4 h-4 text-accent-cool" />
               Engagement Stats
             </CardTitle>
           </CardHeader>

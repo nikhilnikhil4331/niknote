@@ -111,11 +111,11 @@ export const MentionPopup: React.FC<Props> = ({
   return (
     <div
       ref={containerRef}
-      className="fixed z-50 w-[280px] max-h-[320px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl flex flex-col"
+      className="fixed z-50 w-[280px] max-h-[320px] overflow-hidden rounded-xl border border-subtle bg-surface shadow-2xl flex flex-col"
       style={{ top, left }}
     >
       {/* Tabs */}
-      <div className="flex border-b border-gray-100">
+      <div className="flex border-b border-subtle">
         {(Object.keys(TAB_META) as MentionType[]).map((t) => {
           const meta = TAB_META[t];
           const active = tab === t;
@@ -125,7 +125,7 @@ export const MentionPopup: React.FC<Props> = ({
               onClick={() => setTab(t)}
               className={cn(
                 "flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium transition-colors",
-                active ? "text-indigo-600 border-b-2 border-indigo-500 -mb-px" : "text-gray-500 hover:text-gray-700"
+                active ? "text-accent-cool border-b-2 border-primary -mb-px" : "text-fg-muted hover:text-fg-primary"
               )}
             >
               <meta.Icon className="w-3 h-3" /> {meta.label}
@@ -137,7 +137,7 @@ export const MentionPopup: React.FC<Props> = ({
       {/* Results */}
       <div className="flex-1 overflow-y-auto py-1">
         {filtered.length === 0 ? (
-          <div className="px-3 py-6 text-center text-[12px] text-gray-400">No matches</div>
+          <div className="px-3 py-6 text-center text-[12px] text-fg-muted/70">No matches</div>
         ) : (
           filtered.map((item, idx) => (
             <button
@@ -146,16 +146,16 @@ export const MentionPopup: React.FC<Props> = ({
               onClick={() => onSelect(item)}
               className={cn(
                 "w-full flex items-center gap-2 px-3 py-2 text-left transition-colors",
-                idx === selectedIndex ? "bg-indigo-50" : "hover:bg-gray-50"
+                idx === selectedIndex ? "bg-[color:hsl(var(--primary)/0.12)]" : "hover:bg-muted"
               )}
             >
-              <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-[10px] font-semibold text-gray-600">
+              <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 text-[10px] font-semibold text-fg-secondary">
                 {item.label.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] text-gray-900 truncate">{item.label}</div>
+                <div className="text-[13px] text-fg-primary truncate">{item.label}</div>
                 {item.sublabel && item.type !== "person" && (
-                  <div className="text-[10px] text-gray-400 truncate">{item.sublabel}</div>
+                  <div className="text-[10px] text-fg-muted/70 truncate">{item.sublabel}</div>
                 )}
               </div>
             </button>

@@ -149,7 +149,7 @@ const Admin: React.FC = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin">
-          <RefreshCw className="w-8 h-8 text-primary" />
+          <RefreshCw className="w-8 h-8 text-accent-rose" />
         </div>
       </div>
     );
@@ -214,8 +214,8 @@ const Admin: React.FC = () => {
             <Card className="rounded-2xl">
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                    <Users className="w-6 h-6 text-blue-500" />
+                  <div className="w-12 h-12 rounded-xl bg-[color:hsl(var(--accent-cool-hsl)/0.1)] flex items-center justify-center">
+                    <Users className="w-6 h-6 text-accent-cool" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Total Users</p>
@@ -230,8 +230,8 @@ const Admin: React.FC = () => {
             <Card className="rounded-2xl">
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                    <Crown className="w-6 h-6 text-amber-500" />
+                  <div className="w-12 h-12 rounded-xl bg-nk-warm-600/10 flex items-center justify-center">
+                    <Crown className="w-6 h-6 text-accent-warm" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Premium Users</p>
@@ -246,8 +246,8 @@ const Admin: React.FC = () => {
             <Card className="rounded-2xl">
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                    <BarChart3 className="w-6 h-6 text-green-500" />
+                  <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
+                    <BarChart3 className="w-6 h-6 text-success" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Notebooks</p>
@@ -289,7 +289,7 @@ const Admin: React.FC = () => {
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-sm font-semibold text-primary">
+                        <span className="text-sm font-semibold text-accent-rose">
                           {(userData.display_name || 'U').charAt(0).toUpperCase()}
                         </span>
                       </div>

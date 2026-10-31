@@ -50,7 +50,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ currentStep, onStepC
               className={cn(
                 'group relative flex-1 flex flex-col items-center justify-center gap-0.5 rounded-2xl mx-0.5 my-1.5',
                 'transition-colors duration-200 active:scale-[0.94]',
-                isActive ? 'text-primary' : 'text-muted-foreground/80'
+                isActive ? 'text-accent-rose' : 'text-muted-foreground/80'
               )}
               style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
             >

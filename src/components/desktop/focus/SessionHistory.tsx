@@ -10,7 +10,7 @@ import { formatMinutesAsHours } from '@/lib/productivity';
 const KIND_LABEL = { pomodoro: 'Pomodoro', timer: 'Timer', stopwatch: 'Stopwatch' } as const;
 
 function catColor(name: string): string {
-  return FOCUS_CATEGORIES.find((c) => c.name === name)?.color ?? '#766A86';
+  return FOCUS_CATEGORIES.find((c) => c.name === name)?.color ?? '#5C3A6E';
 }
 
 export const SessionHistory: React.FC<{ limit?: number }> = ({ limit = 12 }) => {

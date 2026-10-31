@@ -19,7 +19,7 @@ export const LandingFooter: React.FC = () => {
             {/* Founder Card */}
             <div className="text-center md:text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-3">
-                <span className="text-xs font-bold text-primary">👨‍💻 Founder & Developer</span>
+                <span className="text-xs font-bold text-accent-rose">👨‍💻 Founder & Developer</span>
               </div>
               <h3 className="text-xl font-bold text-foreground">Nikhil Jatav</h3>
               <p className="text-sm text-muted-foreground mt-1">
@@ -44,7 +44,7 @@ export const LandingFooter: React.FC = () => {
                   { icon: Mail, label: 'Email Support' },
                 ].map((badge) => (
                   <div key={badge.label} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-muted/30 text-xs text-muted-foreground">
-                    <badge.icon className="w-3 h-3 text-primary" />
+                    <badge.icon className="w-3 h-3 text-accent-rose" />
                     {badge.label}
                   </div>
                 ))}
@@ -87,7 +87,7 @@ export const LandingFooter: React.FC = () => {
             <p className="text-sm text-muted-foreground leading-relaxed mb-3">
               AI-Powered Study App for Indian Students. Handwriting notes, AI Teacher, Quiz Generator — sab ek jagah!
             </p>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-[10px] font-bold text-orange-600 border border-orange-200">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-nk-warm-600/10 text-[10px] font-bold text-accent-warm border border-[color:hsl(var(--accent-warm-hsl)/0.34)]">
               🇮🇳 Made in India
             </span>
           </div>
@@ -125,7 +125,7 @@ export const LandingFooter: React.FC = () => {
             <div className="space-y-2">
               <button
                 onClick={handleWhatsAppShare}
-                className="flex items-center gap-2 text-sm text-green-600 hover:text-green-700 transition-colors"
+                className="flex items-center gap-2 text-sm text-success hover:text-success transition-colors"
               >
                 <MessageCircle className="w-4 h-4" />
                 Share on WhatsApp
@@ -170,7 +170,7 @@ export const LandingFooter: React.FC = () => {
             <button type="button" onClick={() => window.dispatchEvent(new Event('niknote:cookie-settings'))} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Cookie settings</button>
           </div>
           <p className="text-xs text-muted-foreground flex items-center gap-1">
-            Made with <Heart className="w-3 h-3 text-red-500 fill-red-500" /> in India 🇮🇳 by Nikhil Jatav
+            Made with <Heart className="w-3 h-3 text-error fill-error" /> in India 🇮🇳 by Nikhil Jatav
           </p>
         </div>
       </div>

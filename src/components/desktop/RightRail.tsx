@@ -21,7 +21,7 @@ import type { DNote } from './notes';
 import { cn } from '@/lib/utils';
 
 const tagColor = (name?: string) =>
-  TASK_TAGS.find((t) => t.name === name)?.color ?? '#766A86';
+  TASK_TAGS.find((t) => t.name === name)?.color ?? '#5C3A6E';
 
 export const RightRail: React.FC<{ notes: DNote[] }> = ({ notes }) => {
   const navigate = useNavigate();
@@ -156,8 +156,8 @@ export const RightRail: React.FC<{ notes: DNote[] }> = ({ notes }) => {
                   >
                     <Play
                       size={12}
-                      fill={linked ? '#D92C9B' : 'none'}
-                      style={{ color: linked ? '#D92C9B' : 'var(--nd-text-3)' }}
+                      fill={linked ? '#A34054' : 'none'}
+                      style={{ color: linked ? '#A34054' : 'var(--nd-text-3)' }}
                     />
                   </button>
                 )}
@@ -167,7 +167,7 @@ export const RightRail: React.FC<{ notes: DNote[] }> = ({ notes }) => {
         </div>
         {tasks.length > todayTasks.length && (
           <button
-            className="mt-2.5 w-full text-center text-[11.5px] font-bold py-1 rounded-lg hover:bg-[#f7f2ff] transition-colors"
+            className="mt-2.5 w-full text-center text-[11.5px] font-bold py-1 rounded-lg hover:bg-[color:hsl(var(--primary)/0.06)] transition-colors"
             style={{ color: 'var(--nd-brand)' }}
             onClick={() => navigate('/tasks')}
           >
@@ -200,7 +200,7 @@ export const RightRail: React.FC<{ notes: DNote[] }> = ({ notes }) => {
           ))}
         </div>
         <button
-          className="mt-3 w-full text-center text-[11.5px] font-bold py-1 rounded-lg hover:bg-[#f7f2ff] transition-colors"
+          className="mt-3 w-full text-center text-[11.5px] font-bold py-1 rounded-lg hover:bg-[color:hsl(var(--primary)/0.06)] transition-colors"
           style={{ color: 'var(--nd-brand)' }}
           onClick={() => navigate('/habit')}
         >

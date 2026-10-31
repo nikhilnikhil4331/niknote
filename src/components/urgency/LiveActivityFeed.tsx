@@ -55,7 +55,7 @@ export const LiveActivityFeed: React.FC = () => {
         >
           <div className="bg-card/95 backdrop-blur-xl border border-border/50 rounded-2xl p-3 shadow-xl shadow-black/10 flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center flex-shrink-0">
-              <activity.icon className="h-4 w-4 text-primary" />
+              <activity.icon className="h-4 w-4 text-accent-rose" />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-medium text-foreground truncate">

@@ -14,7 +14,7 @@ export default function Donate() {
       <div className="mx-auto max-w-md space-y-6">
         <Link to="/" className="inline-flex min-h-[44px] items-center gap-2 text-sm text-muted-foreground"><ArrowLeft size={17} /> Home</Link>
         <header className="text-center space-y-2">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Heart /></div>
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-accent-rose"><Heart /></div>
           <h1 className="text-2xl font-semibold text-foreground">Support NikNote</h1>
           <p className="text-sm text-muted-foreground">Every feature is free for everyone right now. If NikNote helps you, you can donate using one of these plans.</p>
         </header>

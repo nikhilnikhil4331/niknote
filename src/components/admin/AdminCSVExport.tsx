@@ -18,10 +18,10 @@ interface AdminCSVExportProps {
 type ExportType = 'users' | 'activities' | 'payments' | 'errors';
 
 const exportConfig = [
-  { type: 'users' as ExportType, label: 'Users', icon: Users, color: 'bg-blue-500/10 text-blue-500' },
-  { type: 'activities' as ExportType, label: 'Activity Logs', icon: Activity, color: 'bg-green-500/10 text-green-500' },
-  { type: 'payments' as ExportType, label: 'Payments', icon: CreditCard, color: 'bg-amber-500/10 text-amber-500' },
-  { type: 'errors' as ExportType, label: 'Error Logs', icon: Bug, color: 'bg-red-500/10 text-red-500' },
+  { type: 'users' as ExportType, label: 'Users', icon: Users, color: 'bg-[color:hsl(var(--accent-cool-hsl)/0.1)] text-accent-cool' },
+  { type: 'activities' as ExportType, label: 'Activity Logs', icon: Activity, color: 'bg-success/10 text-success' },
+  { type: 'payments' as ExportType, label: 'Payments', icon: CreditCard, color: 'bg-nk-warm-600/10 text-accent-warm' },
+  { type: 'errors' as ExportType, label: 'Error Logs', icon: Bug, color: 'bg-error/10 text-error' },
 ];
 
 export const AdminCSVExport: React.FC<AdminCSVExportProps> = () => {

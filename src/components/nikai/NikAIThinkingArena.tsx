@@ -255,11 +255,11 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
         {/* Real score + controls */}
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-foreground">
-            <Zap className="h-3 w-3 text-amber-500" />
+            <Zap className="h-3 w-3 text-accent-warm" />
             {score}
           </span>
           <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-            <Trophy className="h-3 w-3 text-amber-500" />
+            <Trophy className="h-3 w-3 text-accent-warm" />
             Best {highScore}
           </span>
 
@@ -268,7 +268,7 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
             onClick={() => setGameExpanded((v) => !v)}
             className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-muted/70"
           >
-            <Gamepad2 className="h-3.5 w-3.5 text-primary" />
+            <Gamepad2 className="h-3.5 w-3.5 text-accent-rose" />
             <span>{gameExpanded ? 'Hide game' : 'Play'}</span>
             {gameExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           </button>
@@ -352,7 +352,7 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
                     key={combo}
                     initial={{ scale: 0.85, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10.5px] font-bold text-amber-700"
+                    className="inline-flex items-center gap-1 rounded-full bg-[color:hsl(var(--accent-warm-hsl)/0.16)] px-2.5 py-0.5 text-[10.5px] font-bold text-accent-warm"
                   >
                     <Flame className="h-3 w-3" />
                     {combo}× combo
@@ -383,10 +383,10 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
                         style={{ left: `${orb.x}%`, top: `${orb.y}%` }}
                         className={`absolute -translate-x-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full text-lg shadow-sm active:scale-125 cursor-pointer ${
                           orb.kind === 'astra'
-                            ? 'bg-violet-100 text-violet-700 ring-2 ring-violet-300'
+                            ? 'bg-[color:hsl(var(--primary)/0.12)] text-fg-secondary ring-2 ring-primary'
                             : orb.kind === 'bomb'
-                              ? 'bg-rose-100 text-rose-700 ring-2 ring-rose-300'
-                              : 'bg-amber-100 text-amber-600 ring-2 ring-amber-300'
+                              ? 'bg-[color:hsl(var(--accent-rose-hsl)/0.14)] text-accent-rose ring-2 ring-accent-rose'
+                              : 'bg-[color:hsl(var(--accent-warm-hsl)/0.16)] text-accent-warm ring-2 ring-accent-warm'
                         }`}
                       >
                         <span>{orb.kind === 'astra' ? '◆' : orb.kind === 'bomb' ? '✕' : '✦'}</span>
@@ -403,7 +403,7 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
                       transition={{ duration: 0.6 }}
                       style={{ left: `${b.x}%`, top: `${b.y}%` }}
                       className={`pointer-events-none absolute -translate-x-1/2 text-xs font-bold ${
-                        b.tone === 'super' ? 'text-violet-600' : b.tone === 'bad' ? 'text-rose-500' : 'text-amber-600'
+                        b.tone === 'super' ? 'text-accent-cool' : b.tone === 'bad' ? 'text-accent-rose' : 'text-accent-warm'
                       }`}
                     >
                       {b.label}

@@ -39,7 +39,7 @@ export const MobileStyleSheet: React.FC<MobileStyleSheetProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-[color:var(--nk-scrim)] backdrop-blur-sm z-50"
           />
 
           <motion.div
@@ -65,7 +65,7 @@ export const MobileStyleSheet: React.FC<MobileStyleSheetProps> = ({
             <div className="flex items-center justify-between px-5 pb-3 border-b border-border/30">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Palette className="w-4 h-4 text-primary" />
+                  <Palette className="w-4 h-4 text-accent-rose" />
                 </div>
                 <h3 className="font-semibold text-base">Style Settings</h3>
               </div>
@@ -168,21 +168,21 @@ export const MobileStyleSheet: React.FC<MobileStyleSheetProps> = ({
                     <div>
                       <div className="flex justify-between mb-1.5">
                         <span className="text-xs text-foreground">Font Size</span>
-                        <span className="text-xs font-medium text-primary">{settings.fontSize}px</span>
+                        <span className="text-xs font-medium text-accent-rose">{settings.fontSize}px</span>
                       </div>
                       <Slider value={[settings.fontSize]} onValueChange={([v]) => updateSettings({ fontSize: v })} min={16} max={40} step={1} />
                     </div>
                     <div>
                       <div className="flex justify-between mb-1.5">
                         <span className="text-xs text-foreground">Line Spacing</span>
-                        <span className="text-xs font-medium text-primary">{settings.lineSpacing}px</span>
+                        <span className="text-xs font-medium text-accent-rose">{settings.lineSpacing}px</span>
                       </div>
                       <Slider value={[settings.lineSpacing]} onValueChange={([v]) => updateSettings({ lineSpacing: v })} min={24} max={60} step={2} />
                     </div>
                     <div>
                       <div className="flex justify-between mb-1.5">
                         <span className="text-xs text-foreground">Word Spacing</span>
-                        <span className="text-xs font-medium text-primary">{settings.wordSpacing}px</span>
+                        <span className="text-xs font-medium text-accent-rose">{settings.wordSpacing}px</span>
                       </div>
                       <Slider value={[settings.wordSpacing]} onValueChange={([v]) => updateSettings({ wordSpacing: v })} min={2} max={12} step={1} />
                     </div>
@@ -198,15 +198,15 @@ export const MobileStyleSheet: React.FC<MobileStyleSheetProps> = ({
                       className={cn(
                         "w-full flex items-center gap-3 p-3.5 rounded-xl border-2 transition-all",
                         isListening
-                          ? "border-red-500/50 bg-red-500/10"
+                          ? "border-[color:hsl(var(--error)/0.5)] bg-error/10"
                           : "border-border/50 hover:border-primary/40"
                       )}
                     >
                       <div className={cn(
                         "w-10 h-10 rounded-xl flex items-center justify-center",
-                        isListening ? "bg-red-500/20" : "bg-primary/10"
+                        isListening ? "bg-error/20" : "bg-primary/10"
                       )}>
-                        {isListening ? <MicOff className="w-5 h-5 text-red-500" /> : <Mic className="w-5 h-5 text-primary" />}
+                        {isListening ? <MicOff className="w-5 h-5 text-error" /> : <Mic className="w-5 h-5 text-accent-rose" />}
                       </div>
                       <div className="text-left">
                         <span className="text-sm font-medium block">

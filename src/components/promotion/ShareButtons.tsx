@@ -45,10 +45,10 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ variant = 'floating'
   };
 
   const shareButtons = [
-    { icon: <MessageCircle className="w-5 h-5" />, label: 'WhatsApp', action: handleWhatsApp, color: 'bg-green-500 hover:bg-green-600', textColor: 'text-white' },
-    { icon: <ExternalLink className="w-5 h-5" />, label: 'Telegram', action: handleTelegram, color: 'bg-blue-500 hover:bg-blue-600', textColor: 'text-white' },
-    { icon: <Twitter className="w-5 h-5" />, label: 'Twitter', action: handleTwitter, color: 'bg-sky-500 hover:bg-sky-600', textColor: 'text-white' },
-    { icon: copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />, label: 'Copy Link', action: handleCopy, color: 'bg-gray-600 hover:bg-gray-700', textColor: 'text-white' },
+    { icon: <MessageCircle className="w-5 h-5" />, label: 'WhatsApp', action: handleWhatsApp, color: 'bg-success hover:bg-success', textColor: 'text-white' },
+    { icon: <ExternalLink className="w-5 h-5" />, label: 'Telegram', action: handleTelegram, color: 'bg-[color:hsl(var(--accent-cool-solid-hsl))] hover:bg-[color:hsl(var(--accent-cool-solid-hsl))]', textColor: 'text-white' },
+    { icon: <Twitter className="w-5 h-5" />, label: 'Twitter', action: handleTwitter, color: 'bg-[color:hsl(var(--accent-cool-solid-hsl))] hover:bg-[color:hsl(var(--accent-cool-solid-hsl))]', textColor: 'text-white' },
+    { icon: copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />, label: 'Copy Link', action: handleCopy, color: 'bg-muted hover:bg-[color:hsl(var(--background-secondary-hsl))]', textColor: 'text-white' },
   ];
 
   if (variant === 'compact') {
@@ -84,7 +84,7 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ variant = 'floating'
     <>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 left-6 z-40 w-12 h-12 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow active:scale-90 md:flex hidden"
+        className="fixed bottom-6 left-6 z-40 w-12 h-12 rounded-full bg-gradient-to-r from-success to-success/70 text-white shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow active:scale-90 md:flex hidden"
         title="Share NikNote"
         style={{ 
           WebkitTapHighlightColor: 'transparent',
@@ -98,11 +98,11 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ variant = 'floating'
       {isOpen && (
         <>
           <div
-            className="fixed inset-0 bg-black/20 z-[60]"
+            className="fixed inset-0 bg-[color:var(--nk-scrim)] z-[60]"
             onClick={() => setIsOpen(false)}
           />
           <div
-            className="fixed bottom-20 left-6 z-[61] w-72 bg-white rounded-2xl border border-gray-200 shadow-2xl p-4"
+            className="fixed bottom-20 left-6 z-[61] w-72 bg-surface rounded-2xl border border-subtle shadow-2xl p-4"
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold">Share NikNote 🎓</h3>

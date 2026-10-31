@@ -185,11 +185,11 @@ export function getEngagementScore(): number {
 
 // Format engagement level
 export function getEngagementLevel(score: number): { level: string; emoji: string; color: string } {
-  if (score >= 80) return { level: 'Super User', emoji: '🏆', color: 'text-amber-500' };
-  if (score >= 60) return { level: 'Power User', emoji: '⚡', color: 'text-blue-500' };
-  if (score >= 40) return { level: 'Active User', emoji: '🔥', color: 'text-orange-500' };
-  if (score >= 20) return { level: 'Regular User', emoji: '📚', color: 'text-green-500' };
-  return { level: 'New Explorer', emoji: '🌱', color: 'text-gray-500' };
+  if (score >= 80) return { level: 'Super User', emoji: '🏆', color: 'text-accent-warm' };
+  if (score >= 60) return { level: 'Power User', emoji: '⚡', color: 'text-accent-cool' };
+  if (score >= 40) return { level: 'Active User', emoji: '🔥', color: 'text-accent-warm' };
+  if (score >= 20) return { level: 'Regular User', emoji: '📚', color: 'text-success' };
+  return { level: 'New Explorer', emoji: '🌱', color: 'text-fg-muted' };
 }
 
 // ============================================================

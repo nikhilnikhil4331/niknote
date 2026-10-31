@@ -278,7 +278,7 @@ const Index = () => {
             .insert({
               user_id: user.id,
               title: noteTitle || 'PC Notebook',
-              cover_color: '#7c3aed',
+              cover_color: '#7C5F9E',
               page_style: settings.pageStyle,
               page_size: settings.pageSize,
               tags: ['PC Studio'],
@@ -1099,8 +1099,8 @@ const Index = () => {
       {!isMobile && <header className={cn(
         "sticky top-0 z-50 flex-shrink-0",
         isMobile 
-          ? "bg-white border-b border-gray-100 h-12" 
-          : "mx-3 mt-2 rounded-2xl bg-white/20 backdrop-blur-2xl border border-white/25 shadow-[0_8px_32px_rgba(0,0,0,0.08)] h-14"
+          ? "bg-surface border-b border-subtle h-12" 
+          : "mx-3 mt-2 rounded-2xl bg-[color:var(--nk-glass-bg)] backdrop-blur-2xl border border-[color:var(--nk-glass-border)] shadow-[var(--nk-shadow-md)] h-14"
       )}>
         <div className={cn("h-full flex items-center justify-between gap-2", isMobile ? "px-3" : "px-4 lg:px-5")}>
           {/* Left: toggle + logo */}
@@ -1109,11 +1109,11 @@ const Index = () => {
               onClick={() => setSidebarOpen(p => !p)}
               className={cn(
                 "flex items-center justify-center rounded-lg transition-colors",
-                isMobile ? "w-8 h-8 active:bg-gray-100" : "h-8 w-8 hover:bg-white/20"
+                isMobile ? "w-8 h-8 active:bg-muted" : "h-8 w-8 hover:bg-surface-hover"
               )}
               style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', cursor: 'pointer' }}
             >
-              <PanelLeft className="w-4 h-4 text-gray-600" />
+              <PanelLeft className="w-4 h-4 text-fg-secondary" />
             </button>
             <img
               src="/niknote-logo.png"
@@ -1137,8 +1137,8 @@ const Index = () => {
                 className={cn(
                   "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200",
                   glassMode
-                    ? "bg-white/30 text-foreground shadow-sm backdrop-blur-sm"
-                    : "bg-white/10 text-foreground/70 hover:bg-white/20 hover:text-foreground"
+                    ? "bg-surface/30 text-foreground shadow-sm backdrop-blur-sm"
+                    : "bg-surface/10 text-foreground/70 hover:bg-surface-hover hover:text-foreground"
                 )}
               >
                 <Gem className="w-4 h-4" />
@@ -1154,23 +1154,23 @@ const Index = () => {
                 <button
                   onClick={() => navigate('/ai')}
                   data-testid="mobile-open-nikai-btn"
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-white border border-purple-200/90 shadow-[0_4px_14px_rgba(138,63,252,0.18)] active:scale-95 transition-transform"
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-surface border border-[color:hsl(var(--primary)/0.9)] shadow-[0_4px_14px_rgba(163,64,84,0.22)] active:scale-95 transition-transform"
                   style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', cursor: 'pointer' }}
                 >
                   <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain select-none" />
-                  <span className="text-[11px] font-bold tracking-tight bg-gradient-to-r from-[#6D28D9] to-[#EC4899] bg-clip-text text-transparent">NikAI</span>
+                  <span className="text-[11px] font-bold tracking-tight bg-gradient-to-r from-nk-purple via-nk-rose to-nk-amber bg-clip-text text-transparent">NikAI</span>
                 </button>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button 
-                      className="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors"
+                      className="flex items-center justify-center w-8 h-8 rounded-lg active:bg-muted transition-colors"
                       style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', cursor: 'pointer' }}
                     >
-                      <MoreVertical className="w-4 h-4 text-gray-600" />
+                      <MoreVertical className="w-4 h-4 text-fg-secondary" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 bg-white/95 backdrop-blur-2xl border-gray-200 rounded-xl shadow-xl">
+                  <DropdownMenuContent align="end" className="w-56 bg-surface/95 backdrop-blur-2xl border-subtle rounded-xl shadow-xl">
                     <DropdownMenuItem onClick={() => changeMood('calm')}>☀️ Calm</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => changeMood('focus')}>✨ Focus</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => changeMood('dark')}>🌙 Dark</DropdownMenuItem>
@@ -1194,7 +1194,7 @@ const Index = () => {
                     {!premium.isPremium && (() => {
                       const aiAccess = premium.checkFeatureAccess('ai_solver');
                       return aiAccess.limit < Infinity ? (
-                        <div className="px-2 py-1.5 text-[10px] text-amber-600 flex items-center gap-1.5">
+                        <div className="px-2 py-1.5 text-[10px] text-accent-warm flex items-center gap-1.5">
                           <Zap className="h-3 w-3" /> AI: {aiAccess.limit - aiAccess.used}/{aiAccess.limit} free left today
                         </div>
                       ) : null;
@@ -1226,21 +1226,21 @@ const Index = () => {
                     }
                   }}
                   title="Cloud Sync Status — click to sync now"
-                  className="hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-medium bg-white/25 hover:bg-white/40 dark:bg-slate-800/60 border border-white/30 text-foreground transition-all"
+                  className="hidden sm:flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-medium bg-surface/25 hover:bg-surface/40 dark:bg-[color:hsl(var(--background-secondary-hsl))] border border-[color:var(--nk-glass-border)] text-foreground transition-all"
                 >
                   {cloudSync.state === 'syncing' ? (
                     <>
-                      <RefreshCw className="w-3.5 h-3.5 text-violet-600 animate-spin" />
+                      <RefreshCw className="w-3.5 h-3.5 text-accent-cool animate-spin" />
                       <span>Syncing…</span>
                     </>
                   ) : cloudSync.state === 'synced' ? (
                     <>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                       <span>Synced</span>
                     </>
                   ) : (
                     <>
-                      <Cloud className="w-3.5 h-3.5 text-sky-600" />
+                      <Cloud className="w-3.5 h-3.5 text-accent-cool" />
                       <span>Sync</span>
                     </>
                   )}
@@ -1251,7 +1251,7 @@ const Index = () => {
                   <button
                     onClick={() => navigate('/ai')}
                     data-testid="pc-open-nikai-btn"
-                    className="relative group flex items-center gap-2 h-9 pl-3 pr-4 rounded-full bg-white hover:bg-purple-50/90 text-[#19162B] border border-purple-200/90 shadow-[0_6px_22px_rgba(138,63,252,0.22)] hover:shadow-[0_8px_28px_rgba(236,72,153,0.32)] transition-all"
+                    className="relative group flex items-center gap-2 h-9 pl-3 pr-4 rounded-full bg-surface hover:bg-[color:hsl(var(--primary)/0.9)] text-fg-primary border border-[color:hsl(var(--primary)/0.9)] shadow-[0_6px_22px_rgba(68,23,78,0.24)] hover:shadow-[0_8px_28px_rgba(163,64,84,0.34)] transition-all"
                   >
                     <img
                       src="/nikai-mark.png"
@@ -1259,7 +1259,7 @@ const Index = () => {
                       aria-hidden="true"
                       className="h-5 w-auto object-contain select-none"
                     />
-                    <span className="font-bold text-[14px] tracking-tight bg-gradient-to-r from-[#241A5E] via-[#6D28D9] to-[#EC4899] bg-clip-text text-transparent">
+                    <span className="font-bold text-[14px] tracking-tight bg-gradient-to-r from-nk-purple via-nk-rose to-nk-amber bg-clip-text text-transparent">
                       NikAI
                     </span>
                   </button>
@@ -1269,7 +1269,7 @@ const Index = () => {
                 <motion.div whileTap={{ scale: 0.93 }} whileHover={{ scale: 1.04 }}>
                   <button
                     onClick={() => setShowScanPanel(true)}
-                    className="flex items-center gap-2 h-9 px-4 rounded-full font-semibold text-xs text-white bg-gradient-to-r from-emerald-500 to-teal-600 shadow-[0_0_16px_rgba(16,185,129,0.3)] hover:shadow-[0_0_24px_rgba(16,185,129,0.5)] transition-all"
+                    className="flex items-center gap-2 h-9 px-4 rounded-full font-semibold text-xs text-white bg-gradient-to-r from-success to-success/70 shadow-[0_0_16px_rgba(21,127,82,0.3)] hover:shadow-[0_0_24px_rgba(21,127,82,0.5)] transition-all"
                   >
                     <Scan className="w-4 h-4" />
                     DNA Scan
@@ -1289,15 +1289,15 @@ const Index = () => {
       {isMobile && sidebarOpen && (
         <>
           <div
-            className="fixed inset-0 z-[60] bg-black/30"
+            className="fixed inset-0 z-[60] bg-[color:var(--nk-scrim)]"
             onClick={() => setSidebarOpen(false)}
             style={{ touchAction: 'manipulation' }}
           />
           <div
-            className="fixed left-0 top-0 bottom-0 w-[280px] z-[61] bg-white shadow-2xl"
+            className="fixed left-0 top-0 bottom-0 w-[280px] z-[61] bg-surface shadow-2xl"
             style={{ transition: 'transform 0.3s ease' }}
           >
-            <React.Suspense fallback={<div className="w-[240px] h-full bg-gray-50 animate-pulse" />}><WorkspaceSidebar isOpen={true} onToggle={() => setSidebarOpen(false)} onOpenCommandPalette={() => setShowCommandPalette(true)} /></React.Suspense>
+            <React.Suspense fallback={<div className="w-[240px] h-full bg-muted animate-pulse" />}><WorkspaceSidebar isOpen={true} onToggle={() => setSidebarOpen(false)} onOpenCommandPalette={() => setShowCommandPalette(true)} /></React.Suspense>
           </div>
         </>
       )}
@@ -1313,7 +1313,7 @@ const Index = () => {
           <AnimatePresence>
             {sidebarOpen && (
               <div className="rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.06)]">
-                <React.Suspense fallback={<div className="w-[240px] h-full bg-white/30 animate-pulse rounded-2xl" />}><WorkspaceSidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(false)} onOpenCommandPalette={() => setShowCommandPalette(true)} /></React.Suspense>
+                <React.Suspense fallback={<div className="w-[240px] h-full bg-surface/30 animate-pulse rounded-2xl" />}><WorkspaceSidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(false)} onOpenCommandPalette={() => setShowCommandPalette(true)} /></React.Suspense>
               </div>
             )}
           </AnimatePresence>
@@ -1327,8 +1327,8 @@ const Index = () => {
 
           {/* Page Bar */}
           {!isMobile && <div className={cn(
-            "flex-shrink-0 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/25 shadow-sm px-3 py-1.5",
-            isMobile && "rounded-none border-0 border-b border-gray-100 bg-white/95 py-1"
+            "flex-shrink-0 rounded-2xl bg-[color:var(--nk-glass-bg)] backdrop-blur-xl border border-[color:var(--nk-glass-border)] shadow-nk-sm px-3 py-1.5",
+            isMobile && "rounded-none border-0 border-b border-subtle bg-surface/95 py-1"
           )}>
             <div className="max-w-4xl mx-auto">
               <PageBar
@@ -1424,26 +1424,26 @@ const Index = () => {
               {showShareMenu && (
                 <>
                   <div
-                    className="fixed inset-0 z-[70] bg-black/30"
+                    className="fixed inset-0 z-[70] bg-[color:var(--nk-scrim)]"
                     onClick={() => setShowShareMenu(false)}
                     style={{ touchAction: 'manipulation' }}
                   />
                   <div
-                    className="fixed bottom-0 left-0 right-0 z-[71] bg-white rounded-t-2xl shadow-2xl p-5"
+                    className="fixed bottom-0 left-0 right-0 z-[71] bg-surface rounded-t-2xl shadow-2xl p-5"
                   >
-                    <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
-                    <h3 className="text-sm font-bold text-gray-900 mb-3">Share Notes</h3>
+                    <div className="w-10 h-1 bg-surface-hover rounded-full mx-auto mb-4" />
+                    <h3 className="text-sm font-bold text-fg-primary mb-3">Share Notes</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <button 
                         onClick={handleShareImage}
-                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-medium active:scale-95 transition-transform"
+                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[color:hsl(var(--success)/0.14)] text-success text-sm font-medium active:scale-95 transition-transform"
                         style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', cursor: 'pointer' }}
                       >
                         <Image className="w-4 h-4" /> As Image
                       </button>
                       <button 
                         onClick={handleSharePDF}
-                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-50 text-blue-700 text-sm font-medium active:scale-95 transition-transform"
+                        className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[color:hsl(var(--accent-cool-hsl)/0.14)] text-accent-cool text-sm font-medium active:scale-95 transition-transform"
                         style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', cursor: 'pointer' }}
                       >
                         <FileText className="w-4 h-4" /> As PDF
@@ -1468,7 +1468,7 @@ const Index = () => {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       className={cn(
-                        "rounded-2xl bg-white/60 backdrop-blur-xl border border-white/30 shadow-sm min-h-[calc(100vh-12rem)]",
+                        "rounded-2xl bg-surface/60 backdrop-blur-xl border border-[color:var(--nk-glass-border)] shadow-sm min-h-[calc(100vh-12rem)]",
                         moodStyles.paper
                       )}
                     >
@@ -1476,7 +1476,7 @@ const Index = () => {
                       <div className="px-8 pt-6 pb-2">
                         <textarea
                           defaultValue="Untitled"
-                          className="w-full text-3xl font-bold bg-transparent border-0 outline-none resize-none text-foreground placeholder:text-muted-foreground/30"
+                          className="w-full text-3xl font-bold bg-transparent border-0 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] resize-none text-foreground placeholder:text-muted-foreground/30"
                           rows={1}
                           onChange={(e) => {
                             e.target.style.height = 'auto';
@@ -1516,7 +1516,7 @@ const Index = () => {
                         <div className="mx-8 mb-6">
                           <div className="preview-card">
                             <div className="preview-card-header">
-                              <span className="flex items-center gap-2 text-[11px] font-bold text-violet-700">✍️ Handwriting Preview</span>
+                              <span className="flex items-center gap-2 text-[11px] font-bold text-fg-secondary">✍️ Handwriting Preview</span>
                               <div className="flex items-center gap-2">
                                 <Button variant="ghost" size="sm" onClick={handleExportPDF} disabled={isExporting} className="h-6 px-2 text-[10px] rounded-lg gap-1">
                                   <FileDown className="w-3 h-3" /> PDF
@@ -1574,13 +1574,13 @@ const Index = () => {
               </div>
 
               {/* RIGHT SIDEBAR — Compact tools panel */}
-              <div className="w-[260px] xl:w-[280px] flex-shrink-0 border-l border-border/30 bg-white/30 backdrop-blur-xl overflow-hidden flex flex-col">
+              <div className="w-[260px] xl:w-[280px] flex-shrink-0 border-l border-border/30 bg-surface/30 backdrop-blur-xl overflow-hidden flex flex-col">
                 <ScrollArea className="flex-1">
                   <div className="p-3 space-y-3">
                     {/* Quick tools */}
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <Button variant="ghost" size="sm" onClick={() => setShowScanPanel(true)} className="h-8 px-2.5 rounded-xl text-[10px] gap-1 bg-emerald-50 border border-emerald-100">
-                        <Scan className="w-3 h-3 text-emerald-500" /> DNA Scan
+                      <Button variant="ghost" size="sm" onClick={() => setShowScanPanel(true)} className="h-8 px-2.5 rounded-xl text-[10px] gap-1 bg-[color:hsl(var(--success)/0.14)] border border-[color:hsl(var(--success)/0.4)]">
+                        <Scan className="w-3 h-3 text-success" /> DNA Scan
                       </Button>
                     </div>
 
@@ -1604,7 +1604,7 @@ const Index = () => {
 
                     {/* Page Controls */}
                     <div>
-                      <Button variant="ghost" size="sm" onClick={() => setShowControls(!showControls)} className="w-full gap-2 rounded-xl text-xs hover:bg-white/20">
+                      <Button variant="ghost" size="sm" onClick={() => setShowControls(!showControls)} className="w-full gap-2 rounded-xl text-xs hover:bg-surface-hover">
                         <Settings2 className="w-4 h-4" /> {showControls ? 'Hide' : 'Show'} Page Settings
                       </Button>
                       <AnimatePresence>
@@ -1617,9 +1617,9 @@ const Index = () => {
                     </div>
 
                     {/* Quick Export */}
-                    <div className="p-3 rounded-xl bg-white/30 border border-white/20">
+                    <div className="p-3 rounded-xl bg-surface/30 border border-[color:var(--nk-glass-border)]">
                       <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Export</h4>
-                      <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={isExporting} className="gap-1.5 rounded-xl text-xs w-full bg-white/30">
+                      <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={isExporting} className="gap-1.5 rounded-xl text-xs w-full bg-surface/30">
                         <FileDown className="w-3.5 h-3.5" /> {isExporting ? 'Exporting...' : 'Export PDF'}
                       </Button>
                     </div>
@@ -1634,11 +1634,11 @@ const Index = () => {
                   centerLabel="Menu"
                   align="left"
                   items={[
-                    { id: 'nikai', label: 'NikAI', icon: Sparkles, tint: '#7c3aed', onSelect: () => navigate('/ai') },
-                    { id: 'money', label: 'Money', icon: Calculator, tint: '#059669', onSelect: () => navigate('/money') },
-                    { id: 'routine', label: 'Routine', icon: ListChecks, tint: '#2563eb', onSelect: () => navigate('/routine') },
-                    { id: 'handwriting', label: 'Handwriting', icon: PenLine, tint: '#d97706', onSelect: () => setShowStudioPanel(true) },
-                    { id: 'pdf', label: 'Import PDF', icon: FileUp, tint: '#e11d48', onSelect: () => homePdfRef.current?.click() },
+                    { id: 'nikai', label: 'NikAI', icon: Sparkles, tint: '#7C5F9E', onSelect: () => navigate('/ai') },
+                    { id: 'money', label: 'Money', icon: Calculator, tint: 'hsl(var(--success))', onSelect: () => navigate('/money') },
+                    { id: 'routine', label: 'Routine', icon: ListChecks, tint: '#5C3A6E', onSelect: () => navigate('/routine') },
+                    { id: 'handwriting', label: 'Handwriting', icon: PenLine, tint: 'hsl(var(--accent-warm-hsl))', onSelect: () => setShowStudioPanel(true) },
+                    { id: 'pdf', label: 'Import PDF', icon: FileUp, tint: '#A34054', onSelect: () => homePdfRef.current?.click() },
                     { id: 'notebooks', label: 'Notebooks', icon: FileText, tint: '#0891b2', onSelect: () => navigate('/notebooks') },
                     { id: 'settings', label: 'Settings', icon: Settings2, tint: '#64748b', onSelect: () => navigate('/appearance') },
                   ]}
@@ -1658,16 +1658,16 @@ const Index = () => {
 
 
       {/* ============ MOBILE PANELS ============ */}
-      <SlidePanel isOpen={showPenPanel} onClose={() => setShowPenPanel(false)} title="Pen Palette" icon={<Palette className="w-4 h-4 text-primary" />} side="right">
+      <SlidePanel isOpen={showPenPanel} onClose={() => setShowPenPanel(false)} title="Pen Palette" icon={<Palette className="w-4 h-4 text-accent-rose" />} side="right">
         <PenPalette currentColor={currentColor} onColorChange={handleColorChange} selectedCount={selectedLines.size} onUndo={handleUndo} onRedo={handleRedo} canUndo={firstSelectedLineId ? canUndo(firstSelectedLineId) : false} canRedo={firstSelectedLineId ? canRedo(firstSelectedLineId) : false} realPenMode={realPenMode} onRealPenModeChange={setRealPenMode} currentText={getPlainText()} onInsertText={(text) => handlePaste(text)} onInsertStructured={handleAIInsertStructured} premiumLocked={!premium.isPremium} onPremiumTap={() => requirePremium('ai_text_tools')} />
       </SlidePanel>
 
-      <SlidePanel isOpen={showStylePanel} onClose={() => setShowStylePanel(false)} title="Page Style" icon={<Settings2 className="w-4 h-4 text-primary" />} side="right">
+      <SlidePanel isOpen={showStylePanel} onClose={() => setShowStylePanel(false)} title="Page Style" icon={<Settings2 className="w-4 h-4 text-accent-rose" />} side="right">
         <React.Suspense fallback={<div className="h-20 bg-muted/10 rounded-xl animate-pulse" />}><ControlPanel {...controlPanelProps} /></React.Suspense>
       </SlidePanel>
 
       {/* Handwriting DNA Scanner Panel */}
-      <SlidePanel isOpen={showScanPanel} onClose={() => setShowScanPanel(false)} title="Handwriting DNA Scanner" icon={<Scan className="w-4 h-4 text-emerald-500" />} side="right">
+      <SlidePanel isOpen={showScanPanel} onClose={() => setShowScanPanel(false)} title="Handwriting DNA Scanner" icon={<Scan className="w-4 h-4 text-success" />} side="right">
         <React.Suspense fallback={<div className="p-6 text-center text-sm text-muted-foreground">Loading Scanner...</div>}>
           <HandwritingScanner
             onDNAExtracted={(dna) => {
@@ -1681,7 +1681,7 @@ const Index = () => {
       </SlidePanel>
 
       {/* Handwriting Studio — style profiles + PDF → handwritten conversion */}
-      <SlidePanel isOpen={showStudioPanel} onClose={() => setShowStudioPanel(false)} title="Handwriting Studio" icon={<PenLine className="w-4 h-4 text-primary" />} side="right">
+      <SlidePanel isOpen={showStudioPanel} onClose={() => setShowStudioPanel(false)} title="Handwriting Studio" icon={<PenLine className="w-4 h-4 text-accent-rose" />} side="right">
         <React.Suspense fallback={<div className="p-6 text-center text-sm text-muted-foreground">Loading Studio…</div>}>
           <HandwritingStudio
             onInsertStructured={handleAIInsertStructured}
@@ -1755,18 +1755,18 @@ const Index = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 z-[70]"
+              className="fixed inset-0 bg-[color:var(--nk-scrim)] z-[70]"
               onClick={() => setShowThemePicker(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-x-4 top-[10%] sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[560px] z-[71] bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/30 shadow-2xl p-6 max-h-[80vh] overflow-y-auto"
+              className="fixed inset-x-4 top-[10%] sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[560px] z-[71] bg-surface/95 backdrop-blur-2xl rounded-2xl border border-[color:var(--nk-glass-border)] shadow-2xl p-6 max-h-[80vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-lg flex items-center gap-2">
-                  <LayoutGrid className="w-5 h-5 text-primary" />
+                  <LayoutGrid className="w-5 h-5 text-accent-rose" />
                   UI Design System
                 </h3>
                 <button onClick={() => setShowThemePicker(false)} aria-label="Close theme picker" className="w-8 h-8 rounded-xl bg-muted/50 flex items-center justify-center hover:bg-muted">

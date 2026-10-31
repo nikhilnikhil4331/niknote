@@ -34,11 +34,11 @@ const MONTHS = [
 ];
 
 const EVENT_COLORS: Record<string, string> = {
-  task: 'bg-blue-400',
-  exam: 'bg-red-400',
-  meeting: 'bg-green-400',
-  deadline: 'bg-amber-400',
-  study: 'bg-purple-400',
+  task: 'bg-[color:hsl(var(--accent-cool-solid-hsl))]',
+  exam: 'bg-error',
+  meeting: 'bg-success',
+  deadline: 'bg-nk-amber',
+  study: 'bg-primary',
 };
 
 export const CalendarView: React.FC<CalendarViewProps> = ({
@@ -116,40 +116,40 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-bold text-gray-900">
+          <h3 className="text-lg font-bold text-fg-primary">
             {MONTHS[month]} {year}
           </h3>
           <div className="flex items-center gap-1">
-            <button onClick={prevMonth} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+            <button onClick={prevMonth} className="p-1 rounded-lg hover:bg-muted text-fg-muted/70">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button onClick={goToday} className="px-2.5 py-1 rounded-lg text-[10px] font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">
+            <button onClick={goToday} className="px-2.5 py-1 rounded-lg text-[10px] font-medium text-fg-secondary bg-muted hover:bg-surface-hover transition-colors">
               Today
             </button>
-            <button onClick={nextMonth} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+            <button onClick={nextMonth} className="p-1 rounded-lg hover:bg-muted text-fg-muted/70">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5">
-          <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
+          <div className="flex gap-0.5 bg-muted rounded-lg p-0.5">
             <button
               onClick={() => setView('month')}
               className={cn(
                 "text-[10px] font-medium px-2 py-1 rounded-md transition-colors",
-                view === 'month' ? "bg-white shadow-sm text-gray-800" : "text-gray-500"
+                view === 'month' ? "bg-surface shadow-sm text-fg-primary" : "text-fg-muted"
               )}
             >Month</button>
             <button
               onClick={() => setView('week')}
               className={cn(
                 "text-[10px] font-medium px-2 py-1 rounded-md transition-colors",
-                view === 'week' ? "bg-white shadow-sm text-gray-800" : "text-gray-500"
+                view === 'week' ? "bg-surface shadow-sm text-fg-primary" : "text-fg-muted"
               )}
             >Week</button>
           </div>
-          <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors">
+          <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium text-accent-cool bg-[color:hsl(var(--primary)/0.12)] hover:bg-[color:hsl(var(--primary)/0.12)] transition-colors">
             <Sparkles className="w-3 h-3" />
             AI Plan
           </button>
@@ -159,14 +159,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       {/* Day headers */}
       <div className="grid grid-cols-7 mb-1">
         {DAYS.map(day => (
-          <div key={day} className="text-center text-[10px] font-semibold text-gray-400 uppercase tracking-wider py-2">
+          <div key={day} className="text-center text-[10px] font-semibold text-fg-muted/70 uppercase tracking-wider py-2">
             {day}
           </div>
         ))}
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 border border-gray-200 rounded-xl overflow-hidden">
+      <div className="grid grid-cols-7 border border-subtle rounded-xl overflow-hidden">
         {calendarDays.map((day, i) => {
           const dayEvents = eventsByDate[day.date] || [];
           return (
@@ -174,24 +174,24 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               key={i}
               onClick={() => onDateClick?.(day.date)}
               className={cn(
-                "min-h-[90px] p-1.5 border border-gray-100 transition-colors cursor-pointer group",
-                !day.isCurrentMonth && "bg-gray-50/50",
-                day.isCurrentMonth && "bg-white hover:bg-indigo-50/30",
-                day.isToday && "bg-indigo-50/50"
+                "min-h-[90px] p-1.5 border border-subtle transition-colors cursor-pointer group",
+                !day.isCurrentMonth && "bg-muted/50",
+                day.isCurrentMonth && "bg-surface hover:bg-[color:hsl(var(--primary)/0.3)]",
+                day.isToday && "bg-[color:hsl(var(--primary)/0.5)]"
               )}
             >
               <div className="flex items-center justify-between mb-1">
                 <span className={cn(
                   "text-[11px] font-medium w-5 h-5 flex items-center justify-center rounded-full",
-                  day.isToday && "bg-indigo-500 text-white",
-                  day.isCurrentMonth && !day.isToday && "text-gray-700",
-                  !day.isCurrentMonth && "text-gray-300"
+                  day.isToday && "bg-primary text-white",
+                  day.isCurrentMonth && !day.isToday && "text-fg-primary",
+                  !day.isCurrentMonth && "text-fg-muted/70"
                 )}>
                   {day.day}
                 </span>
                 <button
                   onClick={(e) => { e.stopPropagation(); onAddEvent?.(day.date); }}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 text-gray-400 transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-surface-hover text-fg-muted/70 transition-all"
                 >
                   <Plus className="w-2.5 h-2.5" />
                 </button>
@@ -205,7 +205,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     onClick={(e) => { e.stopPropagation(); onEventClick?.(event); }}
                     className={cn(
                       "w-full text-left px-1.5 py-0.5 rounded text-[9px] font-medium truncate transition-opacity hover:opacity-80 text-white",
-                      event.color || EVENT_COLORS[event.type || 'task'] || 'bg-blue-400'
+                      event.color || EVENT_COLORS[event.type || 'task'] || 'bg-[color:hsl(var(--accent-cool-solid-hsl))]'
                     )}
                   >
                     {event.time && <span className="opacity-70">{event.time} </span>}
@@ -213,7 +213,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   </button>
                 ))}
                 {dayEvents.length > 3 && (
-                  <span className="text-[8px] text-gray-400 pl-1">+{dayEvents.length - 3} more</span>
+                  <span className="text-[8px] text-fg-muted/70 pl-1">+{dayEvents.length - 3} more</span>
                 )}
               </div>
             </div>
@@ -226,7 +226,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         {Object.entries(EVENT_COLORS).map(([type, color]) => (
           <div key={type} className="flex items-center gap-1">
             <div className={cn("w-2 h-2 rounded-full", color)} />
-            <span className="text-[9px] text-gray-400 capitalize">{type}</span>
+            <span className="text-[9px] text-fg-muted/70 capitalize">{type}</span>
           </div>
         ))}
       </div>

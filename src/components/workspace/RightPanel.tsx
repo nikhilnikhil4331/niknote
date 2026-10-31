@@ -171,7 +171,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
           {/* Tags placeholder */}
           <Section title="Tags">
             <div className="flex flex-wrap gap-1.5">
-              <span className="px-2.5 py-1 text-[10px] font-medium rounded-full bg-primary/10 text-primary border border-primary/20">
+              <span className="px-2.5 py-1 text-[10px] font-medium rounded-full bg-primary/10 text-accent-rose border border-primary/20">
                 + Add tag
               </span>
             </div>

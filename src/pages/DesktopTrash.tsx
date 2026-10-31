@@ -64,7 +64,7 @@ const DesktopTrash: React.FC = () => {
                     <RotateCcw size={13} /> Restore
                   </button>
                   <button
-                    className="nd-btn-ghost !text-[#DC2626] hover:!bg-[#FEF2F2] hover:!border-[#FECACA]"
+                    className="nd-btn-ghost !text-fg-secondary hover:!bg-surface-secondary hover:!border-subtle"
                     onClick={() => {
                       if (window.confirm(`Delete "${n.title}" forever? This cannot be undone.`)) {
                         void deleteForever(n);

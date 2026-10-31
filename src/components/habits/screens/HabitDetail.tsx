@@ -9,6 +9,7 @@ import {
   toDay, waterProgress,
 } from '@/lib/trackers';
 import { haptic } from '@/hooks/useHaptics';
+import { readableInk } from '@/lib/readableInk';
 
 const QUICK_GLASSES = [
   { label: '100ml', glasses: 100 / GLASS_ML, icon: '🥃' },
@@ -115,12 +116,12 @@ export function HabitDetailScreen({ id, go }: { id: string; go: (s: { name: stri
                   </button>
                   {confirmDel ? (
                     <button type="button" onClick={() => { deleteHabit(h.id); go({ name: 'tab', id: 'habits' }); }}
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-bold text-white" style={{ background: '#ef4444' }}>
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-bold text-white" style={{ background: '#A62B36' }}>
                       <Trash2 size={15} /> Tap to confirm delete
                     </button>
                   ) : (
                     <button type="button" onClick={() => setConfirmDel(true)}
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-rose-500">
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-accent-rose">
                       <Trash2 size={15} /> Delete habit
                     </button>
                   )}
@@ -149,7 +150,7 @@ export function HabitDetailScreen({ id, go }: { id: string; go: (s: { name: stri
             </div>
             <div className="mt-3 h-2 overflow-hidden rounded-full nnh-track">
               <motion.div initial={false} animate={{ width: `${pct * 100}%` }} className="h-full rounded-full"
-                style={{ background: 'linear-gradient(90deg, #38bdf8, #2563eb)' }}
+                style={{ background: 'linear-gradient(90deg, #A688C9, #5C3A6E)' }}
                 transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 60, damping: 16 }} />
             </div>
 
@@ -171,7 +172,7 @@ export function HabitDetailScreen({ id, go }: { id: string; go: (s: { name: stri
         ) : (
           <section className="nnh-card p-5">
             <div className="flex flex-col items-center">
-              <Ring size={176} stroke={13} pct={pct} from={h.color} to={h.color === '#f59e0b' ? '#f97316' : '#ec4899'}>
+              <Ring size={176} stroke={13} pct={pct} from={h.color} to={h.color === '#C4762F' ? '#D9822F' : '#A34054'}>
                 <div className="text-center">
                   <p className="nnh-display text-[38px] font-extrabold leading-none">
                     <CountUp value={v} decimals={h.type === 'sleep' ? 1 : 0} />
@@ -191,7 +192,7 @@ export function HabitDetailScreen({ id, go }: { id: string; go: (s: { name: stri
                 <motion.button whileTap={reduced ? undefined : { scale: 0.94 }} type="button"
                   onClick={() => bump(h, h.type === 'sleep' ? 0.5 : h.type === 'minutes' ? 5 : 1)}
                   className="flex h-12 items-center gap-1.5 rounded-full px-6 text-[14px] font-extrabold text-white"
-                  style={{ background: `linear-gradient(92deg, ${h.color}, #ec4899)`, boxShadow: `0 12px 24px -12px ${h.color}` }}>
+                  style={{ background: `linear-gradient(92deg, ${h.color}, #A34054)`, boxShadow: `0 12px 24px -12px ${h.color}` }}>
                   <Plus size={17} strokeWidth={2.8} />
                   {h.type === 'sleep' ? '30 min sleep' : h.type === 'minutes' ? '5 min more' : '1 more'}
                 </motion.button>
@@ -255,7 +256,7 @@ export function HabitDetailScreen({ id, go }: { id: string; go: (s: { name: stri
               onClick={() => { haptic('selection'); updateHabit(h.id, { reminderOn: !h.reminderOn }); }}
               className="flex rounded-full p-0.5 transition-colors"
               style={{ width: 46, height: 26, background: h.reminderOn ? h.color : 'var(--nnh-line)', justifyContent: h.reminderOn ? 'flex-end' : 'flex-start' }}>
-              <motion.span layout className="block rounded-full bg-white shadow" style={{ width: 22, height: 22 }}
+              <motion.span layout className="block rounded-full bg-surface shadow" style={{ width: 22, height: 22 }}
                 transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 30 }} />
             </button>
           </div>
@@ -276,7 +277,7 @@ export function HabitDetailScreen({ id, go }: { id: string; go: (s: { name: stri
                     <label className="flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-bold nnh-chip">
                       <input type="time" defaultValue="09:00" onChange={e => addReminderTime(e.target.value)} autoFocus
                         aria-label="New reminder time"
-                        className="bg-transparent text-[11px] font-bold outline-none" style={{ color: 'var(--nnh-ink)' }} />
+                        className="bg-transparent text-[11px] font-bold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]" style={{ color: 'var(--nnh-ink)' }} />
                     </label>
                   ) : (
                     <button type="button" onClick={() => { haptic('light'); setNewTime(true); }}
@@ -353,7 +354,7 @@ function EditHabitSheet({ open, habit, onClose, onSave, siblings }: {
       <div className="space-y-4">
         <label className="flex items-center gap-2 rounded-2xl px-3 py-2.5 nnh-chip">
           <input value={name} onChange={e => setName(e.target.value)} aria-label="Edit habit name"
-            className="flex-1 bg-transparent text-[14px] font-semibold outline-none" style={{ color: 'var(--nnh-ink)' }} />
+            className="flex-1 bg-transparent text-[14px] font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]" style={{ color: 'var(--nnh-ink)' }} />
         </label>
         <div>
           <p className="nnh-label mb-2">Icon</p>
@@ -400,7 +401,7 @@ function EditHabitSheet({ open, habit, onClose, onSave, siblings }: {
                 <button key={i} type="button" aria-label={DAY_NAMES[i]} aria-pressed={on}
                   onClick={() => { haptic('selection'); setDays(d => d.includes(i) ? d.filter(x => x !== i) : [...d, i].sort((a, b) => a - b)); }}
                   className="grid aspect-square place-items-center rounded-full border-2 text-[11px] font-extrabold"
-                  style={on ? { background: color, borderColor: color, color: '#fff' } : { borderColor: 'var(--nnh-line)', color: 'var(--nnh-sub)' }}>
+                  style={on ? { background: color, borderColor: color, color: readableInk(color) } : { borderColor: 'var(--nnh-line)', color: 'var(--nnh-sub)' }}>
                   {l}
                 </button>
               );

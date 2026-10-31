@@ -54,9 +54,9 @@ export function seedState(now = new Date()): RoutineState {
     entries[`${id}|${day(off, now)}`] = { v, ...(at ? { at: `${day(off, now)}T${at}:00` } : {}) };
   };
   const habits: Habit[] = [
-    { id: uid(), name: 'Water Intake', category: 'health', icon: '💧', color: '#0ea5e9', type: 'water', target: 8, days: [0, 1, 2, 3, 4, 5, 6], reminderOn: true, reminders: ['08:00', '12:00', '16:00'], createdAt: day(-20, now), archived: false },
-    { id: uid(), name: 'Sleep', category: 'health', icon: '🌙', color: '#8b5cf6', type: 'sleep', target: 8, days: [0, 1, 2, 3, 4, 5, 6], reminderOn: false, reminders: ['22:30'], createdAt: day(-20, now), archived: false },
-    { id: uid(), name: 'Exercise', category: 'health', icon: '🏃', color: '#22c55e', type: 'minutes', target: 30, days: [0, 1, 2, 3, 4, 5, 6], reminderOn: true, reminders: ['07:00'], createdAt: day(-20, now), archived: false },
+    { id: uid(), name: 'Water Intake', category: 'health', icon: '💧', color: '#7C5F9E', type: 'water', target: 8, days: [0, 1, 2, 3, 4, 5, 6], reminderOn: true, reminders: ['08:00', '12:00', '16:00'], createdAt: day(-20, now), archived: false },
+    { id: uid(), name: 'Sleep', category: 'health', icon: '🌙', color: '#7C5F9E', type: 'sleep', target: 8, days: [0, 1, 2, 3, 4, 5, 6], reminderOn: false, reminders: ['22:30'], createdAt: day(-20, now), archived: false },
+    { id: uid(), name: 'Exercise', category: 'health', icon: '🏃', color: '#157F52', type: 'minutes', target: 30, days: [0, 1, 2, 3, 4, 5, 6], reminderOn: true, reminders: ['07:00'], createdAt: day(-20, now), archived: false },
   ];
   const [w, s, x] = habits.map(h => h.id);
   // Past six days: mostly completed, a few misses so charts have shape.

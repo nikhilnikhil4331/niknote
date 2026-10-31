@@ -78,7 +78,7 @@ export const AGENT_DEFINITIONS: Omit<Agent, 'id' | 'status' | 'currentTask' | 'm
     name: 'Guru AI',
     description: 'Your AI teacher — explains concepts in Hindi & English, creates quizzes, and helps you learn',
     icon: '👨‍🏫',
-    color: 'from-indigo-500 to-purple-600',
+    color: 'from-nk-purple to-nk-rose',
     capabilities: ['explain', 'quiz', 'flashcards', 'doubt_solving', 'exam_prep'],
     systemPrompt: `You are Guru AI, NikNote's AI teacher built specifically for Indian students. You:
 - Explain concepts in simple Hindi/English (Hinglish)
@@ -99,7 +99,7 @@ export const AGENT_DEFINITIONS: Omit<Agent, 'id' | 'status' | 'currentTask' | 'm
     name: 'Research Agent',
     description: 'Deep research on any topic — reads papers, compares sources, finds insights',
     icon: '🔬',
-    color: 'from-blue-500 to-cyan-600',
+    color: 'from-nk-purple to-nk-rose',
     capabilities: ['web_search', 'paper_analysis', 'citation_extraction', 'comparison', 'summary'],
     systemPrompt: `You are NikNote's Research Agent. You:
 - Search the web for latest information
@@ -120,7 +120,7 @@ export const AGENT_DEFINITIONS: Omit<Agent, 'id' | 'status' | 'currentTask' | 'm
     name: 'Doc Scanner AI',
     description: 'Scan any document — handwritten notes, exam papers, textbooks, PDFs',
     icon: '📄',
-    color: 'from-emerald-500 to-teal-600',
+    color: 'from-success to-success/70',
     capabilities: ['image_ocr', 'pdf_ocr', 'handwriting_detection', 'table_extraction', 'equation_extraction'],
     systemPrompt: `You are NikNote's Document Scanner. You:
 - Process handwritten notes with high accuracy
@@ -140,7 +140,7 @@ export const AGENT_DEFINITIONS: Omit<Agent, 'id' | 'status' | 'currentTask' | 'm
     name: 'Math Solver',
     description: 'Solves math problems step by step — algebra, calculus, geometry, statistics',
     icon: '📐',
-    color: 'from-amber-500 to-orange-600',
+    color: 'from-nk-warm-600 to-nk-rose',
     capabilities: ['solve_equations', 'calculus', 'geometry', 'statistics', 'proof_verification', 'step_by_step'],
     systemPrompt: `You are NikNote's Math Solver, built for Indian students. You:
 - Solve problems step by step (not just answers)
@@ -160,7 +160,7 @@ export const AGENT_DEFINITIONS: Omit<Agent, 'id' | 'status' | 'currentTask' | 'm
     name: 'Content Writer',
     description: 'Write, edit, and improve any content — essays, reports, notes',
     icon: '✍️',
-    color: 'from-pink-500 to-rose-600',
+    color: 'from-nk-rose to-nk-rose',
     capabilities: ['write', 'edit', 'improve', 'translate', 'summarize', 'expand'],
     systemPrompt: `You are NikNote's AI Content Writer. You:
 - Write essays, reports, and notes in Hindi/English
@@ -181,7 +181,7 @@ export const AGENT_DEFINITIONS: Omit<Agent, 'id' | 'status' | 'currentTask' | 'm
     name: 'Study Planner',
     description: 'Creates personalized study plans, tracks progress, suggests revision',
     icon: '📅',
-    color: 'from-green-500 to-emerald-600',
+    color: 'from-success to-success/70',
     capabilities: ['plan_creation', 'progress_tracking', 'revision_scheduling', 'weak_area_detection', 'daily_schedule'],
     systemPrompt: `You are NikNote's Study Planner. You:
 - Create day-by-day study plans for Indian exams
@@ -201,7 +201,7 @@ export const AGENT_DEFINITIONS: Omit<Agent, 'id' | 'status' | 'currentTask' | 'm
     name: 'Fact Checker',
     description: 'Verifies facts, claims, and information accuracy',
     icon: '✅',
-    color: 'from-red-500 to-rose-600',
+    color: 'from-error to-nk-rose',
     capabilities: ['fact_verification', 'source_checking', 'claim_analysis'],
     systemPrompt: `You are NikNote's Fact Checker. You:
 - Verify factual claims and statements
@@ -219,7 +219,7 @@ export const AGENT_DEFINITIONS: Omit<Agent, 'id' | 'status' | 'currentTask' | 'm
     name: 'Workflow Bot',
     description: 'Automates repetitive tasks using workflow templates',
     icon: '🤖',
-    color: 'from-violet-500 to-purple-600',
+    color: 'from-nk-purple to-nk-rose',
     capabilities: ['workflow_execution', 'task_automation', 'batch_processing'],
     systemPrompt: `You are NikNote's Workflow Automation Bot. You:
 - Execute pre-built workflow templates

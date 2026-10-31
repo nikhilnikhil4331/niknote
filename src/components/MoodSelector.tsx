@@ -22,9 +22,9 @@ const moods: MoodOption[] = [
     name: 'Calm',
     icon: <Sun className="w-4 h-4" />,
     colors: {
-      bg: 'from-sky-50 to-blue-50',
-      paper: 'bg-white',
-      accent: 'bg-sky-500',
+      bg: 'from-nk-purple to-nk-rose',
+      paper: 'bg-surface',
+      accent: 'bg-[color:hsl(var(--accent-cool-solid-hsl))]',
     },
   },
   {
@@ -32,9 +32,9 @@ const moods: MoodOption[] = [
     name: 'Focus',
     icon: <Sparkles className="w-4 h-4" />,
     colors: {
-      bg: 'from-indigo-50 to-purple-50',
-      paper: 'bg-slate-50',
-      accent: 'bg-indigo-500',
+      bg: 'from-nk-purple to-nk-rose',
+      paper: 'bg-muted',
+      accent: 'bg-primary',
     },
   },
   {
@@ -42,9 +42,9 @@ const moods: MoodOption[] = [
     name: 'Dark',
     icon: <Moon className="w-4 h-4" />,
     colors: {
-      bg: 'from-slate-900 to-zinc-900',
-      paper: 'bg-zinc-800',
-      accent: 'bg-violet-500',
+      bg: 'from-surface-hover to-surface-hover',
+      paper: 'bg-[color:hsl(var(--background-secondary-hsl))]',
+      accent: 'bg-primary',
     },
   },
   {
@@ -52,9 +52,9 @@ const moods: MoodOption[] = [
     name: 'Vintage',
     icon: <Coffee className="w-4 h-4" />,
     colors: {
-      bg: 'from-amber-50 to-orange-50',
-      paper: 'bg-amber-50',
-      accent: 'bg-amber-600',
+      bg: 'from-nk-warm-600 to-nk-rose',
+      paper: 'bg-[color:hsl(var(--accent-warm-hsl)/0.16)]',
+      accent: 'bg-nk-warm-600',
     },
   },
   {
@@ -62,9 +62,9 @@ const moods: MoodOption[] = [
     name: 'Study',
     icon: <BookOpen className="w-4 h-4" />,
     colors: {
-      bg: 'from-emerald-50 to-teal-50',
-      paper: 'bg-emerald-50/50',
-      accent: 'bg-emerald-500',
+      bg: 'from-success to-success/70',
+      paper: 'bg-[color:hsl(var(--success)/0.5)]',
+      accent: 'bg-success',
     },
   },
 ];
@@ -76,7 +76,7 @@ interface MoodSelectorProps {
 
 export const MoodSelector: React.FC<MoodSelectorProps> = ({ currentMood, onMoodChange }) => {
   return (
-    <div className="flex items-center gap-1 p-1 bg-white/15 backdrop-blur-sm rounded-xl">
+    <div className="flex items-center gap-1 p-1 bg-surface/15 backdrop-blur-sm rounded-xl">
       {moods.map((mood) => (
         <motion.button
           key={mood.id}
@@ -86,8 +86,8 @@ export const MoodSelector: React.FC<MoodSelectorProps> = ({ currentMood, onMoodC
           className={cn(
             "flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all duration-200",
             currentMood === mood.id
-              ? "bg-white/40 shadow-sm text-foreground backdrop-blur-sm"
-              : "text-foreground/60 hover:text-foreground hover:bg-white/20"
+              ? "bg-surface/40 shadow-sm text-foreground backdrop-blur-sm"
+              : "text-foreground/60 hover:text-foreground hover:bg-surface/20"
           )}
         >
           <span className={cn(

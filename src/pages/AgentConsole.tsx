@@ -96,7 +96,7 @@ export default function AgentConsole() {
       <header className="border-b border-border/60 bg-background/80 backdrop-blur-xl">
         <div className="px-4 h-14 flex items-center gap-3">
           <Link to="/" className="p-2 -ml-2 rounded-lg hover:bg-muted"><ArrowLeft className="w-5 h-5" /></Link>
-          <Users className="w-5 h-5 text-primary" />
+          <Users className="w-5 h-5 text-accent-rose" />
           <h1 className="font-semibold">Agent Console</h1>
           <span className="text-xs text-muted-foreground hidden sm:inline">
             {AGENTS.length} specialists
@@ -200,7 +200,7 @@ export default function AgentConsole() {
                       onClick={() => send(p)}
                       className="w-full text-left text-sm px-4 py-3 rounded-xl bg-muted/60 hover:bg-muted border border-border/50 transition"
                     >
-                      <Sparkles className="w-3.5 h-3.5 inline mr-2 text-primary" />
+                      <Sparkles className="w-3.5 h-3.5 inline mr-2 text-accent-rose" />
                       {p}
                     </button>
                   ))}

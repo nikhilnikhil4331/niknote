@@ -23,10 +23,10 @@ type FeedbackType = 'suggestion' | 'bug' | 'praise' | 'feature';
 type FeedbackCategory = 'editor' | 'ai' | 'handwriting' | 'pdf' | 'mobile' | 'pricing' | 'other';
 
 const feedbackTypes: { id: FeedbackType; label: string; icon: any; color: string }[] = [
-  { id: 'suggestion', label: 'Suggestion', icon: Lightbulb, color: 'from-yellow-500 to-amber-600' },
-  { id: 'bug', label: 'Bug Report', icon: Bug, color: 'from-red-500 to-rose-600' },
-  { id: 'praise', label: 'Love It!', icon: Heart, color: 'from-pink-500 to-red-500' },
-  { id: 'feature', label: 'Feature Request', icon: Sparkles, color: 'from-purple-500 to-indigo-600' },
+  { id: 'suggestion', label: 'Suggestion', icon: Lightbulb, color: 'from-nk-warm-600 to-nk-rose' },
+  { id: 'bug', label: 'Bug Report', icon: Bug, color: 'from-error to-nk-rose' },
+  { id: 'praise', label: 'Love It!', icon: Heart, color: 'from-nk-rose to-error/70' },
+  { id: 'feature', label: 'Feature Request', icon: Sparkles, color: 'from-nk-purple to-nk-rose' },
 ];
 
 const categories: { id: FeedbackCategory; label: string }[] = [
@@ -106,7 +106,7 @@ const FeedbackPage = () => {
   // Success State
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-green-50/20 to-primary/5 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-background via-success/70/20 to-primary/5 flex items-center justify-center p-4">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -143,7 +143,7 @@ const FeedbackPage = () => {
             <h1 className="text-base sm:text-lg font-semibold truncate">Feedback 💬</h1>
             <p className="text-xs text-muted-foreground truncate">Help us improve NikNote</p>
           </div>
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center flex-shrink-0">
+          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary-active/60 flex items-center justify-center flex-shrink-0">
             <MessageSquare className="h-5 w-5 text-primary-foreground" />
           </div>
         </div>
@@ -187,7 +187,7 @@ const FeedbackPage = () => {
                   onClick={() => setCategory(cat.id)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
                     category === cat.id
-                      ? 'border-primary bg-primary/10 text-primary'
+                      ? 'border-primary bg-primary/10 text-accent-rose'
                       : 'border-border/50 bg-card text-muted-foreground hover:border-border'
                   }`}
                 >
@@ -211,7 +211,7 @@ const FeedbackPage = () => {
                   <Star
                     className={`h-9 w-9 transition-colors ${
                       star <= rating
-                        ? 'text-amber-500 fill-amber-500'
+                        ? 'text-accent-warm fill-nk-amber'
                         : 'text-muted-foreground/30'
                     }`}
                   />
@@ -287,7 +287,7 @@ const FeedbackPage = () => {
             <Button
               type="submit"
               disabled={submitting || !title.trim() || !description.trim() || rating === 0}
-              className="w-full h-13 py-3 rounded-xl text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 transition-all"
+              className="w-full h-13 py-3 rounded-xl text-base font-semibold bg-gradient-to-r from-primary to-primary-active/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20 transition-all"
             >
               {submitting ? (
                 <>
@@ -305,7 +305,7 @@ const FeedbackPage = () => {
 
           {/* Encouragement */}
           <div className="text-center text-xs text-muted-foreground pb-6">
-            <Heart className="h-3 w-3 inline text-red-500" /> Every feedback helps us improve for you
+            <Heart className="h-3 w-3 inline text-error" /> Every feedback helps us improve for you
           </div>
         </form>
       </main>

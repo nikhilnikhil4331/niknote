@@ -49,17 +49,17 @@ export const AIDiffView: React.FC<Props> = ({ original, next, className }) => {
     <div className={cn("text-[14px] leading-relaxed whitespace-pre-wrap break-words", className)}>
       {ops.map((op, idx) => {
         if (op.type === "eq") {
-          return <span key={idx} className="text-gray-600">{op.value}</span>;
+          return <span key={idx} className="text-fg-secondary">{op.value}</span>;
         }
         if (op.type === "add") {
           return (
-            <span key={idx} className="bg-emerald-100 text-emerald-900 rounded-sm px-0.5">
+            <span key={idx} className="bg-[color:hsl(var(--success)/0.14)] text-success rounded-sm px-0.5">
               {op.value}
             </span>
           );
         }
         return (
-          <span key={idx} className="bg-red-100 text-red-800 line-through rounded-sm px-0.5">
+          <span key={idx} className="bg-[color:hsl(var(--error)/0.14)] text-error line-through rounded-sm px-0.5">
             {op.value}
           </span>
         );

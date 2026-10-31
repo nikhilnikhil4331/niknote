@@ -105,7 +105,7 @@ export default function HistoryPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <Loader2 className="w-8 h-8 animate-spin text-accent-rose" />
       </div>
     );
   }
@@ -120,7 +120,7 @@ export default function HistoryPage() {
               <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary-active/60 flex items-center justify-center">
                 <History className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
@@ -142,7 +142,7 @@ export default function HistoryPage() {
           >
             <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
               <CardContent className="p-4 text-center">
-                <Brain className="w-8 h-8 mx-auto text-primary mb-2" />
+                <Brain className="w-8 h-8 mx-auto text-accent-rose mb-2" />
                 <p className="text-2xl font-bold">{stats.totalAiRequests}</p>
                 <p className="text-xs text-muted-foreground">AI Requests</p>
               </CardContent>
@@ -154,9 +154,9 @@ export default function HistoryPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <Card className="border-2 border-green-500/20 bg-gradient-to-br from-green-500/5 to-green-500/10">
+            <Card className="border-2 border-[color:hsl(var(--success)/0.2)] bg-gradient-to-br from-success/5 to-success/70/10">
               <CardContent className="p-4 text-center">
-                <Download className="w-8 h-8 mx-auto text-green-500 mb-2" />
+                <Download className="w-8 h-8 mx-auto text-success mb-2" />
                 <p className="text-2xl font-bold">{stats.totalExports}</p>
                 <p className="text-xs text-muted-foreground">Exports</p>
               </CardContent>
@@ -168,9 +168,9 @@ export default function HistoryPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="border-2 border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-blue-500/10">
+            <Card className="border-2 border-[color:hsl(var(--accent-cool-hsl)/0.2)] bg-gradient-to-br from-nk-purple/5 to-nk-rose/10">
               <CardContent className="p-4 text-center">
-                <FileText className="w-8 h-8 mx-auto text-blue-500 mb-2" />
+                <FileText className="w-8 h-8 mx-auto text-accent-cool mb-2" />
                 <p className="text-2xl font-bold">{stats.totalPages}</p>
                 <p className="text-xs text-muted-foreground">Pages Created</p>
               </CardContent>
@@ -182,9 +182,9 @@ export default function HistoryPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
           >
-            <Card className="border-2 border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-amber-500/10">
+            <Card className="border-2 border-[color:hsl(var(--accent-warm-hsl)/0.2)] bg-gradient-to-br from-nk-warm-700/5 to-nk-rose/10">
               <CardContent className="p-4 text-center">
-                <Clock className="w-8 h-8 mx-auto text-amber-500 mb-2" />
+                <Clock className="w-8 h-8 mx-auto text-accent-warm mb-2" />
                 <p className="text-sm font-medium">
                   {stats.lastActive 
                     ? formatDistanceToNow(new Date(stats.lastActive), { addSuffix: true })
@@ -225,7 +225,7 @@ export default function HistoryPage() {
                       className="flex items-start gap-4 p-3 rounded-xl hover:bg-muted/30 transition-colors"
                     >
                       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <IconComponent className="w-5 h-5 text-primary" />
+                        <IconComponent className="w-5 h-5 text-accent-rose" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm">

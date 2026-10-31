@@ -80,34 +80,34 @@ export function ProfileScreen({ go }: { go: (s: { name: string; id?: string }) =
 
         <section className="space-y-2">
           <h3 className="nnh-label px-1">Routine</h3>
-          {row(<Goal size={17} />, 'My Goals', 'Set targets for each habit', undefined, () => { haptic('selection'); setSheet('goals'); }, '#7c3aed')}
-          {row(<Bell size={17} />, 'Reminders', `${activeHabits.filter(h => h.reminderOn).length} active reminders`, undefined, () => { haptic('selection'); setSheet('reminders'); }, '#ec4899')}
-          {row(<CalendarDays size={17} />, 'Calendar', 'Month view & habit history', undefined, () => go({ name: 'calendar' }), '#0ea5e9')}
-          {row(<Trophy size={17} />, 'Streaks & Achievements', `${best} day best · ${achCount} unlocked`, undefined, () => go({ name: 'streaks' }), '#f59e0b')}
-          {row(<Waves size={17} />, 'Focus Timer', `${state.focus[toDay(now)] ?? 0} sessions today`, undefined, () => go({ name: 'focus' }), '#6366f1')}
+          {row(<Goal size={17} />, 'My Goals', 'Set targets for each habit', undefined, () => { haptic('selection'); setSheet('goals'); }, '#7C5F9E')}
+          {row(<Bell size={17} />, 'Reminders', `${activeHabits.filter(h => h.reminderOn).length} active reminders`, undefined, () => { haptic('selection'); setSheet('reminders'); }, '#A34054')}
+          {row(<CalendarDays size={17} />, 'Calendar', 'Month view & habit history', undefined, () => go({ name: 'calendar' }), '#7C5F9E')}
+          {row(<Trophy size={17} />, 'Streaks & Achievements', `${best} day best · ${achCount} unlocked`, undefined, () => go({ name: 'streaks' }), '#C4762F')}
+          {row(<Waves size={17} />, 'Focus Timer', `${state.focus[toDay(now)] ?? 0} sessions today`, undefined, () => go({ name: 'focus' }), '#7C5F9E')}
         </section>
 
         <section className="space-y-2">
           <h3 className="nnh-label px-1">Preferences</h3>
           {row(<Palette size={17} />, 'Theme', state.theme === 'light' ? 'Light' : 'Dark',
-            <Toggle on={state.theme === 'dark'} onChange={v => setTheme(v ? 'dark' : 'light')} label="Toggle dark theme" />, undefined, '#f59e0b')}
+            <Toggle on={state.theme === 'dark'} onChange={v => setTheme(v ? 'dark' : 'light')} label="Toggle dark theme" />, undefined, '#C4762F')}
           {row(<Bell size={17} />, 'Notifications', state.notifications ? 'On' : 'Muted',
-            <Toggle on={state.notifications} onChange={setNotifications} label="Toggle notifications" />, undefined, '#ef4444')}
+            <Toggle on={state.notifications} onChange={setNotifications} label="Toggle notifications" />, undefined, '#A62B36')}
           {row(<Sparkles size={17} />, 'Motion', reduced ? 'Reduced motion respected' : 'Full motion', 
             <span className="rounded-full px-2 py-1 text-[9px] font-extrabold" style={{ background: 'var(--nnh-card)', color: 'var(--nnh-sub)' }}>
               {reduced ? 'SYSTEM' : 'ON'}
-            </span>, undefined, '#8b5cf6')}
+            </span>, undefined, '#7C5F9E')}
         </section>
 
         <section className="space-y-2">
           <h3 className="nnh-label px-1">Your data</h3>
-          {row(<BarChart3 size={17} />, 'Statistics', 'Completion, streaks & trends', undefined, () => go({ name: 'tab', id: 'insights' }), '#0ea5e9')}
+          {row(<BarChart3 size={17} />, 'Statistics', 'Completion, streaks & trends', undefined, () => go({ name: 'tab', id: 'insights' }), '#7C5F9E')}
           {row(<Download size={17} />, 'Export Data', 'Download your data as JSON', undefined, exportData, '#16a34a')}
           {row(<Cloud size={17} />, 'Backup & Sync', syncBusy ? 'Syncing…' : syncMsg === 'synced' ? 'Up to date ☁️' : 'Mirror to the cloud',
             <motion.button whileTap={{ scale: 0.92 }} type="button" onClick={syncNow} disabled={syncBusy}
               className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[11px] font-extrabold text-white nnh-gradient-btn disabled:opacity-50">
               <Upload size={12} /> {syncBusy ? 'Syncing' : 'Sync now'}
-            </motion.button>, undefined, '#6366f1')}
+            </motion.button>, undefined, '#7C5F9E')}
         </section>
 
         <Link to="/account" className="block rounded-2xl py-3 text-center text-[12px] font-bold nnh-chip" style={{ color: 'var(--nnh-violet)' }}>

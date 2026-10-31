@@ -143,7 +143,7 @@ export const HABIT_ICONS = [
   '❤️', '🎵', '🧺', '📞', '🚴', '🧊', '🍵', '✍️',
 ];
 
-export const HABIT_COLORS = ['#8b5cf6', '#ec4899', '#f97316', '#f59e0b', '#22c55e', '#14b8a6', '#0ea5e9', '#6366f1'];
+export const HABIT_COLORS = ['#7C5F9E', '#A34054', '#D9822F', '#C4762F', '#157F52', '#157F52', '#7C5F9E', '#7C5F9E'];
 
 export function greetingFor(hour: number) {
   if (hour < 5) return 'Good Night';
@@ -272,14 +272,14 @@ const anyEntryDone = (c: AchievementCtx) => Object.values(c.entries).some(e => e
 const streakOf = (c: AchievementCtx) => bestStreakAcross(c.entries, c.habits, new Date(c.today + 'T12:00'));
 
 export const ACHIEVEMENTS: AchievementDef[] = [
-  { id: 'first-step', name: 'First Step', desc: 'Complete your first habit', icon: '⭐', color: '#f59e0b', test: anyEntryDone },
-  { id: 'streak-3', name: '3 Day Streak', desc: 'Keep going!', icon: '🔥', color: '#f97316', test: c => streakOf(c) >= 3 },
-  { id: 'hydration-hero', name: 'Hydration Hero', desc: 'Drink 8 glasses in a day', icon: '💧', color: '#0ea5e9', test: c => c.habits.some(h => h.type === 'water') && Object.values(c.entries).some(e => e.v >= 8) },
-  { id: 'early-bird', name: 'Early Bird', desc: 'Complete a habit before 8 AM', icon: '🐦', color: '#8b5cf6', test: c => Object.values(c.entries).some(e => e.v > 0 && !!e.at && e.at.slice(11, 16) < '08:00') },
-  { id: 'streak-7', name: 'Week Warrior', desc: 'Hit a 7 day streak', icon: '🚀', color: '#ec4899', test: c => streakOf(c) >= 7 },
-  { id: 'perfect-week', name: 'Perfect Week', desc: '100% habits for 7 straight days', icon: '🏆', color: '#f59e0b', test: c => { const w = weekCompletion(c.entries, c.habits, new Date(c.today + 'T12:00')); return w.slots > 0 && w.perDay.every(p => p.pct === 100); } },
-  { id: 'focus-4', name: 'Deep Diver', desc: 'Finish 4 focus sessions in a day', icon: '⏱️', color: '#3b82f6', test: c => Object.values(c.focus).some(n => n >= 4) },
-  { id: 'night-owl', name: 'Night Owl', desc: 'Log a workout after 7 PM', icon: '🦉', color: '#6366f1', test: c => c.habits.some(h => h.type === 'minutes') && Object.values(c.entries).some(e => e.v > 0 && !!e.at && e.at.slice(11, 16) >= '19:00') },
+  { id: 'first-step', name: 'First Step', desc: 'Complete your first habit', icon: '⭐', color: '#C4762F', test: anyEntryDone },
+  { id: 'streak-3', name: '3 Day Streak', desc: 'Keep going!', icon: '🔥', color: '#D9822F', test: c => streakOf(c) >= 3 },
+  { id: 'hydration-hero', name: 'Hydration Hero', desc: 'Drink 8 glasses in a day', icon: '💧', color: '#7C5F9E', test: c => c.habits.some(h => h.type === 'water') && Object.values(c.entries).some(e => e.v >= 8) },
+  { id: 'early-bird', name: 'Early Bird', desc: 'Complete a habit before 8 AM', icon: '🐦', color: '#7C5F9E', test: c => Object.values(c.entries).some(e => e.v > 0 && !!e.at && e.at.slice(11, 16) < '08:00') },
+  { id: 'streak-7', name: 'Week Warrior', desc: 'Hit a 7 day streak', icon: '🚀', color: '#A34054', test: c => streakOf(c) >= 7 },
+  { id: 'perfect-week', name: 'Perfect Week', desc: '100% habits for 7 straight days', icon: '🏆', color: '#C4762F', test: c => { const w = weekCompletion(c.entries, c.habits, new Date(c.today + 'T12:00')); return w.slots > 0 && w.perDay.every(p => p.pct === 100); } },
+  { id: 'focus-4', name: 'Deep Diver', desc: 'Finish 4 focus sessions in a day', icon: '⏱️', color: '#5C3A6E', test: c => Object.values(c.focus).some(n => n >= 4) },
+  { id: 'night-owl', name: 'Night Owl', desc: 'Log a workout after 7 PM', icon: '🦉', color: '#7C5F9E', test: c => c.habits.some(h => h.type === 'minutes') && Object.values(c.entries).some(e => e.v > 0 && !!e.at && e.at.slice(11, 16) >= '19:00') },
 ];
 
 export function unlockedAchievements(c: AchievementCtx) {

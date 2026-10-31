@@ -35,9 +35,9 @@ type DrawingToolType = 'select' | 'pencil' | 'line' | 'rectangle' | 'circle' | '
 const COLORS = [
   { name: 'Blue', value: '#1e40af' },
   { name: 'Black', value: '#1f2937' },
-  { name: 'Red', value: '#dc2626' },
+  { name: 'Red', value: '#A62B36' },
   { name: 'Green', value: '#16a34a' },
-  { name: 'Purple', value: '#7c3aed' },
+  { name: 'Purple', value: '#7C5F9E' },
   { name: 'Brown', value: '#92400e' },
   { name: 'Teal', value: '#0d9488' },
   { name: 'Orange', value: '#ea580c' },

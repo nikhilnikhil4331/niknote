@@ -81,7 +81,7 @@ export const ExitIntentPopup: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleDismiss}
-            className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] bg-[color:var(--nk-scrim)] backdrop-blur-sm"
           />
 
           {/* Popup */}
@@ -102,9 +102,9 @@ export const ExitIntentPopup: React.FC = () => {
               </button>
 
               {/* Header gradient */}
-              <div className="bg-gradient-to-br from-primary/10 via-orange-500/10 to-pink-500/10 p-6 pb-4">
+              <div className="bg-gradient-to-br from-primary/10 via-nk-rose/10 to-nk-rose/10 p-6 pb-4">
                 <div className="flex items-center justify-center gap-3 mb-4">
-                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-orange-500 via-pink-500 to-purple-600 flex items-center justify-center shadow-lg">
+                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-nk-warm-700 via-nk-rose to-nk-purple flex items-center justify-center shadow-lg">
                     <Crown className="h-7 w-7 text-white" />
                   </div>
                 </div>
@@ -141,7 +141,7 @@ export const ExitIntentPopup: React.FC = () => {
                     setShow(false);
                     navigate('/payment?plan=weekly');
                   }}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 text-white font-semibold text-sm hover:from-orange-400 hover:via-pink-400 hover:to-purple-500 transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-nk-warm-700 via-nk-rose to-nk-purple text-white font-semibold text-sm hover:from-nk-warm-700 hover:via-nk-rose hover:to-nk-purple transition-all shadow-lg shadow-[color:hsl(var(--primary)/0.25)] flex items-center justify-center gap-2"
                 >
                   <Zap className="h-4 w-4" />
                   Unlock Premium — ₹49 for 7 days

@@ -20,7 +20,7 @@ export default function RoutineAppPage() {
   return (
     <div className="relative">
       {showBanner && (
-        <div role="status" className="sticky top-0 z-50 flex items-center justify-between gap-3 px-4 py-2 bg-amber-50 text-amber-950 text-xs border-b border-amber-200">
+        <div role="status" className="sticky top-0 z-50 flex items-center justify-between gap-3 px-4 py-2 bg-[color:hsl(var(--accent-warm-hsl)/0.16)] text-accent-warm text-xs border-b border-[color:hsl(var(--accent-warm-hsl)/0.34)]">
           <span>{failed ? 'Still offline. Your habits stay saved on this device.' : 'Cloud connection unavailable. Habits work on this device.'}</span>
           <button
             type="button"

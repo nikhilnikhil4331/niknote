@@ -91,20 +91,20 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-gray-100">
+      <div className="p-4 border-b border-subtle">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-indigo-500" />
-            <h3 className="text-sm font-bold text-gray-900">Comments</h3>
+            <MessageSquare className="w-4 h-4 text-accent-cool" />
+            <h3 className="text-sm font-bold text-fg-primary">Comments</h3>
           </div>
           <div className="flex items-center gap-1 text-[10px]">
             {openCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600 font-semibold">
+              <span className="px-1.5 py-0.5 rounded-full bg-[color:hsl(var(--primary)/0.12)] text-accent-cool font-semibold">
                 {openCount} open
               </span>
             )}
             {resolvedCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-green-600 font-semibold">
+              <span className="px-1.5 py-0.5 rounded-full bg-[color:hsl(var(--success)/0.14)] text-success font-semibold">
                 {resolvedCount} resolved
               </span>
             )}
@@ -112,14 +112,14 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
+        <div className="flex gap-0.5 bg-muted rounded-lg p-0.5">
           {(['all', 'open', 'resolved'] as const).map(f => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               className={cn(
                 "flex-1 text-[10px] font-medium py-1 rounded-md transition-colors capitalize",
-                filter === f ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                filter === f ? "bg-surface text-fg-primary shadow-sm" : "text-fg-muted hover:text-fg-primary"
               )}
             >
               {f}
@@ -129,9 +129,9 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
       </div>
 
       {/* New comment input */}
-      <div className="p-3 border-b border-gray-100">
+      <div className="p-3 border-b border-subtle">
         <div className="flex items-start gap-2">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center flex-shrink-0">
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-nk-purple to-nk-rose flex items-center justify-center flex-shrink-0">
             <span className="text-[9px] text-white font-bold">U</span>
           </div>
           <div className="flex-1 relative">
@@ -140,12 +140,12 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Add a comment..."
               rows={2}
-              className="w-full text-xs bg-gray-50 rounded-lg px-3 py-2 border border-gray-200 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200 outline-none resize-none"
+              className="w-full text-xs bg-muted rounded-lg px-3 py-2 border border-subtle focus:border-[color:hsl(var(--primary)/0.3)] focus:ring-1 focus:ring-primary outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] resize-none"
             />
             {newComment.trim() && (
               <button
                 onClick={() => { onAddComment('current', newComment.trim()); setNewComment(''); }}
-                className="absolute right-2 bottom-2 px-2.5 py-1 rounded-md text-[10px] font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-colors"
+                className="absolute right-2 bottom-2 px-2.5 py-1 rounded-md text-[10px] font-medium text-white bg-primary hover:bg-primary transition-colors"
               >
                 Send
               </button>
@@ -158,12 +158,12 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
       <div className="flex-1 overflow-y-auto">
         {filteredComments.length === 0 ? (
           <div className="text-center py-12 px-4">
-            <MessageSquare className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-            <p className="text-sm text-gray-400">No comments yet</p>
-            <p className="text-[11px] text-gray-300 mt-1">Select text and comment to start a discussion</p>
+            <MessageSquare className="w-10 h-10 text-fg-muted/70 mx-auto mb-3" />
+            <p className="text-sm text-fg-muted/70">No comments yet</p>
+            <p className="text-[11px] text-fg-muted/70 mt-1">Select text and comment to start a discussion</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-subtle">
             {filteredComments.map((comment) => (
               <motion.div
                 key={comment.id}
@@ -171,29 +171,29 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
                 animate={{ opacity: 1, y: 0 }}
                 className={cn(
                   "p-3 transition-colors",
-                  comment.resolved && "bg-green-50/30",
+                  comment.resolved && "bg-[color:hsl(var(--success)/0.3)]",
                   comment.aiSuggested && "border-l-2 border-l-purple-300"
                 )}
               >
                 {/* Comment header */}
                 <div className="flex items-start gap-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center flex-shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-nk-purple to-nk-rose flex items-center justify-center flex-shrink-0">
                     <span className="text-[9px] text-white font-bold">
                       {comment.userName?.[0]?.toUpperCase() || 'U'}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-semibold text-gray-800">{comment.userName}</span>
-                      <span className="text-[10px] text-gray-400">{formatTime(comment.createdAt)}</span>
+                      <span className="text-[11px] font-semibold text-fg-primary">{comment.userName}</span>
+                      <span className="text-[10px] text-fg-muted/70">{formatTime(comment.createdAt)}</span>
                       {comment.aiSuggested && (
-                        <span className="text-[9px] font-medium px-1 py-0.5 rounded-full bg-purple-100 text-purple-600">AI</span>
+                        <span className="text-[9px] font-medium px-1 py-0.5 rounded-full bg-[color:hsl(var(--primary)/0.12)] text-accent-cool">AI</span>
                       )}
                       {comment.resolved && (
-                        <span className="text-[9px] font-medium px-1 py-0.5 rounded-full bg-green-100 text-green-600">Resolved</span>
+                        <span className="text-[9px] font-medium px-1 py-0.5 rounded-full bg-[color:hsl(var(--success)/0.14)] text-success">Resolved</span>
                       )}
                     </div>
-                    <p className="text-[12px] text-gray-700 mt-0.5 leading-relaxed">{comment.content}</p>
+                    <p className="text-[12px] text-fg-primary mt-0.5 leading-relaxed">{comment.content}</p>
 
                     {/* Reactions */}
                     {comment.reactions.length > 0 && (
@@ -205,8 +205,8 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
                             className={cn(
                               "flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] border transition-colors",
                               reaction.userIds.includes(currentUserId || '')
-                                ? "bg-indigo-50 border-indigo-200 text-indigo-600"
-                                : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"
+                                ? "bg-[color:hsl(var(--primary)/0.12)] border-[color:hsl(var(--primary)/0.3)] text-accent-cool"
+                                : "bg-muted border-subtle text-fg-muted hover:bg-muted"
                             )}
                           >
                             <span>{reaction.emoji}</span>
@@ -220,20 +220,20 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
                     <div className="flex items-center gap-1.5 mt-1.5">
                       <button
                         onClick={() => setShowReactions(showReactions === comment.id ? null : comment.id)}
-                        className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors"
+                        className="text-[10px] text-fg-muted/70 hover:text-fg-secondary transition-colors"
                       >
                         <Smile className="w-3 h-3" />
                       </button>
                       <button
                         onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                        className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-0.5"
+                        className="text-[10px] text-fg-muted/70 hover:text-fg-secondary transition-colors flex items-center gap-0.5"
                       >
                         <Reply className="w-3 h-3" /> Reply
                       </button>
                       {!comment.resolved && (
                         <button
                           onClick={() => onResolveComment(comment.id)}
-                          className="text-[10px] text-green-500 hover:text-green-600 transition-colors flex items-center gap-0.5"
+                          className="text-[10px] text-success hover:text-success transition-colors flex items-center gap-0.5"
                         >
                           <Check className="w-3 h-3" /> Resolve
                         </button>
@@ -247,13 +247,13 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.9 }}
-                          className="flex items-center gap-0.5 mt-1.5 p-1 bg-white rounded-lg border border-gray-200 shadow-sm w-fit"
+                          className="flex items-center gap-0.5 mt-1.5 p-1 bg-surface rounded-lg border border-subtle shadow-sm w-fit"
                         >
                           {EMOJI_REACTIONS.map(emoji => (
                             <button
                               key={emoji}
                               onClick={() => { onReactComment(comment.id, emoji); setShowReactions(null); }}
-                              className="w-6 h-6 rounded hover:bg-gray-100 flex items-center justify-center text-sm transition-colors"
+                              className="w-6 h-6 rounded hover:bg-muted flex items-center justify-center text-sm transition-colors"
                             >
                               {emoji}
                             </button>
@@ -264,18 +264,18 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
 
                     {/* Replies */}
                     {comment.replies.length > 0 && (
-                      <div className="mt-2 ml-2 space-y-2 border-l-2 border-gray-100 pl-3">
+                      <div className="mt-2 ml-2 space-y-2 border-l-2 border-subtle pl-3">
                         {comment.replies.map(reply => (
                           <div key={reply.id} className="flex items-start gap-2">
-                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center flex-shrink-0">
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-surface-hover to-surface-hover flex items-center justify-center flex-shrink-0">
                               <span className="text-[8px] text-white font-bold">{reply.userName?.[0]?.toUpperCase()}</span>
                             </div>
                             <div>
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] font-semibold text-gray-700">{reply.userName}</span>
-                                <span className="text-[9px] text-gray-400">{formatTime(reply.createdAt)}</span>
+                                <span className="text-[10px] font-semibold text-fg-primary">{reply.userName}</span>
+                                <span className="text-[9px] text-fg-muted/70">{formatTime(reply.createdAt)}</span>
                               </div>
-                              <p className="text-[11px] text-gray-600 leading-relaxed">{reply.content}</p>
+                              <p className="text-[11px] text-fg-secondary leading-relaxed">{reply.content}</p>
                             </div>
                           </div>
                         ))}
@@ -298,11 +298,11 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
                               onChange={(e) => setReplyText(e.target.value)}
                               onKeyDown={(e) => { if (e.key === 'Enter') handleAddReply(comment.id); }}
                               placeholder="Reply..."
-                              className="flex-1 text-[11px] bg-gray-50 rounded-lg px-2.5 py-1.5 border border-gray-200 focus:border-indigo-300 outline-none"
+                              className="flex-1 text-[11px] bg-muted rounded-lg px-2.5 py-1.5 border border-subtle focus:border-[color:hsl(var(--primary)/0.3)] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]"
                             />
                             <button
                               onClick={() => handleAddReply(comment.id)}
-                              className="px-2 py-1 rounded-md text-[9px] font-medium text-white bg-indigo-500 hover:bg-indigo-600"
+                              className="px-2 py-1 rounded-md text-[9px] font-medium text-white bg-primary hover:bg-primary"
                             >
                               Send
                             </button>
@@ -319,8 +319,8 @@ export const CommentsPanel: React.FC<CommentsPanelProps> = ({
       </div>
 
       {/* AI suggestion */}
-      <div className="p-3 border-t border-gray-100">
-        <button className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors">
+      <div className="p-3 border-t border-subtle">
+        <button className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-accent-cool bg-[color:hsl(var(--primary)/0.12)] hover:bg-[color:hsl(var(--primary)/0.12)] transition-colors">
           <Sparkles className="w-3.5 h-3.5" />
           AI suggest improvements
         </button>

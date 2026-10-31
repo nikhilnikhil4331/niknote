@@ -138,11 +138,11 @@ export const StudyStreakWidget: React.FC = () => {
       <div className="bg-card rounded-2xl border border-border/50 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Flame className={`h-5 w-5 ${streakData.currentStreak > 0 ? 'text-orange-500' : 'text-muted-foreground'}`} />
+            <Flame className={`h-5 w-5 ${streakData.currentStreak > 0 ? 'text-accent-warm' : 'text-muted-foreground'}`} />
             <span className="font-bold text-sm text-foreground">Study Streak</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-2xl font-bold text-orange-500">{streakData.currentStreak}</span>
+            <span className="text-2xl font-bold text-accent-warm">{streakData.currentStreak}</span>
             <span className="text-xs text-muted-foreground">days</span>
           </div>
         </div>
@@ -152,11 +152,11 @@ export const StudyStreakWidget: React.FC = () => {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-[10px]">
               <span className="text-muted-foreground">Next: {nextReward.label}</span>
-              <span className="text-orange-600 font-semibold">{streakData.currentStreak}/{nextReward.days} days</span>
+              <span className="text-accent-warm font-semibold">{streakData.currentStreak}/{nextReward.days} days</span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
               <motion.div
-                className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
+                className="h-full bg-gradient-to-r from-nk-warm-700 to-error/70 rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${progressToNext}%` }}
                 transition={{ duration: 0.8, ease: 'easeOut' }}
@@ -174,7 +174,7 @@ export const StudyStreakWidget: React.FC = () => {
                 key={reward.days}
                 className={`flex-1 text-center p-1.5 rounded-lg text-[9px] font-semibold transition-all ${
                   achieved
-                    ? 'bg-orange-500/10 text-orange-600 border border-orange-500/20'
+                    ? 'bg-nk-warm-600/10 text-accent-warm border border-[color:hsl(var(--accent-warm-hsl)/0.2)]'
                     : 'bg-muted/30 text-muted-foreground border border-transparent'
                 }`}
                 title={reward.description}
@@ -189,8 +189,8 @@ export const StudyStreakWidget: React.FC = () => {
         {/* Today status */}
         <div className={`flex items-center gap-2 p-2 rounded-lg text-xs ${
           streakData.todayCompleted
-            ? 'bg-green-500/10 text-green-600'
-            : 'bg-amber-500/10 text-amber-600'
+            ? 'bg-success/10 text-success'
+            : 'bg-nk-warm-600/10 text-accent-warm'
         }`}>
           {streakData.todayCompleted ? (
             <>
@@ -215,7 +215,7 @@ export const StudyStreakWidget: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowRewardPopup(null)}
-              className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
+              className="fixed inset-0 z-[60] bg-[color:var(--nk-scrim)] backdrop-blur-sm"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.8, y: 20 }}
@@ -238,7 +238,7 @@ export const StudyStreakWidget: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleClaim(showRewardPopup)}
-                    className="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white font-semibold text-sm flex items-center justify-center gap-2"
+                    className="flex-1 py-3 rounded-xl bg-gradient-to-r from-nk-warm-700 to-nk-rose text-white font-semibold text-sm flex items-center justify-center gap-2"
                   >
                     <Gift className="h-4 w-4" />
                     Nice!
@@ -250,7 +250,7 @@ export const StudyStreakWidget: React.FC = () => {
                       );
                       window.open(`https://wa.me/?text=${msg}`, '_blank');
                     }}
-                    className="py-3 px-4 rounded-xl border-2 border-green-500/30 bg-green-500/5 text-green-600 font-semibold text-sm flex items-center gap-2"
+                    className="py-3 px-4 rounded-xl border-2 border-[color:hsl(var(--success)/0.3)] bg-success/5 text-success font-semibold text-sm flex items-center gap-2"
                   >
                     <Share2 className="h-4 w-4" />
                     Share

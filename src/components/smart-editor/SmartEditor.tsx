@@ -247,9 +247,9 @@ export const SmartEditor: React.FC<SmartEditorProps> = ({
         className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/30 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-500" />
+          <Sparkles className="w-4 h-4 text-accent-warm" />
           <span className="text-xs font-semibold">Smart Suggestions</span>
-          <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
+          <span className="text-[10px] bg-primary/10 text-accent-rose px-1.5 py-0.5 rounded-full font-medium">
             {suggestions.length}
           </span>
         </div>
@@ -290,7 +290,7 @@ export const SmartEditor: React.FC<SmartEditorProps> = ({
                   <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleAccept(suggestion)}
-                      className="p-1 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                      className="p-1 rounded-md bg-primary/10 text-accent-rose hover:bg-primary/20 transition-colors"
                       title="Accept"
                     >
                       <ChevronRight className="w-3 h-3" />

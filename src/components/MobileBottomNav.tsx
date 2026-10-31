@@ -39,7 +39,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activeTab, onT
               className={cn('relative flex-1 flex flex-col items-center justify-center gap-0.5 h-12 rounded-2xl transition-colors duration-200 active:scale-95',
                 active ? 'text-primary-foreground' : 'text-muted-foreground')}
               style={{ WebkitTapHighlightColor: 'transparent' }} aria-current={active ? 'page' : undefined}>
-              {active && <motion.span layoutId="nn-editor-tab" transition={reduced ? { duration: 0 } : spring.snappy} className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-md" aria-hidden="true" />}
+              {active && <motion.span layoutId="nn-editor-tab" transition={reduced ? { duration: 0 } : spring.snappy} className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary to-nk-rose shadow-md" aria-hidden="true" />}
               <Icon className="relative w-[19px] h-[19px]" strokeWidth={2.2} />
               <span className="relative text-[10px] font-semibold">{label}</span>
             </button>

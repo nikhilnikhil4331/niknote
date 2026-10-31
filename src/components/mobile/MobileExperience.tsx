@@ -513,7 +513,7 @@ export function MobileExperience() {
                 { key: 'realPen' as const, label: 'Real Pen Mode', icon: PenLine },
               ].map(({ key, label, icon: Icon }) => (
                 <div className="nn-settings-row" key={key}>
-                  <Icon className="h-5 w-5 text-primary" />
+                  <Icon className="h-5 w-5 text-accent-rose" />
                   <label htmlFor={`setting-${key}`}>{label}</label>
                   <Switch id={`setting-${key}`} checked={appearance[key]} onCheckedChange={(value) => update({ [key]: value })} />
                 </div>
@@ -557,7 +557,7 @@ export function MobileExperience() {
                   {customImg ? (
                     <img src={customImg} alt="" aria-hidden="true" className="h-5 w-auto object-contain" />
                   ) : (
-                    <Icon className="h-5 w-5 text-primary" />
+                    <Icon className="h-5 w-5 text-accent-rose" />
                   )}
                   <span>{label}</span>
                   <ChevronRight className="h-4 w-4" />

@@ -87,14 +87,14 @@ export function SleepScreen({ go }: { go: (s: { name: string; id?: string }) => 
                 className="h-9 px-4 rounded-full nnh-gradient-btn text-white text-[12px] font-bold flex items-center gap-1"><Plus size={14} /> 30 min</motion.button>
             </div>
           </div>
-          <Ring size={84} stroke={9} pct={pct} from="#a78bfa" to="#6366f1">
+          <Ring size={84} stroke={9} pct={pct} from="#C0A6DE" to="#7C5F9E">
             <span className="text-[18px] font-extrabold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}><CountUp value={Math.round(pct * 100)} />%</span>
           </Ring>
         </section>
 
         <section className="nnh-card p-4">
           <p className="text-[14px] font-bold mb-3">Sleep {range === 'day' ? 'per night' : range === 'week' ? 'by week (avg)' : 'by month (avg)'}</p>
-          <WeekBars data={bars} colorFrom="#a78bfa" colorTo="#6366f1" max={10} height={130} suffix="h" reduced={reduced} />
+          <WeekBars data={bars} colorFrom="#C0A6DE" colorTo="#7C5F9E" max={10} height={130} suffix="h" reduced={reduced} />
         </section>
 
         {/* summary */}
@@ -102,15 +102,15 @@ export function SleepScreen({ go }: { go: (s: { name: string; id?: string }) => 
           <p className="text-[14px] font-bold mb-3">Sleep Summary</p>
           <div className="grid grid-cols-3 gap-2">
             <label className="rounded-2xl p-3 text-center" style={{ background: 'var(--nnh-card-soft)' }}>
-              <BedDouble size={16} className="mx-auto" style={{ color: '#8b5cf6' }} />
+              <BedDouble size={16} className="mx-auto" style={{ color: '#7C5F9E' }} />
               <input type="time" value={times.bed ?? ''} onChange={e => { haptic('light'); setSleepTime(today, 'bed', e.target.value); }}
-                className="mt-2 w-full bg-transparent text-center text-[15px] font-extrabold outline-none" style={{ color: 'var(--nnh-ink)', fontFamily: "'Space Grotesk', sans-serif" }} aria-label="Bed time" />
+                className="mt-2 w-full bg-transparent text-center text-[15px] font-extrabold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]" style={{ color: 'var(--nnh-ink)', fontFamily: "'Space Grotesk', sans-serif" }} aria-label="Bed time" />
               <span className="text-[10px] font-semibold" style={{ color: 'var(--nnh-sub)' }}>Bed time</span>
             </label>
             <label className="rounded-2xl p-3 text-center" style={{ background: 'var(--nnh-card-soft)' }}>
-              <Sun size={16} className="mx-auto" style={{ color: '#f59e0b' }} />
+              <Sun size={16} className="mx-auto" style={{ color: '#C4762F' }} />
               <input type="time" value={times.wake ?? ''} onChange={e => { haptic('light'); setSleepTime(today, 'wake', e.target.value); }}
-                className="mt-2 w-full bg-transparent text-center text-[15px] font-extrabold outline-none" style={{ color: 'var(--nnh-ink)', fontFamily: "'Space Grotesk', sans-serif" }} aria-label="Wake time" />
+                className="mt-2 w-full bg-transparent text-center text-[15px] font-extrabold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]" style={{ color: 'var(--nnh-ink)', fontFamily: "'Space Grotesk', sans-serif" }} aria-label="Wake time" />
               <span className="text-[10px] font-semibold" style={{ color: 'var(--nnh-sub)' }}>Wake up</span>
             </label>
             <div className="rounded-2xl p-3 text-center" style={{ background: 'linear-gradient(160deg, var(--nnh-lavender), var(--nnh-pale-pink))' }}>

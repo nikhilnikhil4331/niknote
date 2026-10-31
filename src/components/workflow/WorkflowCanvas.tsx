@@ -48,24 +48,24 @@ interface CanvasEdge {
 // ============================================================
 
 const NODE_CONFIG: Record<CanvasNodeType, { icon: React.ReactNode; color: string; label: string; desc: string }> = {
-  start: { icon: <Play className="w-4 h-4" />, color: 'bg-green-500', label: 'Start', desc: 'Input node' },
-  end: { icon: <Check className="w-4 h-4" />, color: 'bg-red-500', label: 'End', desc: 'Output node' },
-  llm: { icon: <Brain className="w-4 h-4" />, color: 'bg-purple-500', label: 'LLM', desc: 'AI model call' },
-  knowledge: { icon: <Search className="w-4 h-4" />, color: 'bg-blue-500', label: 'Knowledge', desc: 'RAG retrieval' },
-  code: { icon: <Code className="w-4 h-4" />, color: 'bg-yellow-500', label: 'Code', desc: 'JavaScript execution' },
-  http: { icon: <Globe className="w-4 h-4" />, color: 'bg-orange-500', label: 'HTTP', desc: 'API call' },
-  ocr: { icon: <Scan className="w-4 h-4" />, color: 'bg-teal-500', label: 'OCR', desc: 'Document scanning' },
-  condition: { icon: <GitBranch className="w-4 h-4" />, color: 'bg-pink-500', label: 'Condition', desc: 'If/else branch' },
-  loop: { icon: <RefreshCw className="w-4 h-4" />, color: 'bg-indigo-500', label: 'Loop', desc: 'Iterate items' },
-  transform: { icon: <Zap className="w-4 h-4" />, color: 'bg-cyan-500', label: 'Transform', desc: 'Data transform' },
-  memory: { icon: <FileText className="w-4 h-4" />, color: 'bg-amber-500', label: 'Memory', desc: 'Store/retrieve' },
-  notification: { icon: <AlertTriangle className="w-4 h-4" />, color: 'bg-rose-500', label: 'Notify', desc: 'Send notification' },
-  pdf: { icon: <FileText className="w-4 h-4" />, color: 'bg-slate-500', label: 'PDF', desc: 'PDF processing' },
-  flashcard: { icon: <Zap className="w-4 h-4" />, color: 'bg-violet-500', label: 'Flashcard', desc: 'Generate flashcards' },
-  quiz: { icon: <Brain className="w-4 h-4" />, color: 'bg-emerald-500', label: 'Quiz', desc: 'Generate quiz' },
-  summarize: { icon: <FileText className="w-4 h-4" />, color: 'bg-sky-500', label: 'Summarize', desc: 'Summarize content' },
-  translate: { icon: <Globe className="w-4 h-4" />, color: 'bg-lime-500', label: 'Translate', desc: 'Translate text' },
-  agent: { icon: <Brain className="w-4 h-4" />, color: 'bg-fuchsia-500', label: 'Agent', desc: 'Sub-agent' },
+  start: { icon: <Play className="w-4 h-4" />, color: 'bg-success', label: 'Start', desc: 'Input node' },
+  end: { icon: <Check className="w-4 h-4" />, color: 'bg-error', label: 'End', desc: 'Output node' },
+  llm: { icon: <Brain className="w-4 h-4" />, color: 'bg-primary', label: 'LLM', desc: 'AI model call' },
+  knowledge: { icon: <Search className="w-4 h-4" />, color: 'bg-[color:hsl(var(--accent-cool-solid-hsl))]', label: 'Knowledge', desc: 'RAG retrieval' },
+  code: { icon: <Code className="w-4 h-4" />, color: 'bg-nk-warm-600', label: 'Code', desc: 'JavaScript execution' },
+  http: { icon: <Globe className="w-4 h-4" />, color: 'bg-nk-warm-600', label: 'HTTP', desc: 'API call' },
+  ocr: { icon: <Scan className="w-4 h-4" />, color: 'bg-success', label: 'OCR', desc: 'Document scanning' },
+  condition: { icon: <GitBranch className="w-4 h-4" />, color: 'bg-primary', label: 'Condition', desc: 'If/else branch' },
+  loop: { icon: <RefreshCw className="w-4 h-4" />, color: 'bg-primary', label: 'Loop', desc: 'Iterate items' },
+  transform: { icon: <Zap className="w-4 h-4" />, color: 'bg-[color:hsl(var(--accent-cool-solid-hsl))]', label: 'Transform', desc: 'Data transform' },
+  memory: { icon: <FileText className="w-4 h-4" />, color: 'bg-nk-warm-600', label: 'Memory', desc: 'Store/retrieve' },
+  notification: { icon: <AlertTriangle className="w-4 h-4" />, color: 'bg-primary', label: 'Notify', desc: 'Send notification' },
+  pdf: { icon: <FileText className="w-4 h-4" />, color: 'bg-muted', label: 'PDF', desc: 'PDF processing' },
+  flashcard: { icon: <Zap className="w-4 h-4" />, color: 'bg-primary', label: 'Flashcard', desc: 'Generate flashcards' },
+  quiz: { icon: <Brain className="w-4 h-4" />, color: 'bg-success', label: 'Quiz', desc: 'Generate quiz' },
+  summarize: { icon: <FileText className="w-4 h-4" />, color: 'bg-[color:hsl(var(--accent-cool-solid-hsl))]', label: 'Summarize', desc: 'Summarize content' },
+  translate: { icon: <Globe className="w-4 h-4" />, color: 'bg-success', label: 'Translate', desc: 'Translate text' },
+  agent: { icon: <Brain className="w-4 h-4" />, color: 'bg-primary', label: 'Agent', desc: 'Sub-agent' },
 };
 
 // ============================================================
@@ -212,9 +212,9 @@ export const WorkflowCanvas: React.FC<{
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 bg-white/50 backdrop-blur-sm">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 bg-surface/50 backdrop-blur-sm">
         <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-primary" />
+          <Zap className="w-4 h-4 text-accent-rose" />
           <span className="font-semibold text-sm">Workflow Builder</span>
           <span className="text-xs text-muted-foreground">{nodes.length} nodes</span>
         </div>
@@ -222,7 +222,7 @@ export const WorkflowCanvas: React.FC<{
           <Button variant="outline" size="sm" onClick={() => setShowNodePicker(true)} className="gap-1 text-xs rounded-lg">
             <Plus className="w-3.5 h-3.5" /> Add Node
           </Button>
-          <Button size="sm" onClick={handleRun} className="gap-1 text-xs rounded-lg bg-gradient-to-r from-primary to-indigo-600">
+          <Button size="sm" onClick={handleRun} className="gap-1 text-xs rounded-lg bg-gradient-to-r from-primary to-nk-rose">
             <Play className="w-3.5 h-3.5" /> Run
           </Button>
           {onClose && (
@@ -266,10 +266,10 @@ export const WorkflowCanvas: React.FC<{
                 <div className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-xl border-2 shadow-md min-w-[160px] transition-all",
                   isSelected ? "border-primary shadow-lg shadow-primary/20" : "border-border/50 hover:border-primary/40",
-                  node.status === 'running' && "border-yellow-400 animate-pulse",
-                  node.status === 'done' && "border-green-400",
-                  node.status === 'error' && "border-red-400",
-                  "bg-white/95 backdrop-blur-sm"
+                  node.status === 'running' && "border-[color:hsl(var(--accent-warm-hsl)/0.34)] animate-pulse",
+                  node.status === 'done' && "border-[color:hsl(var(--success)/0.4)]",
+                  node.status === 'error' && "border-[color:hsl(var(--error)/0.4)]",
+                  "bg-surface/95 backdrop-blur-sm"
                 )}>
                   <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-white flex-shrink-0", config.color)}>
                     {config.icon}
@@ -278,8 +278,8 @@ export const WorkflowCanvas: React.FC<{
                     <div className="text-xs font-semibold truncate">{node.label}</div>
                     <div className="text-[9px] text-muted-foreground truncate">{config.desc}</div>
                   </div>
-                  {node.status === 'running' && <Loader2 className="w-3 h-3 text-yellow-500 animate-spin" />}
-                  {node.status === 'done' && <Check className="w-3 h-3 text-green-500" />}
+                  {node.status === 'running' && <Loader2 className="w-3 h-3 text-accent-warm animate-spin" />}
+                  {node.status === 'done' && <Check className="w-3 h-3 text-success" />}
                   {/* Connect handle */}
                   <button
                     onClick={(e) => {
@@ -318,7 +318,7 @@ export const WorkflowCanvas: React.FC<{
 
         {/* Right sidebar — node config */}
         {selectedNodeData && (
-          <div className="w-[240px] border-l border-border/30 bg-white/50 backdrop-blur-sm p-3 overflow-y-auto flex-shrink-0">
+          <div className="w-[240px] border-l border-border/30 bg-surface/50 backdrop-blur-sm p-3 overflow-y-auto flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold">Node Config</span>
               <button onClick={() => setSelectedNode(null)} className="text-muted-foreground hover:text-foreground">
@@ -329,7 +329,7 @@ export const WorkflowCanvas: React.FC<{
               <div>
                 <label className="text-[10px] font-medium text-muted-foreground">Label</label>
                 <input
-                  className="w-full mt-0.5 px-2 py-1 text-xs rounded-lg border border-border/50 bg-white/50"
+                  className="w-full mt-0.5 px-2 py-1 text-xs rounded-lg border border-border/50 bg-surface/50"
                   value={selectedNodeData.label}
                   onChange={(e) => setNodes(prev => prev.map(n =>
                     n.id === selectedNode ? { ...n, label: e.target.value } : n
@@ -386,14 +386,14 @@ export const WorkflowCanvas: React.FC<{
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/30 z-50"
+              className="fixed inset-0 bg-[color:var(--nk-scrim)] z-50"
               onClick={() => setShowNodePicker(false)}
             />
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-white/95 backdrop-blur-xl rounded-2xl border border-border/30 shadow-2xl p-4 w-[90vw] max-w-[500px]"
+              className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-surface/95 backdrop-blur-xl rounded-2xl border border-border/30 shadow-2xl p-4 w-[90vw] max-w-[500px]"
             >
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold">Add Workflow Node</h3>

@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import "./styles/theme.css";
 import "./index.css";
 
 // Ensure any legacy cached service workers (< v8.1.0) update & purge stale bundles immediately

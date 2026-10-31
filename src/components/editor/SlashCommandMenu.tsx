@@ -94,24 +94,24 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 w-[280px] max-h-[380px] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-2xl"
+      className="fixed z-50 w-[280px] max-h-[380px] overflow-y-auto rounded-xl border border-subtle bg-surface shadow-2xl"
       style={{ top: adjustedTop, left: adjustedLeft, touchAction: 'manipulation' }}
     >
       {/* Header */}
-      <div className="sticky top-0 bg-white px-3 py-2 border-b border-gray-100 flex items-center gap-2 z-10">
-        <Slash className="w-3.5 h-3.5 text-indigo-500" />
-        <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Block Types</span>
-        <kbd className="ml-auto text-[9px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">ESC</kbd>
+      <div className="sticky top-0 bg-surface px-3 py-2 border-b border-subtle flex items-center gap-2 z-10">
+        <Slash className="w-3.5 h-3.5 text-accent-cool" />
+        <span className="text-[11px] font-bold text-fg-muted uppercase tracking-wider">Block Types</span>
+        <kbd className="ml-auto text-[9px] font-mono text-fg-muted/70 bg-muted px-1.5 py-0.5 rounded">ESC</kbd>
       </div>
 
       {grouped.length === 0 ? (
-        <div className="text-center py-6 text-gray-400 text-sm">No blocks found</div>
+        <div className="text-center py-6 text-fg-muted/70 text-sm">No blocks found</div>
       ) : (
         grouped.map((group) => {
           const catInfo = CATEGORY_LABELS[group.category] || { label: group.category, emoji: '📦' };
           return (
             <div key={group.category}>
-              <div className="px-3 py-1.5 text-[9px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+              <div className="px-3 py-1.5 text-[9px] font-bold text-fg-muted/70 uppercase tracking-wider flex items-center gap-1.5">
                 <span>{catInfo.emoji}</span> {catInfo.label}
               </div>
               {group.commands.map((cmd) => {
@@ -125,28 +125,28 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-1.5 text-left transition-colors",
                       idx === selectedIndex
-                        ? "bg-indigo-50 text-indigo-900"
-                        : "text-gray-700 hover:bg-gray-50"
+                        ? "bg-[color:hsl(var(--primary)/0.12)] text-fg-primary"
+                        : "text-fg-primary hover:bg-muted"
                     )}
                     style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
                   >
                     <div className={cn(
                       "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-sm",
-                      idx === selectedIndex ? "bg-indigo-100" : "bg-gray-100"
+                      idx === selectedIndex ? "bg-[color:hsl(var(--primary)/0.12)]" : "bg-muted"
                     )}>
                       {cmd.icon}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-medium truncate">{cmd.label}</div>
-                      <div className="text-[10px] text-gray-400 truncate">{cmd.description}</div>
+                      <div className="text-[10px] text-fg-muted/70 truncate">{cmd.description}</div>
                     </div>
                     {cmd.shortcut && (
-                      <kbd className="text-[9px] font-mono text-gray-400 bg-gray-100 px-1 py-0.5 rounded">{cmd.shortcut}</kbd>
+                      <kbd className="text-[9px] font-mono text-fg-muted/70 bg-muted px-1 py-0.5 rounded">{cmd.shortcut}</kbd>
                     )}
                   </button>
                 );
               })}
-              <div className="h-px bg-gray-100 my-1 mx-3" />
+              <div className="h-px bg-muted my-1 mx-3" />
             </div>
           );
         })

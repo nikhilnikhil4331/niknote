@@ -157,7 +157,7 @@ export const SemiCircularDial: React.FC<SemiCircularDialProps> = ({
             type="button"
             tabIndex={-1}
             aria-label={`Close ${menuLabel}`}
-            className="fixed inset-0 z-[95] cursor-default bg-black/25 backdrop-blur-[2px]"
+            className="fixed inset-0 z-[95] cursor-default bg-[color:var(--nk-scrim)] backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -179,7 +179,7 @@ export const SemiCircularDial: React.FC<SemiCircularDialProps> = ({
             const p = points[i] ?? { x: 0, y: -radius, angle: 0 };
             const Icon = item.icon;
             const active = activeId === item.id;
-            const tint = item.tint || '#7c3aed';
+            const tint = item.tint || '#7C5F9E';
             return (
               <motion.button
                 key={item.id}
@@ -188,7 +188,7 @@ export const SemiCircularDial: React.FC<SemiCircularDialProps> = ({
                 role="menuitem"
                 aria-label={item.label}
                 onClick={() => pick(item)}
-                className="absolute grid h-12 w-12 place-items-center rounded-full border bg-white/95 shadow-md backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+                className="absolute grid h-12 w-12 place-items-center rounded-full border bg-surface/95 shadow-md backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 style={{
                   left: 0,
                   top: 0,
@@ -209,7 +209,7 @@ export const SemiCircularDial: React.FC<SemiCircularDialProps> = ({
                 <Icon size={20} strokeWidth={2.2} aria-hidden="true" />
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none absolute left-1/2 top-full w-[72px] -translate-x-1/2 pt-1 text-center text-[10px] font-bold leading-tight tracking-tight text-zinc-700"
+                  className="pointer-events-none absolute left-1/2 top-full w-[72px] -translate-x-1/2 pt-1 text-center text-[10px] font-bold leading-tight tracking-tight text-fg-primary"
                   style={{ top: Math.abs(p.angle) < 14 ? 'calc(100% + 10px)' : 'calc(100% + 4px)' }}
                 >
                   {item.label}
@@ -228,8 +228,8 @@ export const SemiCircularDial: React.FC<SemiCircularDialProps> = ({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={toggle}
-        className="relative z-[97] grid h-14 w-14 place-items-center rounded-full border-[3px] border-white text-white shadow-[0_14px_30px_-10px_rgba(109,40,217,0.55)] transition-shadow hover:shadow-[0_16px_34px_-10px_rgba(109,40,217,0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2"
-        style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #ec4899 100%)' }}
+        className="relative z-[97] grid h-14 w-14 place-items-center rounded-full border-[3px] border-[color:hsl(var(--background-primary-hsl))] text-white shadow-[0_14px_30px_-10px_rgba(102,34,73,0.55)] transition-shadow hover:shadow-[0_16px_34px_-10px_rgba(163,64,84,0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        style={{ background: 'linear-gradient(135deg, #44174E 0%, #A34054 55%, #ED9E59 100%)' }}
         whileTap={reduced ? undefined : { scale: 0.9 }}
         whileHover={reduced ? undefined : { scale: 1.05 }}
         transition={DIAL_SPRING}

@@ -352,7 +352,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
                       setAuthTab('login');
                       triggerHaptic('selection');
                     }}
-                    className="min-h-[44px] text-primary font-medium hover:underline"
+                    className="min-h-[44px] text-accent-rose font-medium hover:underline"
                   >
                     Already have an account? Sign in
                   </button>
@@ -458,7 +458,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
                 </div>
                 {!signup && (
                   <div className="text-right -mt-2">
-                    <Link to="/reset-password" className="text-xs text-primary font-medium hover:underline">
+                    <Link to="/reset-password" className="text-xs text-accent-rose font-medium hover:underline">
                       Forgot password?
                     </Link>
                   </div>
@@ -507,7 +507,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
                       setError('');
                       setAuthTab(signup ? 'login' : 'signup');
                     }}
-                    className="min-h-[44px] text-primary font-medium hover:underline"
+                    className="min-h-[44px] text-accent-rose font-medium hover:underline"
                   >
                     {signup ? 'Already have an account? Sign in' : 'New here? Create account'}
                   </button>

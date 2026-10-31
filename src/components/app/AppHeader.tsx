@@ -36,7 +36,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             onChange={(e) => onTitleChange(e.target.value)}
             onBlur={() => setIsEditing(false)}
             onKeyDown={(e) => e.key === 'Enter' && setIsEditing(false)}
-            className="w-full text-sm font-semibold bg-transparent border-b border-primary outline-none text-foreground"
+            className="w-full text-sm font-semibold bg-transparent border-b border-primary outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] text-foreground"
           />
         ) : (
           <button
@@ -60,13 +60,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           className={cn(
             "flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold",
             currentStreak > 0
-              ? "bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400"
+              ? "bg-[color:hsl(var(--accent-warm-hsl)/0.16)] text-accent-warm dark:bg-nk-warm-600 dark:text-accent-warm"
               : "bg-muted/50 text-muted-foreground"
           )}
           animate={currentStreak > 0 ? { scale: [1, 1.05, 1] } : {}}
           transition={{ duration: 0.5, delay: 0.5 }}
         >
-          <Flame className={cn("w-3.5 h-3.5", currentStreak > 0 && "text-orange-500")} />
+          <Flame className={cn("w-3.5 h-3.5", currentStreak > 0 && "text-accent-warm")} />
           <span>{currentStreak}</span>
         </motion.div>
 

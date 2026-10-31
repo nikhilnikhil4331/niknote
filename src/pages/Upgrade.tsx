@@ -101,11 +101,11 @@ const Upgrade = () => {
 
         <div className="text-center space-y-3">
           <div className="flex justify-center"><PlanArt /></div>
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-primary/10 via-orange-500/10 to-pink-500/10 text-xs sm:text-sm font-medium border border-primary/10">
-            <Flame className="h-4 w-4 text-orange-500" />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-primary/10 via-nk-rose/10 to-nk-rose/10 text-xs sm:text-sm font-medium border border-primary/10">
+            <Flame className="h-4 w-4 text-accent-warm" />
             Student Pro ₹49 for 7 days · Premium ₹99 for 30 days
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary-active/70 bg-clip-text text-transparent">
             {isPremium ? "You're Premium! 🎉" : 'Unlock Your Full Potential'}
           </h2>
           <p className="text-muted-foreground max-w-md mx-auto text-sm">
@@ -136,7 +136,7 @@ const Upgrade = () => {
                     onClick={() => setSelected(plan.code as 'weekly' | 'monthly')}
                     className="relative z-10 flex flex-col items-center justify-center py-2.5 px-2 rounded-xl transition-colors"
                   >
-                    <span className={`text-[11px] font-semibold uppercase tracking-wide ${isSel ? 'text-primary' : 'text-muted-foreground'}`}>
+                    <span className={`text-[11px] font-semibold uppercase tracking-wide ${isSel ? 'text-accent-rose' : 'text-muted-foreground'}`}>
                       {plan.label}
                     </span>
                     <span className={`text-sm font-bold mt-0.5 ${isSel ? 'text-foreground' : 'text-muted-foreground'}`}>
@@ -154,14 +154,14 @@ const Upgrade = () => {
               animate={{ opacity: 1, y: 0 }}
               className="relative bg-card rounded-3xl border-2 border-primary shadow-xl shadow-primary/10 p-5"
             >
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-primary/60 rounded-t-3xl" />
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-primary-active/60 rounded-t-3xl" />
               {activePlan.badge && (
                 <div className="absolute top-3 right-3 text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-primary text-primary-foreground">
                   {activePlan.badge}
                 </div>
               )}
               <div className="flex items-center gap-2 mb-3">
-                <activePlan.icon className="h-5 w-5 text-primary" />
+                <activePlan.icon className="h-5 w-5 text-accent-rose" />
                 <span className="font-semibold">{activePlan.label}</span>
               </div>
               <div className="flex items-baseline gap-1 mb-4">
@@ -171,7 +171,7 @@ const Upgrade = () => {
               <ul className="space-y-2.5 mb-2">
                 {activePlan.features.map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
                     <span>{f}</span>
                   </li>
                 ))}
@@ -189,12 +189,12 @@ const Upgrade = () => {
                   className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-card border border-border/30 text-center"
                 >
                   <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <feature.icon className="w-4 h-4 text-primary" />
+                    <feature.icon className="w-4 h-4 text-accent-rose" />
                   </div>
                   <div className="text-xs font-semibold leading-tight">{feature.text}</div>
                   <div
                     className={`text-[10px] leading-tight ${
-                      feature.free ? 'text-muted-foreground' : 'font-semibold text-primary'
+                      feature.free ? 'text-muted-foreground' : 'font-semibold text-accent-rose'
                     }`}
                   >
                     {feature.free ? 'Free for everyone' : 'Premium only'}
@@ -215,7 +215,7 @@ const Upgrade = () => {
                   });
                   navigate(`/payment?plan=${activePlan.code}`);
                 }}
-                className="w-full h-12 rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-base font-semibold"
+                className="w-full h-12 rounded-2xl bg-gradient-to-r from-primary to-primary-active/80 text-base font-semibold"
               >
                 <CreditCard className="w-4 h-4 mr-2" />
                 Get {activePlan.label} — ₹{activePlan.price}{activePlan.period}
@@ -228,7 +228,7 @@ const Upgrade = () => {
               transition={{ delay: 0.4 }}
               className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl p-5 border border-primary/20 text-center space-y-2"
             >
-              <Users className="h-7 w-7 text-primary mx-auto" />
+              <Users className="h-7 w-7 text-accent-rose mx-auto" />
               <h3 className="text-base font-bold">For teachers &amp; institutions</h3>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">
                 Explore the free editor and contact us about your institution’s needs.
@@ -263,7 +263,7 @@ const Upgrade = () => {
               });
               navigate(`/payment?plan=${activePlan.code}`);
             }}
-            className="w-full h-12 rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-sm font-semibold shadow-lg shadow-primary/20"
+            className="w-full h-12 rounded-2xl bg-gradient-to-r from-primary to-primary-active/80 text-sm font-semibold shadow-lg shadow-primary/20"
           >
             <CreditCard className="w-4 h-4 mr-2" />
             Continue — ₹{activePlan.price}{activePlan.period}

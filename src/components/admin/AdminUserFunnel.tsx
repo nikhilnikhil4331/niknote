@@ -26,11 +26,11 @@ interface AdminUserFunnelProps {
 
 export const AdminUserFunnel: React.FC<AdminUserFunnelProps> = ({ data, loading }) => {
   const steps: FunnelStep[] = [
-    { name: 'Visit', icon: Eye, count: data.visits, color: 'bg-blue-500' },
-    { name: 'Signup', icon: UserPlus, count: data.signups, color: 'bg-green-500' },
-    { name: 'First Page', icon: FileText, count: data.firstPage, color: 'bg-indigo-500' },
-    { name: 'First Export', icon: Download, count: data.firstExport, color: 'bg-purple-500' },
-    { name: 'Premium', icon: Crown, count: data.premium, color: 'bg-amber-500' },
+    { name: 'Visit', icon: Eye, count: data.visits, color: 'bg-[color:hsl(var(--accent-cool-solid-hsl))]' },
+    { name: 'Signup', icon: UserPlus, count: data.signups, color: 'bg-success' },
+    { name: 'First Page', icon: FileText, count: data.firstPage, color: 'bg-primary' },
+    { name: 'First Export', icon: Download, count: data.firstExport, color: 'bg-primary' },
+    { name: 'Premium', icon: Crown, count: data.premium, color: 'bg-nk-warm-600' },
   ];
 
   const calculateDropoff = (current: number, previous: number): string => {
@@ -62,7 +62,7 @@ export const AdminUserFunnel: React.FC<AdminUserFunnelProps> = ({ data, loading 
     <Card className="rounded-xl">
       <CardHeader className="pb-2">
         <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-          <TrendingDown className="w-4 h-4 text-primary" />
+          <TrendingDown className="w-4 h-4 text-accent-rose" />
           User Conversion Funnel
         </CardTitle>
       </CardHeader>
@@ -156,7 +156,7 @@ export const AdminUserFunnel: React.FC<AdminUserFunnelProps> = ({ data, loading 
                         <span className="text-destructive">
                           {calculateDropoff(step.count, previousStep.count)} dropoff
                         </span>
-                        <span className="text-green-500">
+                        <span className="text-success">
                           {calculateConversion(step.count, previousStep.count)} conversion
                         </span>
                       </div>

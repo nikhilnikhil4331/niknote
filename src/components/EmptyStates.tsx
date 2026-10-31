@@ -21,7 +21,7 @@ export function EmptyState({ icon, title, description, action, className }: Empt
     <div className={`flex flex-col items-center justify-center py-12 px-6 text-center ${className || ''}`}>
       {/* Animated icon container */}
       <div className="w-20 h-20 rounded-3xl bg-primary/5 border border-primary/10 flex items-center justify-center mb-5 animate-float">
-        {icon || <FileText className="w-9 h-9 text-primary/60" />}
+        {icon || <FileText className="w-9 h-9 text-accent-rose/60" />}
       </div>
       
       <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
@@ -48,7 +48,7 @@ export function EmptyEditor() {
     <EmptyState
       icon={
         <div className="relative">
-          <Pen className="w-9 h-9 text-primary/60" />
+          <Pen className="w-9 h-9 text-accent-rose/60" />
           <div className="absolute -right-1 -top-1 w-3 h-3 bg-primary/20 rounded-full animate-pen-flow" />
         </div>
       }
@@ -61,7 +61,7 @@ export function EmptyEditor() {
 export function EmptyPreview() {
   return (
     <EmptyState
-      icon={<BookOpen className="w-9 h-9 text-primary/60" />}
+      icon={<BookOpen className="w-9 h-9 text-accent-rose/60" />}
       title="Your Notes Will Appear Here"
       description="Write something on the left and watch your handwriting come to life on this paper"
     />
@@ -71,7 +71,7 @@ export function EmptyPreview() {
 export function EmptyNotebooks({ onCreateNew }: { onCreateNew: () => void }) {
   return (
     <EmptyState
-      icon={<FileText className="w-9 h-9 text-primary/60" />}
+      icon={<FileText className="w-9 h-9 text-accent-rose/60" />}
       title="No Notebooks Yet"
       description="Create your first notebook and start writing beautiful handwritten notes"
       action={{
@@ -85,7 +85,7 @@ export function EmptyNotebooks({ onCreateNew }: { onCreateNew: () => void }) {
 export function EmptySearchResult({ query }: { query: string }) {
   return (
     <EmptyState
-      icon={<Search className="w-9 h-9 text-primary/60" />}
+      icon={<Search className="w-9 h-9 text-accent-rose/60" />}
       title="No Results Found"
       description={`We couldn't find anything matching "${query}". Try a different search term.`}
     />

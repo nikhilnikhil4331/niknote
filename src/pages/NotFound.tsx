@@ -19,7 +19,7 @@ const NotFound = () => {
         {/* Handwritten-style 404 */}
         <div className="mb-6">
           <span 
-            className="text-8xl sm:text-[120px] leading-none font-bold text-primary/80"
+            className="text-8xl sm:text-[120px] leading-none font-bold text-accent-rose/80"
             style={{ fontFamily: "'Caveat', cursive", transform: 'rotate(-3deg)', display: 'inline-block' }}
           >
             404

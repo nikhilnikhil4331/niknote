@@ -179,7 +179,7 @@ export const HandwritingAnalyzer: React.FC<HandwritingAnalyzerProps> = ({ onAppl
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <Camera className="w-8 h-8 text-primary" />
+                  <Camera className="w-8 h-8 text-accent-rose" />
                 </motion.div>
                 <div>
                   <p className="font-semibold text-sm">Upload Handwriting Sample</p>
@@ -190,15 +190,15 @@ export const HandwritingAnalyzer: React.FC<HandwritingAnalyzerProps> = ({ onAppl
 
                 {/* Tips */}
                 <div className="grid grid-cols-3 gap-2 w-full mt-1">
-                  <div className="bg-green-500/10 rounded-lg p-2 text-center">
+                  <div className="bg-success/10 rounded-lg p-2 text-center">
                     <span className="text-lg">✅</span>
                     <p className="text-[9px] text-muted-foreground mt-0.5">Clear & bright</p>
                   </div>
-                  <div className="bg-green-500/10 rounded-lg p-2 text-center">
+                  <div className="bg-success/10 rounded-lg p-2 text-center">
                     <span className="text-lg">📝</span>
                     <p className="text-[9px] text-muted-foreground mt-0.5">2-3 lines</p>
                   </div>
-                  <div className="bg-red-500/10 rounded-lg p-2 text-center">
+                  <div className="bg-error/10 rounded-lg p-2 text-center">
                     <span className="text-lg">❌</span>
                     <p className="text-[9px] text-muted-foreground mt-0.5">Blurry/dark</p>
                   </div>
@@ -224,13 +224,13 @@ export const HandwritingAnalyzer: React.FC<HandwritingAnalyzerProps> = ({ onAppl
           >
             {/* Thumbnail */}
             <div className="relative rounded-xl overflow-hidden border border-border h-32">
-              <img src={previewImage} alt="Sample" className="w-full h-full object-contain bg-white/50" />
+              <img src={previewImage} alt="Sample" className="w-full h-full object-contain bg-surface/50" />
               <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
             </div>
 
             {/* Animated messages */}
             <Card className="p-6 bg-primary/5 border-primary/20 text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+              <Loader2 className="w-8 h-8 animate-spin text-accent-rose mx-auto mb-4" />
               <AnimatePresence mode="wait">
                 <motion.div
                   key={messageIndex}
@@ -264,7 +264,7 @@ export const HandwritingAnalyzer: React.FC<HandwritingAnalyzerProps> = ({ onAppl
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
               >
-                <Sparkles className="w-8 h-8 text-primary mx-auto mb-2" />
+                <Sparkles className="w-8 h-8 text-accent-rose mx-auto mb-2" />
               </motion.div>
               <h3 className="font-bold text-base">Your Handwriting Style is Ready! ✨</h3>
               <p className="text-xs text-muted-foreground mt-1">
@@ -274,9 +274,9 @@ export const HandwritingAnalyzer: React.FC<HandwritingAnalyzerProps> = ({ onAppl
 
             {/* Quality warning */}
             {analysisResult.qualityWarning && (
-              <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                <p className="text-[11px] text-amber-700 dark:text-amber-400">{analysisResult.qualityWarning}</p>
+              <div className="flex items-start gap-2 p-2.5 rounded-lg bg-nk-warm-600/10 border border-[color:hsl(var(--accent-warm-hsl)/0.2)]">
+                <AlertTriangle className="w-4 h-4 text-accent-warm flex-shrink-0 mt-0.5" />
+                <p className="text-[11px] text-accent-warm dark:text-accent-warm">{analysisResult.qualityWarning}</p>
               </div>
             )}
 
@@ -284,10 +284,10 @@ export const HandwritingAnalyzer: React.FC<HandwritingAnalyzerProps> = ({ onAppl
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-xl overflow-hidden border border-border">
                 <p className="text-[9px] font-semibold text-center py-1 bg-muted/50 text-muted-foreground">ORIGINAL</p>
-                <img src={previewImage} alt="Original" className="w-full h-24 object-contain bg-white" />
+                <img src={previewImage} alt="Original" className="w-full h-24 object-contain bg-surface" />
               </div>
-              <div className="rounded-xl overflow-hidden border border-primary/30 bg-white">
-                <p className="text-[9px] font-semibold text-center py-1 bg-primary/10 text-primary">GENERATED</p>
+              <div className="rounded-xl overflow-hidden border border-primary/30 bg-surface">
+                <p className="text-[9px] font-semibold text-center py-1 bg-primary/10 text-accent-rose">GENERATED</p>
                 <div className="p-2 h-24 flex items-center justify-center">
                   <p 
                     className={cn(

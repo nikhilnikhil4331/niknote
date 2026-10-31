@@ -33,7 +33,7 @@ const AUDIT_CONFIGS: Record<AuditType, {
   bugs: {
     label: "Bug Audit",
     icon: Bug,
-    color: "from-red-500 to-orange-600",
+    color: "from-error to-nk-rose",
     instruction: `You are NikNote's Bug Hunter. Given the app context below, produce a structured bug audit report:
 1. Top 5 likely bug areas, each with: severity (P0/P1/P2), symptom, likely cause, suggested fix.
 2. Regression risks introduced by recent AI + editor changes.
@@ -44,7 +44,7 @@ Format as clean markdown with headings.`,
   performance: {
     label: "Performance Audit",
     icon: Zap,
-    color: "from-yellow-500 to-amber-600",
+    color: "from-nk-warm-600 to-nk-rose",
     instruction: `You are NikNote's Performance Auditor. Produce a performance audit:
 1. Likely bottlenecks (bundle, renders, DB, network) with evidence hooks.
 2. Quick wins (< 1 day each) and structural bets.
@@ -55,7 +55,7 @@ Format as markdown.`,
   security: {
     label: "Security Audit",
     icon: Shield,
-    color: "from-emerald-500 to-teal-600",
+    color: "from-success to-success/70",
     instruction: `You are NikNote's Security Engineer. Produce a security audit:
 1. Auth surfaces and risks.
 2. RLS review checklist for user_owned tables.
@@ -68,7 +68,7 @@ Format as markdown.`,
   ux: {
     label: "UX Audit",
     icon: Sparkles,
-    color: "from-pink-500 to-fuchsia-600",
+    color: "from-nk-purple via-nk-rose to-nk-amber",
     instruction: `You are NikNote's UX Designer. Produce a UX audit:
 1. Friction points across onboarding → note → export → upgrade.
 2. Mobile-specific issues.
@@ -80,7 +80,7 @@ Format as markdown.`,
   ai: {
     label: "AI Audit",
     icon: ClipboardCheck,
-    color: "from-indigo-500 to-purple-600",
+    color: "from-nk-purple to-nk-rose",
     instruction: `You are NikNote's AI Reviewer. Produce an AI-quality audit:
 1. Hallucination risks in current agents.
 2. Prompt improvements for the Guru/Teacher agent.
@@ -147,7 +147,7 @@ export default function AuditReports() {
       <header className="sticky top-0 z-20 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
           <Link to="/" className="p-2 -ml-2 rounded-lg hover:bg-muted"><ArrowLeft className="w-5 h-5" /></Link>
-          <ClipboardCheck className="w-5 h-5 text-primary" />
+          <ClipboardCheck className="w-5 h-5 text-accent-rose" />
           <h1 className="font-semibold">Audit Reports</h1>
         </div>
       </header>
@@ -175,7 +175,7 @@ export default function AuditReports() {
                     <Icon className="w-5 h-5 text-white" />
                   </div>
                   <div className="text-sm font-semibold">{cfg.label}</div>
-                  <div className="mt-2 flex items-center gap-1 text-xs text-primary">
+                  <div className="mt-2 flex items-center gap-1 text-xs text-accent-rose">
                     {isRunning ? <><Loader2 className="w-3 h-3 animate-spin" /> Running…</> : <><Play className="w-3 h-3" /> Run</>}
                   </div>
                 </motion.button>
@@ -250,7 +250,7 @@ export default function AuditReports() {
                     </div>
                   </div>
                   {runningType === active.type && (
-                    <span className="ml-auto text-xs text-primary flex items-center gap-1.5">
+                    <span className="ml-auto text-xs text-accent-rose flex items-center gap-1.5">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" /> Streaming…
                     </span>
                   )}

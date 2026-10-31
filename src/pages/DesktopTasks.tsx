@@ -12,7 +12,7 @@ import { useTasks, TASK_COLUMNS, TASK_TAGS, todayKey, type TaskStatus, type NikT
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-const tagColorOf = (name?: string) => TASK_TAGS.find((x) => x.name === name)?.color ?? '#766A86';
+const tagColorOf = (name?: string) => TASK_TAGS.find((x) => x.name === name)?.color ?? '#5C3A6E';
 
 const DesktopTasks: React.FC = () => {
   const { tasks, addTask, updateTask, removeTask, restoreTask, toggleDone } = useTasks();
@@ -72,7 +72,7 @@ const DesktopTasks: React.FC = () => {
               {openCount} open · {doneToday} completed today
             </p>
           </div>
-          <span className="ml-auto nd-chip" style={{ background: '#ECE7FF', color: '#6C5CE7' }}>
+          <span className="ml-auto nd-chip" style={{ background: 'hsl(var(--primary) / 0.14)', color: 'hsl(var(--accent-cool-hsl))' }}>
             <ListChecks size={12} /> Drag cards between columns
           </span>
         </div>
@@ -162,7 +162,7 @@ const DesktopTasks: React.FC = () => {
                         {!t.tag && !editingId && (
                           <label
                             className="relative inline-flex items-center gap-1 cursor-pointer text-[10.5px] font-semibold rounded-full px-2 py-[2px] opacity-0 group-hover:opacity-100 transition-opacity"
-                            style={{ background: '#F4F3FA', color: 'var(--nd-text-3)' }}
+                            style={{ background: 'hsl(var(--surface-hover-hsl))', color: 'var(--nd-text-3)' }}
                             title="Add category"
                           >
                             <Tag size={10} /> tag
@@ -181,8 +181,8 @@ const DesktopTasks: React.FC = () => {
                           className="relative inline-flex items-center gap-1 cursor-pointer text-[11px] font-semibold rounded-full px-2 py-[2px] transition-colors"
                           style={
                             due
-                              ? { background: due.hot ? '#FFE1E6' : '#F1EFFF', color: due.hot ? '#D93A5C' : '#6C5CE7' }
-                              : { background: '#F4F3FA', color: 'var(--nd-text-3)' }
+                              ? { background: due.hot ? '#F7E9E6' : '#F1E8F5', color: due.hot ? '#A62B36' : '#662249' }
+                              : { background: 'hsl(var(--surface-hover-hsl))', color: 'var(--nd-text-3)' }
                           }
                           title="Set due date"
                         >

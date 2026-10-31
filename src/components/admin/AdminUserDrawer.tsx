@@ -159,7 +159,7 @@ export const AdminUserDrawer: React.FC<AdminUserDrawerProps> = ({
             <div className="flex items-center justify-between p-4 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-bold text-primary">
+                  <span className="text-lg font-bold text-accent-rose">
                     {(user.display_name || 'U').charAt(0).toUpperCase()}
                   </span>
                 </div>

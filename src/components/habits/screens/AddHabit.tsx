@@ -6,17 +6,18 @@ import { useRoutine } from '@/components/habits/RoutineProvider';
 import { TopBar } from '@/components/habits/ui';
 import { HABIT_CATEGORIES, HABIT_COLORS, HABIT_ICONS, habitUnit, type HabitType } from '@/lib/trackers';
 import { haptic } from '@/hooks/useHaptics';
+import { readableInk } from '@/lib/readableInk';
 
 const DAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const TYPE_LABEL: Record<HabitType, string> = { times: 'Times', water: 'Glasses', sleep: 'Hours', minutes: 'Minutes' };
 const QUICK: { name: string; icon: string; category: (typeof HABIT_CATEGORIES)[number]['id']; type: HabitType; target: number; color: string }[] = [
-  { name: 'Drink Water', icon: '💧', category: 'health', type: 'water', target: 8, color: '#0ea5e9' },
-  { name: 'Sleep 8h', icon: '🌙', category: 'health', type: 'sleep', target: 8, color: '#8b5cf6' },
-  { name: 'Workout 30m', icon: '💪', category: 'health', type: 'minutes', target: 30, color: '#22c55e' },
-  { name: 'Read 20m', icon: '📖', category: 'study', type: 'minutes', target: 20, color: '#6366f1' },
-  { name: 'Meditate 10m', icon: '🧘', category: 'mind', type: 'minutes', target: 10, color: '#ec4899' },
-  { name: 'Journal', icon: '✍️', category: 'mind', type: 'times', target: 1, color: '#f59e0b' },
+  { name: 'Drink Water', icon: '💧', category: 'health', type: 'water', target: 8, color: '#7C5F9E' },
+  { name: 'Sleep 8h', icon: '🌙', category: 'health', type: 'sleep', target: 8, color: '#7C5F9E' },
+  { name: 'Workout 30m', icon: '💪', category: 'health', type: 'minutes', target: 30, color: '#157F52' },
+  { name: 'Read 20m', icon: '📖', category: 'study', type: 'minutes', target: 20, color: '#7C5F9E' },
+  { name: 'Meditate 10m', icon: '🧘', category: 'mind', type: 'minutes', target: 10, color: '#A34054' },
+  { name: 'Journal', icon: '✍️', category: 'mind', type: 'times', target: 1, color: '#C4762F' },
 ];
 
 export function AddHabitScreen({ go }: { go: (s: { name: string; id?: string }) => void }) {
@@ -117,15 +118,15 @@ export function AddHabitScreen({ go }: { go: (s: { name: string; id?: string }) 
         {/* name */}
         <motion.div key={shake} initial={false} animate={shake ? { x: [0, -9, 9, -5, 5, 0] } : { x: 0 }} transition={{ duration: 0.4 }}>
           <label className="flex h-13 items-center gap-2.5 rounded-2xl px-4 nnh-chip"
-            style={{ height: 52, borderColor: nameError ? '#f43f5e' : name ? color : undefined }}>
+            style={{ height: 52, borderColor: nameError ? '#A62B36' : name ? color : undefined }}>
             <Wand2 size={17} style={{ color: name ? color : 'var(--nnh-sub)' }} />
             <input value={name} onChange={e => setName(e.target.value)} placeholder="Habit name…" aria-label="Habit name"
               maxLength={40}
-              className="flex-1 bg-transparent text-[14px] font-medium outline-none"
+              className="flex-1 bg-transparent text-[14px] font-medium outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]"
               style={{ color: 'var(--nnh-ink)' }} />
             <span className="text-[10px] font-bold tabular-nums" style={{ color: 'var(--nnh-sub)' }}>{name.length}/40</span>
           </label>
-          {nameError && <p className="ml-1 mt-1 text-[11px] font-semibold text-rose-500">Give your habit a name ✨</p>}
+          {nameError && <p className="ml-1 mt-1 text-[11px] font-semibold text-accent-rose">Give your habit a name ✨</p>}
         </motion.div>
 
         {/* category */}
@@ -206,13 +207,13 @@ export function AddHabitScreen({ go }: { go: (s: { name: string; id?: string }) 
                 return (
                   <button key={i} type="button" aria-label={DAY_NAMES[i]} aria-pressed={on} onClick={() => toggleDay(i)}
                     className="grid aspect-square place-items-center rounded-full border-2 text-[11px] font-extrabold"
-                    style={on ? { background: color, borderColor: color, color: '#fff' } : { borderColor: 'var(--nnh-line)', color: 'var(--nnh-sub)' }}>
+                    style={on ? { background: color, borderColor: color, color: readableInk(color) } : { borderColor: 'var(--nnh-line)', color: 'var(--nnh-sub)' }}>
                     {l}
                   </button>
                 );
               })}
             </div>
-            {daysError && <p className="mt-2 text-[11px] font-semibold text-rose-500">Pick at least one day ✨</p>}
+            {daysError && <p className="mt-2 text-[11px] font-semibold text-accent-rose">Pick at least one day ✨</p>}
           </div>
 
           <div>
@@ -222,7 +223,7 @@ export function AddHabitScreen({ go }: { go: (s: { name: string; id?: string }) 
                 {(['times', 'water', 'sleep', 'minutes'] as HabitType[]).map(t => (
                   <button key={t} type="button" onClick={() => applyType(t)} aria-pressed={type === t}
                     className="rounded-lg px-2 py-1 text-[10px] font-bold"
-                    style={type === t ? { background: color, color: '#fff' } : { background: 'var(--nnh-card-soft)', color: 'var(--nnh-sub)' }}>
+                    style={type === t ? { background: color, color: readableInk(color) } : { background: 'var(--nnh-card-soft)', color: 'var(--nnh-sub)' }}>
                     {TYPE_LABEL[t]}
                   </button>
                 ))}
@@ -255,7 +256,7 @@ export function AddHabitScreen({ go }: { go: (s: { name: string; id?: string }) 
                   className="flex items-center gap-1 overflow-hidden text-[11px] font-bold" style={{ color: 'var(--nnh-sub)' }}>
                   <Clock size={12} />
                   <input type="time" value={reminder} onChange={e => setReminder(e.target.value)} aria-label="Reminder time"
-                    className="w-[68px] bg-transparent text-[11px] font-bold outline-none" style={{ color: 'var(--nnh-ink)' }} />
+                    className="w-[68px] bg-transparent text-[11px] font-bold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]" style={{ color: 'var(--nnh-ink)' }} />
                 </motion.label>
               )}
             </AnimatePresence>
@@ -263,7 +264,7 @@ export function AddHabitScreen({ go }: { go: (s: { name: string; id?: string }) 
               onClick={() => { haptic('selection'); setReminderOn(v => !v); }}
               className="flex w-[46px] items-center rounded-full p-0.5 transition-colors"
               style={{ height: 26, background: reminderOn ? color : 'var(--nnh-line)', justifyContent: reminderOn ? 'flex-end' : 'flex-start' }}>
-              <motion.span layout className="block rounded-full bg-white shadow" style={{ width: 22, height: 22 }} />
+              <motion.span layout className="block rounded-full bg-surface shadow" style={{ width: 22, height: 22 }} />
             </button>
           </div>
         </section>

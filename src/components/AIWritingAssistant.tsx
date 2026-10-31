@@ -20,7 +20,7 @@ interface AIWritingAssistantProps {
 
 type AssistMode = 'expand' | 'summarize' | 'improve' | 'generate' | 'graph';
 
-const GRAPH_COLORS = ['#7c3aed', '#2563eb', '#059669', '#e11d48', '#d97706'];
+const GRAPH_COLORS = ['#A34054', '#ED9E59', '#E9BCB9', '#662249', '#5C3A6E'];
 
 export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
   onInsertText,
@@ -188,7 +188,7 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <motion.span
-              className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#F4F1FC]"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[color:hsl(var(--primary)/0.06)]"
               animate={isLoading ? { scale: [1, 1.12, 1] } : { scale: 1 }}
               transition={isLoading ? { duration: 1.1, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }}
             >

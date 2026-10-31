@@ -76,7 +76,7 @@ export const PricingTeaser: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <span className="text-sm font-semibold text-primary uppercase tracking-wider">Pricing</span>
+          <span className="text-sm font-semibold text-accent-rose uppercase tracking-wider">Pricing</span>
           <h2 className="text-3xl sm:text-4xl font-bold mt-3 mb-4 text-foreground">
             Simple pricing, on your terms
           </h2>
@@ -95,12 +95,12 @@ export const PricingTeaser: React.FC = () => {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className={`relative rounded-3xl p-8 border transition-all duration-300 ${
                 plan.highlighted
-                  ? 'bg-gradient-to-b from-primary/5 to-accent/5 border-primary/30 shadow-xl shadow-primary/10 scale-[1.02]'
+                  ? 'bg-gradient-to-b from-primary/5 to-nk-rose/5 border-primary/30 shadow-xl shadow-primary/10 scale-[1.02]'
                   : 'bg-card border-border/50 hover:border-primary/20 hover:shadow-lg'
               }`}
             >
               {plan.highlighted && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-primary to-blue-600 text-white text-xs font-bold flex items-center gap-1">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-primary to-nk-rose text-white text-xs font-bold flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
                   Best value
                 </div>
@@ -117,7 +117,7 @@ export const PricingTeaser: React.FC = () => {
               <ul className="space-y-2.5 mb-8">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2 text-sm text-foreground">
-                    <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                    <Check className="w-4 h-4 text-accent-rose flex-shrink-0 mt-0.5" />
                     {feature}
                   </li>
                 ))}
@@ -143,7 +143,7 @@ export const PricingTeaser: React.FC = () => {
                 }}
                 className={`w-full rounded-full h-12 font-semibold ${
                   plan.highlighted
-                    ? 'bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-500 text-white shadow-lg shadow-primary/20'
+                    ? 'bg-gradient-to-r from-primary to-nk-rose hover:from-primary/90 hover:to-nk-rose text-white shadow-lg shadow-primary/20'
                     : ''
                 }`}
                 variant={plan.highlighted ? 'default' : 'outline'}

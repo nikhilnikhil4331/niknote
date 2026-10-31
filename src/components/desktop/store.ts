@@ -66,13 +66,13 @@ export type TaskStatus = 'todo' | 'doing' | 'done';
 export type TaskPriority = 'low' | 'normal' | 'high';
 
 export const TASK_TAGS: { name: string; color: string }[] = [
-  { name: 'Study', color: '#7028D9' },
-  { name: 'Learning', color: '#D92C9B' },
-  { name: 'Work', color: '#2563EB' },
-  { name: 'Health', color: '#159B68' },
-  { name: 'Reading', color: '#EAA23B' },
-  { name: 'Personal', color: '#F26D9B' },
-  { name: 'Other', color: '#766A86' },
+  { name: 'Study', color: '#662249' },
+  { name: 'Learning', color: '#A34054' },
+  { name: 'Work', color: '#5C3A6E' },
+  { name: 'Health', color: '#157F52' },
+  { name: 'Reading', color: '#C4762F' },
+  { name: 'Personal', color: '#A34054' },
+  { name: 'Other', color: '#5C3A6E' },
 ];
 
 export interface NikTask {
@@ -88,9 +88,9 @@ export interface NikTask {
 }
 
 export const TASK_COLUMNS: { id: TaskStatus; label: string; bg: string; dot: string }[] = [
-  { id: 'todo', label: 'To Do', bg: '#FFF3F4', dot: '#F26D8D' },
-  { id: 'doing', label: 'In Progress', bg: '#F1EFFF', dot: '#7C6CF0' },
-  { id: 'done', label: 'Done', bg: '#ECFBF3', dot: '#1FA97A' },
+  { id: 'todo', label: 'To Do', bg: '#FFF3F4', dot: '#A34054' },
+  { id: 'doing', label: 'In Progress', bg: '#F1E8F5', dot: '#7C5F9E' },
+  { id: 'done', label: 'Done', bg: '#ECFBF3', dot: '#157F52' },
 ];
 
 const TASKS_KEY = 'niknote.desktop.tasks.v1';
@@ -225,16 +225,16 @@ export interface NikSpace {
 }
 
 export const DEFAULT_SPACES: NikSpace[] = [
-  { name: 'Personal', color: '#7C6CF0' },
-  { name: 'College', color: '#3B82F6' },
-  { name: 'Work', color: '#F59E0B' },
-  { name: 'Projects', color: '#EC4899' },
-  { name: 'Ideas', color: '#10B981' },
-  { name: 'Archive', color: '#94A3B8' },
+  { name: 'Personal', color: '#7C5F9E' },
+  { name: 'College', color: '#5C3A6E' },
+  { name: 'Work', color: '#C4762F' },
+  { name: 'Projects', color: '#A34054' },
+  { name: 'Ideas', color: '#157F52' },
+  { name: 'Archive', color: '#7B6F8A' },
 ];
 
 const SPACES_KEY = 'niknote.desktop.spaces.v1';
-const SPACE_COLORS = ['#7C6CF0', '#3B82F6', '#F59E0B', '#EC4899', '#10B981', '#06B6D4', '#F26D8D', '#8B5CF6'];
+const SPACE_COLORS = ['#7C5F9E', '#5C3A6E', '#C4762F', '#A34054', '#157F52', '#7C5F9E', '#A34054', '#7C5F9E'];
 
 export function useSpaces(extraFolders: string[] = []) {
   const [custom, setCustom] = useLocalStore<NikSpace[]>(SPACES_KEY, []);
@@ -322,10 +322,10 @@ function seedHabits(): NikHabit[] {
     return days;
   };
   return [
-    { id: 'habit-study', name: 'Study', emoji: '📚', color: '#22C55E', target: 4, unit: 'sessions', days: mkDays([1, 1, 1]) },
-    { id: 'habit-read', name: 'Read', emoji: '📖', color: '#F5A623', target: 3, unit: 'sessions', days: mkDays([1, 0, 1]) },
-    { id: 'habit-workout', name: 'Workout', emoji: '🏋️', color: '#38BDF8', target: 1, unit: 'session', days: mkDays([0, 0, 1]) },
-    { id: 'habit-sleep', name: 'Sleep', emoji: '😴', color: '#8B7CF6', target: 8, unit: 'hours', days: mkDays([0, 0, 7]) },
+    { id: 'habit-study', name: 'Study', emoji: '📚', color: '#157F52', target: 4, unit: 'sessions', days: mkDays([1, 1, 1]) },
+    { id: 'habit-read', name: 'Read', emoji: '📖', color: '#C4762F', target: 3, unit: 'sessions', days: mkDays([1, 0, 1]) },
+    { id: 'habit-workout', name: 'Workout', emoji: '🏋️', color: '#A688C9', target: 1, unit: 'session', days: mkDays([0, 0, 1]) },
+    { id: 'habit-sleep', name: 'Sleep', emoji: '😴', color: '#7C5F9E', target: 8, unit: 'hours', days: mkDays([0, 0, 7]) },
   ];
 }
 
@@ -485,11 +485,11 @@ export interface PersistedTimer {
 
 /** Focus-session categories with brand accents (Study/Work/Reading/Personal/Other). */
 export const FOCUS_CATEGORIES: { name: string; color: string }[] = [
-  { name: 'Study', color: '#7028D9' },
-  { name: 'Work', color: '#2563EB' },
-  { name: 'Reading', color: '#EAA23B' },
-  { name: 'Personal', color: '#F26D9B' },
-  { name: 'Other', color: '#766A86' },
+  { name: 'Study', color: '#662249' },
+  { name: 'Work', color: '#5C3A6E' },
+  { name: 'Reading', color: '#C4762F' },
+  { name: 'Personal', color: '#A34054' },
+  { name: 'Other', color: '#5C3A6E' },
 ];
 
 // ---------------- Linked task (shared between task lists and the timer) ----------------

@@ -91,7 +91,7 @@ export default function ResetPassword() {
               <Button type="submit" className="w-full h-12" disabled={busy}>{busy ? <Loader2 className="animate-spin" size={18} /> : 'Send reset link'}</Button>
             </form>
           )}
-          {stage === 'sent' && <div role="status" className="text-center space-y-3"><Mail className="mx-auto text-primary" size={34} /><p className="text-sm text-muted-foreground">If an account exists for <strong className="text-foreground break-all">{email}</strong>, a reset link is on its way. Check spam too. Open only the newest email — each link works once.</p></div>}
+          {stage === 'sent' && <div role="status" className="text-center space-y-3"><Mail className="mx-auto text-accent-rose" size={34} /><p className="text-sm text-muted-foreground">If an account exists for <strong className="text-foreground break-all">{email}</strong>, a reset link is on its way. Check spam too. Open only the newest email — each link works once.</p></div>}
           {stage === 'checking' && <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-6"><Loader2 className="animate-spin" size={18} /> Checking your link…</div>}
           {stage === 'expired' && (
             <div className="space-y-3 text-center">
@@ -107,7 +107,7 @@ export default function ResetPassword() {
               <Button type="submit" className="w-full h-12" disabled={busy}>{busy ? <Loader2 className="animate-spin" size={18} /> : 'Save new password'}</Button>
             </form>
           )}
-          {stage === 'done' && <div role="status" className="text-center space-y-2"><Check className="mx-auto text-primary" size={36} /><p className="text-sm text-muted-foreground">Password updated. Opening your workspace…</p></div>}
+          {stage === 'done' && <div role="status" className="text-center space-y-2"><Check className="mx-auto text-accent-rose" size={36} /><p className="text-sm text-muted-foreground">Password updated. Opening your workspace…</p></div>}
         </div>
       </section>
     </main>
