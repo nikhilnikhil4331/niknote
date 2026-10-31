@@ -23,7 +23,7 @@ const institutionPlans = [
     period: "",
     seats: "For individual teachers and students",
     icon: School,
-    color: "from-blue-500 to-indigo-600",
+    color: "from-nk-purple to-nk-rose",
     action: "editor",
     features: [
       "Create handwritten worksheets and notes",
@@ -38,7 +38,7 @@ const institutionPlans = [
     seats: "For one account; ₹99 for 30 days is also available",
     icon: GraduationCap,
     highlighted: true,
-    color: "from-purple-500 to-pink-600",
+    color: "from-nk-purple to-nk-rose",
     action: "premium",
     features: [
       "AI writing assistant and voice dictation",
@@ -52,7 +52,7 @@ const institutionPlans = [
     period: "",
     seats: "Discuss your institution's needs",
     icon: Building2,
-    color: "from-orange-500 to-red-600",
+    color: "from-nk-warm-600 to-error/70",
     action: "contact",
     features: [
       "Tell us about your teachers and students",
@@ -152,7 +152,7 @@ const B2BPage = () => {
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <button onClick={() => navigate('/')} className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary-active/60 flex items-center justify-center">
               <GraduationCap className="h-4 w-4 text-primary-foreground" />
             </div>
             <span className="font-bold text-base">NikNote</span>
@@ -169,14 +169,14 @@ const B2BPage = () => {
 
       {/* Hero */}
       <section className="relative overflow-hidden py-16 sm:py-24 px-4">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-nk-rose/5" />
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-sm font-medium mb-6"
           >
-            <Building2 className="h-4 w-4 text-primary" />
+            <Building2 className="h-4 w-4 text-accent-rose" />
             NikNote for Education
           </motion.div>
           <motion.h1
@@ -186,7 +186,7 @@ const B2BPage = () => {
             className="text-3xl sm:text-5xl font-extrabold leading-tight mb-4"
           >
             Handwritten worksheets,
-            <span className="block bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-primary to-nk-rose bg-clip-text text-transparent">
               without the hand-copying
             </span>
           </motion.h1>
@@ -235,7 +235,7 @@ const B2BPage = () => {
               { value: "30 days", label: "Premium pass" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-2xl font-bold text-primary">{stat.value}</div>
+                <div className="text-2xl font-bold text-accent-rose">{stat.value}</div>
                 <div className="text-xs text-muted-foreground">{stat.label}</div>
               </div>
             ))}
@@ -264,7 +264,7 @@ const B2BPage = () => {
                 transition={{ delay: i * 0.1 }}
                 className="p-5 rounded-2xl bg-card border border-border/30 hover:border-primary/30 hover:shadow-lg transition-all"
               >
-                <item.icon className="h-8 w-8 text-primary mb-3" />
+                <item.icon className="h-8 w-8 text-accent-rose mb-3" />
                 <h3 className="font-semibold text-base mb-1">{item.title}</h3>
                 <p className="text-sm text-muted-foreground">{item.desc}</p>
               </motion.div>
@@ -291,7 +291,7 @@ const B2BPage = () => {
                 }`}
               >
                 {plan.highlighted && (
-                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-purple-600" />
+                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-nk-rose" />
                 )}
                 <div className="p-6">
                   <div className="flex items-center gap-3 mb-4">
@@ -315,13 +315,13 @@ const B2BPage = () => {
                   <ul className="space-y-2 mb-6">
                     {plan.features.map((f) => (
                       <li key={f} className="flex items-start gap-2 text-sm">
-                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle2 className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                         <span>{f}</span>
                       </li>
                     ))}
                   </ul>
                   <Button
-                    className={`w-full rounded-xl ${plan.highlighted ? 'bg-gradient-to-r from-primary to-primary/80' : ''}`}
+                    className={`w-full rounded-xl ${plan.highlighted ? 'bg-gradient-to-r from-primary to-primary-active/80' : ''}`}
                     variant={plan.highlighted ? 'default' : 'outline'}
                     onClick={() => plan.action === 'editor' ? navigate('/studio') : plan.action === 'premium' ? navigate('/payment?plan=weekly') : document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
                   >
@@ -357,8 +357,8 @@ const B2BPage = () => {
             ))}
           </div>
 
-          <div className="mt-8 p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5">
-            <div className="text-sm font-semibold text-amber-700 mb-2">
+          <div className="mt-8 p-5 rounded-2xl border border-[color:hsl(var(--accent-warm-hsl)/0.3)] bg-nk-warm-600/5">
+            <div className="text-sm font-semibold text-accent-warm mb-2">
               Not included in any plan today
             </div>
             <p className="text-xs text-muted-foreground mb-3">
@@ -410,7 +410,7 @@ const B2BPage = () => {
       </section>
 
       {/* Contact Form */}
-      <section id="contact" className="py-16 px-4 bg-gradient-to-br from-primary/5 to-purple-500/5">
+      <section id="contact" className="py-16 px-4 bg-gradient-to-br from-primary/5 to-nk-rose/5">
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-3">Get Started Today</h2>
           <p className="text-center text-muted-foreground mb-8">Tell us what your teachers or students need. The free editor is available now.</p>
@@ -483,7 +483,7 @@ const B2BPage = () => {
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-primary to-primary/80"
+              className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-primary to-primary-active/80"
             >
               {submitting ? "Submitting..." : "Contact us"}
               <ArrowRight className="h-4 w-4 ml-2" />

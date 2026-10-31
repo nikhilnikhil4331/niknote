@@ -7,26 +7,26 @@
 
 .pdfs-root {
   --pdfs-bg: hsl(var(--background));
-  --pdfs-workspace: hsl(220 14% 92%);
+  --pdfs-workspace: hsl(var(--background-tertiary-hsl));
   --pdfs-surface: hsl(var(--card));
   --pdfs-surface-raised: hsl(var(--card));
   --pdfs-border: hsl(var(--border));
   --pdfs-text: hsl(var(--foreground));
   --pdfs-text-2: hsl(var(--muted-foreground));
   --pdfs-accent: hsl(var(--primary));
-  --pdfs-accent-soft: hsl(var(--primary) / 0.1);
+  --pdfs-accent-soft: hsl(var(--primary) / 0.14);
   --pdfs-accent-text: hsl(var(--primary-foreground));
-  --pdfs-danger: hsl(0 72% 51%);
-  --pdfs-danger-soft: hsl(0 84% 60% / 0.1);
-  --pdfs-page-shadow: 0 1px 2px hsl(222 47% 11% / 0.08), 0 10px 32px hsl(222 47% 11% / 0.13);
-  --pdfs-bar-shadow: 0 4px 24px hsl(222 47% 11% / 0.12), 0 1px 4px hsl(222 47% 11% / 0.08);
+  --pdfs-danger: hsl(var(--error));
+  --pdfs-danger-soft: hsl(var(--error) / 0.12);
+  --pdfs-page-shadow: 0 1px 2px hsl(var(--text-primary-hsl) / 0.08), 0 10px 32px hsl(var(--text-primary-hsl) / 0.13);
+  --pdfs-bar-shadow: 0 4px 24px hsl(var(--text-primary-hsl) / 0.12), 0 1px 4px hsl(var(--text-primary-hsl) / 0.08);
   --pdfs-ease: cubic-bezier(0.22, 1, 0.36, 1);
   background: var(--pdfs-bg);
   color: var(--pdfs-text);
 }
 
 .dark .pdfs-root {
-  --pdfs-workspace: hsl(222 30% 12%);
+  --pdfs-workspace: hsl(var(--background-secondary-hsl));
   --pdfs-page-shadow: 0 1px 2px hsl(0 0% 0% / 0.4), 0 12px 36px hsl(0 0% 0% / 0.45);
   --pdfs-bar-shadow: 0 4px 24px hsl(0 0% 0% / 0.45), 0 1px 4px hsl(0 0% 0% / 0.35);
 }

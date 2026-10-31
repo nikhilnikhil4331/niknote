@@ -100,34 +100,34 @@ export const TableBlock: React.FC<TableBlockProps> = ({
   };
 
   return (
-    <div className="table-block rounded-xl border border-gray-200 overflow-hidden bg-white">
+    <div className="table-block rounded-xl border border-subtle overflow-hidden bg-surface">
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50/80 border-b border-gray-200">
+            <tr className="bg-muted/80 border-b border-subtle">
               <th className="w-8 px-1 py-2" /> {/* Row number */}
               {headers.map((header, colIdx) => (
-                <th key={colIdx} className="relative group border-r border-gray-200 last:border-r-0">
+                <th key={colIdx} className="relative group border-r border-subtle last:border-r-0">
                   <div className="flex items-center gap-1 px-2 py-1.5">
                     <input
                       value={header}
                       onChange={(e) => updateHeader(colIdx, e.target.value)}
-                      className="bg-transparent border-0 outline-none text-xs font-semibold text-gray-600 w-full"
+                      className="bg-transparent border-0 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] text-xs font-semibold text-fg-secondary w-full"
                       placeholder={`Column ${colIdx + 1}`}
                     />
                     <button
                       onClick={() => toggleSort(colIdx)}
                       className={cn(
                         "p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity",
-                        sortColumn === colIdx ? "opacity-100 text-indigo-500" : "text-gray-400 hover:text-gray-600"
+                        sortColumn === colIdx ? "opacity-100 text-accent-cool" : "text-fg-muted/70 hover:text-fg-secondary"
                       )}
                     >
                       <ArrowUpDown className="w-3 h-3" />
                     </button>
                     <button
                       onClick={() => setShowColumnMenu(showColumnMenu === colIdx ? null : colIdx)}
-                      className="p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600"
+                      className="p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity text-fg-muted/70 hover:text-fg-secondary"
                     >
                       <MoreHorizontal className="w-3 h-3" />
                     </button>
@@ -139,11 +139,11 @@ export const TableBlock: React.FC<TableBlockProps> = ({
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
-                        className="absolute right-0 top-full z-50 w-32 py-1 bg-white rounded-lg shadow-lg border border-gray-200"
+                        className="absolute right-0 top-full z-50 w-32 py-1 bg-surface rounded-lg shadow-lg border border-subtle"
                       >
                         <button
                           onClick={() => { deleteColumn(colIdx); setShowColumnMenu(null); }}
-                          className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-red-500 hover:bg-red-50"
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-error hover:bg-[color:hsl(var(--error)/0.14)]"
                         >
                           <Trash2 className="w-3 h-3" /> Delete column
                         </button>
@@ -153,7 +153,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({
                 </th>
               ))}
               <th className="w-8 px-1">
-                <button onClick={addColumn} className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors">
+                <button onClick={addColumn} className="p-1 rounded hover:bg-surface-hover text-fg-muted/70 hover:text-fg-secondary transition-colors">
                   <Plus className="w-3.5 h-3.5" />
                 </button>
               </th>
@@ -161,19 +161,19 @@ export const TableBlock: React.FC<TableBlockProps> = ({
           </thead>
           <tbody>
             {sortedRows.map((row, rowIdx) => (
-              <tr key={rowIdx} className="border-b border-gray-100 group hover:bg-gray-50/50">
-                <td className="px-1 py-1 text-[10px] text-gray-300 text-center">{rowIdx + 1}</td>
+              <tr key={rowIdx} className="border-b border-subtle group hover:bg-muted/50">
+                <td className="px-1 py-1 text-[10px] text-fg-muted/70 text-center">{rowIdx + 1}</td>
                 {row.map((cell, colIdx) => (
-                  <td key={colIdx} className="border-r border-gray-100 last:border-r-0 px-0.5 py-0.5">
+                  <td key={colIdx} className="border-r border-subtle last:border-r-0 px-0.5 py-0.5">
                     <input
                       value={cell}
                       onChange={(e) => updateCell(rowIdx, colIdx, e.target.value)}
                       onFocus={() => setSelectedCell({ row: rowIdx, col: colIdx })}
                       className={cn(
-                        "w-full bg-transparent border-0 outline-none text-xs px-2 py-1.5 rounded",
+                        "w-full bg-transparent border-0 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] text-xs px-2 py-1.5 rounded",
                         selectedCell?.row === rowIdx && selectedCell?.col === colIdx
-                          ? "bg-indigo-50 ring-1 ring-indigo-200"
-                          : "hover:bg-gray-50"
+                          ? "bg-[color:hsl(var(--primary)/0.12)] ring-1 ring-primary"
+                          : "hover:bg-muted"
                       )}
                       placeholder="—"
                     />
@@ -182,7 +182,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({
                 <td className="px-0.5 py-0.5">
                   <button
                     onClick={() => deleteRow(rowIdx)}
-                    className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-50 text-gray-300 hover:text-red-500 transition-all"
+                    className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-[color:hsl(var(--error)/0.14)] text-fg-muted/70 hover:text-error transition-all"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -194,10 +194,10 @@ export const TableBlock: React.FC<TableBlockProps> = ({
       </div>
 
       {/* Add row button */}
-      <div className="px-2 py-1.5 border-t border-gray-100">
+      <div className="px-2 py-1.5 border-t border-subtle">
         <button
           onClick={addRow}
-          className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+          className="flex items-center gap-1.5 text-[11px] text-fg-muted/70 hover:text-fg-secondary transition-colors"
         >
           <Plus className="w-3 h-3" />
           New row
@@ -205,13 +205,13 @@ export const TableBlock: React.FC<TableBlockProps> = ({
       </div>
 
       {/* AI Auto-fill */}
-      <div className="px-2 py-1.5 border-t border-gray-50 flex items-center gap-2">
-        <button className="flex items-center gap-1.5 text-[10px] text-indigo-500 hover:text-indigo-700 transition-colors font-medium">
+      <div className="px-2 py-1.5 border-t border-subtle flex items-center gap-2">
+        <button className="flex items-center gap-1.5 text-[10px] text-accent-cool hover:text-fg-secondary transition-colors font-medium">
           <Sparkles className="w-3 h-3" />
           AI Auto-fill
         </button>
-        <span className="text-[10px] text-gray-300">|</span>
-        <button className="flex items-center gap-1.5 text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
+        <span className="text-[10px] text-fg-muted/70">|</span>
+        <button className="flex items-center gap-1.5 text-[10px] text-fg-muted/70 hover:text-fg-secondary transition-colors">
           <Filter className="w-3 h-3" />
           Filter
         </button>

@@ -13,9 +13,9 @@ const BLOCK_PRESENTATION: Record<string, { fontSize?: string; fontWeight?: numbe
   h2: { fontSize: '1.3em', fontWeight: 700 },
   h3: { fontSize: '1.12em', fontWeight: 700 },
   bullet: { marker: '•' },
-  callout: { className: 'border-l-4 border-emerald-400/80 bg-emerald-50/60 -ml-1 rounded-r-lg' },
-  equation: { fontFamily: "'Georgia', 'Times New Roman', serif", fontWeight: 500, className: 'bg-indigo-50/70 rounded-lg -ml-1 border border-indigo-100' },
-  code: { fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: '0.82em', className: 'bg-zinc-900/[0.045] rounded-lg -ml-1 border border-zinc-900/10' },
+  callout: { className: 'border-l-4 border-[color:hsl(var(--success)/0.8)] bg-[color:hsl(var(--success)/0.6)] -ml-1 rounded-r-lg' },
+  equation: { fontFamily: "'Georgia', 'Times New Roman', serif", fontWeight: 500, className: 'bg-[color:hsl(var(--primary)/0.7)] rounded-lg -ml-1 border border-[color:hsl(var(--primary)/0.3)]' },
+  code: { fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: '0.82em', className: 'bg-nk-midnight/[0.045] rounded-lg -ml-1 border border-active/10' },
   divider: { className: '' },
 };
 
@@ -228,7 +228,7 @@ const EditableLine: React.FC<EditableLineProps> = ({
           textarea hidden but focusable so Backspace can still remove the line */}
       {isGraph && graphSVG && (
         <div
-          className="min-w-0 flex-1 rounded-xl border border-border/60 bg-white/60 p-2 shadow-sm"
+          className="min-w-0 flex-1 rounded-xl border border-border/60 bg-surface/60 p-2 shadow-sm"
           dangerouslySetInnerHTML={{ __html: graphSVG }}
         />
       )}
@@ -266,7 +266,7 @@ const EditableLine: React.FC<EditableLineProps> = ({
         enterKeyHint="next"
         wrap={bt === 'code' ? 'off' : 'off'}
         className={cn(
-          "block flex-1 bg-transparent border-none outline-none font-handwriting-1",
+          "block flex-1 bg-transparent border-none outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] font-handwriting-1",
           "text-lg sm:text-xl leading-[48px] tracking-wide",
           "resize-none overflow-hidden whitespace-pre-wrap break-words",
           "placeholder:text-muted-foreground/30 placeholder:italic",
@@ -448,7 +448,7 @@ export const LineBasedEditor: React.FC<LineBasedEditorProps> = ({
       className={cn(
         "nn-magnify relative rounded-2xl border overflow-hidden",
         "bg-paper/90 backdrop-blur-xl",
-        "border-white/15 shadow-lg",
+        "border-[color:var(--nk-glass-border)] shadow-lg",
         "transition-all duration-200",
         keyboardVisible && "pb-4"
       )}

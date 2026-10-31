@@ -183,7 +183,7 @@ export async function syncLocalNotesWithCloud(
         .insert({
           user_id: userId,
           title: item.title || 'Untitled Note',
-          cover_color: item.cover_color || '#8b5cf6',
+          cover_color: item.cover_color || '#7C5F9E',
           page_style: item.page_style || 'ruled',
           page_size: item.page_size || 'a4',
           tags: Array.isArray(item.tags) && item.tags.length ? item.tags : ['Notes'],
@@ -273,7 +273,7 @@ export async function syncLocalNotesWithCloud(
             id: cn.id,
             title: cn.title || 'Untitled Note',
             blocks: pagesByNotebook.get(cn.id) || [createBlock('text', '')],
-            cover_color: cn.cover_color || '#8b5cf6',
+            cover_color: cn.cover_color || '#7C5F9E',
             page_style: cn.page_style || 'ruled',
             page_size: cn.page_size || 'a4',
             tags: cn.tags || ['Notes'],

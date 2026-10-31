@@ -17,7 +17,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({ value, onChange }) => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
           <div className="section-icon">
-            <Edit3 className="w-4 h-4 text-primary" />
+            <Edit3 className="w-4 h-4 text-accent-rose" />
           </div>
           <div>
             <h3 className="font-semibold text-sm text-foreground">Text Editor</h3>

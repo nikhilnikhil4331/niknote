@@ -182,7 +182,7 @@ export default function PdfPageView({
     if (selected) {
       const b = annotationBounds(selected);
       ctx.save();
-      ctx.strokeStyle = '#2563eb';
+      ctx.strokeStyle = '#5C3A6E';
       ctx.setLineDash([6, 4]);
       ctx.lineWidth = Math.max(1.5, plan.outputScale);
       const pad = 5 * plan.outputScale;

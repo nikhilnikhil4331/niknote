@@ -159,11 +159,11 @@ export const FisheyeCameraBackground: React.FC<FisheyeCameraBackgroundProps> = (
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="absolute bottom-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-xl border border-white/10"
+            className="absolute bottom-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[color:var(--nk-scrim)] backdrop-blur-xl border border-[color:var(--nk-glass-border)]"
           >
             {hasPermission ? (
               <>
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-error animate-pulse" />
                 <span className="text-[10px] text-white/60 font-medium tracking-wider uppercase">
                   Live Mirror
                 </span>

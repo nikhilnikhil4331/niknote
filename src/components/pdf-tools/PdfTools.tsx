@@ -63,8 +63,8 @@ function OptionChip({
       onClick={onClick}
       className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
         active
-          ? 'border-rose-500 bg-rose-500 text-white shadow-sm'
-          : 'border-border/70 bg-background/60 text-muted-foreground hover:border-rose-400/60 hover:text-foreground'
+          ? 'border-[color:hsl(var(--accent-rose-hsl)/0.36)] bg-primary text-white shadow-sm'
+          : 'border-border/70 bg-background/60 text-muted-foreground hover:border-[color:hsl(var(--accent-rose-hsl)/0.6)] hover:text-foreground'
       }`}
     >
       {children}
@@ -120,7 +120,7 @@ function FileRow({
 }: { name: string; meta: string; onRemove?: () => void; leading?: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/70 px-3 py-2">
-      {leading ?? <FileText className="h-5 w-5 shrink-0 text-rose-500" />}
+      {leading ?? <FileText className="h-5 w-5 shrink-0 text-accent-rose" />}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{name}</p>
         <p className="text-[11px] text-muted-foreground">{meta}</p>
@@ -146,9 +146,9 @@ function DropZone({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full flex-col items-center gap-2 rounded-3xl border-2 border-dashed border-rose-300/70 bg-rose-50/40 px-4 py-7 text-center transition hover:border-rose-400 hover:bg-rose-50/70 dark:border-rose-500/30 dark:bg-rose-500/5 dark:hover:bg-rose-500/10"
+      className="flex w-full flex-col items-center gap-2 rounded-3xl border-2 border-dashed border-[color:hsl(var(--accent-rose-hsl)/0.7)] bg-[color:hsl(var(--accent-rose-hsl)/0.4)] px-4 py-7 text-center transition hover:border-[color:hsl(var(--accent-rose-hsl)/0.36)] hover:bg-[color:hsl(var(--accent-rose-hsl)/0.7)] dark:border-[color:hsl(var(--accent-rose-hsl)/0.3)] dark:bg-primary/5 dark:hover:bg-primary/10"
     >
-      {busy ? <Loader2 className="h-6 w-6 animate-spin text-rose-500" /> : <Icon className="h-6 w-6 text-rose-500" />}
+      {busy ? <Loader2 className="h-6 w-6 animate-spin text-accent-rose" /> : <Icon className="h-6 w-6 text-accent-rose" />}
       <span className="text-sm font-semibold">{title}</span>
       <span className="text-xs text-muted-foreground">{subtitle}</span>
     </button>
@@ -172,13 +172,13 @@ function ResultCard({ result, extra, mime = 'application/pdf' }: { result: Resul
   };
 
   return (
-    <div className="mt-3 rounded-2xl border border-emerald-400/50 bg-emerald-50/60 p-3 dark:bg-emerald-500/10">
+    <div className="mt-3 rounded-2xl border border-[color:hsl(var(--success)/0.5)] bg-[color:hsl(var(--success)/0.6)] p-3 dark:bg-success/10">
       <div className="flex items-center gap-2">
-        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+        <CheckCircle2 className="h-4 w-4 text-success" />
         <p className="min-w-0 flex-1 truncate text-sm font-semibold">{result.name}</p>
         <span className="shrink-0 text-xs text-muted-foreground">{formatBytes(result.bytes.byteLength)}</span>
       </div>
-      {extra ? <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">{extra}</p> : null}
+      {extra ? <p className="mt-1 text-xs text-success dark:text-success">{extra}</p> : null}
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Button size="sm" onClick={() => share('save')} disabled={saving} className="gap-1.5">
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
@@ -454,7 +454,7 @@ function CompressPanel() {
 
 // ── 4. Watermark ────────────────────────────────────────────
 
-const WATERMARK_COLORS = ['#ef4444', '#0ea5e9', '#111827', '#16a34a', '#a855f7'];
+const WATERMARK_COLORS = ['#A62B36', '#7C5F9E', '#111827', '#16a34a', '#7C5F9E'];
 
 function WatermarkPanel() {
   const [file, setFile] = useState<PdfPick | null>(null);
@@ -948,7 +948,7 @@ function OcrPanel() {
               <p className="text-xs font-medium">{progress.label}</p>
               <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-rose-500 transition-all"
+                  className="h-full rounded-full bg-primary transition-all"
                   style={{
                     width: `${Math.round(
                       (progress.stage === 'page'
@@ -1100,7 +1100,7 @@ export default function PdfTools() {
   const active = TABS.find((item) => item.id === tab) || TABS[0];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-500/10 via-background to-background pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-nk-rose/10 via-background to-background pb-24">
       <header className="sticky top-0 z-20 border-b border-border/50 bg-background/80 px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
           <Link
@@ -1116,7 +1116,7 @@ export default function PdfTools() {
           </div>
           <Link
             to="/pdf-editor"
-            className="rounded-full border border-rose-400/50 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-500/20 dark:text-rose-300"
+            className="rounded-full border border-[color:hsl(var(--accent-rose-hsl)/0.5)] bg-primary/10 px-3 py-1.5 text-xs font-semibold text-accent-rose transition hover:bg-primary/20 dark:text-accent-rose"
           >
             Edit & sign
           </Link>
@@ -1125,7 +1125,7 @@ export default function PdfTools() {
 
       <main className="mx-auto max-w-3xl px-4 pt-4">
         <div className="mb-4 flex items-start gap-2 rounded-2xl border border-border/60 bg-card/60 p-3 text-xs text-muted-foreground">
-          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent-rose" />
           <p>
             Sab kuch tumhare phone me hi hota hai — koi file upload nahi hoti. Merge, split, compress,
             Word, Excel, watermark aur password sab <strong className="font-semibold">offline</strong> chalte hain;
@@ -1153,11 +1153,11 @@ export default function PdfTools() {
         <Card className="mt-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Iske baad</p>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            <Link to="/pdf-editor" className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 text-sm transition hover:border-rose-400/60">
+            <Link to="/pdf-editor" className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 text-sm transition hover:border-[color:hsl(var(--accent-rose-hsl)/0.6)]">
               <span className="font-semibold">PDF Studio</span>
               <span className="block text-[11px] text-muted-foreground">Pen, signature, stamps, page edit</span>
             </Link>
-            <Link to="/documents" className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 text-sm transition hover:border-rose-400/60">
+            <Link to="/documents" className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 text-sm transition hover:border-[color:hsl(var(--accent-rose-hsl)/0.6)]">
               <span className="font-semibold">Documents</span>
               <span className="block text-[11px] text-muted-foreground">Scan → OCR → NikAI summary</span>
             </Link>

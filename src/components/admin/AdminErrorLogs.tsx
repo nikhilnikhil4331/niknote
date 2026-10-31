@@ -25,10 +25,10 @@ interface AdminErrorLogsProps {
 }
 
 const severityConfig: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
-  critical: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-500/10' },
-  error: { icon: AlertTriangle, color: 'text-orange-500', bg: 'bg-orange-500/10' },
-  warning: { icon: AlertCircle, color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
-  info: { icon: Info, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+  critical: { icon: XCircle, color: 'text-error', bg: 'bg-error/10' },
+  error: { icon: AlertTriangle, color: 'text-accent-warm', bg: 'bg-nk-warm-600/10' },
+  warning: { icon: AlertCircle, color: 'text-accent-warm', bg: 'bg-nk-warm-600/10' },
+  info: { icon: Info, color: 'text-accent-cool', bg: 'bg-[color:hsl(var(--accent-cool-hsl)/0.1)]' },
 };
 
 function formatTimeAgo(dateString: string): string {
@@ -72,7 +72,7 @@ export const AdminErrorLogs: React.FC<AdminErrorLogsProps> = ({
               <div className="text-center text-muted-foreground py-8">Loading...</div>
             ) : errors.length === 0 ? (
               <div className="text-center py-8">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-2" />
+                <CheckCircle className="w-12 h-12 text-success mx-auto mb-2" />
                 <p className="text-muted-foreground">No errors reported</p>
               </div>
             ) : (
@@ -103,7 +103,7 @@ export const AdminErrorLogs: React.FC<AdminErrorLogsProps> = ({
                             </Badge>
                           )}
                           {error.resolved && (
-                            <Badge className="text-xs bg-green-500">Resolved</Badge>
+                            <Badge className="text-xs bg-success">Resolved</Badge>
                           )}
                         </div>
                         <p className="text-sm mt-1 text-muted-foreground line-clamp-2">

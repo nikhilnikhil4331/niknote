@@ -53,7 +53,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
               className="h-9 w-auto object-contain"
               loading="eager"
             />
-            <span className="hidden lg:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-orange-500/10 text-[10px] font-bold text-orange-600 border border-orange-200">
+            <span className="hidden lg:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-nk-warm-600/10 text-[10px] font-bold text-accent-warm border border-[color:hsl(var(--accent-warm-hsl)/0.34)]">
               🇮🇳 Made in India
             </span>
           </motion.a>
@@ -78,7 +78,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
               variant="ghost"
               size="icon"
               onClick={handleShareWhatsApp}
-              className="rounded-xl hover:bg-green-50 text-green-600 hidden sm:flex"
+              className="rounded-xl hover:bg-[color:hsl(var(--success)/0.14)] text-success hidden sm:flex"
               title="Share on WhatsApp"
             >
               <MessageCircle className="w-5 h-5" />
@@ -101,7 +101,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
             {/* CTA */}
             <Button
               onClick={onStartWriting}
-              className="hidden sm:flex h-10 px-5 rounded-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/25 transition-all duration-300 font-medium text-sm"
+              className="hidden sm:flex h-10 px-5 rounded-full bg-gradient-to-r from-primary to-primary-active/90 hover:from-primary/90 hover:to-primary shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/25 transition-all duration-300 font-medium text-sm"
             >
               Start Free ✨
             </Button>
@@ -140,14 +140,14 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
             <div className="pt-2 flex gap-2">
               <Button
                 onClick={() => { onStartWriting(); setMobileMenuOpen(false); }}
-                className="flex-1 h-11 rounded-full bg-gradient-to-r from-primary to-primary/90 font-medium"
+                className="flex-1 h-11 rounded-full bg-gradient-to-r from-primary to-primary-active/90 font-medium"
               >
                 Start Free ✨
               </Button>
               <Button
                 onClick={() => { handleShareWhatsApp(); setMobileMenuOpen(false); }}
                 variant="outline"
-                className="h-11 rounded-full border-green-500 text-green-600 hover:bg-green-50"
+                className="h-11 rounded-full border-[color:hsl(var(--success)/0.4)] text-success hover:bg-[color:hsl(var(--success)/0.14)]"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Share

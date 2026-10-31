@@ -157,9 +157,9 @@ const NotebookPage = memo<{
         {/* Vintage paper effects */}
         {isVintage && (
           <>
-            <div className="absolute inset-0 pointer-events-none opacity-20" style={{ background: 'linear-gradient(to bottom right, rgba(120, 53, 15, 0.2), transparent, rgba(120, 53, 15, 0.1))' }} />
-            <div className="absolute top-0 left-0 right-0 h-2" style={{ background: 'linear-gradient(to bottom, rgba(120, 53, 15, 0.1), transparent)' }} />
-            <div className="absolute bottom-0 left-0 right-0 h-3" style={{ background: 'linear-gradient(to top, rgba(120, 53, 15, 0.15), transparent)' }} />
+            <div className="absolute inset-0 pointer-events-none opacity-20" style={{ background: 'linear-gradient(to bottom right, rgba(68, 23, 78, 0.2), transparent, rgba(68, 23, 78, 0.1))' }} />
+            <div className="absolute top-0 left-0 right-0 h-2" style={{ background: 'linear-gradient(to bottom, rgba(68, 23, 78, 0.1), transparent)' }} />
+            <div className="absolute bottom-0 left-0 right-0 h-3" style={{ background: 'linear-gradient(to top, rgba(68, 23, 78, 0.15), transparent)' }} />
           </>
         )}
 

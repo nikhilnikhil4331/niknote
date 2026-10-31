@@ -338,7 +338,7 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
             className="flex flex-col gap-4"
           >
             {/* Sample upload */}
-            <div className="rounded-xl border border-border/60 bg-white/50 p-3">
+            <div className="rounded-xl border border-border/60 bg-surface/50 p-3">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-xs font-semibold text-foreground">1 · Handwriting sample</h4>
                 <Button variant="outline" size="sm" className="h-7 px-2.5 text-[11px] gap-1.5" onClick={() => imgInputRef.current?.click()}>
@@ -353,7 +353,7 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
                 />
               </div>
               {sampleUrl ? (
-                <img src={sampleUrl} alt="Handwriting sample" className="max-h-36 w-full object-contain rounded-lg border border-border/40 bg-white" />
+                <img src={sampleUrl} alt="Handwriting sample" className="max-h-36 w-full object-contain rounded-lg border border-border/40 bg-surface" />
               ) : (
                 <button
                   onClick={() => imgInputRef.current?.click()}
@@ -366,7 +366,7 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
             </div>
 
             {/* Consent */}
-            <label className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-white/50 p-3 cursor-pointer">
+            <label className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-surface/50 p-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={consent}
@@ -393,7 +393,7 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
                     <p className="text-[11px] text-muted-foreground leading-snug">{analysis.styleDescription}</p>
                   </div>
                   {analysis.confidence != null && (
-                    <span className="flex-shrink-0 rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[10px] font-semibold">
+                    <span className="flex-shrink-0 rounded-full bg-[color:hsl(var(--success)/0.14)] text-success px-2 py-0.5 text-[10px] font-semibold">
                       {Math.round(analysis.confidence * 100)}% match
                     </span>
                   )}
@@ -442,7 +442,7 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
               ) : (
                 <ul className="space-y-2">
                   {profiles.map(p => (
-                    <li key={p.id} className={`rounded-xl border p-2.5 flex items-center gap-2.5 ${activeProfileId === p.id ? 'border-primary/40 bg-primary/[0.04]' : 'border-border/60 bg-white/50'}`}>
+                    <li key={p.id} className={`rounded-xl border p-2.5 flex items-center gap-2.5 ${activeProfileId === p.id ? 'border-primary/40 bg-primary/[0.04]' : 'border-border/60 bg-surface/50'}`}>
                       {p.thumb ? (
                         <img src={p.thumb} alt="" className="w-12 h-12 rounded-lg object-cover border border-border/40 flex-shrink-0" />
                       ) : (
@@ -471,7 +471,7 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
             className="flex flex-col gap-3"
           >
             {/* PDF upload */}
-            <div className="rounded-xl border border-border/60 bg-white/50 p-3">
+            <div className="rounded-xl border border-border/60 bg-surface/50 p-3">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-xs font-semibold text-foreground">1 · Upload PDF (text PDF)</h4>
                 <Button variant="outline" size="sm" className="h-7 px-2.5 text-[11px] gap-1.5" onClick={() => pdfInputRef.current?.click()}>
@@ -482,7 +482,7 @@ export const HandwritingStudio: React.FC<HandwritingStudioProps> = ({ onInsertSt
               {pdfLoading ? (
                 <div className="h-20 flex items-center justify-center gap-2 text-muted-foreground text-xs"><Loader2 className="w-4 h-4 animate-spin" /> Reading PDF offline in your browser…</div>
               ) : pdfError ? (
-                <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5">{pdfError}</p>
+                <p className="text-[11px] text-accent-warm bg-[color:hsl(var(--accent-warm-hsl)/0.16)] border border-[color:hsl(var(--accent-warm-hsl)/0.34)] rounded-lg p-2.5">{pdfError}</p>
               ) : pdfName ? (
                 <p className="text-[11px] text-foreground">{pdfName} — <strong>{pdfPages.length}</strong> page{pdfPages.length !== 1 && 's'} with text, {totalPdfChars.toLocaleString()} characters</p>
               ) : (

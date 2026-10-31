@@ -67,7 +67,7 @@ const DesktopShared: React.FC = () => {
         {/* Paste link */}
         <div className="nd-card p-5 mt-6 nd-anim nd-anim-1">
           <div className="flex items-center gap-2 text-[14px] font-bold" style={{ color: 'var(--nd-text)' }}>
-            <Link2 size={16} color="#6C5CE7" /> Open a shared note
+            <Link2 size={16} color="#662249" /> Open a shared note
           </div>
           <div className="flex gap-2 mt-3">
             <input
@@ -90,11 +90,11 @@ const DesktopShared: React.FC = () => {
         {history.length > 0 && (
           <div className="nd-card mt-4 nd-anim nd-anim-2">
             <div className="flex items-center gap-2 px-5 pt-4 text-[13px] font-bold" style={{ color: 'var(--nd-text)' }}>
-              <History size={14} color="#6C5CE7" /> Recently opened shared notes
+              <History size={14} color="#662249" /> Recently opened shared notes
             </div>
             <div className="p-2.5">
               {history.map((h) => (
-                <div key={h.url} className="flex items-center gap-2.5 rounded-xl px-3 py-2 hover:bg-[#F8F7FF] transition-colors group">
+                <div key={h.url} className="flex items-center gap-2.5 rounded-xl px-3 py-2 hover:bg-surface-secondary transition-colors group">
                   <button className="flex-1 min-w-0 text-left" onClick={() => openLink(h.url)}>
                     <span className="block text-[13px] font-medium truncate" style={{ color: 'var(--nd-text)' }}>{h.url}</span>
                     <span className="block text-[11px]" style={{ color: 'var(--nd-text-3)' }}>
@@ -117,9 +117,9 @@ const DesktopShared: React.FC = () => {
         {/* How sharing works */}
         <div className="grid grid-cols-3 gap-4 mt-4 pb-10 nd-anim nd-anim-3">
           {[
-            { icon: MousePointerClick, title: '1 · Open any note', sub: 'Pick a note from My Notes to open it in the editor.', color: '#6C5CE7', bg: '#ECE7FF' },
-            { icon: Share2, title: '2 · Tap Share', sub: 'Use the Share button in the editor to copy a link or export.', color: '#2F6FED', bg: '#E1EEFF' },
-            { icon: Users, title: '3 · Anyone can view', sub: 'Friends open your link and read the note — no app needed.', color: '#149A66', bg: '#DCF5E7' },
+            { icon: MousePointerClick, title: '1 · Open any note', sub: 'Pick a note from My Notes to open it in the editor.', color: '#662249', bg: 'hsl(var(--primary) / 0.14)' },
+            { icon: Share2, title: '2 · Tap Share', sub: 'Use the Share button in the editor to copy a link or export.', color: '#5C3A6E', bg: 'hsl(var(--accent-cool-hsl) / 0.16)' },
+            { icon: Users, title: '3 · Anyone can view', sub: 'Friends open your link and read the note — no app needed.', color: '#157F52', bg: 'hsl(var(--success) / 0.16)' },
           ].map((s) => {
             const Icon = s.icon;
             return (

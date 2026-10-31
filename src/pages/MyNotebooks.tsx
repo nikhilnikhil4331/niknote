@@ -21,8 +21,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 const COVER_COLORS = [
-  '#3B82F6', '#8B5CF6', '#EC4899', '#EF4444',
-  '#F59E0B', '#10B981', '#06B6D4', '#6366F1',
+  '#5C3A6E', '#7C5F9E', '#A34054', '#A62B36',
+  '#C4762F', '#157F52', '#7C5F9E', '#7C5F9E',
 ];
 
 const MyNotebooks: React.FC = () => {
@@ -253,7 +253,7 @@ const MyNotebooks: React.FC = () => {
                     >
                       <BookOpen className="w-5 h-5" style={{ color: nb.cover_color }} />
                     </div>
-                    <h3 className="font-semibold text-base mb-0.5 truncate group-hover:text-primary transition-colors">
+                    <h3 className="font-semibold text-base mb-0.5 truncate group-hover:text-accent-rose transition-colors">
                       {nb.title}
                     </h3>
                     <p className="text-xs text-muted-foreground line-clamp-1 mb-3">
@@ -266,7 +266,7 @@ const MyNotebooks: React.FC = () => {
                         {nb.tags.slice(0, 3).map((t) => (
                           <span
                             key={t}
-                            className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary"
+                            className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-accent-rose"
                           >
                             #{t}
                           </span>

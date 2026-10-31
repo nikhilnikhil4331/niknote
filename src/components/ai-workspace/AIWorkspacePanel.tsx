@@ -22,10 +22,10 @@ export const AIWorkspacePanel: React.FC<AIWorkspacePanelProps> = ({
   return (
     <>
       <div
-        className="fixed inset-0 z-[74] bg-black/25 backdrop-blur-[1px]"
+        className="fixed inset-0 z-[74] bg-[color:var(--nk-scrim)] backdrop-blur-[1px]"
         onClick={onClose}
       />
-      <div className="fixed inset-y-0 right-0 z-[75] flex flex-col h-full w-full sm:w-[460px] overflow-hidden border-l border-purple-200/70 shadow-2xl bg-[#FAF8FF]">
+      <div className="fixed inset-y-0 right-0 z-[75] flex flex-col h-full w-full sm:w-[460px] overflow-hidden border-l border-[color:hsl(var(--primary)/0.7)] shadow-2xl bg-[color:hsl(var(--primary)/0.06)]">
         <NikAIWorkspace
           embedded
           onClose={onClose}

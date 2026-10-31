@@ -72,7 +72,7 @@ class RouteErrorBoundary extends Component<{ children: ReactNode }, { error: Err
             {chunk ? (
               <>
                 <div className="mx-auto w-14 h-14 rounded-2xl bg-primary/10 grid place-items-center">
-                  <RefreshCw className="w-6 h-6 text-primary animate-spin" />
+                  <RefreshCw className="w-6 h-6 text-accent-rose animate-spin" />
                 </div>
                 <h1 className="text-lg font-semibold">App update ho raha hai…</h1>
                 <p className="text-sm text-muted-foreground">

@@ -33,13 +33,13 @@ interface NotificationSystemProps {
 }
 
 const NOTIFICATION_STYLES: Record<Notification['type'], { icon: React.ReactNode; color: string; bg: string }> = {
-  comment: { icon: <MessageSquare className="w-3.5 h-3.5" />, color: 'text-green-600', bg: 'bg-green-50' },
-  mention: { icon: <AtSign className="w-3.5 h-3.5" />, color: 'text-blue-600', bg: 'bg-blue-50' },
-  share: { icon: <Share2 className="w-3.5 h-3.5" />, color: 'text-purple-600', bg: 'bg-purple-50' },
-  favorite: { icon: <Star className="w-3.5 h-3.5" />, color: 'text-amber-600', bg: 'bg-amber-50' },
-  ai: { icon: <Sparkles className="w-3.5 h-3.5" />, color: 'text-violet-600', bg: 'bg-violet-50' },
-  system: { icon: <Info className="w-3.5 h-3.5" />, color: 'text-gray-600', bg: 'bg-gray-50' },
-  reminder: { icon: <AlertCircle className="w-3.5 h-3.5" />, color: 'text-orange-600', bg: 'bg-orange-50' },
+  comment: { icon: <MessageSquare className="w-3.5 h-3.5" />, color: 'text-success', bg: 'bg-[color:hsl(var(--success)/0.14)]' },
+  mention: { icon: <AtSign className="w-3.5 h-3.5" />, color: 'text-accent-cool', bg: 'bg-[color:hsl(var(--accent-cool-hsl)/0.14)]' },
+  share: { icon: <Share2 className="w-3.5 h-3.5" />, color: 'text-accent-cool', bg: 'bg-[color:hsl(var(--primary)/0.12)]' },
+  favorite: { icon: <Star className="w-3.5 h-3.5" />, color: 'text-accent-warm', bg: 'bg-[color:hsl(var(--accent-warm-hsl)/0.16)]' },
+  ai: { icon: <Sparkles className="w-3.5 h-3.5" />, color: 'text-accent-cool', bg: 'bg-[color:hsl(var(--primary)/0.12)]' },
+  system: { icon: <Info className="w-3.5 h-3.5" />, color: 'text-fg-secondary', bg: 'bg-muted' },
+  reminder: { icon: <AlertCircle className="w-3.5 h-3.5" />, color: 'text-accent-warm', bg: 'bg-[color:hsl(var(--accent-warm-hsl)/0.16)]' },
 };
 
 const formatTime = (ts: number): string => {
@@ -68,13 +68,13 @@ export const NotificationSystem: React.FC<NotificationSystemProps> = ({
   return (
     <div className="flex flex-col h-full max-h-[500px]">
       {/* Header */}
-      <div className="p-3 border-b border-gray-100">
+      <div className="p-3 border-b border-subtle">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-indigo-500" />
-            <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
+            <Bell className="w-4 h-4 text-accent-cool" />
+            <h3 className="text-sm font-bold text-fg-primary">Notifications</h3>
             {unreadCount > 0 && (
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white">
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-error text-white">
                 {unreadCount}
               </span>
             )}
@@ -82,7 +82,7 @@ export const NotificationSystem: React.FC<NotificationSystemProps> = ({
           {unreadCount > 0 && (
             <button
               onClick={onMarkAllRead}
-              className="text-[10px] text-indigo-500 hover:text-indigo-600 font-medium flex items-center gap-1"
+              className="text-[10px] text-accent-cool hover:text-accent-cool font-medium flex items-center gap-1"
             >
               <CheckCheck className="w-3 h-3" /> Mark all read
             </button>
@@ -90,19 +90,19 @@ export const NotificationSystem: React.FC<NotificationSystemProps> = ({
         </div>
 
         {/* Filter */}
-        <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
+        <div className="flex gap-0.5 bg-muted rounded-lg p-0.5">
           <button
             onClick={() => setFilter('all')}
             className={cn(
               "flex-1 text-[10px] font-medium py-1 rounded-md transition-colors",
-              filter === 'all' ? "bg-white text-gray-800 shadow-sm" : "text-gray-500"
+              filter === 'all' ? "bg-surface text-fg-primary shadow-sm" : "text-fg-muted"
             )}
           >All ({notifications.length})</button>
           <button
             onClick={() => setFilter('unread')}
             className={cn(
               "flex-1 text-[10px] font-medium py-1 rounded-md transition-colors",
-              filter === 'unread' ? "bg-white text-gray-800 shadow-sm" : "text-gray-500"
+              filter === 'unread' ? "bg-surface text-fg-primary shadow-sm" : "text-fg-muted"
             )}
           >Unread ({unreadCount})</button>
         </div>
@@ -112,11 +112,11 @@ export const NotificationSystem: React.FC<NotificationSystemProps> = ({
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
           <div className="text-center py-8">
-            <Bell className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">No notifications</p>
+            <Bell className="w-8 h-8 text-fg-muted/70 mx-auto mb-2" />
+            <p className="text-sm text-fg-muted/70">No notifications</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-subtle">
             {filtered.map((notification, i) => {
               const style = NOTIFICATION_STYLES[notification.type];
               return (
@@ -126,13 +126,13 @@ export const NotificationSystem: React.FC<NotificationSystemProps> = ({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.02 }}
                   className={cn(
-                    "relative px-3 py-3 hover:bg-gray-50 transition-colors group",
-                    !notification.read && "bg-indigo-50/30"
+                    "relative px-3 py-3 hover:bg-muted transition-colors group",
+                    !notification.read && "bg-[color:hsl(var(--primary)/0.3)]"
                   )}
                 >
                   {/* Unread dot */}
                   {!notification.read && (
-                    <div className="absolute left-1.5 top-4 w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                    <div className="absolute left-1.5 top-4 w-1.5 h-1.5 rounded-full bg-primary" />
                   )}
 
                   <div className="flex items-start gap-2.5 ml-2">
@@ -144,16 +144,16 @@ export const NotificationSystem: React.FC<NotificationSystemProps> = ({
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-gray-800">{notification.title}</span>
-                        <span className="text-[9px] text-gray-400 flex-shrink-0 ml-2">{formatTime(notification.timestamp)}</span>
+                        <span className="text-[11px] font-semibold text-fg-primary">{notification.title}</span>
+                        <span className="text-[9px] text-fg-muted/70 flex-shrink-0 ml-2">{formatTime(notification.timestamp)}</span>
                       </div>
-                      <p className="text-[10px] text-gray-500 mt-0.5 leading-relaxed">{notification.description}</p>
+                      <p className="text-[10px] text-fg-muted mt-0.5 leading-relaxed">{notification.description}</p>
 
                       {/* Action button */}
                       {notification.actionLabel && (
                         <button
                           onClick={() => onAction(notification)}
-                          className="mt-1.5 text-[10px] font-medium text-indigo-500 hover:text-indigo-600 flex items-center gap-0.5"
+                          className="mt-1.5 text-[10px] font-medium text-accent-cool hover:text-accent-cool flex items-center gap-0.5"
                         >
                           {notification.actionLabel} →
                         </button>
@@ -163,7 +163,7 @@ export const NotificationSystem: React.FC<NotificationSystemProps> = ({
                     {/* Dismiss */}
                     <button
                       onClick={() => onDismiss(notification.id)}
-                      className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 text-gray-300 hover:text-gray-500 transition-all flex-shrink-0"
+                      className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-surface-hover text-fg-muted/70 hover:text-fg-muted transition-all flex-shrink-0"
                     >
                       <X className="w-3 h-3" />
                     </button>

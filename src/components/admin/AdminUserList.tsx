@@ -169,7 +169,7 @@ export const AdminUserList: React.FC<AdminUserListProps> = ({
                           }}
                         >
                           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <span className="text-sm font-semibold text-primary">
+                            <span className="text-sm font-semibold text-accent-rose">
                               {(userData.display_name || 'U').charAt(0).toUpperCase()}
                             </span>
                           </div>

@@ -20,7 +20,7 @@ export const ReferralWidget: React.FC<{ variant?: 'banner' | 'card' | 'compact' 
   return (
     <section className={`rounded-2xl border border-border/60 bg-card p-4 ${variant === 'compact' ? 'text-xs' : ''}`} aria-label="Share NikNote">
       <div className="flex items-start gap-3">
-        <Share2 className="h-5 w-5 text-primary shrink-0" />
+        <Share2 className="h-5 w-5 text-accent-rose shrink-0" />
         <div className="flex-1 space-y-2">
           <h3 className="font-semibold text-sm">Share NikNote</h3>
           <p className="text-xs text-muted-foreground">Know someone who would like the free editor? Send them a link.</p>

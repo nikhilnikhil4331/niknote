@@ -29,9 +29,9 @@ interface TimelineViewProps {
 }
 
 const TIMELINE_COLORS = [
-  'bg-blue-400', 'bg-purple-400', 'bg-green-400',
-  'bg-amber-400', 'bg-red-400', 'bg-cyan-400',
-  'bg-pink-400', 'bg-indigo-400',
+  'bg-[color:hsl(var(--accent-cool-solid-hsl))]', 'bg-primary', 'bg-success',
+  'bg-nk-amber', 'bg-error', 'bg-[color:hsl(var(--accent-cool-solid-hsl))]',
+  'bg-primary', 'bg-primary',
 ];
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -98,41 +98,41 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-indigo-500" />
-          <h3 className="text-sm font-bold text-gray-900">Timeline</h3>
-          <span className="text-[10px] text-gray-400">{items.length} items</span>
+          <Calendar className="w-4 h-4 text-accent-cool" />
+          <h3 className="text-sm font-bold text-fg-primary">Timeline</h3>
+          <span className="text-[10px] text-fg-muted/70">{items.length} items</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <button onClick={prevRange} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+          <button onClick={prevRange} className="p-1 rounded-lg hover:bg-muted text-fg-muted/70">
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => setCurrentDate(new Date())}
-            className="px-2.5 py-1 rounded-lg text-[10px] font-medium text-gray-600 bg-gray-100 hover:bg-gray-200"
+            className="px-2.5 py-1 rounded-lg text-[10px] font-medium text-fg-secondary bg-muted hover:bg-surface-hover"
           >
             Today
           </button>
-          <button onClick={nextRange} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
+          <button onClick={nextRange} className="p-1 rounded-lg hover:bg-muted text-fg-muted/70">
             <ChevronRight className="w-4 h-4" />
           </button>
-          <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium text-purple-600 bg-purple-50 hover:bg-purple-100">
+          <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium text-accent-cool bg-[color:hsl(var(--primary)/0.12)] hover:bg-[color:hsl(var(--primary)/0.12)]">
             <Sparkles className="w-3 h-3" /> AI Schedule
           </button>
         </div>
       </div>
 
       {/* Timeline grid */}
-      <div className="border border-gray-200 rounded-xl overflow-hidden">
+      <div className="border border-subtle rounded-xl overflow-hidden">
         {/* Month headers */}
-        <div className="flex bg-gray-50 border-b border-gray-200">
-          <div className="w-48 flex-shrink-0 px-3 py-2 text-[10px] font-semibold text-gray-400 border-r border-gray-200">
+        <div className="flex bg-muted border-b border-subtle">
+          <div className="w-48 flex-shrink-0 px-3 py-2 text-[10px] font-semibold text-fg-muted/70 border-r border-subtle">
             Item
           </div>
           <div className="flex-1 relative h-8">
             {months.map((m, i) => (
               <div
                 key={i}
-                className="absolute top-0 bottom-0 flex items-center px-2 text-[10px] font-medium text-gray-500 border-r border-gray-100"
+                className="absolute top-0 bottom-0 flex items-center px-2 text-[10px] font-medium text-fg-muted border-r border-subtle"
                 style={{ left: `${m.offset}%`, width: `${m.width}%` }}
               >
                 {m.label}
@@ -146,10 +146,10 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           {/* Today indicator */}
           {todayOffset >= 0 && todayOffset <= 100 && (
             <div
-              className="absolute top-0 bottom-0 w-px bg-red-400 z-10"
+              className="absolute top-0 bottom-0 w-px bg-error z-10"
               style={{ left: `calc(192px + ${todayOffset}% * (100% - 192px) / 100)` }}
             >
-              <div className="absolute -top-0 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-b text-[8px] font-bold text-white bg-red-400">
+              <div className="absolute -top-0 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-b text-[8px] font-bold text-white bg-error">
                 Today
               </div>
             </div>
@@ -158,11 +158,11 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           {/* Rows */}
           {items.length === 0 ? (
             <div className="text-center py-8 px-4">
-              <Calendar className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">No timeline items</p>
+              <Calendar className="w-8 h-8 text-fg-muted/70 mx-auto mb-2" />
+              <p className="text-sm text-fg-muted/70">No timeline items</p>
               <button
                 onClick={onAddItem}
-                className="mt-2 px-3 py-1.5 rounded-lg text-[10px] font-medium text-indigo-500 bg-indigo-50 hover:bg-indigo-100"
+                className="mt-2 px-3 py-1.5 rounded-lg text-[10px] font-medium text-accent-cool bg-[color:hsl(var(--primary)/0.12)] hover:bg-[color:hsl(var(--primary)/0.12)]"
               >
                 <Plus className="w-3 h-3 inline mr-1" /> Add item
               </button>
@@ -181,13 +181,13 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.02 }}
                   onClick={() => onItemClick?.(item)}
-                  className="flex items-center hover:bg-gray-50 transition-colors cursor-pointer border-b border-gray-50 last:border-b-0"
+                  className="flex items-center hover:bg-muted transition-colors cursor-pointer border-b border-subtle last:border-b-0"
                 >
                   {/* Label */}
-                  <div className="w-48 flex-shrink-0 px-3 py-2 border-r border-gray-100">
-                    <div className="text-[11px] font-medium text-gray-800 truncate">{item.title}</div>
+                  <div className="w-48 flex-shrink-0 px-3 py-2 border-r border-subtle">
+                    <div className="text-[11px] font-medium text-fg-primary truncate">{item.title}</div>
                     {item.assignee && (
-                      <div className="text-[9px] text-gray-400">{item.assignee}</div>
+                      <div className="text-[9px] text-fg-muted/70">{item.assignee}</div>
                     )}
                   </div>
 
@@ -204,7 +204,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
                       {/* Progress */}
                       {item.progress !== undefined && (
                         <div
-                          className="absolute inset-0 rounded-md bg-white/30"
+                          className="absolute inset-0 rounded-md bg-surface/30"
                           style={{ width: `${item.progress}%` }}
                         />
                       )}

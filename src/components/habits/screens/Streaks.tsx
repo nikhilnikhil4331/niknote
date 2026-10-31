@@ -74,8 +74,8 @@ export function StreaksScreen({ go }: { go: (s: { name: string; id?: string }) =
                   className="grid h-8 w-8 place-items-center rounded-full border-2"
                   style={{
                     borderColor: w.full ? 'var(--nnh-orange)' : w.partial ? 'var(--nnh-pink)' : 'var(--nnh-line)',
-                    background: w.full ? 'linear-gradient(135deg,#f97316,#fbbf24)' : 'transparent',
-                    color: '#fff',
+                    background: w.full ? 'linear-gradient(135deg,#D9822F,#ED9E59)' : 'transparent',
+                    color: w.full ? '#1B1931' : 'var(--nnh-ink)',
                   }}>
                   {w.full && <Check size={14} strokeWidth={3.4} />}
                 </motion.span>

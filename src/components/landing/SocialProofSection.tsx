@@ -45,7 +45,7 @@ export const SocialProofSection: React.FC = () => {
               transition={{ duration: 0.4, delay: index * 0.1 }}
               className="text-center p-4 rounded-2xl bg-card/50 border border-border/30"
             >
-              <stat.icon className="w-6 h-6 text-primary mx-auto mb-2" />
+              <stat.icon className="w-6 h-6 text-accent-rose mx-auto mb-2" />
               <div className="text-2xl sm:text-3xl font-bold text-foreground">{stat.value}</div>
               <div className="text-sm font-medium text-foreground">{stat.label}</div>
               <div className="text-[11px] text-muted-foreground">{stat.sub}</div>
@@ -61,7 +61,7 @@ export const SocialProofSection: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <span className="text-sm font-semibold text-primary uppercase tracking-wider">Early access</span>
+          <span className="text-sm font-semibold text-accent-rose uppercase tracking-wider">Early access</span>
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground mt-2">
             We are early. Here is the honest pitch.
           </h2>

@@ -8,7 +8,7 @@ export type BarDatum = { label: string; value: number; hint?: string; today?: bo
  * Interactive bar chart. Values come straight from the caller (never invented);
  * bars are focusable buttons so the tooltip is keyboard reachable too.
  */
-export function InteractiveBars({ data, height = 132, suffix = '', max, from = '#9333ea', to = '#ec4899', formatValue }: {
+export function InteractiveBars({ data, height = 132, suffix = '', max, from = '#7C5F9E', to = '#A34054', formatValue }: {
   data: BarDatum[];
   height?: number;
   suffix?: string;
@@ -129,7 +129,7 @@ export function ProgressBar({ pct, color = 'var(--nnh-purple)', height = 6 }: { 
 }
 
 /** Animated SVG trend line. Points are real percentages; the draw-in never invents data. */
-export function TrendLine({ points, height = 96, from = '#9333ea', to = '#ec4899', label }: {
+export function TrendLine({ points, height = 96, from = '#7C5F9E', to = '#A34054', label }: {
   points: { label: string; value: number }[];
   height?: number;
   from?: string;

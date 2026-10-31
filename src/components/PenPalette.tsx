@@ -50,12 +50,12 @@ export const PenPalette: React.FC<PenPaletteProps> = ({
   });
 
   return (
-    <div className="flex flex-col gap-4 p-4 bg-white/30 backdrop-blur-sm rounded-2xl border border-white/20 shadow-sm">
+    <div className="flex flex-col gap-4 p-4 bg-surface/30 backdrop-blur-sm rounded-2xl border border-[color:var(--nk-glass-border)] shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between gap-2.5">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Pen className="w-4 h-4 text-primary" />
+            <Pen className="w-4 h-4 text-accent-rose" />
           </div>
           <div>
             <h3 className="font-semibold text-sm text-foreground">Pen Palette</h3>

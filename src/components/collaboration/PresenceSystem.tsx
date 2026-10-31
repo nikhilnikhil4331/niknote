@@ -27,14 +27,14 @@ interface PresenceSystemProps {
 }
 
 const STATUS_COLORS = {
-  active: 'bg-green-500',
-  idle: 'bg-amber-500',
-  offline: 'bg-gray-300',
+  active: 'bg-success',
+  idle: 'bg-nk-warm-600',
+  offline: 'bg-surface-hover',
 };
 
 const PRESENCE_COLORS = [
-  '#6366f1', '#ec4899', '#14b8a6', '#f59e0b',
-  '#8b5cf6', '#06b6d4', '#ef4444', '#22c55e',
+  '#7C5F9E', '#A34054', '#157F52', '#C4762F',
+  '#7C5F9E', '#7C5F9E', '#A62B36', '#157F52',
 ];
 
 export const PresenceSystem: React.FC<PresenceSystemProps> = ({
@@ -80,7 +80,7 @@ export const PresenceSystem: React.FC<PresenceSystemProps> = ({
 
       {/* ===== Presence bar (bottom-right) ===== */}
       {otherUsers.length > 0 && (
-        <div className="fixed bottom-4 right-4 z-40 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/80 backdrop-blur-xl border border-gray-200/60 shadow-lg">
+        <div className="fixed bottom-4 right-4 z-40 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface/80 backdrop-blur-xl border border-subtle/60 shadow-lg">
           {/* User avatars */}
           <div className="flex -space-x-1.5">
             {otherUsers.slice(0, 5).map(user => (
@@ -103,14 +103,14 @@ export const PresenceSystem: React.FC<PresenceSystemProps> = ({
               </motion.button>
             ))}
             {otherUsers.length > 5 && (
-              <div className="w-7 h-7 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-[8px] font-bold text-gray-600 shadow-sm">
+              <div className="w-7 h-7 rounded-full border-2 border-white bg-surface-hover flex items-center justify-center text-[8px] font-bold text-fg-secondary shadow-sm">
                 +{otherUsers.length - 5}
               </div>
             )}
           </div>
 
           {/* Label */}
-          <div className="flex items-center gap-1 text-[10px] text-gray-500">
+          <div className="flex items-center gap-1 text-[10px] text-fg-muted">
             <Eye className="w-3 h-3" />
             <span>{otherUsers.length} {otherUsers.length === 1 ? 'person' : 'people'} viewing</span>
           </div>

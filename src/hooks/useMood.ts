@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MoodType } from '@/components/MoodSelector';
+import { setTheme } from '@/hooks/useDarkMode';
 
 interface MoodStyles {
   background: string;
@@ -11,33 +12,33 @@ interface MoodStyles {
 const moodStylesMap: Record<MoodType, MoodStyles> = {
   calm: {
     background: 'niknote-bg-calm',
-    paper: 'bg-white/60 dark:bg-zinc-800/60',
+    paper: 'bg-surface/60 dark:bg-[color:hsl(var(--background-secondary-hsl))]',
     paperTexture: '',
-    textClass: 'text-slate-800 dark:text-slate-200',
+    textClass: 'text-fg-primary dark:text-fg-muted/70',
   },
   focus: {
     background: 'niknote-bg-focus',
-    paper: 'bg-slate-50/60 dark:bg-slate-800/60',
+    paper: 'bg-muted/60 dark:bg-[color:hsl(var(--background-secondary-hsl))]',
     paperTexture: '',
-    textClass: 'text-slate-900 dark:text-slate-100',
+    textClass: 'text-fg-primary dark:text-fg-muted/70',
   },
   dark: {
     background: 'niknote-bg-dark',
-    paper: 'bg-zinc-800/60',
+    paper: 'bg-[color:hsl(var(--background-secondary-hsl))]',
     paperTexture: '',
-    textClass: 'text-zinc-100',
+    textClass: 'text-fg-muted/70',
   },
   vintage: {
     background: 'niknote-bg-vintage',
-    paper: 'bg-amber-50/60 dark:bg-amber-900/30',
+    paper: 'bg-[color:hsl(var(--accent-warm-hsl)/0.6)] dark:bg-nk-warm-600/30',
     paperTexture: '',
-    textClass: 'text-amber-900 dark:text-amber-100',
+    textClass: 'text-accent-warm dark:text-accent-warm',
   },
   study: {
     background: 'niknote-bg-study',
-    paper: 'bg-emerald-50/60 dark:bg-emerald-900/20',
+    paper: 'bg-[color:hsl(var(--success)/0.6)] dark:bg-success/20',
     paperTexture: '',
-    textClass: 'text-emerald-900 dark:text-emerald-100',
+    textClass: 'text-success dark:text-success',
   },
 };
 
@@ -50,11 +51,9 @@ export function useMood() {
   useEffect(() => {
     localStorage.setItem('nikhil-notes-mood', mood);
     
-    if (mood === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    // The editor mood must not fight the app theme: only the explicit "dark"
+    // mood asks the theme controller for the night palette.
+    if (mood === 'dark') setTheme('dark');
   }, [mood]);
 
   const changeMood = useCallback((newMood: MoodType) => {

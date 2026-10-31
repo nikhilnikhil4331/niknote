@@ -69,17 +69,17 @@ const iconMap = {
 };
 
 const colorMap = {
-  success: 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300',
-  error: 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300',
-  warning: 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300',
-  info: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300',
+  success: 'bg-[color:hsl(var(--success)/0.14)] border-[color:hsl(var(--success)/0.4)] text-success dark:bg-success/20 dark:border-[color:hsl(var(--success)/0.4)] dark:text-success',
+  error: 'bg-[color:hsl(var(--error)/0.14)] border-[color:hsl(var(--error)/0.4)] text-error dark:bg-error/20 dark:border-[color:hsl(var(--error)/0.4)] dark:text-error',
+  warning: 'bg-[color:hsl(var(--accent-warm-hsl)/0.16)] border-[color:hsl(var(--accent-warm-hsl)/0.34)] text-accent-warm dark:bg-nk-warm-600/20 dark:border-[color:hsl(var(--accent-warm-hsl)/0.34)] dark:text-accent-warm',
+  info: 'bg-[color:hsl(var(--accent-cool-hsl)/0.14)] border-[color:hsl(var(--accent-cool-hsl)/0.35)] text-accent-cool dark:bg-[color:hsl(var(--accent-cool-hsl)/0.2)] dark:border-[color:hsl(var(--accent-cool-hsl)/0.35)] dark:text-accent-cool',
 };
 
 const iconColorMap = {
-  success: 'text-green-500',
-  error: 'text-red-500',
-  warning: 'text-amber-500',
-  info: 'text-blue-500',
+  success: 'text-success',
+  error: 'text-error',
+  warning: 'text-accent-warm',
+  info: 'text-accent-cool',
 };
 
 function ToastDisplay() {
@@ -105,7 +105,7 @@ function ToastDisplay() {
             <p className="text-sm font-medium flex-1">{toast.message}</p>
             <button
               onClick={() => removeToast(toast.id)}
-              className="flex-shrink-0 p-0.5 rounded-md hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+              className="flex-shrink-0 p-0.5 rounded-md hover:bg-surface-hover dark:hover:bg-surface/10 transition-colors"
             >
               <X className="w-3.5 h-3.5 opacity-50" />
             </button>

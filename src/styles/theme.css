@@ -1,0 +1,506 @@
+/* ============================================================
+   NIKNOTE — SUNSET PLUM DESIGN SYSTEM
+   ------------------------------------------------------------
+   Single source of truth for colour, elevation, radii, motion
+   and typography. Every component must consume these tokens
+   instead of hard-coding colours.
+
+   Palette (official):
+     Midnight Plum  #1B1931
+     Deep Purple    #44174E
+     Burgundy       #662249
+     Rose Wine      #A34054
+     Warm Amber     #ED9E59
+     Soft Blush     #E9BCB9
+
+   Two product surfaces are supported:
+     • :root        → "Daylight" (warm blush paper, plum ink)
+     • .dark        → "Sunset Plum Night" (default experience)
+
+   The dark theme is the signature NikNote look and is applied
+   by default; an explicit `theme=light` preference (persisted by
+   the theme controller) switches to Daylight.
+   ============================================================ */
+
+:root {
+  /* ---------- 1. RAW PALETTE ---------- */
+  --nk-midnight: #1b1931;
+  --nk-purple: #44174e;
+  --nk-burgundy: #662249;
+  --nk-rose: #a34054;
+  --nk-amber: #ed9e59;
+  --nk-blush: #e9bcb9;
+
+  /* Plum ramp — tints & shades derived from the six brand colours */
+  --nk-plum-50: #fdf7f5;
+  --nk-plum-100: #f7e9e6;
+  --nk-plum-200: #e9bcb9; /* soft blush */
+  --nk-plum-300: #d8a3a6;
+  --nk-plum-400: #bf8590;
+  --nk-plum-500: #a34054; /* rose wine */
+  --nk-plum-600: #8c3149;
+  --nk-plum-700: #662249; /* burgundy */
+  --nk-plum-800: #44174e; /* deep purple */
+  --nk-plum-900: #2a1235;
+  --nk-plum-950: #1b1931; /* midnight plum */
+
+  /* Warm ramp — amber highlights */
+  --nk-warm-100: #fbead7;
+  --nk-warm-200: #f6d5b4;
+  --nk-warm-300: #f2b987;
+  --nk-warm-400: #ed9e59; /* warm amber */
+  --nk-warm-500: #d9822f;
+  --nk-warm-600: #c4762f;
+  --nk-warm-700: #9a5a14;
+
+  /* Cool ramp — plum-lilac secondary accent */
+  --nk-lilac-100: #f1e8f5;
+  --nk-lilac-200: #e0cde8;
+  --nk-lilac-300: #c0a6de;
+  --nk-lilac-400: #a688c9;
+  --nk-lilac-500: #7c5f9e;
+  --nk-lilac-600: #5c3a6e;
+
+  /* ---------- 2. SIGNATURE GRADIENTS ---------- */
+  --nk-grad-primary: linear-gradient(180deg, #ed9e59 0%, #a34054 40%, #662249 72%, #44174e 100%);
+  --nk-grad-secondary: linear-gradient(135deg, #1b1931 0%, #44174e 45%, #662249 100%);
+  --nk-grad-accent: linear-gradient(135deg, #a34054 0%, #ed9e59 100%);
+  --nk-grad-soft: linear-gradient(135deg, #e9bcb9 0%, #ed9e59 100%);
+  --nk-grad-sheen: linear-gradient(135deg, rgba(237, 158, 89, 0.16), rgba(163, 64, 84, 0.12) 48%, rgba(68, 23, 78, 0.16) 100%);
+  --nk-grad-hero: linear-gradient(140deg, #44174e 0%, #662249 42%, #a34054 74%, #ed9e59 130%);
+
+  /* ---------- 3. RADII ---------- */
+  --nk-radius-xs: 6px;
+  --nk-radius-sm: 10px;
+  --nk-radius-md: 14px;
+  --nk-radius-lg: 18px;
+  --nk-radius-xl: 24px;
+  --nk-radius-2xl: 30px;
+  --nk-radius-pill: 999px;
+
+  /* ---------- 4. SPACING & LAYOUT ---------- */
+  --nk-space-1: 4px;
+  --nk-space-2: 8px;
+  --nk-space-3: 12px;
+  --nk-space-4: 16px;
+  --nk-space-5: 20px;
+  --nk-space-6: 24px;
+  --nk-space-8: 32px;
+  --nk-space-10: 40px;
+  --nk-sidebar-width: 264px;
+  --nk-sidebar-width-collapsed: 72px;
+  --nk-topbar-height: 60px;
+
+  /* ---------- 5. MOTION ---------- */
+  --nk-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --nk-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --nk-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --nk-dur-fast: 180ms;
+  --nk-dur-base: 220ms;
+  --nk-dur-slow: 320ms;
+  --nk-dur-slower: 400ms;
+
+  /* ---------- 6. TYPOGRAPHY ---------- */
+  --nk-font-sans: 'Inter', 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --nk-font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --nk-font-script: 'Caveat', 'Kalam', cursive;
+  --nk-font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --nk-text-xs: 11px;
+  --nk-text-sm: 12.5px;
+  --nk-text-base: 14px;
+  --nk-text-md: 15px;
+  --nk-text-lg: 17px;
+  --nk-text-xl: 21px;
+  --nk-text-2xl: 26px;
+  --nk-text-3xl: 32px;
+  --nk-leading-tight: 1.2;
+  --nk-leading-snug: 1.4;
+  --nk-leading-normal: 1.6;
+  --nk-tracking-tight: -0.015em;
+}
+
+/* ============================================================
+   DAYLIGHT THEME (light)
+   ============================================================ */
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --background-primary: #fbf6f4;
+  --background-primary-hsl: 17 47% 97%;
+  --background-secondary: #f5eae6;
+  --background-secondary-hsl: 16 43% 93%;
+  --background-tertiary: #efe2de;
+  --background-tertiary-hsl: 14 35% 90%;
+  --surface-primary: #fffdfc;
+  --surface-primary-hsl: 20 100% 99%;
+  --surface-secondary: #fbf4f1;
+  --surface-secondary-hsl: 18 56% 96%;
+  --surface-elevated: #ffffff;
+  --surface-elevated-hsl: 0 0% 100%;
+  --surface-hover: #f3e6e2;
+  --surface-hover-hsl: 14 41% 92%;
+
+  /* text */
+  --text-primary: #241b2e;
+  --text-primary-hsl: 268 26% 14%;
+  --text-secondary: #584862;
+  --text-secondary-hsl: 277 15% 33%;
+  --text-muted: #6b5a73;
+  --text-muted-hsl: 281 12% 40%;
+  --text-inverse: #fff7f4;
+  --text-inverse-hsl: 14 100% 98%;
+
+  /* borders */
+  --border-subtle: #eaddd9;
+  --border-subtle-hsl: 14 29% 88%;
+  --border-active: #d8bfbe;
+  --border-active-hsl: 2 25% 80%;
+  --border-strong: #c2a5a5;
+  --border-strong-hsl: 0 19% 70%;
+
+  /* brand */
+  --accent-primary: #8c3149;
+  --accent-primary-hsl: 344 48% 37%;
+  --accent-primary-foreground: #fff7f4;
+  --accent-primary-foreground-hsl: 14 100% 98%;
+  --accent-secondary: #5c3a6e;
+  --accent-secondary-hsl: 279 31% 33%;
+  --accent-secondary-foreground: #fff7f4;
+  --accent-secondary-foreground-hsl: 14 100% 98%;
+  --accent-rose: #8c3149;
+  --accent-rose-hsl: 344 48% 37%;
+  --accent-warm: #975611;
+  --accent-warm-hsl: 31 80% 33%;
+  --accent-cool: #5c3a6e;
+  --accent-cool-hsl: 279 31% 33%;
+  --accent-cool-solid: #5c3a6e;
+  --accent-cool-solid-hsl: 279 31% 33%;
+  --accent-secondary-foreground-hsl: 14 100% 98%;
+  --primary-hex: #a34054;
+  --primary-hsl: 348 44% 45%;
+  --primary-hover: #8c3149;
+  --primary-hover-hsl: 344 48% 37%;
+  --primary-active: #74263c;
+  --primary-active-hsl: 343 51% 30%;
+  --primary-foreground-hex: #fff7f4;
+  --primary-foreground-hsl: 14 100% 98%;
+
+  /* status */
+  --success-hex: #157f52;
+  --success-hsl: 155 72% 29%;
+  --success-foreground-hex: #ffffff;
+  --success-foreground-hsl: 0 0% 100%;
+  --warning-hex: #975611;
+  --warning-hsl: 31 80% 33%;
+  --warning-foreground-hex: #241a2e;
+  --warning-foreground-hsl: 270 28% 14%;
+  --error-hex: #a62b36;
+  --error-hsl: 355 59% 41%;
+  --error-foreground-hex: #fff7f4;
+  --error-foreground-hsl: 16 100% 98%;
+  --info-hex: #5c3a6e;
+  --info-hsl: 279 31% 33%;
+  --focus-ring-hex: #8c3149;
+  --focus-ring-hsl: 344 48% 37%;
+
+  /* paper (writing surfaces stay light for legibility + export) */
+  --paper-hex: #fffdf9;
+  --paper-hsl: 40 100% 99%;
+  --paper-ruled-hex: #fbf6ec;
+  --paper-ruled-hsl: 40 65% 95%;
+  --paper-foreground-hex: #2a2233;
+  --paper-foreground-hsl: 268 20% 17%;
+  --paper-muted-hex: #7b6f6b;
+  --paper-muted-hsl: 15 7% 45%;
+  --paper-rule-hex: #e7dacd;
+  --paper-rule-hsl: 30 35% 85%;
+
+  /* effects */
+  --nk-shadow-xs: 0 1px 2px rgba(36, 27, 46, 0.05);
+  --nk-shadow-sm: 0 2px 8px -2px rgba(68, 23, 78, 0.1), 0 1px 2px rgba(36, 27, 46, 0.04);
+  --nk-shadow-md: 0 10px 26px -14px rgba(68, 23, 78, 0.25), 0 2px 6px -2px rgba(36, 27, 46, 0.06);
+  --nk-shadow-lg: 0 24px 60px -28px rgba(68, 23, 78, 0.32), 0 6px 18px -10px rgba(36, 27, 46, 0.08);
+  --nk-shadow-focus: 0 0 0 3px hsl(var(--focus-ring-hsl) / 0.35);
+  --nk-glass-bg: rgba(255, 253, 252, 0.72);
+  --nk-glass-border: rgba(233, 188, 185, 0.5);
+  --nk-scrim: rgba(27, 25, 49, 0.38);
+  --nk-selection: rgba(163, 64, 84, 0.18);
+  --nk-grad-brand: linear-gradient(135deg, #a34054, #ed9e59);
+  --nk-grad-surface: linear-gradient(160deg, rgba(237, 158, 89, 0.12), rgba(163, 64, 84, 0.06) 55%, rgba(68, 23, 78, 0.05));
+}
+
+/* ============================================================
+   SUNSET PLUM NIGHT (dark — default)
+   ============================================================ */
+.dark {
+  color-scheme: dark;
+
+  --background-primary: #121020;
+  --background-primary-hsl: 248 33% 9%;
+  --background-secondary: #17152a;
+  --background-secondary-hsl: 246 33% 12%;
+  --background-tertiary: #1b1931;
+  --background-tertiary-hsl: 245 32% 15%;
+  --surface-primary: #1e1a32;
+  --surface-primary-hsl: 250 32% 15%;
+  --surface-secondary: #191630;
+  --surface-secondary-hsl: 247 37% 14%;
+  --surface-elevated: #262040;
+  --surface-elevated-hsl: 251 33% 19%;
+  --surface-hover: #2b2447;
+  --surface-hover-hsl: 252 33% 21%;
+
+  --text-primary: #f7eeec;
+  --text-primary-hsl: 11 41% 95%;
+  --text-secondary: #d5c0c3;
+  --text-secondary-hsl: 351 20% 79%;
+  --text-muted: #a79bae;
+  --text-muted-hsl: 278 10% 65%;
+  --text-inverse: #1b1931;
+  --text-inverse-hsl: 245 32% 15%;
+
+  --border-subtle: #322b4a;
+  --border-subtle-hsl: 254 26% 23%;
+  --border-active: #4a3e68;
+  --border-active-hsl: 257 25% 33%;
+  --border-strong: #5b4c7c;
+  --border-strong-hsl: 259 24% 39%;
+
+  --accent-primary: #ed9e59;
+  --accent-primary-hsl: 28 80% 64%;
+  --accent-primary-foreground: #241a2e;
+  --accent-primary-foreground-hsl: 268 28% 14%;
+  --accent-secondary: #c0a6de;
+  --accent-secondary-hsl: 268 46% 76%;
+  --accent-secondary-foreground: #201832;
+  --accent-secondary-foreground-hsl: 253 35% 15%;
+  --accent-rose: #e9bcb9;
+  --accent-rose-hsl: 4 52% 82%;
+  --accent-warm: #ed9e59;
+  --accent-warm-hsl: 28 80% 64%;
+  --accent-cool: #c0a6de;
+  --accent-cool-hsl: 268 46% 76%;
+  --accent-cool-solid: #7c5f9e;
+  --accent-cool-solid-hsl: 268 46% 49%;
+  --accent-secondary-foreground-hsl: 253 35% 15%;
+  --primary-hex: #a34054;
+  --primary-hsl: 348 44% 45%;
+  --primary-hover: #b8495f;
+  --primary-hover-hsl: 348 44% 50%;
+  --primary-active: #8c3149;
+  --primary-active-hsl: 344 48% 37%;
+  --primary-foreground-hex: #fdf6f1;
+  --primary-foreground-hsl: 20 60% 97%;
+
+  --success-hex: #6fcf97;
+  --success-hsl: 145 50% 62%;
+  --success-foreground-hex: #12261a;
+  --success-foreground-hsl: 144 36% 11%;
+  --warning-hex: #ed9e59;
+  --warning-hsl: 28 80% 64%;
+  --warning-foreground-hex: #241a2e;
+  --warning-foreground-hsl: 270 28% 14%;
+  --error-hex: #f08a8a;
+  --error-hsl: 0 77% 74%;
+  --error-foreground-hex: #2a1113;
+  --error-foreground-hsl: 355 42% 12%;
+  --info-hex: #c0a6de;
+  --info-hsl: 268 46% 76%;
+  --focus-ring-hex: #ed9e59;
+  --focus-ring-hsl: 28 80% 64%;
+
+  /* paper surfaces intentionally stay light for comfortable writing */
+  --paper-hex: #fbf5ec;
+  --paper-hsl: 36 65% 95%;
+  --paper-ruled-hex: #f6eee1;
+  --paper-ruled-hsl: 37 54% 92%;
+  --paper-foreground-hex: #2a2233;
+  --paper-foreground-hsl: 268 20% 17%;
+  --paper-muted-hex: #7b6f6b;
+  --paper-muted-hsl: 15 7% 45%;
+  --paper-rule-hex: #e4d6c9;
+  --paper-rule-hsl: 29 33% 84%;
+
+  --nk-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --nk-shadow-sm: 0 2px 10px -3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.35);
+  --nk-shadow-md: 0 14px 34px -18px rgba(0, 0, 0, 0.7), 0 2px 8px -4px rgba(0, 0, 0, 0.4);
+  --nk-shadow-lg: 0 30px 70px -32px rgba(0, 0, 0, 0.85), 0 8px 24px -14px rgba(0, 0, 0, 0.5);
+  --nk-shadow-focus: 0 0 0 3px hsl(var(--focus-ring-hsl) / 0.45);
+  --nk-glass-bg: rgba(30, 26, 50, 0.72);
+  --nk-glass-border: rgba(233, 188, 185, 0.14);
+  --nk-scrim: rgba(8, 6, 16, 0.62);
+  --nk-selection: rgba(237, 158, 89, 0.28);
+  --nk-grad-brand: linear-gradient(135deg, #a34054, #ed9e59);
+  --nk-grad-surface: linear-gradient(160deg, rgba(237, 158, 89, 0.14), rgba(163, 64, 84, 0.1) 55%, rgba(68, 23, 78, 0.24));
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  background-color: hsl(var(--background-primary-hsl));
+}
+
+body {
+  background-color: hsl(var(--background-primary-hsl));
+  color: hsl(var(--text-primary-hsl));
+  font-family: var(--nk-font-sans);
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color var(--nk-dur-base) var(--nk-ease-out),
+    color var(--nk-dur-base) var(--nk-ease-out);
+}
+
+::selection {
+  background: var(--nk-selection);
+  color: hsl(var(--text-primary-hsl));
+}
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid hsl(var(--focus-ring-hsl));
+  outline-offset: 2px;
+  border-radius: var(--nk-radius-xs);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border-active-hsl));
+  border-radius: var(--nk-radius-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--border-strong-hsl));
+  background-clip: padding-box;
+}
+
+/* Writing surfaces always resolve ink tokens so hosted components stay
+   readable even when the surrounding product chrome is dark. */
+:where(.paper-plain, .paper-ruled, .paper-graph, .paper-dotted, .paper-single-line,
+  .paper-college, .bg-paper, .nn-editor-canvas, .nk-paper, [class*='bg-paper']) {
+  --foreground: var(--paper-foreground-hsl);
+  --card-foreground: var(--paper-foreground-hsl);
+  --popover-foreground: var(--paper-foreground-hsl);
+  --muted-foreground: var(--paper-muted-hsl);
+  --secondary: var(--paper-ruled-hsl);
+  --muted: var(--paper-ruled-hsl);
+  --accent: var(--paper-ruled-hsl);
+  --accent-foreground: var(--paper-foreground-hsl);
+  --border: var(--paper-rule-hsl);
+  --input: var(--paper-rule-hsl);
+  color: hsl(var(--paper-foreground-hsl));
+}
+
+/* ============================================================
+   SHARED UTILITIES
+   ============================================================ */
+.nk-gradient-primary { background-image: var(--nk-grad-primary); }
+.nk-gradient-secondary { background-image: var(--nk-grad-secondary); }
+.nk-gradient-accent { background-image: var(--nk-grad-accent); }
+.nk-gradient-soft { background-image: var(--nk-grad-soft); }
+.nk-gradient-hero { background-image: var(--nk-grad-hero); }
+
+.nk-text-gradient {
+  background-image: var(--nk-grad-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.nk-focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.nk-focus-ring:focus-visible {
+  outline-color: hsl(var(--focus-ring-hsl));
+  box-shadow: var(--nk-shadow-focus);
+}
+
+.nk-hairline { border: 1px solid hsl(var(--border-subtle-hsl)); }
+
+.nk-scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.nk-scrollbar-none::-webkit-scrollbar { display: none; }
+
+/* Motion utilities (180–400ms, premium easing) */
+.nk-transition { transition: all var(--nk-dur-base) var(--nk-ease-out); }
+.nk-transition-colors {
+  transition: background-color var(--nk-dur-fast) var(--nk-ease-out),
+    color var(--nk-dur-fast) var(--nk-ease-out),
+    border-color var(--nk-dur-fast) var(--nk-ease-out),
+    box-shadow var(--nk-dur-fast) var(--nk-ease-out);
+}
+.nk-rise { animation: nk-rise var(--nk-dur-slow) var(--nk-ease-out) both; }
+.nk-fade { animation: nk-fade var(--nk-dur-base) var(--nk-ease-out) both; }
+.nk-scale-in { animation: nk-scale-in var(--nk-dur-base) var(--nk-ease-out) both; }
+
+@keyframes nk-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes nk-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes nk-scale-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes nk-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes nk-pulse-soft {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Slot aliases
+   ------------------------------------------------------------------
+   Tailwind reads `hsl(var(--token))`, so every token Tailwind consumes
+   must hold a bare "H S% L%" slot. These aliases are declared last in
+   the cascade and resolve per-element, so `.dark` automatically picks
+   up the night values of the `-hsl` variables above.
+   ------------------------------------------------------------------ */
+:root {
+  --primary: var(--primary-hsl);
+  --primary-foreground: var(--primary-foreground-hsl);
+  --success: var(--success-hsl);
+  --success-foreground: var(--success-foreground-hsl);
+  --warning: var(--warning-hsl);
+  --warning-foreground: var(--warning-foreground-hsl);
+  --error: var(--error-hsl);
+  --error-foreground: var(--error-foreground-hsl);
+  --info: var(--info-hsl);
+  --focus-ring: var(--focus-ring-hsl);
+  --paper: var(--paper-hsl);
+  --paper-ruled: var(--paper-ruled-hsl);
+  --paper-foreground: var(--paper-foreground-hsl);
+  --paper-muted: var(--paper-muted-hsl);
+  --paper-rule: var(--paper-rule-hsl);
+}

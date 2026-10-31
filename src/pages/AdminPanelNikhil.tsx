@@ -796,7 +796,7 @@ const AdminPanelNikhil: React.FC = () => {
           animate={{ rotate: 360 }}
           transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
         >
-          <RefreshCw className="w-8 h-8 text-primary" />
+          <RefreshCw className="w-8 h-8 text-accent-rose" />
         </motion.div>
       </div>
     );
@@ -814,7 +814,7 @@ const AdminPanelNikhil: React.FC = () => {
           <Card className="rounded-2xl shadow-xl">
             <CardHeader className="text-center">
               <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Shield className="w-8 h-8 text-primary" />
+                <Shield className="w-8 h-8 text-accent-rose" />
               </div>
               <CardTitle>NikNote Admin</CardTitle>
               <CardDescription>
@@ -856,7 +856,7 @@ const AdminPanelNikhil: React.FC = () => {
               <div className="flex items-center gap-2">
                 <h1 className="font-bold text-base sm:text-lg">Analytics Control Center</h1>
                 {realtimeConnected && (
-                  <span className="flex items-center gap-1 text-xs text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                  <span className="flex items-center gap-1 text-xs text-success bg-success/10 px-2 py-0.5 rounded-full">
                     <Radio className="w-3 h-3 animate-pulse" />
                     Live
                   </span>
@@ -1105,7 +1105,7 @@ const AdminChatWidget: React.FC = () => {
       <motion.button
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow"
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-gradient-to-r from-nk-purple to-nk-rose text-white shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow"
       >
         {isOpen ? <X className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
       </motion.button>
@@ -1117,10 +1117,10 @@ const AdminChatWidget: React.FC = () => {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-20 right-6 z-50 w-80 max-h-[420px] bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/30 shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-20 right-6 z-50 w-80 max-h-[420px] bg-surface/95 backdrop-blur-2xl rounded-2xl border border-[color:var(--nk-glass-border)] shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
+            <div className="px-4 py-3 bg-gradient-to-r from-nk-purple to-nk-rose text-white">
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-4 h-4" />
                 <span className="text-sm font-bold">Admin Chat</span>
@@ -1152,12 +1152,12 @@ const AdminChatWidget: React.FC = () => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
                 placeholder="Type message..."
-                className="flex-1 text-xs bg-muted/30 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary/30"
+                className="flex-1 text-xs bg-muted/30 rounded-lg px-3 py-2 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] focus:ring-1 focus:ring-primary/30"
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim()}
-                className="px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-xs font-medium disabled:opacity-50"
+                className="px-3 py-2 rounded-lg bg-gradient-to-r from-nk-purple to-nk-rose text-white text-xs font-medium disabled:opacity-50"
               >
                 Send
               </button>

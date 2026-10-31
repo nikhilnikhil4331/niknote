@@ -103,7 +103,7 @@ export const UserProfileDropdown = forwardRef<HTMLDivElement>((_, ref) => {
             className={`
               w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium transition-all
               ${item.highlight 
-                ? 'bg-gradient-to-r from-accent/10 to-accent/5 text-accent hover:from-accent/20 hover:to-accent/10' 
+                ? 'bg-gradient-to-r from-nk-amber/10 to-nk-rose/5 text-accent hover:from-nk-amber/20 hover:to-nk-rose/10' 
                 : 'hover:bg-muted/60 text-foreground'
               }
             `}
@@ -185,7 +185,7 @@ export const UserProfileDropdown = forwardRef<HTMLDivElement>((_, ref) => {
             className={`
               w-full flex items-center gap-5 px-5 py-5 rounded-2xl text-lg font-semibold transition-all
               ${item.highlight 
-                ? 'bg-gradient-to-r from-accent/15 to-accent/5 text-accent border-2 border-accent/20' 
+                ? 'bg-gradient-to-r from-nk-amber/15 to-nk-rose/5 text-accent border-2 border-accent/20' 
                 : 'bg-muted/50 text-foreground active:bg-muted'
               }
             `}

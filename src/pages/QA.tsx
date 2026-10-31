@@ -11,10 +11,10 @@ import { Check, X, AlertTriangle, SkipForward, Play, RotateCcw, ArrowLeft } from
 import { useNavigate } from 'react-router-dom';
 
 const statusConfig = {
-  pass: { icon: <Check className="w-4 h-4" />, color: 'text-green-500', bg: 'bg-green-50', label: 'PASS' },
-  fail: { icon: <X className="w-4 h-4" />, color: 'text-red-500', bg: 'bg-red-50', label: 'FAIL' },
-  warn: { icon: <AlertTriangle className="w-4 h-4" />, color: 'text-amber-500', bg: 'bg-amber-50', label: 'WARN' },
-  skip: { icon: <SkipForward className="w-4 h-4" />, color: 'text-gray-400', bg: 'bg-gray-50', label: 'SKIP' },
+  pass: { icon: <Check className="w-4 h-4" />, color: 'text-success', bg: 'bg-[color:hsl(var(--success)/0.14)]', label: 'PASS' },
+  fail: { icon: <X className="w-4 h-4" />, color: 'text-error', bg: 'bg-[color:hsl(var(--error)/0.14)]', label: 'FAIL' },
+  warn: { icon: <AlertTriangle className="w-4 h-4" />, color: 'text-accent-warm', bg: 'bg-[color:hsl(var(--accent-warm-hsl)/0.16)]', label: 'WARN' },
+  skip: { icon: <SkipForward className="w-4 h-4" />, color: 'text-fg-muted/70', bg: 'bg-muted', label: 'SKIP' },
 };
 
 export default function QAPage() {
@@ -82,7 +82,7 @@ export default function QAPage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-xl text-center"
           >
-            <span className="text-sm font-semibold text-primary">
+            <span className="text-sm font-semibold text-accent-rose">
               🧪 Running Cycle #{currentCycle}...
             </span>
           </motion.div>
@@ -96,19 +96,19 @@ export default function QAPage() {
               <div className="text-xs text-muted-foreground">Cycles</div>
             </div>
             <div className="bg-card border border-border rounded-xl p-3 text-center">
-              <div className="text-2xl font-bold text-green-500">
+              <div className="text-2xl font-bold text-success">
                 {lastResult?.passed || 0}
               </div>
               <div className="text-xs text-muted-foreground">Passed</div>
             </div>
             <div className="bg-card border border-border rounded-xl p-3 text-center">
-              <div className="text-2xl font-bold text-red-500">
+              <div className="text-2xl font-bold text-error">
                 {lastResult?.failed || 0}
               </div>
               <div className="text-xs text-muted-foreground">Failed</div>
             </div>
             <div className="bg-card border border-border rounded-xl p-3 text-center">
-              <div className="text-2xl font-bold text-amber-500">
+              <div className="text-2xl font-bold text-accent-warm">
                 {lastResult?.warnings || 0}
               </div>
               <div className="text-xs text-muted-foreground">Warnings</div>
@@ -133,7 +133,7 @@ export default function QAPage() {
                   (selectedCycle || results.length) === r.cycleNumber
                     ? 'bg-primary text-primary-foreground'
                     : r.failed > 0
-                      ? 'bg-red-50 text-red-600 border border-red-200'
+                      ? 'bg-[color:hsl(var(--error)/0.14)] text-error border border-[color:hsl(var(--error)/0.4)]'
                       : 'bg-muted/50 text-muted-foreground'
                 }`}
               >

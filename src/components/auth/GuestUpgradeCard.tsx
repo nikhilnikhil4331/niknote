@@ -73,15 +73,15 @@ export function GuestUpgradeCard() {
         >
           {sync.state === 'syncing' ? (
             <>
-              <RefreshCw size={12} className="animate-spin text-primary" /> Syncing…
+              <RefreshCw size={12} className="animate-spin text-accent-rose" /> Syncing…
             </>
           ) : sync.state === 'synced' ? (
             <>
-              <CheckCircle2 size={12} className="text-emerald-500" /> Cloud Synced
+              <CheckCircle2 size={12} className="text-success" /> Cloud Synced
             </>
           ) : (
             <>
-              <Cloud size={12} className="text-primary" /> Sync Now
+              <Cloud size={12} className="text-accent-rose" /> Sync Now
             </>
           )}
         </button>

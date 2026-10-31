@@ -63,14 +63,14 @@ export const NikAIStarConstellation: React.FC<{
     >
       <defs>
         <linearGradient id={`nikai-star-a-${uid}`} x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#8B3DFF" />
-          <stop offset="52%" stopColor="#EC4899" />
-          <stop offset="100%" stopColor="#FF934F" />
+          <stop offset="0%" stopColor="#662249" />
+          <stop offset="52%" stopColor="#A34054" />
+          <stop offset="100%" stopColor="#ED9E59" />
         </linearGradient>
         <linearGradient id={`nikai-star-b-${uid}`} x1="12" y1="4" x2="44" y2="36" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#A855F7" />
-          <stop offset="60%" stopColor="#F472B6" />
-          <stop offset="100%" stopColor="#FDBA74" />
+          <stop offset="0%" stopColor="#A34054" />
+          <stop offset="60%" stopColor="#ED9E59" />
+          <stop offset="100%" stopColor="#E9BCB9" />
         </linearGradient>
       </defs>
 
@@ -174,12 +174,12 @@ export const NikAIBrand: React.FC<NikAIBrandProps> = ({
         />
         <span className="sr-only">NikAI</span>
         {badge && (
-          <span className="mt-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[#F4F1FC] text-[#5C4E8E] border border-[#E7E2F7]">
+          <span className="mt-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[color:hsl(var(--primary)/0.06)] text-fg-secondary border border-subtle">
             {badge}
           </span>
         )}
         {subtitle && (
-          <p className="text-xs font-medium text-[#6C6688] mt-1 tracking-tight text-center">
+          <p className="text-xs font-medium text-fg-secondary mt-1 tracking-tight text-center">
             {subtitle}
           </p>
         )}
@@ -205,13 +205,13 @@ export const NikAIBrand: React.FC<NikAIBrandProps> = ({
         />
         <span className="sr-only">NikAI</span>
         {badge && (
-          <span className="ml-0.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[#F4F1FC] text-[#5C4E8E] border border-[#E7E2F7]">
+          <span className="ml-0.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[color:hsl(var(--primary)/0.06)] text-fg-secondary border border-subtle">
             {badge}
           </span>
         )}
       </div>
       {subtitle && (
-        <span className="text-[11px] font-medium text-[#6C6688] -mt-0.5 tracking-tight">
+        <span className="text-[11px] font-medium text-fg-secondary -mt-0.5 tracking-tight">
           {subtitle}
         </span>
       )}
@@ -238,10 +238,10 @@ export const NikAILoader: React.FC<{ label?: string }> = ({
           className="w-24 h-24 rounded-full p-[2px]"
           style={{
             background:
-              'conic-gradient(from 0deg, #8B3DFF, #EC4899, #FF934F, #C084FC, #8B3DFF)',
+              'conic-gradient(from 0deg, #662249, #A34054, #ED9E59, #C0A6DE, #662249)',
           }}
         >
-          <div className="w-full h-full rounded-full bg-white" />
+          <div className="w-full h-full rounded-full bg-surface" />
         </motion.div>
         <div className="absolute inset-0 flex items-center justify-center">
           <img
@@ -255,19 +255,19 @@ export const NikAILoader: React.FC<{ label?: string }> = ({
 
       <NikAIBrand size="md" badge="ASTRA" />
 
-      <div className="w-40 h-1.5 rounded-full overflow-hidden bg-purple-100">
+      <div className="w-40 h-1.5 rounded-full overflow-hidden bg-[color:hsl(var(--primary)/0.12)]">
         <motion.div
           initial={{ x: '-100%' }}
           animate={{ x: '100%' }}
           transition={{ duration: 1.15, repeat: Infinity, ease: 'easeInOut' }}
           className="w-full h-full rounded-full"
           style={{
-            background: 'linear-gradient(90deg, #8B3DFF, #EC4899, #FF934F)',
+            background: 'linear-gradient(90deg, #662249, #A34054, #ED9E59)',
           }}
         />
       </div>
 
-      <p className="text-xs font-semibold text-[#5E577C]">{label}</p>
+      <p className="text-xs font-semibold text-fg-secondary">{label}</p>
     </div>
   );
 };

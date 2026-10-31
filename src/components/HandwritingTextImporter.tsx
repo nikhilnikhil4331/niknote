@@ -180,9 +180,9 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return 'text-green-600 dark:text-green-400';
-    if (confidence >= 0.5) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
+    if (confidence >= 0.8) return 'text-success dark:text-success';
+    if (confidence >= 0.5) return 'text-accent-warm dark:text-accent-warm';
+    return 'text-error dark:text-error';
   };
 
   const getConfidenceLabel = (confidence: number) => {
@@ -208,7 +208,7 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
         >
           <div className="flex flex-col items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <FileText className="w-6 h-6 text-primary" />
+              <FileText className="w-6 h-6 text-accent-rose" />
             </div>
             <div>
               <p className="font-medium text-sm">Import a PDF or Photo</p>
@@ -229,7 +229,7 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
             <img
               src={previewImage}
               alt="Handwriting sample"
-              className="w-full max-h-48 object-contain bg-white"
+              className="w-full max-h-48 object-contain bg-surface"
             />
             <Button
               variant="ghost"
@@ -243,7 +243,7 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
             {isExtracting && (
               <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <Loader2 className="w-8 h-8 animate-spin text-accent-rose" />
                   <span className="text-sm font-medium">
                     {retryCount > 0 ? 'Retrying extraction...' : 'Extracting text...'}
                   </span>
@@ -285,7 +285,7 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
                       ocrResult.success ? "bg-primary/10" : "bg-destructive/10"
                     )}>
                       {ocrResult.success ? (
-                        <FileText className="w-4 h-4 text-primary" />
+                        <FileText className="w-4 h-4 text-accent-rose" />
                       ) : (
                         <AlertTriangle className="w-4 h-4 text-destructive" />
                       )}
@@ -314,7 +314,7 @@ export const HandwritingTextImporter: React.FC<HandwritingTextImporterProps> = (
                   <div className="text-xs text-muted-foreground bg-background/50 rounded-lg p-2">
                     {ocrResult.warnings.map((warning, i) => (
                       <p key={i} className="flex items-start gap-1">
-                        <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0 text-yellow-500" />
+                        <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0 text-accent-warm" />
                         {warning}
                       </p>
                     ))}

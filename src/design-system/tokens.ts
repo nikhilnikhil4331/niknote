@@ -1,71 +1,97 @@
 // ============================================================
-// NikNote 4.0 — Design System
-// Premium, colorful, modern — inspired by Notion + Apple + Linear
-// Every color, spacing, animation, and typography token
+// NikNote — Sunset Plum Design System (JS tokens)
+// ------------------------------------------------------------
+// CSS is the source of truth (see src/styles/theme.css). This module
+// mirrors the same tokens for canvas/SVG/export code that needs raw
+// values and cannot resolve CSS custom properties.
 // ============================================================
 
+export const palette = {
+  midnight: '#1B1931',
+  purple: '#44174E',
+  burgundy: '#662249',
+  rose: '#A34054',
+  amber: '#ED9E59',
+  blush: '#E9BCB9',
+} as const;
+
 export const niknoteColors = {
-  // Primary brand colors
-  primary: {
-    50: '#eef2ff',
-    100: '#e0e7ff',
-    200: '#c7d2fe',
-    300: '#a5b4fc',
-    400: '#818cf8',
-    500: '#6366f1', // Main brand color (indigo)
-    600: '#4f46e5',
-    700: '#4338ca',
-    800: '#3730a3',
-    900: '#312e81',
+  palette,
+  plum: {
+    50: '#FDF7F5',
+    100: '#F7E9E6',
+    200: '#E9BCB9',
+    300: '#D8A3A6',
+    400: '#BF8590',
+    500: '#A34054',
+    600: '#8C3149',
+    700: '#662249',
+    800: '#44174E',
+    900: '#2A1235',
+    950: '#1B1931',
   },
-  // Accent — NikNote's signature purple-blue gradient
-  accent: {
-    gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa)',
-    gradientHover: 'linear-gradient(135deg, #4f46e5, #7c3aed, #8b5cf6)',
-    glow: '0 0 20px rgba(99, 102, 241, 0.4)',
-    glowHover: '0 0 30px rgba(99, 102, 241, 0.6)',
+  warm: {
+    100: '#FBEAD7',
+    200: '#F6D5B4',
+    300: '#F2B987',
+    400: '#ED9E59',
+    500: '#D9822F',
+    600: '#C4762F',
+    700: '#9A5A14',
   },
-  // Semantic colors
-  success: '#10b981',
-  warning: '#f59e0b',
-  error: '#ef4444',
-  info: '#3b82f6',
-  // Surface colors
-  surface: {
-    primary: '#ffffff',
-    secondary: '#f8fafc',
-    tertiary: '#f1f5f9',
-    elevated: '#ffffff',
-    overlay: 'rgba(0, 0, 0, 0.5)',
-    blur: 'rgba(255, 255, 255, 0.7)',
+  lilac: {
+    100: '#F1E8F5',
+    200: '#E0CDE8',
+    300: '#C0A6DE',
+    400: '#A688C9',
+    500: '#7C5F9E',
+    600: '#5C3A6E',
   },
-  // Text colors
-  text: {
-    primary: '#0f172a',
-    secondary: '#475569',
-    tertiary: '#94a3b8',
-    inverse: '#ffffff',
-    link: '#6366f1',
+  // Semantic values for canvas/export contexts (dark theme — the default).
+  dark: {
+    backgroundPrimary: '#121020',
+    backgroundSecondary: '#17152A',
+    backgroundTertiary: '#1B1931',
+    surfacePrimary: '#1E1A32',
+    surfaceElevated: '#262040',
+    textPrimary: '#F7EEEC',
+    textSecondary: '#D5C0C3',
+    textMuted: '#A79BAE',
+    borderSubtle: '#322B4A',
+    accentPrimary: '#ED9E59',
+    accentSecondary: '#C0A6DE',
+    primary: '#A34054',
+    success: '#6FCF97',
+    warning: '#ED9E59',
+    error: '#F08A8A',
   },
-  // Border
-  border: {
-    default: '#e2e8f0',
-    hover: '#cbd5e1',
-    active: '#6366f1',
-    subtle: '#f1f5f9',
+  light: {
+    backgroundPrimary: '#FBF6F4',
+    backgroundSecondary: '#F5EAE6',
+    backgroundTertiary: '#EFE2DE',
+    surfacePrimary: '#FFFDFC',
+    surfaceElevated: '#FFFFFF',
+    textPrimary: '#241B2E',
+    textSecondary: '#584862',
+    textMuted: '#6B5A73',
+    borderSubtle: '#EADDD9',
+    accentPrimary: '#8C3149',
+    accentSecondary: '#5C3A6E',
+    primary: '#A34054',
+    success: '#157F52',
+    warning: '#A65E12',
+    error: '#A62B36',
   },
-  // Feature-specific gradients
   gradients: {
-    ai: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-    aiGlow: '0 0 20px rgba(139, 92, 246, 0.4)',
-    dna: 'linear-gradient(135deg, #10b981, #14b8a6)',
-    dnaGlow: '0 0 16px rgba(16, 185, 129, 0.3)',
-    premium: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-    premiumGlow: '0 0 16px rgba(245, 158, 11, 0.3)',
-    workspace: 'linear-gradient(135deg, #6366f1, #3b82f6)',
-    workspaceGlow: '0 0 20px rgba(99, 102, 241, 0.3)',
+    primary: 'linear-gradient(180deg, #ED9E59 0%, #A34054 40%, #662249 72%, #44174E 100%)',
+    secondary: 'linear-gradient(135deg, #1B1931 0%, #44174E 45%, #662249 100%)',
+    accent: 'linear-gradient(135deg, #A34054 0%, #ED9E59 100%)',
+    soft: 'linear-gradient(135deg, #E9BCB9 0%, #ED9E59 100%)',
   },
 } as const;
+
+/** Chart series — coordinated, readable on both themes. */
+export const chartPalette = ['#A34054', '#ED9E59', '#E9BCB9', '#662249', '#44174E', '#C0A6DE', '#6FCF97'] as const;
 
 export const niknoteSpacing = {
   xs: '4px',
@@ -78,37 +104,39 @@ export const niknoteSpacing = {
 } as const;
 
 export const niknoteRadii = {
-  sm: '6px',
-  md: '10px',
-  lg: '14px',
-  xl: '20px',
+  xs: '6px',
+  sm: '10px',
+  md: '14px',
+  lg: '18px',
+  xl: '24px',
+  '2xl': '30px',
   full: '9999px',
 } as const;
 
 export const niknoteShadows = {
-  sm: '0 1px 2px rgba(0, 0, 0, 0.05)',
-  md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
-  lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
-  xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-  glow: '0 0 20px rgba(99, 102, 241, 0.15)',
-  glass: '0 8px 32px rgba(0, 0, 0, 0.06)',
+  xs: '0 1px 2px rgba(36, 27, 46, 0.05)',
+  sm: '0 2px 8px -2px rgba(68, 23, 78, 0.1), 0 1px 2px rgba(36, 27, 46, 0.04)',
+  md: '0 10px 26px -14px rgba(68, 23, 78, 0.25), 0 2px 6px -2px rgba(36, 27, 46, 0.06)',
+  lg: '0 24px 60px -28px rgba(68, 23, 78, 0.32), 0 6px 18px -10px rgba(36, 27, 46, 0.08)',
+  focus: '0 0 0 3px rgba(163, 64, 84, 0.35)',
 } as const;
 
 export const niknoteTypography = {
   fontFamily: {
-    sans: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    mono: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+    sans: "'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    display: "'Space Grotesk', 'Inter', system-ui, sans-serif",
+    mono: "'JetBrains Mono', 'Fira Code', monospace",
     handwriting: "'Caveat', 'Kalam', 'Indie Flower', cursive",
   },
   fontSize: {
     xs: '11px',
-    sm: '12px',
+    sm: '12.5px',
     base: '14px',
-    lg: '16px',
-    xl: '18px',
-    '2xl': '22px',
-    '3xl': '28px',
-    '4xl': '36px',
+    md: '15px',
+    lg: '17px',
+    xl: '21px',
+    '2xl': '26px',
+    '3xl': '32px',
   },
   fontWeight: {
     normal: 400,
@@ -118,102 +146,87 @@ export const niknoteTypography = {
     extrabold: 800,
   },
   lineHeight: {
-    tight: 1.25,
-    normal: 1.5,
-    relaxed: 1.75,
+    tight: 1.2,
+    snug: 1.4,
+    normal: 1.6,
+  },
+  tracking: {
+    tight: '-0.015em',
   },
 } as const;
 
-// Animation presets (for Framer Motion)
 export const niknoteMotion = {
-  // Spring physics
+  duration: { fast: 0.18, base: 0.22, slow: 0.32, slower: 0.4 },
+  easing: {
+    out: [0.22, 1, 0.36, 1] as const,
+    inOut: [0.4, 0, 0.2, 1] as const,
+    spring: [0.34, 1.56, 0.64, 1] as const,
+  },
   spring: {
     gentle: { type: 'spring', stiffness: 120, damping: 14, mass: 1 } as const,
     snappy: { type: 'spring', stiffness: 300, damping: 25, mass: 0.8 } as const,
-    bouncy: { type: 'spring', stiffness: 400, damping: 15, mass: 0.6 } as const,
     smooth: { type: 'spring', stiffness: 200, damping: 20, mass: 1 } as const,
   },
-  // Common transitions
   transitions: {
-    fast: { duration: 0.15, ease: [0.25, 0.46, 0.45, 0.94] } as const,
-    normal: { duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] } as const,
-    slow: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } as const,
+    fast: { duration: 0.18, ease: [0.22, 1, 0.36, 1] } as const,
+    normal: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } as const,
+    slow: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } as const,
   },
-  // Common animation variants
   variants: {
-    fadeIn: {
-      initial: { opacity: 0 },
-      animate: { opacity: 1 },
-      exit: { opacity: 0 },
-    },
+    fadeIn: { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } },
     slideUp: {
       initial: { opacity: 0, y: 10 },
       animate: { opacity: 1, y: 0 },
       exit: { opacity: 0, y: 10 },
-    },
-    slideDown: {
-      initial: { opacity: 0, y: -10 },
-      animate: { opacity: 1, y: 0 },
-      exit: { opacity: 0, y: -10 },
     },
     slideInRight: {
       initial: { opacity: 0, x: 20 },
       animate: { opacity: 1, x: 0 },
       exit: { opacity: 0, x: 20 },
     },
-    slideInLeft: {
-      initial: { opacity: 0, x: -20 },
-      animate: { opacity: 1, x: 0 },
-      exit: { opacity: 0, x: -20 },
-    },
     scaleIn: {
-      initial: { opacity: 0, scale: 0.95 },
+      initial: { opacity: 0, scale: 0.97 },
       animate: { opacity: 1, scale: 1 },
-      exit: { opacity: 0, scale: 0.95 },
+      exit: { opacity: 0, scale: 0.97 },
     },
-    staggerContainer: {
-      animate: {
-        transition: { staggerChildren: 0.05 },
-      },
-    },
+    staggerContainer: { animate: { transition: { staggerChildren: 0.05 } } },
   },
-  // Hover/tap interaction
   interaction: {
-    whileHover: { scale: 1.02, transition: { duration: 0.15 } },
-    whileTap: { scale: 0.98, transition: { duration: 0.1 } },
-    whileHoverLift: { y: -2, transition: { duration: 0.15 } },
+    whileHover: { scale: 1.015, transition: { duration: 0.18 } },
+    whileTap: { scale: 0.985, transition: { duration: 0.12 } },
+    whileHoverLift: { y: -2, transition: { duration: 0.18 } },
   },
 } as const;
 
-// Glass morphism presets
+/** Restrained glass — reserved for overlays and hero widgets. */
 export const niknoteGlass = {
   light: {
-    background: 'rgba(255, 255, 255, 0.7)',
+    background: 'rgba(255, 253, 252, 0.72)',
     backdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.3)',
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.06)',
+    border: '1px solid rgba(233, 188, 185, 0.5)',
+    boxShadow: '0 10px 26px -14px rgba(68, 23, 78, 0.25)',
   },
-  medium: {
-    background: 'rgba(255, 255, 255, 0.5)',
-    backdropFilter: 'blur(24px)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-  },
-  heavy: {
-    background: 'rgba(255, 255, 255, 0.3)',
-    backdropFilter: 'blur(32px)',
-    border: '1px solid rgba(255, 255, 255, 0.15)',
-    boxShadow: '0 16px 48px rgba(0, 0, 0, 0.12)',
+  dark: {
+    background: 'rgba(30, 26, 50, 0.72)',
+    backdropFilter: 'blur(20px)',
+    border: '1px solid rgba(233, 188, 185, 0.14)',
+    boxShadow: '0 24px 60px -28px rgba(0, 0, 0, 0.75)',
   },
 } as const;
 
-// Sidebar design tokens
 export const sidebarTokens = {
-  width: '260px',
-  widthCollapsed: '0px',
-  itemHeight: '32px',
+  width: '264px',
+  widthCollapsed: '72px',
+  itemHeight: '34px',
   sectionTitleHeight: '28px',
   padding: '12px',
-  itemPadding: '6px 8px',
+  itemPadding: '8px 10px',
   indentPerLevel: 16,
+} as const;
+
+/** Premium interface surface tokens (dark defaults). */
+export const premiumTokens = {
+  gradient: niknoteColors.gradients.accent,
+  border: 'rgba(237, 158, 89, 0.35)',
+  glow: '0 10px 30px -12px rgba(237, 158, 89, 0.45)',
 } as const;

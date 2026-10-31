@@ -212,7 +212,7 @@ ${extractedText.substring(0, 4000)}`,
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          <FileText className="w-6 h-6 text-primary" />
+          <FileText className="w-6 h-6 text-accent-rose" />
           Document Intelligence
         </h2>
         <p className="text-muted-foreground text-sm mt-1">
@@ -220,7 +220,7 @@ ${extractedText.substring(0, 4000)}`,
         </p>
         <button
           onClick={() => navigate('/pdf-editor')}
-          className="mt-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#EC4899] px-4 py-2 text-[12.5px] font-bold text-white shadow-sm"
+          className="mt-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-nk-purple via-nk-rose to-nk-amber px-4 py-2 text-[12.5px] font-bold text-white shadow-sm"
         >
           <FileText className="w-4 h-4" />
           PDF Studio — edit, sign & annotate any PDF
@@ -267,7 +267,7 @@ ${extractedText.substring(0, 4000)}`,
           animate={{ opacity: 1 }}
           className="text-center py-12"
         >
-          <Loader2 className="w-10 h-10 animate-spin mx-auto text-primary mb-4" />
+          <Loader2 className="w-10 h-10 animate-spin mx-auto text-accent-rose mb-4" />
           <h3 className="text-lg font-semibold mb-1">
             {step === 'uploading' && 'Upload ho raha hai...'}
             {step === 'extracting' && 'Text extract ho raha hai...'}
@@ -291,7 +291,7 @@ ${extractedText.substring(0, 4000)}`,
           animate={{ opacity: 1 }}
           className="text-center py-12"
         >
-          <X className="w-10 h-10 mx-auto text-red-500 mb-4" />
+          <X className="w-10 h-10 mx-auto text-error mb-4" />
           <h3 className="text-lg font-semibold mb-1">Oops! Error aa gaya</h3>
           <p className="text-muted-foreground text-sm mb-4">{error}</p>
           <Button onClick={() => { setStep('idle'); setFile(null); setError(null); }}>
@@ -309,7 +309,7 @@ ${extractedText.substring(0, 4000)}`,
           {/* File info */}
           {file && (
             <div className="flex items-center gap-3 mb-4 p-3 bg-muted/50 rounded-xl">
-              <FileText className="w-5 h-5 text-primary" />
+              <FileText className="w-5 h-5 text-accent-rose" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{file.name}</p>
                 <p className="text-xs text-muted-foreground">
@@ -336,7 +336,7 @@ ${extractedText.substring(0, 4000)}`,
             <Button
               onClick={handleGenerateNotes}
               disabled={isGeneratingNotes}
-              className="flex-1 gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white"
+              className="flex-1 gap-2 bg-gradient-to-r from-nk-purple to-nk-rose text-white"
             >
               {isGeneratingNotes ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -400,7 +400,7 @@ ${extractedText.substring(0, 4000)}`,
                 <ul className="space-y-2">
                   {extracted.keyPoints.map((point, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
-                      <span className="text-primary font-bold mt-0.5">•</span>
+                      <span className="text-accent-rose font-bold mt-0.5">•</span>
                       <span className="text-muted-foreground">{point}</span>
                     </li>
                   ))}
@@ -489,7 +489,7 @@ ${extractedText.substring(0, 4000)}`,
                 {extracted.topics.map((topic, i) => (
                   <span
                     key={i}
-                    className="px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                    className="px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-accent-rose border border-primary/20"
                   >
                     {topic}
                   </span>

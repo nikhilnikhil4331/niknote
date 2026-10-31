@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { spring } from '@/lib/motion';
 
 /* ── Animated progress ring ── */
-export function Ring({ size = 64, stroke = 7, pct, from = '#8b5cf6', to = '#ec4899', track, children, className }: {
+export function Ring({ size = 64, stroke = 7, pct, from = '#7C5F9E', to = '#A34054', track, children, className }: {
   size?: number; stroke?: number; pct: number; from?: string; to?: string; track?: string; children?: ReactNode; className?: string;
 }) {
   const id = useId();
@@ -139,7 +139,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
     <AnimatePresence>
       {open && (
         <>
-          <motion.div className="absolute inset-0 z-40 bg-black/35" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+          <motion.div className="absolute inset-0 z-40 bg-[color:var(--nk-scrim)]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           <motion.div
             className="absolute inset-x-2 z-50 max-h-[78%] overflow-y-auto rounded-[1.6rem] p-4 nnh-card nnh-scroll"
             style={{ bottom: 'calc(8px + env(safe-area-inset-bottom, 0px))', background: 'var(--nnh-card)' }}
@@ -166,13 +166,13 @@ export function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boo
     <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)}
       className={cn('w-11 rounded-full p-0.5 transition-colors flex items-center', on ? 'nnh-gradient-btn justify-end' : 'justify-start')}
       style={{ height: 26, background: on ? undefined : 'var(--nnh-line)', width: 46 }}>
-      <motion.span layout className="block rounded-full bg-white shadow" style={{ width: 22, height: 22 }} transition={spring.snappy} />
+      <motion.span layout className="block rounded-full bg-surface shadow" style={{ width: 22, height: 22 }} transition={spring.snappy} />
     </button>
   );
 }
 
 /* ── Mini water glass for the home card ── */
-export function MiniGlass({ pct, color = '#0ea5e9', size = 44 }: { pct: number; color?: string; size?: number }) {
+export function MiniGlass({ pct, color = '#7C5F9E', size = 44 }: { pct: number; color?: string; size?: number }) {
   const p = Math.max(0, Math.min(1, pct));
   const top = 8, bottom = 56;
   const level = top + (1 - p) * (bottom - top) - 4;

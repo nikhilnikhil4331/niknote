@@ -30,10 +30,10 @@ type Period = 'week' | 'month' | 'year';
 type Metric = 'focus' | 'tasks' | 'notes' | 'habits';
 
 const METRICS: { id: Metric; label: string; color: string; icon: React.ElementType; unit: string }[] = [
-  { id: 'focus', label: 'Focus Time', color: '#7028D9', icon: Timer, unit: 'min' },
-  { id: 'tasks', label: 'Tasks Done', color: '#D92C9B', icon: ListChecks, unit: '' },
-  { id: 'notes', label: 'Notes Created', color: '#FFAD45', icon: NotebookPen, unit: '' },
-  { id: 'habits', label: 'Habit Logs', color: '#159B68', icon: HeartPulse, unit: '' },
+  { id: 'focus', label: 'Focus Time', color: '#662249', icon: Timer, unit: 'min' },
+  { id: 'tasks', label: 'Tasks Done', color: '#A34054', icon: ListChecks, unit: '' },
+  { id: 'notes', label: 'Notes Created', color: '#ED9E59', icon: NotebookPen, unit: '' },
+  { id: 'habits', label: 'Habit Logs', color: '#157F52', icon: HeartPulse, unit: '' },
 ];
 
 const PERIODS: { id: Period; label: string }[] = [
@@ -138,19 +138,19 @@ export const ProductivityOverview: React.FC<{ notes: DNote[] }> = ({ notes }) =>
     return [
       {
         id: 'focus' as const, label: 'Focus Time', value: formatMinutesAsHours(focusNow),
-        delta: deltaPct(focusNow, focusPrev), color: '#7028D9', bg: '#F5F0FF', icon: Timer,
+        delta: deltaPct(focusNow, focusPrev), color: '#662249', bg: 'hsl(var(--primary) / 0.14)', icon: Timer,
       },
       {
         id: 'tasks' as const, label: 'Tasks Completed', value: String(tasksNow),
-        delta: deltaPct(tasksNow, tasksPrev), color: '#D92C9B', bg: '#FFF3F8', icon: ListChecks,
+        delta: deltaPct(tasksNow, tasksPrev), color: '#A34054', bg: 'hsl(var(--accent-rose-hsl) / 0.16)', icon: ListChecks,
       },
       {
         id: 'notes' as const, label: 'Notes Created', value: String(notesNow),
-        delta: deltaPct(notesNow, notesPrev), color: '#E8940A', bg: '#FFF8EA', icon: NotebookPen,
+        delta: deltaPct(notesNow, notesPrev), color: '#C4762F', bg: 'hsl(var(--accent-primary-hsl) / 0.18)', icon: NotebookPen,
       },
       {
         id: 'habits' as const, label: 'Habit Score', value: `${habitNow}%`,
-        delta: deltaPct(habitNow, habitPrev), color: '#159B68', bg: '#E9F9F1', icon: HeartPulse,
+        delta: deltaPct(habitNow, habitPrev), color: '#157F52', bg: 'hsl(var(--success) / 0.16)', icon: HeartPulse,
         caption: 'last 7 days',
       },
     ];
@@ -281,10 +281,10 @@ export const ProductivityOverview: React.FC<{ notes: DNote[] }> = ({ notes }) =>
                       {perDay ? new Date(`${row.key}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : monthLabel(row.key)}
                     </div>
                     <div className="mt-1 space-y-0.5" style={{ color: 'var(--nd-ink-2)' }}>
-                      <div><b style={{ color: '#7028D9' }}>{formatMinutesAsHours(series.focus[i] ?? 0)}</b> focused</div>
-                      <div><b style={{ color: '#D92C9B' }}>{series.tasks[i] ?? 0}</b> tasks done</div>
-                      <div><b style={{ color: '#E8940A' }}>{series.notes[i] ?? 0}</b> notes created</div>
-                      {perDay && <div><b style={{ color: '#159B68' }}>{series.habits[i] ?? 0}</b> habit logs</div>}
+                      <div><b style={{ color: 'hsl(var(--accent-cool-hsl))' }}>{formatMinutesAsHours(series.focus[i] ?? 0)}</b> focused</div>
+                      <div><b style={{ color: 'hsl(var(--accent-rose-hsl))' }}>{series.tasks[i] ?? 0}</b> tasks done</div>
+                      <div><b style={{ color: 'hsl(var(--accent-warm-hsl))' }}>{series.notes[i] ?? 0}</b> notes created</div>
+                      {perDay && <div><b style={{ color: 'hsl(var(--success))' }}>{series.habits[i] ?? 0}</b> habit logs</div>}
                     </div>
                     {perDay && <div className="mt-1 text-[10px] font-semibold" style={{ color: 'var(--nd-text-3)' }}>Click for details</div>}
                   </div>
@@ -304,7 +304,7 @@ export const ProductivityOverview: React.FC<{ notes: DNote[] }> = ({ notes }) =>
               {rows.map((r) => (
                 <Cell
                   key={r.key}
-                  fill={r.key === selectedKey ? '#4D168F' : r.isToday ? '#D92C9B' : activeMetric.color}
+                  fill={r.key === selectedKey ? '#44174E' : r.isToday ? '#A34054' : activeMetric.color}
                   fillOpacity={selectedKey && r.key !== selectedKey ? 0.35 : r.isToday ? 1 : 0.82}
                   style={{ cursor: perDay ? 'pointer' : 'default' }}
                 />

@@ -50,7 +50,7 @@ export const TrustBar: React.FC<ValueProps> = ({ className = '', variant = 'bann
       className={`rounded-xl bg-card border border-border/50 p-4 text-left space-y-2 ${className}`}
     >
       <div className="flex items-start gap-2">
-        <ShieldCheck className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+        <ShieldCheck className="h-4 w-4 text-success mt-0.5 shrink-0" />
         <p className="text-xs text-muted-foreground leading-relaxed">
           <span className="font-semibold text-foreground">No countdown, no fake discount.</span>{' '}
           The price shown is the price you pay. Payments run through Razorpay over UPI, cards or

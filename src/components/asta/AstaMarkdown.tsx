@@ -66,19 +66,19 @@ const CodeBlockView: React.FC<{ language: string; code: string }> = ({ language,
   };
 
   return (
-    <div className="my-3.5 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-100 shadow-sm">
-      <div className="flex items-center justify-between border-b border-zinc-800/90 bg-zinc-900/90 px-3.5 py-2 text-[11px] font-mono text-zinc-400">
+    <div className="my-3.5 overflow-hidden rounded-xl border border-active bg-nk-midnight text-fg-muted/70 shadow-sm">
+      <div className="flex items-center justify-between border-b border-active/90 bg-nk-midnight/90 px-3.5 py-2 text-[11px] font-mono text-fg-muted/70">
         <span className="uppercase tracking-wider">{language || 'code / formula'}</span>
         <button
           type="button"
           onClick={onCopy}
-          className="inline-flex min-h-[28px] items-center gap-1.5 rounded-md px-2 py-1 text-zinc-300 transition-colors hover:bg-zinc-800 active:scale-95"
+          className="inline-flex min-h-[28px] items-center gap-1.5 rounded-md px-2 py-1 text-fg-muted/70 transition-colors hover:bg-[color:hsl(var(--background-secondary-hsl))] active:scale-95"
         >
-          {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
           <span>{copied ? 'Copied' : 'Copy'}</span>
         </button>
       </div>
-      <pre className="overflow-x-auto p-3.5 text-[13px] leading-relaxed font-mono text-zinc-100">
+      <pre className="overflow-x-auto p-3.5 text-[13px] leading-relaxed font-mono text-fg-muted/70">
         <code>{code}</code>
       </pre>
     </div>
@@ -96,13 +96,13 @@ const InteractiveQuizDeck: React.FC<{ questions: ParsedMCQ[] }> = ({ questions }
 
   return (
     <div className="my-3 space-y-3.5">
-      <div className="flex items-center justify-between rounded-xl border border-indigo-500/20 bg-indigo-500/[0.06] px-3.5 py-2.5 text-xs font-medium text-foreground">
+      <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/[0.06] px-3.5 py-2.5 text-xs font-medium text-foreground">
         <span className="inline-flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+          <Sparkles className="h-3.5 w-3.5 text-accent-cool" />
           Interactive Practice Quiz ({questions.length} MCQs)
         </span>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-background px-2.5 py-1 font-semibold shadow-2xs">
-          <Trophy className="h-3.5 w-3.5 text-amber-500" />
+          <Trophy className="h-3.5 w-3.5 text-accent-warm" />
           Score: {score} / {questions.length}
         </span>
       </div>
@@ -115,7 +115,7 @@ const InteractiveQuizDeck: React.FC<{ questions: ParsedMCQ[] }> = ({ questions }
             className="rounded-2xl border border-border/80 bg-card/90 p-4 shadow-2xs transition-colors"
           >
             <p className="mb-3 text-[14.5px] font-semibold leading-snug text-foreground">
-              <span className="mr-1.5 text-indigo-500">Q{q.number}.</span>
+              <span className="mr-1.5 text-accent-cool">Q{q.number}.</span>
               {q.question}
             </p>
             <div className="space-y-2">
@@ -126,9 +126,9 @@ const InteractiveQuizDeck: React.FC<{ questions: ParsedMCQ[] }> = ({ questions }
                   'border-border/70 bg-background hover:bg-muted/60 text-foreground';
                 if (pick) {
                   if (isRight) {
-                    cls = 'border-emerald-500/70 bg-emerald-500/10 text-foreground font-medium';
+                    cls = 'border-[color:hsl(var(--success)/0.7)] bg-success/10 text-foreground font-medium';
                   } else if (isChosen) {
-                    cls = 'border-rose-500/70 bg-rose-500/10 text-foreground';
+                    cls = 'border-[color:hsl(var(--accent-rose-hsl)/0.7)] bg-primary/10 text-foreground';
                   } else {
                     cls = 'border-border/40 bg-background/50 text-muted-foreground';
                   }
@@ -150,7 +150,7 @@ const InteractiveQuizDeck: React.FC<{ questions: ParsedMCQ[] }> = ({ questions }
             </div>
             {pick && (
               <div className="mt-3 rounded-xl bg-muted/60 px-3.5 py-2.5 text-xs leading-relaxed text-foreground/90">
-                <strong className={pick === q.answer ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+                <strong className={pick === q.answer ? 'text-success dark:text-success' : 'text-accent-rose dark:text-accent-rose'}>
                   {pick === q.answer ? '✓ Correct!' : `✗ Correct Answer: Option ${q.answer}`}
                 </strong>
                 {q.explanation ? ` — ${q.explanation}` : ''}
@@ -161,7 +161,7 @@ const InteractiveQuizDeck: React.FC<{ questions: ParsedMCQ[] }> = ({ questions }
       })}
 
       {answeredCount === questions.length && (
-        <div className="flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs font-medium text-foreground">
+        <div className="flex items-center justify-between rounded-xl border border-[color:hsl(var(--success)/0.3)] bg-success/10 px-4 py-3 text-xs font-medium text-foreground">
           <span>Quiz completed! Final score: <strong>{score}/{questions.length}</strong></span>
           <button
             type="button"
@@ -204,11 +204,11 @@ export const AstaMarkdown: React.FC<{ content: string; isStreaming?: boolean }> 
             <h3 className="mt-4 mb-1.5 text-[15.5px] font-semibold text-foreground first:mt-0">{children}</h3>
           ),
           p: ({ children }) => <p className="mb-3 last:mb-0 leading-[1.72]">{children}</p>,
-          ul: ({ children }) => <ul className="mb-3 ml-5 list-disc space-y-1.5 marker:text-indigo-500">{children}</ul>,
+          ul: ({ children }) => <ul className="mb-3 ml-5 list-disc space-y-1.5 marker:text-accent-cool">{children}</ul>,
           ol: ({ children }) => <ol className="mb-3 ml-5 list-decimal space-y-1.5 marker:font-semibold">{children}</ol>,
           li: ({ children }) => <li className="pl-0.5 leading-[1.68]">{children}</li>,
           blockquote: ({ children }) => (
-            <blockquote className="my-3 rounded-r-xl border-l-[3px] border-indigo-500 bg-indigo-500/[0.06] px-4 py-2.5 text-[14px] text-foreground/90">
+            <blockquote className="my-3 rounded-r-xl border-l-[3px] border-primary bg-primary/[0.06] px-4 py-2.5 text-[14px] text-foreground/90">
               {children}
             </blockquote>
           ),
@@ -230,7 +230,7 @@ export const AstaMarkdown: React.FC<{ content: string; isStreaming?: boolean }> 
             }
             return (
               <code
-                className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[13px] font-medium text-indigo-600 dark:text-indigo-300"
+                className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[13px] font-medium text-accent-cool dark:text-accent-cool"
                 {...props}
               >
                 {children}
@@ -242,7 +242,7 @@ export const AstaMarkdown: React.FC<{ content: string; isStreaming?: boolean }> 
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-indigo-600 underline underline-offset-2 dark:text-indigo-400"
+              className="font-medium text-accent-cool underline underline-offset-2 dark:text-accent-cool"
             >
               {children}
             </a>
@@ -252,7 +252,7 @@ export const AstaMarkdown: React.FC<{ content: string; isStreaming?: boolean }> 
         {content}
       </ReactMarkdown>
       {isStreaming && (
-        <span className="ml-1 inline-block h-4 w-2 animate-pulse rounded-sm bg-indigo-500 align-middle" />
+        <span className="ml-1 inline-block h-4 w-2 animate-pulse rounded-sm bg-primary align-middle" />
       )}
     </div>
   );

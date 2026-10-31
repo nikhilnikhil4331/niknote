@@ -6,8 +6,8 @@
 /* Mobile navigation roles inherit the selected appearance palette. */
 .nn-mobile {
   --nav-glass: hsl(var(--background) / .88);
-  --nav-highlight: linear-gradient(135deg, hsl(var(--primary) / .18), hsl(var(--accent) / .08));
-  --nav-create: linear-gradient(145deg, hsl(var(--primary)), hsl(var(--accent)));
+  --nav-highlight: linear-gradient(135deg, hsl(var(--primary) / .18), hsl(var(--accent-primary-hsl) / .12));
+  --nav-create: linear-gradient(145deg, hsl(var(--primary)), hsl(var(--primary-hover-hsl)));
   --nav-shadow: 0 8px 30px hsl(var(--foreground) / .1), inset 0 1px 0 hsl(var(--primary-foreground) / .4);
   --nav-create-shadow: 0 6px 16px hsl(var(--primary) / .28);
 }
@@ -40,17 +40,17 @@
 .nn-mobile .nn-ai-greeting h2 { overflow-wrap: anywhere; letter-spacing: 0; }
 .nn-mobile .nn-profile h2, .nn-mobile .nn-drawer-profile strong { max-width: 100%; overflow-wrap: anywhere; }
 
-.nik-auth-page { --auth-pink: var(--ink-pink); --auth-violet: var(--accent); --auth-blue: var(--primary); min-height: 100dvh; position: relative; isolation: isolate; display: grid; place-items: center; padding: 68px 20px 32px; background: hsl(var(--background)); overflow: clip; }
+.nik-auth-page { --auth-pink: var(--accent-rose-hsl); --auth-violet: var(--accent-secondary-hsl); --auth-blue: var(--primary-hsl); min-height: 100dvh; position: relative; isolation: isolate; display: grid; place-items: center; padding: 68px 20px 32px; background: hsl(var(--background)); overflow: clip; }
 .nik-auth-backdrop { position: absolute; inset: -20%; z-index: -1; background: linear-gradient(125deg, hsl(var(--auth-pink) / .12), hsl(var(--auth-violet) / .09) 42%, hsl(var(--auth-blue) / .12), hsl(var(--background))); background-size: 200% 200%; animation: nik-auth-drift 14s ease-in-out infinite alternate; }
 .nik-auth-back { position: absolute; top: max(22px, env(safe-area-inset-top)); left: 22px; display: flex; align-items: center; gap: 7px; font-size: 13px; }
 .nik-auth-content { width: 100%; max-width: 420px; }
 .nik-auth-content > header { background: transparent !important; }
 .nik-auth-logo { width: 190px; height: 90px; object-fit: contain; margin: 0 auto 14px; }
-.nik-auth-form-surface { padding: 26px; border: 1px solid hsl(var(--card) / .9); border-radius: 22px; background: hsl(var(--card) / .75); backdrop-filter: blur(22px); box-shadow: 0 18px 60px hsl(var(--accent) / .08); }
+.nik-auth-form-surface { padding: 26px; border: 1px solid hsl(var(--border-subtle-hsl) / .9); border-radius: 22px; background: hsl(var(--card) / .78); backdrop-filter: blur(22px); box-shadow: 0 18px 60px hsl(var(--primary) / .1); }
 .nik-auth-field-icon { position: absolute; left: 14px; top: 15px; color: hsl(var(--muted-foreground)); pointer-events: none; }
 .nik-auth-submit { background: linear-gradient(105deg, hsl(var(--auth-violet)), hsl(var(--auth-blue))); color: hsl(var(--primary-foreground)); box-shadow: 0 6px 18px hsl(var(--primary) / .18); }
 .nik-auth-success { min-height: 290px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 16px; }
-.nik-auth-success-mark { position: relative; display: grid; place-items: center; width: 88px; height: 88px; margin-bottom: 8px; border-radius: 28px; background: hsl(var(--accent) / .1); color: hsl(var(--accent)); }
+.nik-auth-success-mark { position: relative; display: grid; place-items: center; width: 88px; height: 88px; margin-bottom: 8px; border-radius: 28px; background: hsl(var(--accent-primary-hsl) / .12); color: hsl(var(--accent-primary-hsl)); }
 .nik-auth-spark { position: absolute; width: 6px; height: 6px; border-radius: 2px; background: hsl(var(--auth-pink)); animation: nik-auth-spark .9s ease-out both; }
 .nik-auth-spark-0 { --sx: -65px; --sy: -48px; }.nik-auth-spark-1 { --sx: 0px; --sy: -70px; }.nik-auth-spark-2 { --sx: 65px; --sy: -42px; }.nik-auth-spark-3 { --sx: 80px; --sy: 8px; }.nik-auth-spark-4 { --sx: 58px; --sy: 52px; }.nik-auth-spark-5 { --sx: 0px; --sy: 72px; }.nik-auth-spark-6 { --sx: -57px; --sy: 48px; }.nik-auth-spark-7 { --sx: -78px; --sy: 0px; }
 @keyframes nik-auth-drift { from { background-position: 0% 20%; transform: translateY(-1%); } to { background-position: 100% 80%; transform: translateY(1%); } }
@@ -59,166 +59,96 @@
 @media (prefers-reduced-motion: reduce) { .nik-auth-backdrop, .nik-auth-spark { animation: none; } }
 
 @layer base {
+  /* ============================================================
+     Legacy token bridge (shadcn + editor)
+     ------------------------------------------------------------
+     These variables point at the Sunset Plum design system in
+     src/styles/theme.css. Because they resolve at use time, the
+     whole application re-themes when `.dark` is toggled — there is
+     no second palette to maintain.
+     ============================================================ */
   :root {
-    --water: 199 89% 55%;
-    --water-deep: 215 85% 48%;
-    --coin: 40 96% 52%;
-    --heart: 340 82% 58%;
-    --success: 152 62% 40%;
-    /* Background - Crisp, modern light gray */
-    --background: 220 20% 98%;
-    --foreground: 222 47% 11%;
+    /* surfaces */
+    --background: var(--background-primary-hsl);
+    --foreground: var(--text-primary-hsl);
+    --card: var(--surface-primary-hsl);
+    --card-foreground: var(--text-primary-hsl);
+    --popover: var(--surface-elevated-hsl);
+    --popover-foreground: var(--text-primary-hsl);
 
-    /* Paper tones - Warm, elegant cream */
-    --paper: 45 40% 96%;
-    --paper-ruled: 42 35% 94%;
-    --paper-foreground: 222 47% 11%;
-    
-    /* Ink colors - Rich, authentic ink tones */
-    --ink-blue: 221 83% 53%;
-    --ink-black: 222 47% 11%;
-    --ink-blue-light: 217 91% 60%;
-    --ink-red: 0 84% 60%;
-    --ink-green: 142 71% 45%;
-    --ink-purple: 262 83% 58%;
-    --ink-brown: 25 55% 38%;
-    --ink-teal: 172 66% 50%;
-    --ink-orange: 25 95% 53%;
-    --ink-pink: 330 81% 60%;
-    --ink-navy: 224 76% 48%;
-    --ink-burgundy: 340 75% 38%;
-    --ink-gold: 38 92% 50%;
-    
-    /* Ruled lines */
-    --line-color: 214 32% 85%;
-    --margin-color: 0 65% 60%;
-    
-    /* Special paper colors */
-    --paper-vintage: 35 40% 88%;
-    --paper-kraft: 30 35% 70%;
-    --paper-blueprint: 215 60% 22%;
+    /* brand — Rose Wine is the primary action colour */
+    --primary: var(--primary-hsl);
+    --primary-foreground: var(--primary-foreground-hsl);
 
-    /* Card - Pure white with premium feel */
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --secondary: var(--surface-secondary-hsl);
+    --secondary-foreground: var(--text-primary-hsl);
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --muted: var(--surface-secondary-hsl);
+    --muted-foreground: var(--text-muted-hsl);
 
-    /* Brand colors - Vibrant indigo/blue */
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
+    /* shadcn "accent" is the neutral hover surface; the brand accent
+       lives on --accent-primary / --accent-secondary */
+    --accent: var(--surface-hover-hsl);
+    --accent-foreground: var(--text-primary-hsl);
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --destructive: var(--error-hsl);
+    --destructive-foreground: var(--error-foreground-hsl);
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 40%;
+    --border: var(--border-subtle-hsl);
+    --input: var(--border-subtle-hsl);
+    --ring: var(--focus-ring-hsl);
 
-    --accent: 262 83% 58%;
-    --accent-foreground: 0 0% 100%;
+    --radius: 0.875rem;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    /* sidebar */
+    --sidebar-background: var(--background-secondary-hsl);
+    --sidebar-foreground: var(--text-primary-hsl);
+    --sidebar-primary: var(--primary-hsl);
+    --sidebar-primary-foreground: var(--primary-foreground-hsl);
+    --sidebar-accent: var(--surface-hover-hsl);
+    --sidebar-accent-foreground: var(--text-primary-hsl);
+    --sidebar-border: var(--border-subtle-hsl);
+    --sidebar-ring: var(--focus-ring-hsl);
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 221 83% 53%;
+    /* toolbar / chrome */
+    --toolbar: var(--surface-secondary-hsl);
+    --toolbar-foreground: var(--text-primary-hsl);
+    --gradient-start: 28 80% 64%;
+    --gradient-end: 348 44% 45%;
 
-    --radius: 1rem;
+    /* status accents used by trackers */
+    --water: 199 74% 46%;
+    --water-deep: 212 72% 40%;
+    --coin: 33 82% 52%;
+    --heart: 348 58% 50%;
+    --success: var(--success-hsl);
 
-    /* Sidebar */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 221 83% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 221 83% 53%;
+    /* ---------- writing surfaces (always light) ---------- */
+    --paper: var(--paper-hsl);
+    --paper-ruled: var(--paper-ruled-hsl);
+    --paper-foreground: var(--paper-foreground-hsl);
+    --line-color: var(--paper-rule-hsl);
+    --margin-color: 348 40% 62%;
 
-    /* Toolbar */
-    --toolbar: 0 0% 100%;
-    --toolbar-foreground: 222 47% 11%;
+    /* Ink wells — harmonised with Sunset Plum, still unmistakably ink */
+    --ink-blue: 218 42% 40%;
+    --ink-black: 268 20% 17%;
+    --ink-blue-light: 214 44% 52%;
+    --ink-red: 352 54% 46%;
+    --ink-green: 160 34% 34%;
+    --ink-purple: 279 34% 40%;
+    --ink-brown: 26 34% 36%;
+    --ink-teal: 187 32% 36%;
+    --ink-orange: 25 58% 46%;
+    --ink-pink: 340 42% 50%;
+    --ink-navy: 226 42% 36%;
+    --ink-burgundy: 342 46% 32%;
+    --ink-gold: 35 60% 38%;
 
-    /* Gradient colors */
-    --gradient-start: 221 83% 53%;
-    --gradient-end: 262 83% 58%;
-  }
-
-  .dark {
-    --water: 199 89% 60%;
-    --water-deep: 215 85% 52%;
-    --coin: 42 95% 58%;
-    --heart: 340 85% 64%;
-    --success: 152 60% 48%;
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
-
-    --paper: 224 50% 8%;
-    --paper-ruled: 224 55% 7%;
-    --paper-foreground: 213 31% 91%;
-    
-    --ink-blue: 217 91% 60%;
-    --ink-black: 213 31% 91%;
-    --ink-blue-light: 217 85% 65%;
-    --ink-red: 0 84% 65%;
-    --ink-green: 142 65% 55%;
-    --ink-purple: 262 75% 65%;
-    --ink-brown: 25 55% 55%;
-    --ink-teal: 172 60% 55%;
-    --ink-orange: 25 90% 60%;
-    --ink-pink: 330 75% 65%;
-    --ink-navy: 224 70% 58%;
-    --ink-burgundy: 340 70% 55%;
-    --ink-gold: 38 85% 58%;
-    
-    --line-color: 224 30% 18%;
-    --margin-color: 0 50% 40%;
-    
-    --paper-vintage: 35 25% 18%;
-    --paper-kraft: 30 20% 28%;
-    --paper-blueprint: 215 55% 12%;
-
-    --card: 224 55% 7%;
-    --card-foreground: 213 31% 91%;
-
-    --popover: 224 55% 7%;
-    --popover-foreground: 213 31% 91%;
-
-    --primary: 217 91% 60%;
-    --primary-foreground: 224 71% 4%;
-
-    --secondary: 224 30% 15%;
-    --secondary-foreground: 213 31% 91%;
-
-    --muted: 224 30% 15%;
-    --muted-foreground: 215 20% 55%;
-
-    --accent: 262 75% 65%;
-    --accent-foreground: 224 71% 4%;
-
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 224 30% 18%;
-    --input: 224 30% 18%;
-    --ring: 217 91% 60%;
-
-    --sidebar-background: 224 55% 6%;
-    --sidebar-foreground: 213 31% 91%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 224 71% 4%;
-    --sidebar-accent: 224 30% 15%;
-    --sidebar-accent-foreground: 213 31% 91%;
-    --sidebar-border: 224 30% 18%;
-    --sidebar-ring: 217 91% 60%;
-
-    --toolbar: 224 55% 8%;
-    --toolbar-foreground: 213 31% 91%;
-
-    --gradient-start: 217 91% 60%;
-    --gradient-end: 262 75% 65%;
+    /* special paper stocks */
+    --paper-vintage: 33 34% 89%;
+    --paper-kraft: 28 28% 74%;
+    --paper-blueprint: 245 32% 18%;
   }
 }
 
@@ -360,19 +290,19 @@
   }
 
   /* AI Formatted content — styled markdown in editor */
-  .ai-formatted strong { font-weight: 700; color: #1e1b4b; }
+  .ai-formatted strong { font-weight: 700; color: hsl(var(--text-primary-hsl)); }
   .ai-formatted em { font-style: italic; }
-  .ai-formatted h3 { font-size: 1rem; font-weight: 700; margin-top: 0.75rem; margin-bottom: 0.25rem; color: #312e81; }
-  .ai-formatted h4 { font-size: 0.875rem; font-weight: 600; margin-top: 0.5rem; margin-bottom: 0.25rem; color: #3730a3; }
-  .ai-formatted code { font-family: 'JetBrains Mono', monospace; background: #e0e7ff; padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.8em; }
+  .ai-formatted h3 { font-size: 1rem; font-weight: 700; margin-top: 0.75rem; margin-bottom: 0.25rem; color: hsl(var(--text-primary-hsl)); }
+  .ai-formatted h4 { font-size: 0.875rem; font-weight: 600; margin-top: 0.5rem; margin-bottom: 0.25rem; color: hsl(var(--text-secondary-hsl)); }
+  .ai-formatted code { font-family: 'JetBrains Mono', monospace; background: hsl(var(--primary) / 0.14); color: hsl(var(--text-primary-hsl)); padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.8em; }
 
   /* ============================================================
      AI RESPONSE BOX — Premium Styling + Animations
      ============================================================ */
   .ai-response-box {
     animation: aiSlideIn 0.4s ease-out;
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.03), rgba(99, 102, 241, 0.05), rgba(168, 85, 247, 0.03));
+    border: 1px solid hsl(var(--accent-primary-hsl) / 0.22);
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.07), hsl(var(--accent-primary-hsl) / 0.05), hsl(var(--accent-secondary-hsl) / 0.06));
     position: relative;
     overflow: hidden;
   }
@@ -383,13 +313,13 @@
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #8b5cf6, #6366f1, #a855f7, #6366f1, #8b5cf6);
+    background: linear-gradient(90deg, #A34054, #C4762F, #A34054, #C4762F, #A34054);
     background-size: 200% 100%;
     animation: shimmerBar 2s linear infinite;
   }
   .ai-response-header {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(99, 102, 241, 0.06));
-    border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.12), hsl(var(--accent-primary-hsl) / 0.08));
+    border-bottom: 1px solid hsl(var(--border-subtle-hsl) / 0.7);
   }
   .ai-response-content {
     animation: aiFadeIn 0.5s ease-out 0.2s both;
@@ -414,14 +344,14 @@
     50% { opacity: 1; }
   }
   .ai-badge {
-    background: linear-gradient(135deg, #8b5cf6, #6366f1);
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    background: linear-gradient(135deg, #A34054, #C4762F);
+    box-shadow: 0 2px 8px rgba(163, 64, 84, 0.32);
   }
   .ai-action-btn {
     transition: all 0.15s ease;
   }
   .ai-action-btn:hover {
-    background: rgba(139, 92, 246, 0.15);
+    background: hsl(var(--accent-primary-hsl) / 0.16);
     transform: scale(1.05);
   }
   .ai-action-btn:active {
@@ -430,19 +360,19 @@
 
   /* Handwriting preview card */
   .preview-card {
-    border: 1px solid rgba(139, 92, 246, 0.15);
+    border: 1px solid hsl(var(--border-subtle-hsl));
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-    background: white;
+    box-shadow: var(--nk-shadow-md);
+    background: hsl(var(--surface-primary-hsl));
   }
   .preview-card-header {
-    background: linear-gradient(135deg, #f5f3ff, #eef2ff, #faf5ff);
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--accent-primary-hsl) / 0.08), hsl(var(--surface-secondary-hsl)));
     padding: 10px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+    border-bottom: 1px solid hsl(var(--border-subtle-hsl));
   }
 
   /* Notebook-style background for editor */
@@ -673,14 +603,14 @@
 
   /* Glass effect - Lovable glassmorphism */
   .glass {
-    background: rgba(255, 255, 255, 0.2);
-    -webkit-backdrop-filter: blur(40px) saturate(1.4);
-    backdrop-filter: blur(40px) saturate(1.4);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--nk-glass-bg);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    backdrop-filter: blur(24px) saturate(1.4);
+    border-color: var(--nk-glass-border);
   }
 
   .glass-subtle {
-    @apply bg-white/55 dark:bg-black/40;
+    background: hsl(var(--surface-primary-hsl) / 0.6);
     -webkit-backdrop-filter: blur(24px) saturate(1.2);
     backdrop-filter: blur(24px) saturate(1.2);
     border-color: hsl(0 0% 100% / 0.15);
@@ -708,7 +638,7 @@
 
   /* Premium gradient */
   .gradient-premium {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)));
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-hover-hsl)), hsl(var(--primary)));
     background-size: 200% 200%;
     animation: gradient-shift 3s ease infinite;
   }
@@ -869,7 +799,7 @@
   }
 
   .glow-accent {
-    box-shadow: 0 0 20px hsl(var(--accent) / 0.4);
+    box-shadow: 0 0 20px hsl(var(--accent-primary-hsl) / 0.35);
   }
 
   /* Liquid Chrome Glass Effect */
@@ -1286,7 +1216,7 @@
 /* Notion editor mobile optimizations */
 @media (max-width: 768px) {
   .notion-editor textarea {
-    caret-color: #6366f1;
+    caret-color: hsl(var(--accent-primary-hsl));
     -webkit-text-size-adjust: 100%;
   }
   
@@ -1349,7 +1279,7 @@
   [role="tab"],
   [role="menuitem"] {
     touch-action: manipulation;
-    -webkit-tap-highlight-color: rgba(99, 102, 241, 0.1);
+    -webkit-tap-highlight-color: hsl(var(--primary) / 0.14);
   }
 
   /* Avoid GPU backdrop-filter hit-testing bugs on older Android WebView while respecting dark mode */
@@ -1544,3 +1474,9 @@
 @media (prefers-reduced-motion: reduce) {
   .nn-nikai-pop::after { animation: none; opacity: 0; }
 }
+
+/* ============================================================
+   Desktop shell — keep the bottom-left corner for the sidebar
+   profile card; global floating buttons must not cover it.
+   ============================================================ */
+body[data-nk-shell='desktop'] .nk-share-fab { display: none; }

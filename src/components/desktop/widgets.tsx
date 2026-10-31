@@ -27,7 +27,7 @@ export function SectionHeader({
         (actionLabel && (
           <button
             onClick={onAction}
-            className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#6C5CE7] hover:text-[#5A4BD1] transition-colors"
+            className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-fg-muted hover:text-fg-muted transition-colors"
           >
             {actionLabel} <ArrowRight size={13} />
           </button>
@@ -37,9 +37,9 @@ export function SectionHeader({
 }
 
 export const STATUS_STYLE: Record<TaskStatus, { label: string; bg: string; fg: string }> = {
-  todo: { label: 'To Do', bg: '#F1F0F8', fg: '#6F6C8A' },
-  doing: { label: 'In Progress', bg: '#E3EDFF', fg: '#2F6FED' },
-  done: { label: 'Done', bg: '#DCF5E7', fg: '#149A66' },
+  todo: { label: 'To Do', bg: 'hsl(var(--surface-hover-hsl))', fg: 'hsl(var(--text-secondary-hsl))' },
+  doing: { label: 'In Progress', bg: 'hsl(var(--accent-cool-hsl) / 0.16)', fg: 'hsl(var(--accent-cool-hsl))' },
+  done: { label: 'Done', bg: 'hsl(var(--success) / 0.16)', fg: 'hsl(var(--success))' },
 };
 
 export function StatusChip({ status }: { status: TaskStatus }) {
@@ -141,11 +141,11 @@ export function NoteCard({
             className="grid place-items-center rounded-full"
             style={{
               position: 'absolute', top: 8, left: 8, width: 22, height: 22,
-              background: '#fff', boxShadow: '0 2px 8px rgba(217,44,155,0.35)',
+              background: 'hsl(var(--surface-elevated-hsl))', boxShadow: 'var(--nk-shadow-sm)',
             }}
             aria-label="Pinned"
           >
-            <Pin size={11} color="#D92C9B" fill="#D92C9B" />
+            <Pin size={11} color="#A34054" fill="#A34054" />
           </span>
         )}
       </div>
@@ -157,7 +157,7 @@ export function NoteCard({
           >
             {note.title}
           </span>
-          {fav && <Star size={12} className="flex-none" fill="#F5A623" color="#F5A623" />}
+          {fav && <Star size={12} className="flex-none" fill="#C4762F" color="#C4762F" />}
         </div>
         <div className="text-[11.5px] mt-0.5 truncate" style={{ color: 'var(--nd-text-3)' }}>
           {footerMeta ?? timeAgo(note.updatedAt)}

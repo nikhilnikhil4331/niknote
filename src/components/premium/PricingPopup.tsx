@@ -209,7 +209,7 @@ export const PricingPopup: React.FC = () => {
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-nk-midnight/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -221,7 +221,7 @@ export const PricingPopup: React.FC = () => {
             aria-modal="true"
             aria-labelledby="nn-pricing-popup-title"
             aria-describedby="nn-pricing-popup-desc"
-            className="relative w-full max-w-lg overflow-hidden rounded-t-[26px] border border-white/10 bg-card shadow-[0_30px_90px_-20px_rgba(15,23,42,0.65)] sm:max-w-2xl sm:rounded-[26px]"
+            className="relative w-full max-w-lg overflow-hidden rounded-t-[26px] border border-[color:var(--nk-glass-border)] bg-card shadow-[0_30px_90px_-20px_rgba(15,23,42,0.65)] sm:max-w-2xl sm:rounded-[26px]"
             initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 40, scale: 0.98 }}
             animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.99 }}
@@ -229,7 +229,7 @@ export const PricingPopup: React.FC = () => {
             onClick={(event) => event.stopPropagation()}
           >
             {/* ── Header ───────────────────────────────────────────── */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-primary via-accent to-[hsl(var(--ink-pink))] px-5 pb-6 pt-5 text-white sm:px-7 sm:pb-7 sm:pt-6">
+            <div className="relative overflow-hidden bg-gradient-to-br from-primary via-nk-rose to-[hsl(var(--ink-pink))] px-5 pb-6 pt-5 text-white sm:px-7 sm:pb-7 sm:pt-6">
               {/* Dark scrim: in dark mode --primary and --accent are bright, and
                   the theme's own --primary-foreground flips to near-black, which
                   would leave this header mixing dark text with the white/20
@@ -237,7 +237,7 @@ export const PricingPopup: React.FC = () => {
                   both themes. */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-slate-950/25"
+                className="pointer-events-none absolute inset-0 bg-nk-midnight/25"
               />
               {/* ruled-paper texture, the app's own visual language */}
               <div
@@ -245,17 +245,17 @@ export const PricingPopup: React.FC = () => {
                 className="pointer-events-none absolute inset-0 opacity-[0.13]"
                 style={{
                   backgroundImage:
-                    'repeating-linear-gradient(180deg, transparent 0 21px, #ffffff 21px 22px)',
+                    'repeating-linear-gradient(180deg, transparent 0 21px, #E9BCB9 21px 22px)',
                 }}
               />
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full bg-white/20 blur-2xl"
+                className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full bg-surface/20 blur-2xl"
               />
 
               <div className="relative flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] backdrop-blur-sm">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-surface/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] backdrop-blur-sm">
                     <Crown className="h-3 w-3" />
                     NikNote Premium
                   </span>
@@ -278,7 +278,7 @@ export const PricingPopup: React.FC = () => {
                   type="button"
                   onClick={rememberAndClose}
                   aria-label="Close pricing popup"
-                  className="-mr-1 -mt-1 shrink-0 rounded-full p-2 text-white/80 transition hover:bg-white/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                  className="-mr-1 -mt-1 shrink-0 rounded-full p-2 text-white/80 transition hover:bg-surface/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -290,7 +290,7 @@ export const PricingPopup: React.FC = () => {
               <ul className="grid gap-2.5 sm:grid-cols-2">
                 {GATED_FEATURES.map((feature) => (
                   <li key={feature.label} className="flex items-start gap-2.5">
-                    <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                    <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-accent-rose">
                       <feature.icon className="h-3.5 w-3.5" />
                     </span>
                     <span className="min-w-0">
@@ -305,8 +305,8 @@ export const PricingPopup: React.FC = () => {
                 ))}
               </ul>
 
-              <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.07] px-3 py-2">
-                <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-[color:hsl(var(--success)/0.25)] bg-success/[0.07] px-3 py-2">
+                <Check className="h-3.5 w-3.5 shrink-0 text-success" />
                 <p className="text-[11.5px] leading-snug text-muted-foreground">
                   <span className="font-semibold text-foreground">
                     16+ handwriting styles, AI notes, PDF tools and exports stay free
@@ -332,7 +332,7 @@ export const PricingPopup: React.FC = () => {
                       </span>
                     )}
                     <div className="flex items-center gap-1.5">
-                      <plan.icon className="h-3.5 w-3.5 text-primary" />
+                      <plan.icon className="h-3.5 w-3.5 text-accent-rose" />
                       <span className="text-[11.5px] font-semibold uppercase tracking-wide text-muted-foreground">
                         {plan.label}
                       </span>
@@ -355,7 +355,7 @@ export const PricingPopup: React.FC = () => {
                 ref={primaryRef}
                 type="button"
                 onClick={goToPlans}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-nk-rose px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
               >
                 See the plans
                 <ArrowRight className="h-4 w-4" />

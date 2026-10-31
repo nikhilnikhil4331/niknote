@@ -251,9 +251,9 @@ export const AdminControls: React.FC<AdminControlsProps> = ({
                     {result.status === 'pending' ? (
                       <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                     ) : result.status === 'pass' ? (
-                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <CheckCircle className="w-5 h-5 text-success" />
                     ) : (
-                      <XCircle className="w-5 h-5 text-red-500" />
+                      <XCircle className="w-5 h-5 text-error" />
                     )}
                   </motion.div>
                 ))}

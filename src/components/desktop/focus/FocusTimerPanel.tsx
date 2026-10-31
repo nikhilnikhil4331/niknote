@@ -31,6 +31,7 @@ import {
 import { DIAL_PRESETS, formatMinutesLabel, type DialRange } from '@/lib/dialMath';
 import { playCompletionChime, playTick, primeAudio } from '@/lib/chime';
 import { cn } from '@/lib/utils';
+import { readableInk } from '@/lib/readableInk';
 
 type CdownPhase = 'idle' | 'focus' | 'shortBreak' | 'longBreak';
 
@@ -663,7 +664,7 @@ export const FocusTimerPanel: React.FC<FocusTimerPanelProps> = ({ tasks, compact
                   <span className="tabular-nums font-semibold flex-1" style={{ color: 'var(--nd-ink)' }}>
                     +{formatStopwatch(lapDuration(laps, i))}
                   </span>
-                  {extremes.fastest === i && <span className="nd-tag" style={{ background: '#dcf5e7', color: 'var(--nd-success)' }}>fastest</span>}
+                  {extremes.fastest === i && <span className="nd-tag" style={{ background: 'hsl(var(--success) / 0.16)', color: 'var(--nd-success)' }}>fastest</span>}
                   {extremes.slowest === i && laps.length > 1 && <span className="nd-tag" style={{ background: '#fde7ec', color: 'var(--nd-error)' }}>slowest</span>}
                   <span className="tabular-nums font-bold" style={{ color: 'var(--nd-ink-2)' }}>{formatStopwatch(lap)}</span>
                 </div>
@@ -682,7 +683,7 @@ export const FocusTimerPanel: React.FC<FocusTimerPanelProps> = ({ tasks, compact
               role="radio"
               aria-checked={category === c.name}
               className="nd-chip-btn !py-1 !px-2.5 !text-[11px]"
-              style={category === c.name ? { background: c.color, borderColor: c.color, color: '#fff' } : undefined}
+              style={category === c.name ? { background: c.color, borderColor: c.color, color: readableInk(c.color) } : undefined}
               onClick={() => setCategory(c.name)}
             >
               {c.name}

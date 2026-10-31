@@ -26,7 +26,7 @@ interface Tpl {
   route?: string; // app templates open a real feature page instead of the editor
 }
 
-const ACCENTS = ['#7C6CF0', '#3B82F6', '#F59E0B', '#EC4899', '#10B981', '#06B6D4', '#F26D8D', '#8B5CF6'];
+const ACCENTS = ['#7C5F9E', '#5C3A6E', '#C4762F', '#A34054', '#157F52', '#7C5F9E', '#A34054', '#7C5F9E'];
 
 const fromLib = (t: NoteTemplate, cat: Tpl['cat'], title = t.title): Tpl => ({
   title, cat, desc: t.desc, text: t.text, style: t.style, accent: ACCENTS[Math.abs(title.length * 3) % ACCENTS.length],
@@ -38,21 +38,21 @@ const TEMPLATES: Tpl[] = [
   fromLib(lib['Lecture Notes'], 'Study', 'Class Notes'),
   fromLib(lib['Cornell Notes'], 'Study'),
   fromLib(lib['To Do List'], 'Planning', 'To-Do List'),
-  { title: 'Habit Tracker', cat: 'Lifestyle', desc: 'Build good habits', text: '', style: 'ruled', accent: '#22C55E', route: '/habit' },
+  { title: 'Habit Tracker', cat: 'Lifestyle', desc: 'Build good habits', text: '', style: 'ruled', accent: '#157F52', route: '/habit' },
   fromLib(lib['Project Plan'], 'Work', 'Project Planner'),
   fromLib(lib['Daily Journal'], 'Personal'),
-  { title: 'Study Planner', cat: 'Study', desc: 'Organize study', style: 'ruled', accent: '#3B82F6', text: '# Study Planner\n## This week\n[] Mon — Biology: Photosynthesis\n[] Tue — Maths: Algebra\n[] Wed — Chemistry: Bonds\n## Goals\n• Finish 2 chapters\n• 50 practice questions\n## Notes\n' },
-  { title: 'Vision Board', cat: 'Personal', desc: 'Your dreams', style: 'dotted', accent: '#EC4899', text: '# Vision Board\n## This year I will\n• \n• \n• \n## Places I want to see\n• \n## Skills to learn\n• \n## My mantra\n"A small step everyday leads to big results."' },
-  { title: 'Travel Planner', cat: 'Lifestyle', desc: 'Plan your trips', style: 'ruled', accent: '#06B6D4', text: '# Travel Planner\n## Destination\n\n## Dates & budget\n\n## Places to visit\n• \n• \n## Packing list\n[] Documents\n[] Clothes\n[] Camera\n## Bookings\n[] Stay\n[] Transport' },
-  { title: 'Meeting Notes', cat: 'Work', desc: 'For professionals', style: 'ruled', accent: '#F59E0B', text: '# Meeting Notes\n## Date & attendees\n\n## Agenda\n• \n• \n## Discussion points\n\n## Decisions\n• \n## Action items\n[] ' },
-  { title: 'Recipe Book', cat: 'Lifestyle', desc: 'Save recipes', style: 'plain', accent: '#F26D8D', text: '# Recipe\n## Time & serves\nPrep: __ min · Cook: __ min · Serves: __\n## Ingredients\n• \n• \n## Steps\n1. \n2. \n3. \n## Tips\n' },
-  { title: 'Reading List', cat: 'Personal', desc: 'Track your books', style: 'ruled', accent: '#8B5CF6', text: '# Reading List\n## Currently reading\n• \n## Want to read\n[] \n[] \n[] \n## Finished\n• \n## Favourite lines\n""' },
+  { title: 'Study Planner', cat: 'Study', desc: 'Organize study', style: 'ruled', accent: '#5C3A6E', text: '# Study Planner\n## This week\n[] Mon — Biology: Photosynthesis\n[] Tue — Maths: Algebra\n[] Wed — Chemistry: Bonds\n## Goals\n• Finish 2 chapters\n• 50 practice questions\n## Notes\n' },
+  { title: 'Vision Board', cat: 'Personal', desc: 'Your dreams', style: 'dotted', accent: '#A34054', text: '# Vision Board\n## This year I will\n• \n• \n• \n## Places I want to see\n• \n## Skills to learn\n• \n## My mantra\n"A small step everyday leads to big results."' },
+  { title: 'Travel Planner', cat: 'Lifestyle', desc: 'Plan your trips', style: 'ruled', accent: '#7C5F9E', text: '# Travel Planner\n## Destination\n\n## Dates & budget\n\n## Places to visit\n• \n• \n## Packing list\n[] Documents\n[] Clothes\n[] Camera\n## Bookings\n[] Stay\n[] Transport' },
+  { title: 'Meeting Notes', cat: 'Work', desc: 'For professionals', style: 'ruled', accent: '#C4762F', text: '# Meeting Notes\n## Date & attendees\n\n## Agenda\n• \n• \n## Discussion points\n\n## Decisions\n• \n## Action items\n[] ' },
+  { title: 'Recipe Book', cat: 'Lifestyle', desc: 'Save recipes', style: 'plain', accent: '#A34054', text: '# Recipe\n## Time & serves\nPrep: __ min · Cook: __ min · Serves: __\n## Ingredients\n• \n• \n## Steps\n1. \n2. \n3. \n## Tips\n' },
+  { title: 'Reading List', cat: 'Personal', desc: 'Track your books', style: 'ruled', accent: '#7C5F9E', text: '# Reading List\n## Currently reading\n• \n## Want to read\n[] \n[] \n[] \n## Finished\n• \n## Favourite lines\n""' },
   fromLib(lib['Exam Prep'], 'Study'),
   fromLib(lib['Revision Sheet'], 'Study'),
   fromLib(lib['Daily Planner'], 'Planning'),
   fromLib(lib['Idea Board'], 'Personal'),
-  { title: 'Money Tracker', cat: 'Lifestyle', desc: 'Track every rupee', text: '', style: 'ruled', accent: '#10B981', route: '/money' },
-  { title: 'Weekly Review', cat: 'Planning', desc: 'Reflect & reset', style: 'ruled', accent: '#7C6CF0', text: '# Weekly Review\n## Wins this week\n• \n## What I learned\n• \n## Next week focus\n[] \n[] \n## Gratitude\n• ' },
+  { title: 'Money Tracker', cat: 'Lifestyle', desc: 'Track every rupee', text: '', style: 'ruled', accent: '#157F52', route: '/money' },
+  { title: 'Weekly Review', cat: 'Planning', desc: 'Reflect & reset', style: 'ruled', accent: '#7C5F9E', text: '# Weekly Review\n## Wins this week\n• \n## What I learned\n• \n## Next week focus\n[] \n[] \n## Gratitude\n• ' },
   fromLib(lib['Blank Note'], 'Personal'),
 ];
 
@@ -126,11 +126,11 @@ const DesktopTemplates: React.FC = () => {
                   <span className="block text-[11.5px] truncate" style={{ color: 'var(--nd-text-3)' }}>{t.desc}</span>
                 </span>
                 {t.route ? (
-                  <span className="nd-chip" style={{ background: '#DCF5E7', color: '#149A66' }}>
+                  <span className="nd-chip" style={{ background: 'hsl(var(--success) / 0.16)', color: 'hsl(var(--success))' }}>
                     App <ArrowUpRight size={10} />
                   </span>
                 ) : (
-                  <span className="nd-chip" style={{ background: '#F1EFFF', color: '#6C5CE7' }}>{t.cat}</span>
+                  <span className="nd-chip" style={{ background: 'hsl(var(--primary) / 0.14)', color: 'hsl(var(--accent-cool-hsl))' }}>{t.cat}</span>
                 )}
               </div>
             </button>

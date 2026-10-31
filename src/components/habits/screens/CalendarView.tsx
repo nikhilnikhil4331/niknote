@@ -5,6 +5,7 @@ import { useRoutine } from '@/components/habits/RoutineProvider';
 import { TopBar } from '@/components/habits/ui';
 import { completionForDay, fmtHabitValue, isScheduled, toDay } from '@/lib/trackers';
 import { haptic } from '@/hooks/useHaptics';
+import { readableInk } from '@/lib/readableInk';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -23,10 +24,16 @@ export function CalendarScreen({ go }: { go: (s: { name: string; id?: string }) 
     const out: (string | null)[] = [];
     for (let i = 0; i < startPad; i++) out.push(null);
     for (let d = 1; d <= daysInMonth; d++) out.push(toDay(new Date(ym.y, ym.m, d)));
+    // Always render a stable 6-week grid, filling the last rows with
+    // next-month days. The height never jumps between months, and
+    // "tomorrow" stays reachable even on the last day of a month.
+    const trailing = Math.max(0, 42 - (startPad + daysInMonth));
+    for (let d = 1; d <= trailing; d++) out.push(toDay(new Date(ym.y, ym.m + 1, d)));
     return out;
   }, [ym]);
 
   const monthLabel = new Date(ym.y, ym.m, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const monthKey = toDay(new Date(ym.y, ym.m, 1)).slice(0, 7);
 
   const nav = (d: number) => {
     haptic('selection');
@@ -53,7 +60,7 @@ export function CalendarScreen({ go }: { go: (s: { name: string; id?: string }) 
   const monthSummary = useMemo(() => {
     let slots = 0, done = 0, active = 0;
     for (const day of cells) {
-      if (!day || day > today) continue;
+      if (!day || day > today || !day.startsWith(monthKey)) continue;
       const c = completionForDay(state.entries, activeHabits, new Date(day + 'T12:00'));
       slots += c.total;
       done += c.done;
@@ -109,6 +116,7 @@ export function CalendarScreen({ go }: { go: (s: { name: string; id?: string }) 
                   if (!day) return <span key={`p${i}`} />;
                   const isToday = day === today;
                   const isSel = day === sel;
+                  const adjacent = !day.startsWith(monthKey);
                   const c = completionForDay(state.entries, activeHabits, new Date(day + 'T12:00'));
                   const future = day > today;
                   return (
@@ -116,15 +124,15 @@ export function CalendarScreen({ go }: { go: (s: { name: string; id?: string }) 
                       className="relative mx-auto grid h-10 w-10 place-items-center rounded-xl"
                       style={{
                         background: isSel
-                          ? 'linear-gradient(135deg,#9333ea,#ec4899)'
+                          ? 'linear-gradient(135deg,#7C5F9E,#A34054)'
                           : c.pct === 100
                             ? 'color-mix(in srgb, var(--nnh-purple) 16%, transparent)'
                             : c.pct > 0
                               ? 'color-mix(in srgb, var(--nnh-pink) 10%, transparent)'
                               : 'transparent',
-                        color: isSel ? '#fff' : future ? 'var(--nnh-sub)' : 'var(--nnh-ink)',
+                        color: isSel ? '#fff' : future || adjacent ? 'var(--nnh-sub)' : 'var(--nnh-ink)',
                         boxShadow: isToday && !isSel ? 'inset 0 0 0 2px var(--nnh-purple)' : undefined,
-                        opacity: future ? 0.55 : 1,
+                        opacity: future ? 0.55 : adjacent ? 0.6 : 1,
                       }}
                       aria-label={`${day}${isToday ? ' today' : ''}, ${c.done}/${c.total} habits complete`}
                       aria-pressed={isSel}>
@@ -202,7 +210,7 @@ export function CalendarScreen({ go }: { go: (s: { name: string; id?: string }) 
                       aria-label={done ? `Reopen ${h.name}` : `Complete ${h.name}`} aria-pressed={done}
                       disabled={sel > today}
                       className="grid h-8 w-8 place-items-center rounded-full border-2 disabled:opacity-40"
-                      style={{ borderColor: done ? h.color : 'var(--nnh-line-strong)', background: done ? h.color : 'transparent', color: '#fff' }}>
+                      style={{ borderColor: done ? h.color : 'var(--nnh-line-strong)', background: done ? h.color : 'transparent', color: done ? readableInk(h.color) : '#fff' }}>
                       {done ? <Check size={14} strokeWidth={3.4} /> : <Plus size={13} style={{ color: 'var(--nnh-sub)' }} />}
                     </motion.button>
                   </div>

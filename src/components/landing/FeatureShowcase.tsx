@@ -24,14 +24,14 @@ const features = [
     title: '🧠 AI Teacher (Hindi + English)',
     description: 'Ask study questions in Hindi or English. Cloud AI needs an internet connection.',
     badge: 'NEW',
-    badgeColor: 'bg-purple-500',
+    badgeColor: 'bg-primary',
   },
   {
     icon: Target,
     title: '📝 Quiz & Flashcard Generator',
     description: 'Enter any topic, get quiz questions + flashcards instantly. Exam revision ka best way! CBSE, JEE, NEET pattern.',
     badge: 'STUDY',
-    badgeColor: 'bg-red-500',
+    badgeColor: 'bg-error',
   },
   {
     icon: Pen,
@@ -68,7 +68,7 @@ const features = [
     title: '📚 28+ Built-in Subjects',
     description: 'Newton\'s Laws, Photosynthesis, Thermodynamics, Indian Constitution — instant notes without any API key!',
     badge: 'FREE',
-    badgeColor: 'bg-green-500',
+    badgeColor: 'bg-success',
   },
   {
     icon: MessageCircle,
@@ -112,10 +112,10 @@ export const FeatureShowcase: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="text-center mb-16"
         >
-          <span className="text-sm font-semibold text-primary uppercase tracking-wider">Features</span>
+          <span className="text-sm font-semibold text-accent-rose uppercase tracking-wider">Features</span>
           <h2 className="text-3xl sm:text-4xl font-bold mt-3 mb-4 text-foreground">
             Notion + ChatGPT + GoodNotes ={' '}
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary to-nk-rose bg-clip-text text-transparent">
               NikNote
             </span>
           </h2>
@@ -144,9 +144,9 @@ export const FeatureShowcase: React.FC = () => {
                 </span>
               )}
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
-                <feature.icon className="w-5 h-5 text-primary" />
+                <feature.icon className="w-5 h-5 text-accent-rose" />
               </div>
-              <h3 className="text-base font-semibold mb-2 text-foreground group-hover:text-primary transition-colors">
+              <h3 className="text-base font-semibold mb-2 text-foreground group-hover:text-accent-rose transition-colors">
                 {feature.title}
               </h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
@@ -168,7 +168,7 @@ export const FeatureShowcase: React.FC = () => {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {['Hindi Support', 'Offline Mode', 'PWA Install', 'Free Forever Plan'].map((tag) => (
-              <span key={tag} className="px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-xs font-medium text-primary">
+              <span key={tag} className="px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-xs font-medium text-accent-rose">
                 ✅ {tag}
               </span>
             ))}

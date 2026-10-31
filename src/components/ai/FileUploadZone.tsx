@@ -193,12 +193,12 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
   if (!user || !session) {
     return (
       <div className={className}>
-        <div className="p-6 rounded-2xl border-2 border-dashed border-amber-500/50 bg-amber-500/5">
+        <div className="p-6 rounded-2xl border-2 border-dashed border-[color:hsl(var(--accent-warm-hsl)/0.5)] bg-nk-warm-600/5">
           <div className="flex flex-col items-center text-center">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-3">
-              <LogIn className="w-6 h-6 text-amber-500" />
+            <div className="w-14 h-14 rounded-2xl bg-nk-warm-600/10 flex items-center justify-center mb-3">
+              <LogIn className="w-6 h-6 text-accent-warm" />
             </div>
-            <p className="font-medium text-sm text-amber-700 dark:text-amber-300">
+            <p className="font-medium text-sm text-accent-warm dark:text-accent-warm">
               Sign in required
             </p>
             <p className="text-xs text-muted-foreground mt-1 mb-4">
@@ -226,19 +226,19 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="p-4 rounded-2xl border-2 border-green-500/30 bg-green-500/5"
+            className="p-4 rounded-2xl border-2 border-[color:hsl(var(--success)/0.3)] bg-success/5"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {isProcessing ? (
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                    <Loader2 className="w-5 h-5 text-accent-rose animate-spin" />
                   </div>
                 ) : previewUrl ? (
                   <img src={previewUrl} alt="Preview" className="w-12 h-12 rounded-xl object-cover" />
                 ) : (
-                  <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
+                    <CheckCircle2 className="w-5 h-5 text-success" />
                   </div>
                 )}
                 <div>
@@ -283,7 +283,7 @@ export const FileUploadZone: React.FC<FileUploadZoneProps> = ({
                   w-14 h-14 rounded-2xl flex items-center justify-center mb-3 transition-colors
                   ${isDragging ? 'bg-primary/20' : 'bg-muted'}
                 `}>
-                  <Upload className={`w-6 h-6 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <Upload className={`w-6 h-6 ${isDragging ? 'text-accent-rose' : 'text-muted-foreground'}`} />
                 </div>
                 <p className="font-medium text-sm">
                   {isDragging ? 'Drop your file here' : 'Upload homework or document'}

@@ -28,12 +28,12 @@ const DesktopCalendar: React.FC = () => {
   const items: CalItem[] = useMemo(
     () => [
       ...active.map((n): CalItem => ({ id: n.id, title: n.title, date: n.updatedAt, color: n.cover, kind: 'note' })),
-      ...tasks.filter((t) => t.due).map((t): CalItem => ({ id: t.id, title: t.title, date: t.due!, color: t.status === 'done' ? '#1FA97A' : '#F26D8D', kind: 'task' })),
+      ...tasks.filter((t) => t.due).map((t): CalItem => ({ id: t.id, title: t.title, date: t.due!, color: t.status === 'done' ? '#157F52' : '#A34054', kind: 'task' })),
       ...sessions.map((fs): CalItem => ({
         id: fs.id,
         title: `${formatMinutesAsHours(fs.durationSec / 60)} ${fs.category}`,
         date: fs.startedAt,
-        color: FOCUS_CATEGORIES.find((c) => c.name === fs.category)?.color ?? '#7028D9',
+        color: FOCUS_CATEGORIES.find((c) => c.name === fs.category)?.color ?? '#662249',
         kind: 'focus',
       })),
     ],
@@ -75,10 +75,10 @@ const DesktopCalendar: React.FC = () => {
           <div className="col-span-8">
             <MonthCalendar items={items} selected={day} onSelectDay={setDay} onItemClick={handleItem} />
             <div className="flex items-center gap-4 mt-3 text-[11.5px] font-medium" style={{ color: 'var(--nd-text-2)' }}>
-              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#7C6CF0' }} /> Note edited</span>
-              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#F26D8D' }} /> Task due</span>
-              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#1FA97A' }} /> Task done</span>
-              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#7028D9' }} /> Focus session</span>
+              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#7C5F9E' }} /> Note edited</span>
+              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#A34054' }} /> Task due</span>
+              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#157F52' }} /> Task done</span>
+              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#662249' }} /> Focus session</span>
             </div>
           </div>
 
@@ -95,11 +95,11 @@ const DesktopCalendar: React.FC = () => {
                   {dayTasks.map((t) => (
                     <button
                       key={t.id}
-                      className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-[#F8F7FF] transition-colors"
+                      className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-surface-secondary transition-colors"
                       style={{ border: '1px solid var(--nd-border-soft)' }}
                       onClick={() => navigate('/tasks')}
                     >
-                      <CheckSquare size={14} color={t.status === 'done' ? '#1FA97A' : '#F26D8D'} className="flex-none" />
+                      <CheckSquare size={14} color={t.status === 'done' ? '#157F52' : '#A34054'} className="flex-none" />
                       <span
                         className="text-[13px] font-semibold truncate"
                         style={{ color: 'var(--nd-text)', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}
@@ -120,11 +120,11 @@ const DesktopCalendar: React.FC = () => {
                   {daySessions.map((fs) => (
                     <button
                       key={fs.id}
-                      className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-[#F8F7FF] transition-colors"
+                      className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-surface-secondary transition-colors"
                       style={{ border: '1px solid var(--nd-border-soft)' }}
                       onClick={() => navigate('/focus')}
                     >
-                      <Timer size={14} style={{ color: FOCUS_CATEGORIES.find((c) => c.name === fs.category)?.color ?? '#7028D9' }} className="flex-none" />
+                      <Timer size={14} style={{ color: FOCUS_CATEGORIES.find((c) => c.name === fs.category)?.color ?? '#662249' }} className="flex-none" />
                       <span className="text-[13px] font-semibold truncate" style={{ color: 'var(--nd-text)' }}>
                         {fs.taskTitle || fs.category} · {formatMinutesAsHours(fs.durationSec / 60)}
                       </span>
@@ -142,7 +142,7 @@ const DesktopCalendar: React.FC = () => {
                   {dayNotes.map((n) => (
                     <button
                       key={n.id}
-                      className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-[#F8F7FF] transition-colors"
+                      className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-surface-secondary transition-colors"
                       style={{ border: '1px solid var(--nd-border-soft)' }}
                       onClick={() => void openNote(n)}
                     >

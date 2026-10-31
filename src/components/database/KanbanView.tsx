@@ -32,9 +32,9 @@ interface KanbanViewProps {
 }
 
 const PRIORITY_COLORS = {
-  low: 'bg-green-100 text-green-700',
-  medium: 'bg-amber-100 text-amber-700',
-  high: 'bg-red-100 text-red-700',
+  low: 'bg-[color:hsl(var(--success)/0.14)] text-success',
+  medium: 'bg-[color:hsl(var(--accent-warm-hsl)/0.16)] text-accent-warm',
+  high: 'bg-[color:hsl(var(--error)/0.14)] text-error',
 };
 
 export const KanbanView: React.FC<KanbanViewProps> = ({
@@ -84,7 +84,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
         {columns.map((column) => (
           <div
             key={column.id}
-            className="w-[280px] flex-shrink-0 flex flex-col bg-gray-50 rounded-xl"
+            className="w-[280px] flex-shrink-0 flex flex-col bg-muted rounded-xl"
             onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
             onDrop={(e) => {
               e.preventDefault();
@@ -96,9 +96,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
             {/* Column Header */}
             <div className="flex items-center gap-2 px-3 py-2.5">
               <div className={cn("w-2.5 h-2.5 rounded-full", column.color)} />
-              <span className="text-xs font-semibold text-gray-700 flex-1">{column.title}</span>
-              <span className="text-[10px] text-gray-400 tabular-nums">{column.cards.length}</span>
-              <button className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors">
+              <span className="text-xs font-semibold text-fg-primary flex-1">{column.title}</span>
+              <span className="text-[10px] text-fg-muted/70 tabular-nums">{column.cards.length}</span>
+              <button className="p-0.5 rounded hover:bg-surface-hover text-fg-muted/70 hover:text-fg-secondary transition-colors">
                 <MoreHorizontal className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -122,13 +122,13 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                   onDragEnd={() => setDraggingCard(null)}
                   onClick={() => onCardClick?.(card)}
                   className={cn(
-                    "p-3 bg-white rounded-lg border border-gray-200/60 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all group",
+                    "p-3 bg-surface rounded-lg border border-subtle/60 shadow-sm cursor-pointer hover:shadow-md hover:border-active transition-all group",
                     draggingCard === card.id && "opacity-50"
                   )}
                 >
-                  <div className="text-[12px] font-medium text-gray-800 mb-1">{card.title}</div>
+                  <div className="text-[12px] font-medium text-fg-primary mb-1">{card.title}</div>
                   {card.description && (
-                    <div className="text-[10px] text-gray-400 mb-2 line-clamp-2">{card.description}</div>
+                    <div className="text-[10px] text-fg-muted/70 mb-2 line-clamp-2">{card.description}</div>
                   )}
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {card.tags?.map((tag) => (
@@ -146,7 +146,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                     )}
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteCard(card.id, column.id); }}
-                      className="ml-auto p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-red-50 text-gray-300 hover:text-red-500 transition-all"
+                      className="ml-auto p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-[color:hsl(var(--error)/0.14)] text-fg-muted/70 hover:text-error transition-all"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -156,25 +156,25 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
               {/* Add card */}
               {addingToColumn === column.id ? (
-                <div className="p-2 bg-white rounded-lg border border-indigo-200 shadow-sm">
+                <div className="p-2 bg-surface rounded-lg border border-[color:hsl(var(--primary)/0.3)] shadow-sm">
                   <input
                     autoFocus
                     value={newCardTitle}
                     onChange={(e) => setNewCardTitle(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') addCard(column.id); if (e.key === 'Escape') setAddingToColumn(null); }}
                     placeholder="Card title..."
-                    className="w-full text-xs bg-transparent border-0 outline-none placeholder:text-gray-400"
+                    className="w-full text-xs bg-transparent border-0 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] placeholder:text-fg-muted/70"
                   />
                   <div className="flex items-center gap-2 mt-2">
                     <button
                       onClick={() => addCard(column.id)}
-                      className="text-[10px] font-medium px-2 py-1 rounded bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+                      className="text-[10px] font-medium px-2 py-1 rounded bg-primary text-white hover:bg-primary transition-colors"
                     >
                       Add
                     </button>
                     <button
                       onClick={() => { setAddingToColumn(null); setNewCardTitle(''); }}
-                      className="text-[10px] text-gray-400 hover:text-gray-600"
+                      className="text-[10px] text-fg-muted/70 hover:text-fg-secondary"
                     >
                       Cancel
                     </button>
@@ -183,7 +183,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
               ) : (
                 <button
                   onClick={() => setAddingToColumn(column.id)}
-                  className="w-full flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] text-gray-400 hover:text-gray-600 hover:bg-white/60 transition-colors"
+                  className="w-full flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] text-fg-muted/70 hover:text-fg-secondary hover:bg-surface/60 transition-colors"
                 >
                   <Plus className="w-3 h-3" />
                   Add card
@@ -195,7 +195,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
         {/* AI suggestion column */}
         <div className="w-[280px] flex-shrink-0 flex flex-col items-center justify-center">
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] text-indigo-500 hover:bg-indigo-50 transition-colors">
+          <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] text-accent-cool hover:bg-[color:hsl(var(--primary)/0.12)] transition-colors">
             <Sparkles className="w-3.5 h-3.5" />
             AI suggest columns
           </button>

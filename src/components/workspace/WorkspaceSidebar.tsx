@@ -82,8 +82,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   // Main navigation items (Notion-style left rail)
   const mainNav: NavItem[] = [
     { id: 'home', icon: <FileText className="w-4 h-4" />, label: 'Home', action: () => navigate('/') },
-    { id: 'ai', icon: <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain" />, label: 'NikAI', action: () => navigate('/ai'), color: 'text-purple-600', badge: 'ASTRA' },
-    { id: 'dna', icon: <Scan className="w-4 h-4 text-emerald-500" />, label: 'DNA Scanner', action: () => {}, color: 'text-emerald-600' },
+    { id: 'ai', icon: <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain" />, label: 'NikAI', action: () => navigate('/ai'), color: 'text-accent-cool', badge: 'ASTRA' },
+    { id: 'dna', icon: <Scan className="w-4 h-4 text-success" />, label: 'DNA Scanner', action: () => {}, color: 'text-success' },
     { id: 'documents', icon: <BookOpen className="w-4 h-4" />, label: 'Documents', action: () => navigate('/documents') },
     { id: 'notebooks', icon: <Layers className="w-4 h-4" />, label: 'Notebooks', action: () => navigate('/notebooks') },
   ];
@@ -94,17 +94,17 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: -260, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-      className="h-full w-[260px] bg-white/60 backdrop-blur-xl border-r border-gray-200/60 flex flex-col overflow-hidden"
+      className="h-full w-[260px] bg-surface/60 backdrop-blur-xl border-r border-subtle/60 flex flex-col overflow-hidden"
     >
       {/* ===== WORKSPACE HEADER ===== */}
-      <div className="p-3 flex items-center justify-between border-b border-gray-100">
+      <div className="p-3 flex items-center justify-between border-b border-subtle">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm">
+          <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center bg-gradient-to-br from-nk-purple to-nk-rose shadow-sm">
             <img src="/niknote-logo.png" alt="NikNote" className="w-full h-full object-contain" />
           </div>
           <div>
-            <div className="text-sm font-bold text-gray-900 leading-tight">NikNote</div>
-            <div className="text-[10px] text-gray-400">Workspace</div>
+            <div className="text-sm font-bold text-fg-primary leading-tight">NikNote</div>
+            <div className="text-[10px] text-fg-muted/70">Workspace</div>
           </div>
         </div>
         <div className="flex items-center gap-0.5">
@@ -112,18 +112,18 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             variant="ghost"
             size="icon"
             onClick={onOpenCommandPalette}
-            className="h-7 w-7 rounded-lg hover:bg-gray-100"
+            className="h-7 w-7 rounded-lg hover:bg-muted"
             title="Command Palette (⌘K)"
           >
-            <Search className="w-3.5 h-3.5 text-gray-400" />
+            <Search className="w-3.5 h-3.5 text-fg-muted/70" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
             onClick={onToggle}
-            className="h-7 w-7 rounded-lg hover:bg-gray-100"
+            className="h-7 w-7 rounded-lg hover:bg-muted"
           >
-            <PanelLeftClose className="w-3.5 h-3.5 text-gray-400" />
+            <PanelLeftClose className="w-3.5 h-3.5 text-fg-muted/70" />
           </Button>
         </div>
       </div>
@@ -134,7 +134,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={onNewNote}
-            className="flex-1 flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 shadow-sm hover:shadow-md transition-shadow"
+            className="flex-1 flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-nk-purple to-nk-rose shadow-sm hover:shadow-md transition-shadow"
           >
             <Plus className="w-3.5 h-3.5" />
             New Note
@@ -142,7 +142,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={onOpenCommandPalette}
-            className="h-8 px-2.5 rounded-lg text-xs text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
+            className="h-8 px-2.5 rounded-lg text-xs text-fg-muted bg-muted hover:bg-surface-hover transition-colors"
             title="Search (⌘K)"
           >
             <Search className="w-3.5 h-3.5" />
@@ -159,15 +159,15 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             onClick={item.action}
             className={cn(
               "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-all group",
-              item.active ? "bg-indigo-50 text-indigo-700" : "text-gray-600 hover:bg-gray-100"
+              item.active ? "bg-[color:hsl(var(--primary)/0.12)] text-fg-secondary" : "text-fg-secondary hover:bg-muted"
             )}
           >
-            <span className={cn("flex-shrink-0", item.color || "text-gray-400")}>
+            <span className={cn("flex-shrink-0", item.color || "text-fg-muted/70")}>
               {item.icon}
             </span>
             <span className="text-[13px] font-medium flex-1 truncate">{item.label}</span>
             {item.badge && (
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600">
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[color:hsl(var(--primary)/0.12)] text-accent-cool">
                 {item.badge}
               </span>
             )}
@@ -175,7 +175,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
         ))}
       </div>
 
-      <div className="h-px bg-gray-100 mx-3" />
+      <div className="h-px bg-muted mx-3" />
 
       <ScrollArea className="flex-1">
         {/* ===== FAVORITES ===== */}
@@ -183,15 +183,15 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
           <div className="px-2 py-2">
             <button
               onClick={() => toggleSection('favorites')}
-              className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-muted transition-colors"
             >
               {collapsed.favorites ? (
-                <ChevronRight className="w-3 h-3 text-gray-400" />
+                <ChevronRight className="w-3 h-3 text-fg-muted/70" />
               ) : (
-                <ChevronDown className="w-3 h-3 text-gray-400" />
+                <ChevronDown className="w-3 h-3 text-fg-muted/70" />
               )}
-              <Star className="w-3 h-3 text-amber-500" />
-              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Favorites</span>
+              <Star className="w-3 h-3 text-accent-warm" />
+              <span className="text-[10px] font-semibold text-fg-muted/70 uppercase tracking-wider">Favorites</span>
             </button>
             <AnimatePresence>
               {!collapsed.favorites && (
@@ -214,15 +214,15 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
         <div className="px-2 py-1">
           <button
             onClick={() => toggleSection('pages')}
-            className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-muted transition-colors"
           >
             {collapsed.pages ? (
-              <ChevronRight className="w-3 h-3 text-gray-400" />
+              <ChevronRight className="w-3 h-3 text-fg-muted/70" />
             ) : (
-              <ChevronDown className="w-3 h-3 text-gray-400" />
+              <ChevronDown className="w-3 h-3 text-fg-muted/70" />
             )}
-            <FileText className="w-3 h-3 text-gray-400" />
-            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Pages</span>
+            <FileText className="w-3 h-3 text-fg-muted/70" />
+            <span className="text-[10px] font-semibold text-fg-muted/70 uppercase tracking-wider">Pages</span>
           </button>
           <AnimatePresence>
             {!collapsed.pages && (
@@ -235,14 +235,14 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                 {loading ? (
                   <div className="space-y-1.5 px-2.5 py-2">
                     {[1, 2, 3].map(i => (
-                      <div key={i} className="h-5 bg-gray-100 rounded-lg animate-pulse" />
+                      <div key={i} className="h-5 bg-muted rounded-lg animate-pulse" />
                     ))}
                   </div>
                 ) : folderTree.size === 0 ? (
                   <div className="text-center py-6 px-4">
-                    <FileText className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                    <p className="text-[11px] text-gray-400">No notes yet</p>
-                    <Button variant="ghost" size="sm" onClick={onNewNote} className="mt-2 text-xs h-7 text-indigo-500">
+                    <FileText className="w-8 h-8 text-fg-muted/70 mx-auto mb-2" />
+                    <p className="text-[11px] text-fg-muted/70">No notes yet</p>
+                    <Button variant="ghost" size="sm" onClick={onNewNote} className="mt-2 text-xs h-7 text-accent-cool">
                       <Plus className="w-3 h-3 mr-1" /> Create first note
                     </Button>
                   </div>
@@ -267,15 +267,15 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
         <div className="px-2 py-1">
           <button
             onClick={() => toggleSection('templates')}
-            className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-muted transition-colors"
           >
             {collapsed.templates ? (
-              <ChevronRight className="w-3 h-3 text-gray-400" />
+              <ChevronRight className="w-3 h-3 text-fg-muted/70" />
             ) : (
-              <ChevronDown className="w-3 h-3 text-gray-400" />
+              <ChevronDown className="w-3 h-3 text-fg-muted/70" />
             )}
-            <LayoutGrid className="w-3 h-3 text-gray-400" />
-            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Templates</span>
+            <LayoutGrid className="w-3 h-3 text-fg-muted/70" />
+            <span className="text-[10px] font-semibold text-fg-muted/70 uppercase tracking-wider">Templates</span>
           </button>
           <AnimatePresence>
             {!collapsed.templates && (
@@ -297,10 +297,10 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                   <button
                     key={t.label}
                     onClick={onNewNote}
-                    className="w-full flex items-center gap-2 px-4 py-1.5 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                    className="w-full flex items-center gap-2 px-4 py-1.5 rounded-lg hover:bg-muted transition-colors text-left"
                   >
                     <span className="text-sm">{t.icon}</span>
-                    <span className="text-[12px] text-gray-600">{t.label}</span>
+                    <span className="text-[12px] text-fg-secondary">{t.label}</span>
                   </button>
                 ))}
               </motion.div>
@@ -310,20 +310,20 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       </ScrollArea>
 
       {/* ===== BOTTOM SECTION ===== */}
-      <div className="border-t border-gray-100">
+      <div className="border-t border-subtle">
         {/* Streak + Quick Stats */}
         <StreakDisplay />
 
         {/* Quick Stats */}
         <div className="px-3 py-2">
-          <div className="flex items-center gap-2 text-[10px] text-gray-400">
-            <Flame className="w-3 h-3 text-orange-500" />
+          <div className="flex items-center gap-2 text-[10px] text-fg-muted/70">
+            <Flame className="w-3 h-3 text-accent-warm" />
             <span>{notebooks.length} notes</span>
-            <span className="text-gray-300">•</span>
+            <span className="text-fg-muted/70">•</span>
             <span>Free Plan</span>
             <button 
               onClick={() => navigate('/upgrade')}
-              className="ml-auto text-amber-600 font-semibold hover:text-amber-700 transition-colors flex items-center gap-0.5"
+              className="ml-auto text-accent-warm font-semibold hover:text-accent-warm transition-colors flex items-center gap-0.5"
             >
               <Crown className="w-3 h-3" />
               Pro
@@ -333,29 +333,29 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
         {/* User */}
         {user ? (
-          <div className="px-3 py-2 border-t border-gray-100">
+          <div className="px-3 py-2 border-t border-subtle">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-sm">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-nk-purple to-nk-rose flex items-center justify-center shadow-sm">
                 <span className="text-[10px] text-white font-bold">
                   {user.email?.[0]?.toUpperCase() || 'U'}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[11px] font-medium text-gray-800 truncate">
+                <div className="text-[11px] font-medium text-fg-primary truncate">
                   {user.email?.split('@')[0]}
                 </div>
-                <div className="text-[10px] text-gray-400 truncate">{user.email}</div>
+                <div className="text-[10px] text-fg-muted/70 truncate">{user.email}</div>
               </div>
               <button
                 onClick={() => navigate('/account')}
-                className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-1 rounded-lg hover:bg-muted transition-colors"
               >
-                <Settings className="w-3.5 h-3.5 text-gray-400" />
+                <Settings className="w-3.5 h-3.5 text-fg-muted/70" />
               </button>
             </div>
           </div>
         ) : (
-          <div className="px-3 py-2 border-t border-gray-100">
+          <div className="px-3 py-2 border-t border-subtle">
             <Button
               onClick={() => navigate('/login')}
               variant="outline"
@@ -387,19 +387,19 @@ const NotebookItem: React.FC<{
       <motion.button
         whileTap={{ scale: 0.98 }}
         onClick={() => navigate('/notebooks')}
-        className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors text-left"
+        className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted transition-colors text-left"
       >
         {isFavorite ? (
-          <Star className="w-3 h-3 text-amber-500 flex-shrink-0" />
+          <Star className="w-3 h-3 text-accent-warm flex-shrink-0" />
         ) : (
-          <FileText className="w-3 h-3 text-gray-400 flex-shrink-0" />
+          <FileText className="w-3 h-3 text-fg-muted/70 flex-shrink-0" />
         )}
-        <span className="text-[12px] text-gray-700 truncate flex-1">{notebook.title}</span>
+        <span className="text-[12px] text-fg-primary truncate flex-1">{notebook.title}</span>
         <button
           onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 transition-all"
+          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-surface-hover transition-all"
         >
-          <MoreHorizontal className="w-3 h-3 text-gray-400" />
+          <MoreHorizontal className="w-3 h-3 text-fg-muted/70" />
         </button>
       </motion.button>
 
@@ -409,21 +409,21 @@ const NotebookItem: React.FC<{
             initial={{ opacity: 0, scale: 0.95, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
-            className="absolute right-0 top-full z-50 w-40 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-gray-200/60 shadow-lg"
+            className="absolute right-0 top-full z-50 w-40 py-1 rounded-xl bg-surface/95 backdrop-blur-xl border border-subtle/60 shadow-lg"
           >
-            <button className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50">
+            <button className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-fg-secondary hover:bg-muted">
               <Edit3 className="w-3 h-3" /> Rename
             </button>
-            <button className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50">
+            <button className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-fg-secondary hover:bg-muted">
               <Copy className="w-3 h-3" /> Duplicate
             </button>
-            <button className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50">
+            <button className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-fg-secondary hover:bg-muted">
               <Share2 className="w-3 h-3" /> Share
             </button>
-            <div className="h-px bg-gray-100 my-1" />
+            <div className="h-px bg-muted my-1" />
             <button
               onClick={() => { onDelete(notebook.id); setShowMenu(false); }}
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-red-500 hover:bg-red-50"
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-error hover:bg-[color:hsl(var(--error)/0.14)]"
             >
               <Trash2 className="w-3 h-3" /> Delete
             </button>
@@ -447,22 +447,22 @@ const FolderItem: React.FC<{
     <div className="mb-0.5">
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-muted transition-colors"
       >
         {isExpanded ? (
-          <ChevronDown className="w-3 h-3 text-gray-400" />
+          <ChevronDown className="w-3 h-3 text-fg-muted/70" />
         ) : (
-          <ChevronRight className="w-3 h-3 text-gray-400" />
+          <ChevronRight className="w-3 h-3 text-fg-muted/70" />
         )}
         {isUnfiled ? (
-          <FolderClosed className="w-3.5 h-3.5 text-indigo-400" />
+          <FolderClosed className="w-3.5 h-3.5 text-accent-cool" />
         ) : (
-          <FolderOpen className="w-3.5 h-3.5 text-amber-500" />
+          <FolderOpen className="w-3.5 h-3.5 text-accent-warm" />
         )}
-        <span className="text-[12px] font-medium text-gray-700 flex-1 text-left truncate">
+        <span className="text-[12px] font-medium text-fg-primary flex-1 text-left truncate">
           {isUnfiled ? 'My Notes' : folder}
         </span>
-        <span className="text-[10px] text-gray-400 tabular-nums">{notebooks.length}</span>
+        <span className="text-[10px] text-fg-muted/70 tabular-nums">{notebooks.length}</span>
       </button>
       <AnimatePresence>
         {isExpanded && (
@@ -490,22 +490,22 @@ const StreakDisplay: React.FC = () => {
   return (
     <button
       onClick={() => navigate('/account')}
-      className="w-full px-3 py-2 flex items-center gap-2 hover:bg-gray-50 transition-colors text-left"
+      className="w-full px-3 py-2 flex items-center gap-2 hover:bg-muted transition-colors text-left"
     >
       <div className={`flex items-center justify-center w-7 h-7 rounded-lg ${
-        streakData.currentStreak > 0 ? 'bg-orange-500/10' : 'bg-gray-100'
+        streakData.currentStreak > 0 ? 'bg-nk-warm-600/10' : 'bg-muted'
       }`}>
         <Flame className={`w-3.5 h-3.5 ${
-          streakData.currentStreak > 0 ? 'text-orange-500' : 'text-gray-400'
+          streakData.currentStreak > 0 ? 'text-accent-warm' : 'text-fg-muted/70'
         }`} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[10px] font-semibold text-gray-600">
+        <div className="text-[10px] font-semibold text-fg-secondary">
           {streakData.currentStreak > 0 ? `${streakData.currentStreak} day streak 🔥` : 'Start your streak!'}
         </div>
-        <div className="text-[9px] text-gray-400">Write daily to earn rewards</div>
+        <div className="text-[9px] text-fg-muted/70">Write daily to earn rewards</div>
       </div>
-      <Crown className="w-3 h-3 text-amber-500" />
+      <Crown className="w-3 h-3 text-accent-warm" />
     </button>
   );
 };

@@ -154,7 +154,7 @@ export default function PaymentPage() {
         key: data.keyId, amount: data.amount, currency: 'INR', name: 'NikNote',
         description: `${plan.label} — ${plan.duration} of access`, order_id: data.orderId,
         prefill: { email: isGuest ? '' : (data.userEmail || user.email || ''), name: user.user_metadata?.full_name || '' },
-        theme: { color: '#6366f1' },
+        theme: { color: '#7C5F9E' },
         handler: async (response: any) => {
           setCheckoutOpen(false);
           const paymentId = typeof response?.razorpay_payment_id === 'string' ? response.razorpay_payment_id : '';
@@ -223,7 +223,7 @@ export default function PaymentPage() {
 
   if (step === 'success') {
     return <main className="min-h-screen flex items-center justify-center p-6 bg-background"><div className="max-w-sm text-center space-y-4">
-      <CheckCircle className="h-14 w-14 mx-auto text-green-600" />
+      <CheckCircle className="h-14 w-14 mx-auto text-success" />
       <h1 className="text-2xl font-bold">Payment verified</h1>
       <p className="text-sm text-muted-foreground">Premium is active on this account.</p>
       <Button onClick={() => navigate('/')} className="rounded-xl">Go to editor</Button>
@@ -232,7 +232,7 @@ export default function PaymentPage() {
 
   if (step === 'pending') {
     return <main className="min-h-screen flex items-center justify-center p-6 bg-background"><div className="max-w-sm w-full text-center space-y-4">
-      <ShieldCheck className="h-14 w-14 mx-auto text-amber-600" />
+      <ShieldCheck className="h-14 w-14 mx-auto text-accent-warm" />
       <h1 className="text-xl font-bold">Payment confirmation pending</h1>
       <p role="status" className="text-sm text-muted-foreground">{notice}</p>
       {paymentReference && <p className="text-xs break-all">Payment reference: {paymentReference}</p>}
@@ -244,7 +244,7 @@ export default function PaymentPage() {
 
   if (isPremium) {
     return <main className="min-h-screen flex items-center justify-center p-6 bg-background"><div className="max-w-sm w-full text-center space-y-4">
-      <CheckCircle className="h-14 w-14 mx-auto text-green-600" />
+      <CheckCircle className="h-14 w-14 mx-auto text-success" />
       <h1 className="text-xl font-bold">Premium is active</h1>
       <p className="text-sm text-muted-foreground">Your paid access is linked to this account.</p>
       {notice && <p role="status" className="text-xs text-muted-foreground">{notice}</p>}
@@ -279,17 +279,17 @@ export default function PaymentPage() {
         <section className="rounded-2xl bg-card border border-border/60 p-5 space-y-3">
           <h2 className="font-semibold">Premium tools</h2>
           <ul className="grid grid-cols-2 gap-2 text-sm">
-            {['AI writing assistant', 'Voice dictation', 'AI style matcher', 'Handwriting import'].map((item) => <li key={item} className="flex gap-2"><Check className="h-4 w-4 text-green-600 shrink-0" />{item}</li>)}
+            {['AI writing assistant', 'Voice dictation', 'AI style matcher', 'Handwriting import'].map((item) => <li key={item} className="flex gap-2"><Check className="h-4 w-4 text-success shrink-0" />{item}</li>)}
           </ul>
           <p className="text-xs text-muted-foreground">Voice dictation depends on browser support; AI tools require an internet connection. Handwriting styles, AI notes, PDF tools and exports remain free.</p>
         </section>
-        {isGuest && <section role="note" className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+        {isGuest && <section role="note" className="rounded-2xl border border-[color:hsl(var(--accent-warm-hsl)/0.3)] bg-nk-warm-600/5 p-4 space-y-3">
           <p className="text-sm font-medium">Protect your paid access</p>
           <p className="text-xs text-muted-foreground">You are using a guest workspace. If browser data is cleared, it may be difficult to recover it. Save it with an email and password before paying.</p>
           <GuestUpgradeCard />
         </section>}
         <p className="text-xs text-muted-foreground flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0" />Razorpay handles payment details. <a className="underline" href="/refunds">Refund policy</a></p>
-        {notice && <p role="status" className="rounded-xl bg-amber-500/10 p-3 text-sm">{notice}</p>}
+        {notice && <p role="status" className="rounded-xl bg-nk-warm-600/10 p-3 text-sm">{notice}</p>}
         {recovery}
       </main>
       <div className="fixed bottom-0 inset-x-0 z-40 bg-background/95 border-t border-border/40 p-4">

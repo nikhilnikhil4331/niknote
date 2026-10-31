@@ -4,7 +4,7 @@
 
 import { useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { NKToaster } from "@/components/nk/NKToast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
@@ -158,8 +158,8 @@ const App = () => {
     // Android hardware Back (no-op on web)
     void initNativeShell();
     initTracking();
-    document.documentElement.classList.remove("dark");
-    localStorage.setItem("theme", "light");
+    // Theme is owned by /theme-init.js + useDarkMode (Sunset Plum Night by
+    // default, Daylight when the visitor picks it). Never force a palette here.
 
     if (import.meta.env.PROD) {
       try {
@@ -189,7 +189,7 @@ const App = () => {
             <HandwritingDNAProvider>
               <TooltipProvider>
                 <Toaster />
-                <Sonner />
+                <NKToaster />
                 <BrowserRouter>
                   <SeoHead />
                   <TouchHealthGuard />

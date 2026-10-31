@@ -67,7 +67,7 @@ export const QuickStylesBar: React.FC<QuickStylesBarProps> = ({
         transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
       }}
     >
-      <div className="h-10 bg-white border border-gray-200 rounded-xl shadow-lg flex items-center px-2.5 gap-1.5">
+      <div className="h-10 bg-surface border border-subtle rounded-xl shadow-lg flex items-center px-2.5 gap-1.5">
         {recentColors.map((color) => {
           const ink = LINE_INK_COLORS.find(c => c.value === color);
           if (!ink) return null;
@@ -77,7 +77,7 @@ export const QuickStylesBar: React.FC<QuickStylesBarProps> = ({
               onClick={() => onColorChange(color)}
               className={cn(
                 "w-7 h-7 rounded-full border-2 flex-shrink-0 transition-transform active:scale-90",
-                currentColor === color ? "border-indigo-500 scale-110 ring-2 ring-indigo-100" : "border-transparent"
+                currentColor === color ? "border-primary scale-110 ring-2 ring-primary" : "border-transparent"
               )}
               style={{ 
                 backgroundColor: ink.hex, 
@@ -91,7 +91,7 @@ export const QuickStylesBar: React.FC<QuickStylesBarProps> = ({
           );
         })}
 
-        <div className="w-px h-5 bg-gray-200 mx-0.5" />
+        <div className="w-px h-5 bg-surface-hover mx-0.5" />
 
         {recentFonts.map((font) => {
           const fontOpt = FONT_OPTIONS.find(f => f.value === font);
@@ -103,8 +103,8 @@ export const QuickStylesBar: React.FC<QuickStylesBarProps> = ({
               className={cn(
                 "px-2 py-1.5 rounded-lg text-[11px] font-medium truncate max-w-[60px] transition-all active:scale-95",
                 currentFont === font
-                  ? "bg-indigo-50 text-indigo-600"
-                  : "text-gray-400"
+                  ? "bg-[color:hsl(var(--primary)/0.12)] text-accent-cool"
+                  : "text-fg-muted/70"
               )}
               style={{ 
                 WebkitTapHighlightColor: 'transparent',
@@ -119,14 +119,14 @@ export const QuickStylesBar: React.FC<QuickStylesBarProps> = ({
 
         <button
           onClick={onOpenStyleSheet}
-          className="ml-auto w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
+          className="ml-auto w-8 h-8 rounded-lg bg-[color:hsl(var(--primary)/0.12)] flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
           style={{ 
             WebkitTapHighlightColor: 'transparent',
             touchAction: 'manipulation',
             cursor: 'pointer',
           }}
         >
-          <Palette className="w-4 h-4 text-indigo-500" />
+          <Palette className="w-4 h-4 text-accent-cool" />
         </button>
       </div>
     </div>

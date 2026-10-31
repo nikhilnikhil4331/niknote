@@ -8,6 +8,7 @@ import { habitSpring } from '@/lib/motion';
 import { haptic } from '@/hooks/useHaptics';
 import { accountName } from '@/lib/accountName';
 import { useAuth } from '@/contexts/AuthContext';
+import { readableInk } from '@/lib/readableInk';
 
 export type Nav = (s: { name: string; id?: string }) => void;
 
@@ -157,7 +158,7 @@ export function HomeScreen({ go }: { go: Nav }) {
                 animate={{ width: `${pct * 100}%` }} transition={reduced ? { duration: 0 } : habitSpring.soft} />
             </div>
           </div>
-          <Ring size={78} stroke={8} pct={pct} from="#9333ea" to="#ec4899">
+          <Ring size={78} stroke={8} pct={pct} from="#7C5F9E" to="#A34054">
             <span className="nnh-display text-[17px] font-extrabold"><CountUp value={Math.round(pct * 100)} />%</span>
           </Ring>
         </div>
@@ -204,7 +205,7 @@ export function HomeScreen({ go }: { go: Nav }) {
                   <span
                     className="grid h-8 w-8 place-items-center rounded-full text-[12px] font-extrabold tabular-nums"
                     style={on
-                      ? { background: 'linear-gradient(135deg, #9333ea, #ec4899)', color: '#fff', boxShadow: '0 8px 16px -8px rgba(147,51,234,0.7)' }
+                      ? { background: 'linear-gradient(135deg, #7C5F9E, #A34054)', color: '#fff', boxShadow: '0 8px 16px -8px rgba(147,51,234,0.7)' }
                       : w.isToday
                         ? { border: '2px solid var(--nnh-purple)', color: 'var(--nnh-violet)' }
                         : { color: w.isFuture ? 'var(--nnh-sub)' : 'var(--nnh-ink)', opacity: w.isFuture ? 0.55 : 1 }}
@@ -230,9 +231,9 @@ export function HomeScreen({ go }: { go: Nav }) {
                   {fmtHabitValue(state.entries[`${water.id}|${selected}`]?.v ?? 0, water.type)}
                 </b> / {water.target}
               </p>
-              <MiniGlass pct={(state.entries[`${water.id}|${selected}`]?.v ?? 0) / water.target} color="#0ea5e9" size={30} />
+              <MiniGlass pct={(state.entries[`${water.id}|${selected}`]?.v ?? 0) / water.target} color="#7C5F9E" size={30} />
             </div>
-            <MiniBar values={microBars(water.id, state.entries, now)} color="#0ea5e9" />
+            <MiniBar values={microBars(water.id, state.entries, now)} color="#7C5F9E" />
           </MetricCard>
         ) : null}
         {sleep ? (
@@ -242,7 +243,7 @@ export function HomeScreen({ go }: { go: Nav }) {
                 {fmtHabitValue(state.entries[`${sleep.id}|${selected}`]?.v ?? 0, sleep.type)}
               </b> / {sleep.target} h
             </p>
-            <MiniBar values={microBars(sleep.id, state.entries, now)} color="#8b5cf6" />
+            <MiniBar values={microBars(sleep.id, state.entries, now)} color="#7C5F9E" />
           </MetricCard>
         ) : null}
         {exercise ? (
@@ -252,7 +253,7 @@ export function HomeScreen({ go }: { go: Nav }) {
                 {Math.round(state.entries[`${exercise.id}|${selected}`]?.v ?? 0)}
               </b> / {exercise.target} min
             </p>
-            <MiniBar values={microBars(exercise.id, state.entries, now)} color="#22c55e" />
+            <MiniBar values={microBars(exercise.id, state.entries, now)} color="#157F52" />
           </MetricCard>
         ) : null}
         <MetricCard label="Streak" tint="var(--nnh-orange)" icon="🔥" onClick={() => go({ name: 'streaks' })}>
@@ -263,7 +264,7 @@ export function HomeScreen({ go }: { go: Nav }) {
           <div className="mt-1 flex items-center gap-1">
             {[0, 1, 2, 3, 4].map(i => (
               <span key={i} className="h-1.5 flex-1 rounded-full"
-                style={{ background: i < Math.min(streak, 5) ? 'linear-gradient(90deg,#f97316,#fbbf24)' : 'var(--nnh-line)' }} />
+                style={{ background: i < Math.min(streak, 5) ? 'linear-gradient(90deg,#D9822F,#ED9E59)' : 'var(--nnh-line)' }} />
             ))}
           </div>
         </MetricCard>
@@ -329,7 +330,7 @@ export function HomeScreen({ go }: { go: Nav }) {
                     style={{
                       borderColor: done ? h.color : 'var(--nnh-line-strong)',
                       background: done ? h.color : 'transparent',
-                      color: '#fff',
+                      color: done ? readableInk(h.color) : '#fff',
                     }}>
                     <motion.span initial={false} animate={done ? { scale: [0.6, 1.15, 1] } : { scale: 1 }}
                       transition={reduced ? { duration: 0 } : habitSpring.pop}>
@@ -386,7 +387,7 @@ export function HomeScreen({ go }: { go: Nav }) {
         <div className="mb-3 flex gap-2">
           <input value={task} onChange={e => setTask(e.target.value)} onKeyDown={e => e.key === 'Enter' && submitTask()}
             placeholder="Add a task…" aria-label="Add a task"
-            className="h-10 min-w-0 flex-1 rounded-xl border px-3 text-[13px] outline-none"
+            className="h-10 min-w-0 flex-1 rounded-xl border px-3 text-[13px] outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]"
             style={{ background: 'var(--nnh-card-soft)', borderColor: 'var(--nnh-line)', color: 'var(--nnh-ink)' }} />
           <motion.button whileTap={reduced ? undefined : { scale: 0.9 }} type="button" onClick={submitTask} aria-label="Add task"
             className="grid h-10 w-10 place-items-center rounded-xl text-white nnh-gradient-btn disabled:opacity-40" disabled={!task.trim()}>
@@ -402,13 +403,13 @@ export function HomeScreen({ go }: { go: Nav }) {
                 <motion.button whileTap={{ scale: 0.78 }} type="button" onClick={() => toggleTodo(t.id)}
                   aria-label={t.done ? `Reopen ${t.title}` : `Complete ${t.title}`} aria-pressed={t.done}
                   className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2"
-                  style={{ borderColor: t.done ? 'var(--nnh-purple)' : 'var(--nnh-line-strong)', background: t.done ? 'var(--nnh-purple)' : 'transparent', color: '#fff' }}>
+                  style={{ borderColor: t.done ? 'var(--nnh-purple)' : 'var(--nnh-line-strong)', background: t.done ? 'var(--nnh-purple)' : 'transparent', color: readableInk('#662249') }}>
                   {t.done && <Check size={13} strokeWidth={3.4} />}
                 </motion.button>
                 <span className={`flex-1 truncate text-[13px] font-medium ${t.done ? 'line-through' : ''}`}
                   style={t.done ? { color: 'var(--nnh-sub)' } : undefined}>{t.title}</span>
                 <span className="h-4 w-1.5 rounded-full" aria-hidden="true"
-                  style={{ background: t.priority === 'high' ? '#ef4444' : t.priority === 'medium' ? '#f59e0b' : '#22c55e' }} />
+                  style={{ background: t.priority === 'high' ? '#A62B36' : t.priority === 'medium' ? '#C4762F' : '#157F52' }} />
                 <button type="button" onClick={() => deleteTodo(t.id)} aria-label={`Delete ${t.title}`}
                   className="grid h-9 w-9 place-items-center rounded-full" style={{ color: 'var(--nnh-sub)' }}>
                   <Trash2 size={14} />

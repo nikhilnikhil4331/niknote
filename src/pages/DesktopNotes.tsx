@@ -28,7 +28,7 @@ const VIEWS: { id: View; label: string; icon: React.ElementType }[] = [
   { id: 'calendar', label: 'Calendar', icon: CalendarDays },
 ];
 
-const COVERS = ['#7C6CF0', '#3B82F6', '#F59E0B', '#EC4899', '#10B981', '#06B6D4', '#F26D8D', '#8B5CF6'];
+const COVERS = ['#7C5F9E', '#5C3A6E', '#C4762F', '#A34054', '#157F52', '#7C5F9E', '#A34054', '#7C5F9E'];
 
 const DesktopNotes: React.FC = () => {
   const navigate = useNavigate();
@@ -155,11 +155,11 @@ const DesktopNotes: React.FC = () => {
           <button onClick={() => { setMenuFor(null); void openNote(note); }}><FileText size={14} /> Open</button>
           <button onClick={() => { setMenuFor(null); openRename(note); }}><Pencil size={14} /> Rename</button>
           <button onClick={() => togglePinned(note.id)}>
-            <Pin size={14} color={isPinned(note.id) ? '#D92C9B' : 'currentColor'} fill={isPinned(note.id) ? '#D92C9B' : 'none'} />
+            <Pin size={14} color={isPinned(note.id) ? '#A34054' : 'currentColor'} fill={isPinned(note.id) ? '#A34054' : 'none'} />
             {isPinned(note.id) ? 'Unpin' : 'Pin to top'}
           </button>
           <button onClick={() => toggleFav(note.id)}>
-            <Star size={14} fill={isFav(note.id) ? '#F5A623' : 'none'} color={isFav(note.id) ? '#F5A623' : 'currentColor'} />
+            <Star size={14} fill={isFav(note.id) ? '#C4762F' : 'none'} color={isFav(note.id) ? '#C4762F' : 'currentColor'} />
             {isFav(note.id) ? 'Remove favourite' : 'Add to favourites'}
           </button>
           <div className="px-2.5 pt-2 pb-1 text-[10.5px] font-semibold uppercase tracking-wide" style={{ color: 'var(--nd-text-3)' }}>
@@ -198,7 +198,7 @@ const DesktopNotes: React.FC = () => {
       title="Favourite"
       onClick={(e) => { e.stopPropagation(); toggleFav(note.id); }}
     >
-      <Star size={14} fill={isFav(note.id) ? '#F5A623' : 'none'} color={isFav(note.id) ? '#F5A623' : '#C9C6DE'} />
+      <Star size={14} fill={isFav(note.id) ? '#C4762F' : 'none'} color={isFav(note.id) ? '#C4762F' : '#C9C6DE'} />
     </button>
   );
 
@@ -228,14 +228,14 @@ const DesktopNotes: React.FC = () => {
               </td>
               <td>
                 {n.folder ? (
-                  <span className="nd-chip" style={{ background: '#F1EFFF', color: '#6C5CE7' }}>{n.folder}</span>
+                  <span className="nd-chip" style={{ background: 'hsl(var(--primary) / 0.14)', color: 'hsl(var(--accent-cool-hsl))' }}>{n.folder}</span>
                 ) : (
                   <span style={{ color: 'var(--nd-text-3)' }}>—</span>
                 )}
               </td>
               <td>
                 {n.tags[0] ? (
-                  <span className="nd-chip" style={{ background: '#FFF3CF', color: '#B87908' }}>{n.tags[0]}</span>
+                  <span className="nd-chip" style={{ background: 'hsl(var(--accent-primary-hsl) / 0.18)', color: 'hsl(var(--accent-warm-hsl))' }}>{n.tags[0]}</span>
                 ) : (
                   <span style={{ color: 'var(--nd-text-3)' }}>—</span>
                 )}
@@ -306,8 +306,8 @@ const DesktopNotes: React.FC = () => {
                   {menuBtn(n, true)}
                 </div>
                 <div className="flex items-center gap-1.5 mt-1.5">
-                  {n.folder && <span className="nd-chip" style={{ background: '#F1EFFF', color: '#6C5CE7' }}>{n.folder}</span>}
-                  {n.tags[0] && <span className="nd-chip" style={{ background: '#FFF3CF', color: '#B87908' }}>{n.tags[0]}</span>}
+                  {n.folder && <span className="nd-chip" style={{ background: 'hsl(var(--primary) / 0.14)', color: 'hsl(var(--accent-cool-hsl))' }}>{n.folder}</span>}
+                  {n.tags[0] && <span className="nd-chip" style={{ background: 'hsl(var(--accent-primary-hsl) / 0.18)', color: 'hsl(var(--accent-warm-hsl))' }}>{n.tags[0]}</span>}
                   <span className="text-[11px] ml-auto" style={{ color: 'var(--nd-text-3)' }}>{niceDate(n.updatedAt)}</span>
                 </div>
               </div>
@@ -342,7 +342,7 @@ const DesktopNotes: React.FC = () => {
       {displayOrdered.map((n) => (
         <div
           key={n.id}
-          className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-[#F8F7FF] transition-colors"
+          className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-surface-secondary transition-colors"
           style={{ borderColor: 'var(--nd-border-soft)' }}
           onClick={() => void openNote(n)}
         >
@@ -395,7 +395,7 @@ const DesktopNotes: React.FC = () => {
           {calDayNotes.map((n) => (
             <button
               key={n.id}
-              className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-[#F8F7FF] transition-colors"
+              className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-surface-secondary transition-colors"
               style={{ border: '1px solid var(--nd-border-soft)' }}
               onClick={() => void openNote(n)}
             >
@@ -446,7 +446,7 @@ const DesktopNotes: React.FC = () => {
             All
           </button>
           <button className={cn('nd-chip-btn', favOnly && 'nd-on')} onClick={() => setFavOnly((v) => !v)}>
-            <Star size={12} className="inline mr-1 -mt-0.5" fill={favOnly ? '#fff' : '#F5A623'} color={favOnly ? '#fff' : '#F5A623'} />
+            <Star size={12} className="inline mr-1 -mt-0.5" fill={favOnly ? '#fff' : '#C4762F'} color={favOnly ? '#fff' : '#C4762F'} />
             Favourites
           </button>
           {folders.map((f) => (

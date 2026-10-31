@@ -434,7 +434,7 @@ export default function BoardScreen() {
       {/* Top bar */}
       <header className="flex flex-wrap items-center gap-2 border-b bg-background/90 px-3 py-2 backdrop-blur">
         <Button variant="ghost" size="icon" aria-label="All boards" onClick={() => { if (dirty.current) persist(); setParams({}); }}><ArrowLeft size={18} /></Button>
-        <input aria-label="Board title" value={title} onChange={e => { setTitle(e.target.value); dirty.current = true; }} className="min-w-0 flex-1 bg-transparent text-base font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring rounded px-1" />
+        <input aria-label="Board title" value={title} onChange={e => { setTitle(e.target.value); dirty.current = true; }} className="min-w-0 flex-1 bg-transparent text-base font-semibold outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] focus-visible:ring-2 focus-visible:ring-ring rounded px-1" />
         <span role="status" aria-live="polite" className={`text-xs ${save === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}>
           {save === 'saving' ? 'Saving…' : save === 'error' ? <>Not saved · <button className="underline" onClick={persist}>Retry</button></> : save === 'saved' ? 'Saved' : ''}
         </span>
@@ -516,7 +516,7 @@ export default function BoardScreen() {
                         onFocus={() => { setSelected(it.id); history.current.push(clone(data)); }}
                         onChange={e => patchItem(it.id, { text: e.target.value }, false)}
                         onPaste={e => onPasteText(e, it)}
-                        className="h-full w-full resize-none overflow-hidden bg-transparent p-1 outline-none placeholder:opacity-40"
+                        className="h-full w-full resize-none overflow-hidden bg-transparent p-1 outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))] placeholder:opacity-40"
                         style={{ fontSize: it.fontSize, lineHeight: it.lineHeight, textAlign: it.align, color: 'inherit' }} />}
                       {it.kind === 'image' && <MediaImage item={it} />}
                       {it.kind === 'audio' && <div className="flex h-full items-center rounded-xl border bg-background/90 p-2 shadow"><MediaAudio item={it} /></div>}

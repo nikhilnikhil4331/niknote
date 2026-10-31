@@ -305,7 +305,7 @@ const ToggleControl: React.FC<{
       enabled ? "bg-primary" : "bg-muted"
     )}>
       <motion.div
-        className="w-5 h-5 rounded-full bg-white shadow-sm"
+        className="w-5 h-5 rounded-full bg-surface shadow-sm"
         animate={{ x: enabled ? 16 : 0 }}
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
       />

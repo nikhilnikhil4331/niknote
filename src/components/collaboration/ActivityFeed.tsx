@@ -30,15 +30,15 @@ interface ActivityFeedProps {
 }
 
 const ACTIVITY_ICONS: Record<ActivityItem['type'], { icon: React.ReactNode; color: string }> = {
-  edit: { icon: <Edit3 className="w-3 h-3" />, color: 'bg-blue-100 text-blue-600' },
-  comment: { icon: <MessageSquare className="w-3 h-3" />, color: 'bg-green-100 text-green-600' },
-  create: { icon: <Plus className="w-3 h-3" />, color: 'bg-indigo-100 text-indigo-600' },
-  delete: { icon: <Trash2 className="w-3 h-3" />, color: 'bg-red-100 text-red-600' },
-  share: { icon: <Share2 className="w-3 h-3" />, color: 'bg-purple-100 text-purple-600' },
-  favorite: { icon: <Star className="w-3 h-3" />, color: 'bg-amber-100 text-amber-600' },
-  mention: { icon: <AtSign className="w-3 h-3" />, color: 'bg-cyan-100 text-cyan-600' },
-  resolve: { icon: <Check className="w-3 h-3" />, color: 'bg-emerald-100 text-emerald-600' },
-  ai: { icon: <Sparkles className="w-3 h-3" />, color: 'bg-violet-100 text-violet-600' },
+  edit: { icon: <Edit3 className="w-3 h-3" />, color: 'bg-[color:hsl(var(--accent-cool-hsl)/0.14)] text-accent-cool' },
+  comment: { icon: <MessageSquare className="w-3 h-3" />, color: 'bg-[color:hsl(var(--success)/0.14)] text-success' },
+  create: { icon: <Plus className="w-3 h-3" />, color: 'bg-[color:hsl(var(--primary)/0.12)] text-accent-cool' },
+  delete: { icon: <Trash2 className="w-3 h-3" />, color: 'bg-[color:hsl(var(--error)/0.14)] text-error' },
+  share: { icon: <Share2 className="w-3 h-3" />, color: 'bg-[color:hsl(var(--primary)/0.12)] text-accent-cool' },
+  favorite: { icon: <Star className="w-3 h-3" />, color: 'bg-[color:hsl(var(--accent-warm-hsl)/0.16)] text-accent-warm' },
+  mention: { icon: <AtSign className="w-3 h-3" />, color: 'bg-[color:hsl(var(--accent-cool-hsl)/0.14)] text-accent-cool' },
+  resolve: { icon: <Check className="w-3 h-3" />, color: 'bg-[color:hsl(var(--success)/0.14)] text-success' },
+  ai: { icon: <Sparkles className="w-3 h-3" />, color: 'bg-[color:hsl(var(--primary)/0.12)] text-accent-cool' },
 };
 
 const formatTime = (timestamp: number): string => {
@@ -87,17 +87,17 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities, onNaviga
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-gray-100">
+      <div className="p-4 border-b border-subtle">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-indigo-500" />
-            <h3 className="text-sm font-bold text-gray-900">Activity</h3>
+            <Clock className="w-4 h-4 text-accent-cool" />
+            <h3 className="text-sm font-bold text-fg-primary">Activity</h3>
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={cn(
               "p-1.5 rounded-lg transition-colors",
-              showFilters ? "bg-indigo-50 text-indigo-600" : "hover:bg-gray-100 text-gray-400"
+              showFilters ? "bg-[color:hsl(var(--primary)/0.12)] text-accent-cool" : "hover:bg-muted text-fg-muted/70"
             )}
           >
             <Filter className="w-3.5 h-3.5" />
@@ -118,7 +118,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities, onNaviga
                   onClick={() => setFilterType('all')}
                   className={cn(
                     "text-[9px] font-medium px-2 py-1 rounded-full transition-colors",
-                    filterType === 'all' ? "bg-indigo-100 text-indigo-600" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                    filterType === 'all' ? "bg-[color:hsl(var(--primary)/0.12)] text-accent-cool" : "bg-muted text-fg-muted hover:bg-surface-hover"
                   )}
                 >All</button>
                 {Object.entries(ACTIVITY_ICONS).map(([type, { icon, color }]) => (
@@ -127,7 +127,7 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities, onNaviga
                     onClick={() => setFilterType(type as ActivityItem['type'])}
                     className={cn(
                       "text-[9px] font-medium px-2 py-1 rounded-full flex items-center gap-1 transition-colors capitalize",
-                      filterType === type ? "bg-indigo-100 text-indigo-600" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      filterType === type ? "bg-[color:hsl(var(--primary)/0.12)] text-accent-cool" : "bg-muted text-fg-muted hover:bg-surface-hover"
                     )}
                   >
                     {icon} {type}
@@ -143,13 +143,13 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities, onNaviga
       <div className="flex-1 overflow-y-auto">
         {grouped.length === 0 ? (
           <div className="text-center py-12">
-            <Clock className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-            <p className="text-sm text-gray-400">No activity yet</p>
+            <Clock className="w-10 h-10 text-fg-muted/70 mx-auto mb-3" />
+            <p className="text-sm text-fg-muted/70">No activity yet</p>
           </div>
         ) : (
           grouped.map(({ label, items }) => (
             <div key={label}>
-              <div className="px-4 py-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider sticky top-0 bg-white/80 backdrop-blur-sm">
+              <div className="px-4 py-2 text-[10px] font-semibold text-fg-muted/70 uppercase tracking-wider sticky top-0 bg-surface/80 backdrop-blur-sm">
                 {label}
               </div>
               {items.map((item, i) => {
@@ -161,28 +161,28 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities, onNaviga
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.02 }}
                     onClick={() => onNavigate(item.pageId)}
-                    className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left group"
+                    className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-muted transition-colors text-left group"
                   >
                     {/* Timeline dot */}
                     <div className="flex flex-col items-center pt-0.5">
                       <div className={cn("w-6 h-6 rounded-full flex items-center justify-center", iconData.color)}>
                         {iconData.icon}
                       </div>
-                      <div className="w-px flex-1 bg-gray-100 mt-1 min-h-[16px]" />
+                      <div className="w-px flex-1 bg-muted mt-1 min-h-[16px]" />
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0 pb-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-semibold text-gray-800">{item.userName}</span>
-                        <span className="text-[10px] text-gray-400">{item.description}</span>
+                        <span className="text-[11px] font-semibold text-fg-primary">{item.userName}</span>
+                        <span className="text-[10px] text-fg-muted/70">{item.description}</span>
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <FileText className="w-3 h-3 text-gray-300" />
-                        <span className="text-[10px] text-gray-500 truncate">{item.pageTitle}</span>
-                        <ArrowRight className="w-2.5 h-2.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <FileText className="w-3 h-3 text-fg-muted/70" />
+                        <span className="text-[10px] text-fg-muted truncate">{item.pageTitle}</span>
+                        <ArrowRight className="w-2.5 h-2.5 text-fg-muted/70 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                      <span className="text-[9px] text-gray-300 mt-0.5 block">{formatTime(item.timestamp)}</span>
+                      <span className="text-[9px] text-fg-muted/70 mt-0.5 block">{formatTime(item.timestamp)}</span>
                     </div>
                   </motion.button>
                 );
@@ -193,8 +193,8 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities, onNaviga
       </div>
 
       {/* AI Summary */}
-      <div className="p-3 border-t border-gray-100">
-        <button className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors">
+      <div className="p-3 border-t border-subtle">
+        <button className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-accent-cool bg-[color:hsl(var(--primary)/0.12)] hover:bg-[color:hsl(var(--primary)/0.12)] transition-colors">
           <Sparkles className="w-3.5 h-3.5" />
           Summarize recent activity with AI
         </button>

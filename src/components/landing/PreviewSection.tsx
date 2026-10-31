@@ -55,7 +55,7 @@ export const PreviewSection: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <span className="text-primary text-sm">✏️</span>
+                      <span className="text-accent-rose text-sm">✏️</span>
                     </div>
                     <span className="text-sm font-medium">Type here...</span>
                   </div>
@@ -108,8 +108,8 @@ export const PreviewSection: React.FC = () => {
           </div>
 
           {/* Decorative Elements */}
-          <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-2xl" />
-          <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-br from-accent/20 to-primary/20 rounded-full blur-2xl" />
+          <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-primary/20 to-nk-rose/20 rounded-full blur-2xl" />
+          <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-br from-nk-amber/20 to-primary/20 rounded-full blur-2xl" />
         </motion.div>
       </div>
     </section>

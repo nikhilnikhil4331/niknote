@@ -105,6 +105,13 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
     localStorage.setItem('niknote.desktop.sidebar', collapsed ? '1' : '0');
   }, [collapsed]);
 
+  // The desktop shell owns the bottom-left corner (sidebar profile card), so
+  // global floating buttons opt out while it is mounted.
+  useEffect(() => {
+    document.body.dataset.nkShell = 'desktop';
+    return () => { delete document.body.dataset.nkShell; };
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -172,7 +179,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
         <div className="flex items-center gap-2 px-3 pt-3.5 pb-1">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 min-w-0 rounded-lg px-1 py-1 hover:bg-[#f1f0fa] transition-colors"
+            className="flex items-center gap-2 min-w-0 rounded-lg px-1 py-1 hover:bg-surface-secondary transition-colors"
             title="NikNote Home"
           >
             <img
@@ -249,7 +256,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
                         aria-label={`Rename space ${sp.name}`}
                       />
                       <button
-                        className="nd-icon-btn flex-none !bg-[#7028D9] !text-white hover:!bg-[#4D168F]"
+                        className="nd-icon-btn flex-none !bg-primary !text-white hover:!bg-primary"
                         onClick={() => submitRenameSpace(sp.name)}
                         title="Save name"
                       >
@@ -323,7 +330,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
                       if (e.key === 'Escape') setNewSpaceOpen(false);
                     }}
                   />
-                  <button className="nd-icon-btn flex-none !bg-[#6C5CE7] !text-white hover:!bg-[#5A4BD1]" onClick={submitSpace} title="Create space">
+                  <button className="nd-icon-btn flex-none !bg-primary !text-white hover:!bg-primary" onClick={submitSpace} title="Create space">
                     <Check size={15} />
                   </button>
                 </div>
@@ -345,7 +352,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
             title="Upgrade to NikNote Premium"
           >
             <span className="flex items-center gap-2">
-              <span className="grid place-items-center rounded-lg w-8 h-8" style={{ background: 'linear-gradient(135deg,#ffad45,#d92c9b)', color: '#fff' }}>
+              <span className="grid place-items-center rounded-lg w-8 h-8" style={{ background: 'linear-gradient(135deg,#44174E,#A34054)', color: '#fff' }}>
                 <Crown size={15} />
               </span>
               <span className="min-w-0">
@@ -359,7 +366,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
         {!isPremium && collapsed && (
           <button
             className="nd-icon-btn mx-auto mb-1.5 flex-none"
-            style={{ background: 'linear-gradient(135deg,#ffad45,#d92c9b)', color: '#fff' }}
+            style={{ background: 'linear-gradient(135deg,#44174E,#A34054)', color: '#fff' }}
             onClick={() => navigate('/upgrade')}
             title="Upgrade to NikNote Premium"
           >
@@ -370,13 +377,13 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
         {/* Profile footer */}
         <div className="relative flex-none" style={{ borderTop: '1px solid var(--nd-border-soft)' }}>
           <button
-            className={cn('flex items-center gap-2.5 w-full text-left px-3.5 py-3 hover:bg-[#f4f3fc] transition-colors', collapsed && 'justify-center px-0')}
+            className={cn('flex items-center gap-2.5 w-full text-left px-3.5 py-3 hover:bg-surface-secondary transition-colors', collapsed && 'justify-center px-0')}
             onClick={() => setMenuOpen((v) => !v)}
             title={collapsed ? displayName : undefined}
           >
             <span
               className="flex-none flex items-center justify-center text-white text-[13px] font-bold"
-              style={{ width: 30, height: 30, borderRadius: 99, background: 'linear-gradient(135deg,#F59E0B,#EC4899 55%,#6C5CE7)' }}
+              style={{ width: 30, height: 30, borderRadius: 99, background: 'linear-gradient(135deg,#C4762F,#A34054 55%,#662249)' }}
             >
               {initial}
             </span>
@@ -407,7 +414,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
                 <button onClick={() => { setMenuOpen(false); navigate('/achievements'); }}><Trophy size={15} /> Achievements</button>
                 {!isPremium && (
                   <button onClick={() => { setMenuOpen(false); navigate('/upgrade'); }}>
-                    <Crown size={15} color="#F59E0B" /> Upgrade to Premium
+                    <Crown size={15} color="#C4762F" /> Upgrade to Premium
                   </button>
                 )}
                 {guest ? (

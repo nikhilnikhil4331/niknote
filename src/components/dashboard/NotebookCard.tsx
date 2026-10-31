@@ -44,7 +44,7 @@ export const NotebookCard: React.FC<NotebookCardProps> = ({
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-semibold text-foreground mb-1 group-hover:text-primary transition-colors">
+        <h3 className="text-lg font-semibold text-foreground mb-1 group-hover:text-accent-rose transition-colors">
           {notebook.title}
         </h3>
 
@@ -58,7 +58,7 @@ export const NotebookCard: React.FC<NotebookCardProps> = ({
           <span className="text-xs text-muted-foreground">
             {formatDistanceToNow(new Date(notebook.updated_at), { addSuffix: true })}
           </span>
-          <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+          <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-accent-rose group-hover:translate-x-1 transition-all" />
         </div>
       </div>
 

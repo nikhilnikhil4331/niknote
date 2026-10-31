@@ -52,14 +52,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             transition={{ duration: 0.5 }}
             className="flex flex-wrap items-center justify-center gap-2 mb-6"
           >
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-200 text-xs font-bold text-orange-600">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-nk-warm-600/10 border border-[color:hsl(var(--accent-warm-hsl)/0.34)] text-xs font-bold text-accent-warm">
               🇮🇳 Made for Indian Students
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-accent-rose">
               <Sparkles className="w-3 h-3" />
               AI-Powered Learning
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-200 text-xs font-bold text-green-600">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/10 border border-[color:hsl(var(--success)/0.4)] text-xs font-bold text-success">
               ✅ 100% Free to Start
             </span>
           </motion.div>
@@ -73,7 +73,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           >
             <span className="text-foreground">AI Notes + Handwriting</span>
             <br />
-            <span className="bg-gradient-to-r from-primary via-blue-500 to-accent bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary via-nk-lilac to-nk-rose bg-clip-text text-transparent">
               Made for Bharat
             </span>
             <br />
@@ -103,12 +103,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             className="flex flex-wrap items-center justify-center gap-2 mb-8"
           >
             {[
-              { label: 'CBSE', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-              { label: 'ICSE', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-              { label: 'JEE', color: 'bg-red-100 text-red-700 border-red-200' },
-              { label: 'NEET', color: 'bg-green-100 text-green-700 border-green-200' },
-              { label: 'UPSC', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-              { label: 'State Boards', color: 'bg-teal-100 text-teal-700 border-teal-200' },
+              { label: 'CBSE', color: 'bg-[color:hsl(var(--accent-cool-hsl)/0.14)] text-accent-cool border-[color:hsl(var(--accent-cool-hsl)/0.35)]' },
+              { label: 'ICSE', color: 'bg-[color:hsl(var(--primary)/0.12)] text-fg-secondary border-[color:hsl(var(--primary)/0.3)]' },
+              { label: 'JEE', color: 'bg-[color:hsl(var(--error)/0.14)] text-error border-[color:hsl(var(--error)/0.4)]' },
+              { label: 'NEET', color: 'bg-[color:hsl(var(--success)/0.14)] text-success border-[color:hsl(var(--success)/0.4)]' },
+              { label: 'UPSC', color: 'bg-[color:hsl(var(--accent-warm-hsl)/0.16)] text-accent-warm border-[color:hsl(var(--accent-warm-hsl)/0.34)]' },
+              { label: 'State Boards', color: 'bg-[color:hsl(var(--success)/0.14)] text-success border-[color:hsl(var(--success)/0.4)]' },
             ].map((exam) => (
               <span
                 key={exam.label}
@@ -129,7 +129,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <Button
               size="lg"
               onClick={onStartWriting}
-              className="group h-14 px-8 text-base font-bold rounded-full bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 hover:from-orange-400 hover:via-pink-400 hover:to-purple-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105"
+              className="group h-14 px-8 text-base font-bold rounded-full bg-gradient-to-r from-nk-warm-700 via-nk-rose to-nk-purple hover:from-nk-warm-700 hover:via-nk-rose hover:to-nk-purple text-white shadow-lg shadow-[color:hsl(var(--primary)/0.25)] hover:shadow-xl hover:shadow-[color:hsl(var(--primary)/0.25)] transition-all duration-300 hover:scale-105"
             >
               <Zap className="w-5 h-5 mr-2" />
               Start Writing FREE ✨
@@ -142,7 +142,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               onClick={onPreviewNotes}
               className="group h-14 px-8 text-base font-semibold rounded-full border-2 hover:bg-secondary/50 transition-all duration-300 hover:scale-105"
             >
-              <Play className="w-5 h-5 mr-2 text-primary" />
+              <Play className="w-5 h-5 mr-2 text-accent-rose" />
               See Examples
             </Button>
 
@@ -150,7 +150,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               size="lg"
               variant="outline"
               onClick={handleWhatsAppShare}
-              className="group h-14 px-8 text-base font-semibold rounded-full border-2 border-green-500 text-green-600 hover:bg-green-50 transition-all duration-300 hover:scale-105"
+              className="group h-14 px-8 text-base font-semibold rounded-full border-2 border-[color:hsl(var(--success)/0.4)] text-success hover:bg-[color:hsl(var(--success)/0.14)] transition-all duration-300 hover:scale-105"
             >
               <MessageCircle className="w-5 h-5 mr-2" />
               Share on WhatsApp
@@ -165,12 +165,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <BookOpen className="w-4 h-4 text-primary" />
+              <BookOpen className="w-4 h-4 text-accent-rose" />
               <span>AI explanations for study topics</span>
             </div>
             <div className="hidden sm:block w-px h-5 bg-border" />
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Brain className="w-4 h-4 text-purple-500" />
+              <Brain className="w-4 h-4 text-accent-cool" />
               <span>Some editing may work offline when cached</span>
             </div>
           </motion.div>

@@ -31,14 +31,14 @@ export function BigWaterGlass({ glasses, goal, onAdd, onRemove }: {
         <defs>
           <clipPath id={`nnh-glass-clip-${uid}`}><path d={GLASS} /></clipPath>
           <linearGradient id={`nnh-water-grad-${uid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="#2563eb" />
+            <stop offset="0%" stopColor="#A688C9" stopOpacity="0.85" />
+            <stop offset="100%" stopColor="#5C3A6E" />
           </linearGradient>
         </defs>
-        <path d={GLASS} fill="#7dd3fc" opacity="0.14" />
+        <path d={GLASS} fill="#C0A6DE" opacity="0.14" />
         <g clipPath={`url(#nnh-glass-clip-${uid})`}>
           <motion.g initial={false} animate={{ y: level }} transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 55, damping: 12 }}>
-            <g className={reduced ? '' : 'nnh-anim-wave-back'}><path d={WAVE} fill="#7dd3fc" opacity="0.45" /></g>
+            <g className={reduced ? '' : 'nnh-anim-wave-back'}><path d={WAVE} fill="#C0A6DE" opacity="0.45" /></g>
             <g className={reduced ? '' : 'nnh-anim-wave'}><path d={WAVE} fill="url(#nnh-water-grad-${uid})" /></g>
             <path d={WAVE} fill="none" stroke="#ffffff" strokeOpacity="0.55" strokeWidth="2" className={reduced ? '' : 'nnh-anim-wave'} />
           </motion.g>
@@ -52,10 +52,10 @@ export function BigWaterGlass({ glasses, goal, onAdd, onRemove }: {
             )}
           </AnimatePresence>
         </g>
-        <path d={GLASS} fill="none" stroke="#bae6fd" strokeWidth="4" strokeLinejoin="round" />
+        <path d={GLASS} fill="none" stroke="#E0CDE8" strokeWidth="4" strokeLinejoin="round" />
         <path d="M30 30 L40 180" stroke="#ffffff" strokeWidth="5" strokeLinecap="round" opacity="0.35" />
         <motion.g initial={false} animate={reduced ? {} : { opacity: [0.35, 1, 0.35] }} transition={{ duration: 2.4, repeat: Infinity }}>
-          <path d="M146 44 q10 -8 4 -16 q-2 10 -4 8" fill="none" stroke="#7dd3fc" strokeWidth="3" strokeLinecap="round" />
+          <path d="M146 44 q10 -8 4 -16 q-2 10 -4 8" fill="none" stroke="#C0A6DE" strokeWidth="3" strokeLinecap="round" />
         </motion.g>
       </svg>
 
@@ -77,11 +77,11 @@ export function BigWaterGlass({ glasses, goal, onAdd, onRemove }: {
 
       {/* tap to drink */}
       <motion.button whileTap={reduced ? undefined : { scale: 0.92 }} type="button" onClick={add} aria-label="Drink a glass"
-        className="absolute -right-1 bottom-6 w-12 h-12 rounded-full bg-white shadow-lg grid place-items-center text-xl">
+        className="absolute -right-1 bottom-6 w-12 h-12 rounded-full bg-surface shadow-lg grid place-items-center text-xl">
         💧
       </motion.button>
       <motion.button whileTap={reduced ? undefined : { scale: 0.92 }} type="button" onClick={onRemove} aria-label="Remove a glass"
-        disabled={glasses <= 0} className="absolute -left-1 bottom-6 w-10 h-10 rounded-full bg-white shadow grid place-items-center text-lg disabled:opacity-40">
+        disabled={glasses <= 0} className="absolute -left-1 bottom-6 w-10 h-10 rounded-full bg-surface shadow grid place-items-center text-lg disabled:opacity-40">
         −
       </motion.button>
     </div>
@@ -89,5 +89,5 @@ export function BigWaterGlass({ glasses, goal, onAdd, onRemove }: {
 }
 
 function confettiMini() {
-  import('canvas-confetti').then(m => m.default({ particleCount: 70, spread: 70, origin: { y: 0.6 }, colors: ['#38bdf8', '#2563eb', '#ffffff'] })).catch(() => {});
+  import('canvas-confetti').then(m => m.default({ particleCount: 70, spread: 70, origin: { y: 0.6 }, colors: ['#A688C9', '#5C3A6E', '#ffffff'] })).catch(() => {});
 }

@@ -153,7 +153,7 @@ export function decodeGraphSpec(text: string): GraphSpec | null {
       yMin: raw.yMin ?? preset?.yMin ?? -5,
       yMax: raw.yMax ?? preset?.yMax ?? 5,
       label: raw.label || 'Graph',
-      color: raw.color || '#7c3aed',
+      color: raw.color || '#7C5F9E',
     };
   } catch {
     return null;

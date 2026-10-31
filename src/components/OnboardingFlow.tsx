@@ -14,23 +14,23 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
 
   const steps = [
     {
-      icon: <Pen className="w-12 h-12 text-primary" />,
+      icon: <Pen className="w-12 h-12 text-accent-rose" />,
       title: 'Welcome to NikNote! ✍️',
       description: 'Turn your typed text into beautiful handwritten notes. Perfect for assignments, notes, and more!',
-      bg: 'from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30',
+      bg: 'from-nk-purple to-nk-rose dark:from-nk-purple/30 dark:to-nk-rose/30',
     },
     {
-      icon: <BookOpen className="w-12 h-12 text-primary" />,
+      icon: <BookOpen className="w-12 h-12 text-accent-rose" />,
       title: 'Choose Your Style',
       description: 'Pick a handwriting style that feels like yours. You can always change it later!',
-      bg: 'from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30',
+      bg: 'from-nk-purple to-nk-rose dark:from-nk-purple/30 dark:to-nk-rose/30',
       isFontPicker: true,
     },
     {
-      icon: <Sparkles className="w-12 h-12 text-primary" />,
+      icon: <Sparkles className="w-12 h-12 text-accent-rose" />,
       title: "You're All Set! 🎉",
       description: 'Start typing and watch your words come alive as handwriting. Try the AI assistant for smart help!',
-      bg: 'from-pink-50 to-amber-50 dark:from-pink-950/30 dark:to-amber-950/30',
+      bg: 'from-nk-purple to-nk-rose dark:from-nk-purple/30 dark:to-nk-rose/30',
     },
   ];
 
@@ -80,7 +80,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         </div>
 
         {/* Icon */}
-        <div className="w-20 h-20 rounded-3xl bg-white/60 dark:bg-white/10 backdrop-blur-sm flex items-center justify-center mx-auto mb-6 shadow-soft">
+        <div className="w-20 h-20 rounded-3xl bg-surface/60 dark:bg-surface/10 backdrop-blur-sm flex items-center justify-center mx-auto mb-6 shadow-soft">
           {currentStep.icon}
         </div>
 
@@ -98,12 +98,12 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
                 className={`p-3 rounded-xl border-2 transition-all text-left ${
                   selectedFont === font.class
                     ? 'border-primary bg-primary/5 shadow-primary-soft'
-                    : 'border-transparent bg-white/50 dark:bg-white/5 hover:bg-white/70'
+                    : 'border-transparent bg-surface/50 dark:bg-surface/5 hover:bg-surface/70'
                 }`}
               >
                 <span className={`${font.class} text-xl block`}>{font.preview}</span>
                 <span className="text-[10px] text-muted-foreground mt-1 block">
-                  {selectedFont === font.class && <Check className="w-3 h-3 inline mr-1 text-primary" />}
+                  {selectedFont === font.class && <Check className="w-3 h-3 inline mr-1 text-accent-rose" />}
                   {font.name}
                 </span>
               </button>

@@ -138,7 +138,7 @@ export default function LegalPage({ policy }: { policy: keyof typeof policies })
             </Button>
           </div>
         )}
-        <nav aria-label="Legal navigation" className="mt-12 border-t border-border pt-6 flex flex-wrap gap-5 text-sm text-primary">
+        <nav aria-label="Legal navigation" className="mt-12 border-t border-border pt-6 flex flex-wrap gap-5 text-sm text-accent-rose">
           <Link to="/privacy">Privacy Policy</Link>
           <Link to="/terms">Terms &amp; Conditions</Link>
           <Link to="/refunds">Refund Policy</Link>

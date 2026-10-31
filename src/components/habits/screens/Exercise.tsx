@@ -97,26 +97,26 @@ export function ExerciseScreen({ go }: { go: (s: { name: string; id?: string }) 
                 className="w-9 h-9 rounded-full grid place-items-center" style={{ background: 'var(--nnh-card-soft)' }}><Minus size={15} /></motion.button>
               {[10, 20, 30].map(m => (
                 <motion.button key={m} whileTap={reduced ? undefined : { scale: 0.94 }} type="button" onClick={() => bump(ex, m)}
-                  className="h-9 px-3.5 rounded-full text-white text-[12px] font-extrabold" style={{ background: 'linear-gradient(92deg, #22c55e, #16a34a)' }}>
+                  className="h-9 px-3.5 rounded-full text-white text-[12px] font-extrabold" style={{ background: 'linear-gradient(92deg, #157F52, #16a34a)' }}>
                   +{m}
                 </motion.button>
               ))}
             </div>
           </div>
-          <Ring size={84} stroke={9} pct={pct} from="#4ade80" to="#16a34a">
+          <Ring size={84} stroke={9} pct={pct} from="#6FCF97" to="#16a34a">
             <span className="nnh-display text-[18px] font-extrabold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}><CountUp value={Math.round(pct * 100)} />%</span>
           </Ring>
         </section>
 
         <section className="nnh-card p-4">
           <p className="text-[14px] font-bold mb-3">Minutes {range === 'day' ? 'per day' : range === 'week' ? 'by week (total)' : 'by month (avg)'}</p>
-          <WeekBars data={bars} colorFrom="#4ade80" colorTo="#16a34a" max={Math.max(45, goal)} height={130} suffix="m" reduced={reduced} />
+          <WeekBars data={bars} colorFrom="#6FCF97" colorTo="#16a34a" max={Math.max(45, goal)} height={130} suffix="m" reduced={reduced} />
         </section>
 
         <div className="grid grid-cols-3 gap-3">
-          <StatTile value={<CountUp value={recent.length} />} label="Workouts (7d)" accent="#22c55e" />
-          <StatTile value={<CountUp value={wkStats.kcal} />} label="Calories" accent="#f97316" />
-          <StatTile value={<><CountUp value={wkStats.km} decimals={1} /></>} label="Distance km" accent="#0ea5e9" />
+          <StatTile value={<CountUp value={recent.length} />} label="Workouts (7d)" accent="#157F52" />
+          <StatTile value={<CountUp value={wkStats.kcal} />} label="Calories" accent="#D9822F" />
+          <StatTile value={<><CountUp value={wkStats.km} decimals={1} /></>} label="Distance km" accent="#7C5F9E" />
         </div>
 
         <section className="nnh-card p-4">
@@ -126,7 +126,7 @@ export function ExerciseScreen({ go }: { go: (s: { name: string; id?: string }) 
               {recent.map((r, i) => (
                 <motion.div key={r.day} layout initial={reduced ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
                   className="flex items-center gap-3 p-2.5 rounded-xl" style={{ background: 'var(--nnh-card-soft)' }}>
-                  <span className="w-9 h-9 rounded-xl grid place-items-center text-lg" style={{ background: 'color-mix(in srgb, #22c55e 18%, transparent)' }}>🏃</span>
+                  <span className="w-9 h-9 rounded-xl grid place-items-center text-lg" style={{ background: 'color-mix(in srgb, #157F52 18%, transparent)' }}>🏃</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-bold">Running</p>
                     <p className="text-[11px] font-semibold" style={{ color: 'var(--nnh-sub)' }}>{r.v} min · {r.km} km · {r.kcal} kcal</p>

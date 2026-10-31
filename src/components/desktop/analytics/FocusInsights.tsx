@@ -16,7 +16,7 @@ const PERIODS = [
 ] as const;
 
 const colorFor = (cat: string, i: number) =>
-  FOCUS_CATEGORIES.find((c) => c.name === cat)?.color ?? ['#8B5CF6', '#06B6D4', '#F26D9B'][i % 3];
+  FOCUS_CATEGORIES.find((c) => c.name === cat)?.color ?? ['#7C5F9E', '#7C5F9E', '#A34054'][i % 3];
 
 export const FocusInsights: React.FC = () => {
   const { sessions } = useFocusSessions();

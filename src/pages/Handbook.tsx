@@ -32,7 +32,7 @@ export default function Handbook() {
           <Link to="/" className="p-2 -ml-2 rounded-lg hover:bg-muted transition">
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <BookOpen className="w-5 h-5 text-primary" />
+          <BookOpen className="w-5 h-5 text-accent-rose" />
           <h1 className="font-semibold">NikNote Handbook</h1>
           <div className="ml-auto relative w-full max-w-xs">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />

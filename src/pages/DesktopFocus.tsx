@@ -72,7 +72,7 @@ const DesktopFocus: React.FC = () => {
                   </div>
                   <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: 'var(--nd-text-3)' }}>Sessions</div>
                 </div>
-                <div className="rounded-xl p-3 text-center" style={{ background: '#fff8ea' }}>
+                <div className="rounded-xl p-3 text-center" style={{ background: 'hsl(var(--accent-primary-hsl) / 0.18)' }}>
                   <div className="text-[19px] font-extrabold tabular-nums" style={{ color: '#d98a0b' }}>
                     {formatMinutesAsHours(stats.allMin)}
                   </div>

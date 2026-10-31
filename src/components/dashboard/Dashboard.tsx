@@ -36,7 +36,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   const handleCreateNotebook = async () => {
     playClick();
-    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+    const colors = ['#5C3A6E', '#157F52', '#C4762F', '#A62B36', '#7C5F9E', '#A34054'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
     
     const notebook = await createNotebook({
@@ -65,7 +65,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <PenTool className="w-5 h-5 text-primary" />
+                <PenTool className="w-5 h-5 text-accent-rose" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground">NikNote</h1>
@@ -92,7 +92,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </Button>
               <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-xl">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <User className="w-4 h-4 text-primary" />
+                  <User className="w-4 h-4 text-accent-rose" />
                 </div>
                 <span className="text-sm font-medium text-foreground hidden sm:block">
                   {user?.email?.split('@')[0]}
@@ -138,10 +138,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-3xl p-8 text-center border-2 border-dashed border-primary/20"
+              className="bg-gradient-to-br from-primary/5 to-nk-rose/5 rounded-3xl p-8 text-center border-2 border-dashed border-primary/20"
             >
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-primary" />
+                <Sparkles className="w-8 h-8 text-accent-rose" />
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-2">No handwriting styles yet</h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">

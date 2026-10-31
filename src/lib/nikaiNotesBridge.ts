@@ -261,7 +261,7 @@ export async function implementNikAINote(params: {
         .insert({
           user_id: params.userId,
           title,
-          cover_color: '#7c3aed',
+          cover_color: '#7C5F9E',
           tags: ['NikAI', 'Smart Notes'],
           page_style: params.pageStyle || 'ruled',
           page_size: 'a4',

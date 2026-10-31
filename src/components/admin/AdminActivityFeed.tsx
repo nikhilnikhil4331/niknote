@@ -47,12 +47,12 @@ const actionIcons: Record<string, React.ElementType> = {
 };
 
 const actionColors: Record<string, string> = {
-  auth: 'bg-blue-500/10 text-blue-500',
-  page: 'bg-green-500/10 text-green-500',
-  export: 'bg-purple-500/10 text-purple-500',
-  premium: 'bg-amber-500/10 text-amber-500',
-  mood: 'bg-pink-500/10 text-pink-500',
-  notebook: 'bg-indigo-500/10 text-indigo-500',
+  auth: 'bg-[color:hsl(var(--accent-cool-hsl)/0.1)] text-accent-cool',
+  page: 'bg-success/10 text-success',
+  export: 'bg-primary/10 text-accent-cool',
+  premium: 'bg-nk-warm-600/10 text-accent-warm',
+  mood: 'bg-primary/10 text-accent-rose',
+  notebook: 'bg-primary/10 text-accent-cool',
   general: 'bg-muted text-muted-foreground',
 };
 

@@ -91,7 +91,7 @@ export const MobileLivePreview: React.FC<MobileLivePreviewProps> = ({
         >
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Eye className="w-3.5 h-3.5 text-primary" />
+              <Eye className="w-3.5 h-3.5 text-accent-rose" />
             </div>
             <span>Live Preview</span>
             <span className="text-xs text-muted-foreground">
@@ -115,7 +115,7 @@ export const MobileLivePreview: React.FC<MobileLivePreviewProps> = ({
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           className={cn(
             "overflow-y-auto overflow-x-hidden px-4 py-3",
-            "bg-white dark:bg-paper"
+            "bg-surface dark:bg-paper"
           )}
           style={{
             // CRITICAL: Flow-based layout - each line is a block, no overlapping

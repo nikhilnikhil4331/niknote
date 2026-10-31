@@ -160,7 +160,7 @@ export const AdminCommandCenter: React.FC = () => {
           { label: 'Coins in circ.', value: stats.totalCoins, icon: Coins },
         ].map((s) => (
           <Card key={s.label} className="p-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-accent-rose">
               <s.icon className="w-4 h-4" />
             </div>
             <div>
@@ -251,7 +251,7 @@ export const AdminCommandCenter: React.FC = () => {
                       <Badge variant="destructive">Banned</Badge>
                     ) : u.plan !== 'free' ? (
                       <div>
-                        <Badge className="bg-amber-500/90 text-white">
+                        <Badge className="bg-nk-warm-600/90 text-white">
                           <Crown className="w-3 h-3 mr-1" />
                           {u.plan}
                         </Badge>
@@ -270,7 +270,7 @@ export const AdminCommandCenter: React.FC = () => {
                   <td className="px-3 py-2 text-right tabular-nums">{u.ai_requests_month}</td>
                   <td className="px-3 py-2 text-right tabular-nums">
                     <span className="inline-flex items-center gap-1">
-                      <Flame className="w-3 h-3 text-orange-500" />{u.current_streak}
+                      <Flame className="w-3 h-3 text-accent-warm" />{u.current_streak}
                     </span>
                   </td>
                   <td className="px-3 py-2 text-right tabular-nums">{u.coins}</td>
@@ -298,7 +298,7 @@ export const AdminCommandCenter: React.FC = () => {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   {selected.display_name || selected.email || selected.user_id.slice(0, 8)}
-                  {selected.plan !== 'free' && <Crown className="w-4 h-4 text-amber-500" />}
+                  {selected.plan !== 'free' && <Crown className="w-4 h-4 text-accent-warm" />}
                   {selected.is_banned && <Ban className="w-4 h-4 text-destructive" />}
                 </DialogTitle>
                 <div className="text-xs text-muted-foreground font-mono">{selected.user_id}</div>

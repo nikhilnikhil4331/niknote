@@ -165,34 +165,34 @@ export class ErrorBoundary extends Component<Props, State> {
       const componentStack = this.state.errorInfo?.componentStack || '';
 
       return (
-        <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-          <div className="bg-white border border-gray-200 rounded-2xl shadow-xl p-8 max-w-lg w-full text-center">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center mx-auto mb-4">
-              <AlertTriangle className="w-8 h-8 text-red-500" />
+        <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-nk-purple via-nk-burgundy to-nk-rose">
+          <div className="bg-surface border border-subtle rounded-2xl shadow-xl p-8 max-w-lg w-full text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-error to-nk-rose flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-8 h-8 text-error" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl font-bold text-fg-primary mb-2">
               Kuch gadbad ho gayi! 😅
             </h2>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-fg-muted mb-4">
               Don't worry — tumhare notes safe hain! Ye temporary issue hai.
             </p>
 
             {/* Error details — only in dev mode */}
             {isDev && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl text-left">
-                <p className="text-xs font-mono text-red-600 break-words font-bold mb-2">
+              <div className="mb-4 p-3 bg-[color:hsl(var(--error)/0.14)] border border-[color:hsl(var(--error)/0.4)] rounded-xl text-left">
+                <p className="text-xs font-mono text-error break-words font-bold mb-2">
                   {errorMsg}
                 </p>
                 {componentStack && (
                   <details className="mt-2">
-                    <summary className="text-[10px] text-red-400 cursor-pointer">Component Stack</summary>
-                    <pre className="text-[10px] text-red-400 mt-1 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">{componentStack}</pre>
+                    <summary className="text-[10px] text-error cursor-pointer">Component Stack</summary>
+                    <pre className="text-[10px] text-error mt-1 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">{componentStack}</pre>
                   </details>
                 )}
                 {errorStack && (
                   <details className="mt-2">
-                    <summary className="text-[10px] text-red-400 cursor-pointer">Error Stack</summary>
-                    <pre className="text-[10px] text-red-400 mt-1 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">{errorStack}</pre>
+                    <summary className="text-[10px] text-error cursor-pointer">Error Stack</summary>
+                    <pre className="text-[10px] text-error mt-1 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">{errorStack}</pre>
                   </details>
                 )}
               </div>
@@ -200,8 +200,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
             {/* Production: show simple error ID for support */}
             {!isDev && errorMsg && (
-              <div className="mb-4 p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                <p className="text-xs text-gray-500">
+              <div className="mb-4 p-3 bg-muted border border-subtle rounded-xl">
+                <p className="text-xs text-fg-muted">
                   Error ID: <span className="font-mono font-bold">{btoa(errorMsg).substring(0, 12)}</span>
                 </p>
               </div>
@@ -210,21 +210,21 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex gap-3 justify-center">
               <button
                 onClick={this.handleGoHome}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-subtle text-sm font-medium text-fg-primary hover:bg-muted transition-colors"
               >
                 <Home className="w-4 h-4" />
                 Home
               </button>
               <button
                 onClick={this.handleReload}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-nk-purple to-nk-rose text-white text-sm font-medium hover:from-nk-purple hover:to-nk-rose transition-all shadow-md"
               >
                 <RefreshCw className="w-4 h-4" />
                 Reload
               </button>
             </div>
 
-            <p className="text-xs text-gray-400 mt-4">
+            <p className="text-xs text-fg-muted/70 mt-4">
               NikNote will be back in a moment ✍️
             </p>
           </div>

@@ -21,11 +21,11 @@ const NAV_ITEMS: { id: TabId; label: string; icon: typeof Home }[] = [
 ];
 
 const QUICK_ACTIONS: { id: QuickId; label: string; icon: typeof Home; tint: string }[] = [
-  { id: 'habit', label: 'Add Habit', icon: ListPlus, tint: '#7c3aed' },
-  { id: 'task', label: 'Add Task', icon: Target, tint: '#ec4899' },
-  { id: 'activity', label: 'Log Activity', icon: Dumbbell, tint: '#34d399' },
-  { id: 'focus', label: 'Focus Timer', icon: Timer, tint: '#f59e0b' },
-  { id: 'water', label: 'Log Water', icon: Droplet, tint: '#0ea5e9' },
+  { id: 'habit', label: 'Add Habit', icon: ListPlus, tint: '#7C5F9E' },
+  { id: 'task', label: 'Add Task', icon: Target, tint: '#A34054' },
+  { id: 'activity', label: 'Log Activity', icon: Dumbbell, tint: '#157F52' },
+  { id: 'focus', label: 'Focus Timer', icon: Timer, tint: '#C4762F' },
+  { id: 'water', label: 'Log Water', icon: Droplet, tint: '#7C5F9E' },
 ];
 
 /** Keeps the floating nav from covering inputs when a soft keyboard is open. */
@@ -467,7 +467,7 @@ function QuickTaskSheet({ open, task, priority, onTask, onPriority, onClose, onS
           placeholder="What needs doing?"
           aria-label="Task title"
           autoFocus
-          className="h-12 w-full rounded-2xl border px-4 text-[14px] font-medium outline-none"
+          className="h-12 w-full rounded-2xl border px-4 text-[14px] font-medium outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:hsl(var(--focus-ring-hsl))]"
           style={{ background: 'var(--nnh-card-soft)', borderColor: 'var(--nnh-line)', color: 'var(--nnh-ink)' }}
         />
         <div className="mt-3 flex gap-2">

@@ -71,7 +71,7 @@ export const PageNavigator: React.FC<PageNavigatorProps> = ({
       {/* Page Indicator */}
       <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 min-w-[90px] sm:min-w-[120px] justify-center">
         <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-primary/10 flex items-center justify-center">
-          <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+          <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent-rose" />
         </div>
         <AnimatePresence mode="wait">
           <motion.span
@@ -109,7 +109,7 @@ export const PageNavigator: React.FC<PageNavigatorProps> = ({
           variant="outline"
           size="sm"
           onClick={handleAddPage}
-          className="h-8 sm:h-10 gap-1 sm:gap-1.5 rounded-lg sm:rounded-xl border-dashed border-primary/40 text-primary hover:bg-primary/10 hover:border-primary px-2 sm:px-3"
+          className="h-8 sm:h-10 gap-1 sm:gap-1.5 rounded-lg sm:rounded-xl border-dashed border-primary/40 text-accent-rose hover:bg-primary/10 hover:border-primary px-2 sm:px-3"
         >
           <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           <span className="text-xs font-medium hidden sm:inline">New Page</span>

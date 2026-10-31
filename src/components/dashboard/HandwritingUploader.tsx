@@ -257,7 +257,7 @@ export const HandwritingUploader: React.FC<HandwritingUploaderProps> = ({
                 transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
                 className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6"
               >
-                <Loader2 className="w-8 h-8 text-primary" />
+                <Loader2 className="w-8 h-8 text-accent-rose" />
               </motion.div>
               <h3 className="text-lg font-semibold text-foreground mb-2">Analyzing Your Handwriting</h3>
               <p className="text-muted-foreground">
@@ -279,9 +279,9 @@ export const HandwritingUploader: React.FC<HandwritingUploaderProps> = ({
           {step === 'result' && analysisResult && (
             <div className="space-y-6">
               {/* Success message */}
-              <div className="flex items-center gap-3 p-4 bg-green-500/10 rounded-xl">
-                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <Check className="w-5 h-5 text-green-500" />
+              <div className="flex items-center gap-3 p-4 bg-success/10 rounded-xl">
+                <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
+                  <Check className="w-5 h-5 text-success" />
                 </div>
                 <div>
                   <p className="font-medium text-foreground">Analysis Complete!</p>

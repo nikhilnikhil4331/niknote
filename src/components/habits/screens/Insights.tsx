@@ -134,7 +134,7 @@ export function InsightsScreen({ go }: { go: (s: { name: string; id?: string }) 
               <CountUp value={completion.pct} />%
             </p>
             <p className="text-[10px] font-semibold" style={{ color: 'var(--nnh-sub)' }}>Completion</p>
-            <p className={`mt-0.5 flex items-center justify-center gap-0.5 text-[10px] font-bold ${delta >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+            <p className={`mt-0.5 flex items-center justify-center gap-0.5 text-[10px] font-bold ${delta >= 0 ? 'text-success' : 'text-accent-rose'}`}>
               {delta >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />} {delta >= 0 ? '+' : ''}{delta}%
             </p>
           </div>
@@ -227,7 +227,7 @@ export function InsightsScreen({ go }: { go: (s: { name: string; id?: string }) 
                 <div className="space-y-2.5">
                   {categories.map(c => {
                     const meta = HABIT_CATEGORIES.find(x => x.id === c.category);
-                    const tint = c.category === 'health' ? '#0ea5e9' : c.category === 'study' ? '#6366f1' : c.category === 'mind' ? '#ec4899' : c.category === 'social' ? '#f97316' : 'var(--nnh-purple)';
+                    const tint = c.category === 'health' ? '#7C5F9E' : c.category === 'study' ? '#7C5F9E' : c.category === 'mind' ? '#A34054' : c.category === 'social' ? '#D9822F' : 'var(--nnh-purple)';
                     return (
                       <div key={c.category} className="flex items-center gap-3">
                         <span className="w-24 shrink-0 truncate text-[11px] font-bold">
@@ -272,13 +272,13 @@ export function InsightsScreen({ go }: { go: (s: { name: string; id?: string }) 
             water ? (
               <>
                 <div className="grid grid-cols-2 gap-3">
-                  <StatTile value={<><CountUp value={totalFor(water.id)} /> <span className="text-[11px]">glasses</span></>} label={rangeLabel} accent="#0ea5e9" icon={<Droplet size={14} />} />
-                  <StatTile value={<><CountUp value={totalFor(water.id) / span} decimals={1} /> <span className="text-[11px]">per day</span></>} label="Daily average" accent="#2563eb" />
+                  <StatTile value={<><CountUp value={totalFor(water.id)} /> <span className="text-[11px]">glasses</span></>} label={rangeLabel} accent="#7C5F9E" icon={<Droplet size={14} />} />
+                  <StatTile value={<><CountUp value={totalFor(water.id) / span} decimals={1} /> <span className="text-[11px]">per day</span></>} label="Daily average" accent="#5C3A6E" />
                 </div>
                 <section className="nnh-card p-4">
                   <p className="mb-2 text-[14px] font-extrabold">Glasses {range === 'week' ? 'per day' : 'per week (avg)'}</p>
                   <InteractiveBars data={range === 'week' ? valuesFor(water.id) : weeklyBuckets(water.id)}
-                    max={water.target} from="#38bdf8" to="#2563eb" height={138} formatValue={v => `${Math.round(v * 10) / 10} glasses`} />
+                    max={water.target} from="#A688C9" to="#5C3A6E" height={138} formatValue={v => `${Math.round(v * 10) / 10} glasses`} />
                   <button type="button" onClick={() => go({ name: 'detail', id: water.id })}
                     className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl py-2.5 text-[12px] font-bold nnh-chip" style={{ color: '#0284c7' }}>
                     Open Water Intake <ChevronRight size={14} />
@@ -291,15 +291,15 @@ export function InsightsScreen({ go }: { go: (s: { name: string; id?: string }) 
           {tab === 'sleep' && (
             <>
               <div className="grid grid-cols-2 gap-3">
-                <StatTile value={<><CountUp value={totalFor(sleep?.id)} decimals={1} /> <span className="text-[11px]">hours</span></>} label={rangeLabel} accent="#8b5cf6" icon={<Moon size={14} />} />
-                <StatTile value={<><CountUp value={totalFor(sleep?.id) / span} decimals={1} /> <span className="text-[11px]">h avg</span></>} label="Daily average" accent="#6366f1" />
+                <StatTile value={<><CountUp value={totalFor(sleep?.id)} decimals={1} /> <span className="text-[11px]">hours</span></>} label={rangeLabel} accent="#7C5F9E" icon={<Moon size={14} />} />
+                <StatTile value={<><CountUp value={totalFor(sleep?.id) / span} decimals={1} /> <span className="text-[11px]">h avg</span></>} label="Daily average" accent="#7C5F9E" />
               </div>
               <section className="nnh-card p-4">
                 <p className="mb-2 text-[14px] font-extrabold">Sleep per night</p>
                 <InteractiveBars data={range === 'week' ? valuesFor(sleep?.id) : weeklyBuckets(sleep?.id)}
-                  max={10} from="#a78bfa" to="#6366f1" height={138} suffix="h" formatValue={v => `${v} h`} />
+                  max={10} from="#C0A6DE" to="#7C5F9E" height={138} suffix="h" formatValue={v => `${v} h`} />
                 <button type="button" onClick={() => go({ name: 'sleep' })}
-                  className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl py-2.5 text-[12px] font-bold nnh-chip" style={{ color: '#7c3aed' }}>
+                  className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl py-2.5 text-[12px] font-bold nnh-chip" style={{ color: '#7C5F9E' }}>
                   Sleep details <ChevronRight size={14} />
                 </button>
               </section>
@@ -314,18 +314,18 @@ export function InsightsScreen({ go }: { go: (s: { name: string; id?: string }) 
                   const s = exerciseStats(mins);
                   return (
                     <div className="grid grid-cols-3 gap-3">
-                      <StatTile value={<><CountUp value={mins} /> <span className="text-[11px]">min</span></>} label={range === 'week' ? 'This week' : '30 days'} accent="#22c55e" icon={<Dumbbell size={13} />} />
-                      <StatTile value={<><CountUp value={s.kcal} /> <span className="text-[11px]">kcal</span></>} label="Burned" accent="#f97316" />
-                      <StatTile value={<><CountUp value={s.km} decimals={1} /> <span className="text-[11px]">km</span></>} label="Distance" accent="#0ea5e9" />
+                      <StatTile value={<><CountUp value={mins} /> <span className="text-[11px]">min</span></>} label={range === 'week' ? 'This week' : '30 days'} accent="#157F52" icon={<Dumbbell size={13} />} />
+                      <StatTile value={<><CountUp value={s.kcal} /> <span className="text-[11px]">kcal</span></>} label="Burned" accent="#D9822F" />
+                      <StatTile value={<><CountUp value={s.km} decimals={1} /> <span className="text-[11px]">km</span></>} label="Distance" accent="#7C5F9E" />
                     </div>
                   );
                 })()}
                 <section className="nnh-card p-4">
                   <p className="mb-2 text-[14px] font-extrabold">Minutes {range === 'week' ? 'per day' : 'per week (avg)'}</p>
                   <InteractiveBars data={range === 'week' ? valuesFor(exercise.id) : weeklyBuckets(exercise.id)}
-                    max={Math.max(45, exercise.target)} from="#4ade80" to="#16a34a" height={138} suffix="m" formatValue={v => `${Math.round(v)} min`} />
+                    max={Math.max(45, exercise.target)} from="#6FCF97" to="#157F52" height={138} suffix="m" formatValue={v => `${Math.round(v)} min`} />
                   <button type="button" onClick={() => go({ name: 'exercise' })}
-                    className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl py-2.5 text-[12px] font-bold nnh-chip" style={{ color: '#16a34a' }}>
+                    className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl py-2.5 text-[12px] font-bold nnh-chip" style={{ color: '#157F52' }}>
                     Exercise details <ChevronRight size={14} />
                   </button>
                 </section>

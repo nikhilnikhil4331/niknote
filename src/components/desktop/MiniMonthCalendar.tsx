@@ -34,12 +34,12 @@ export const MiniMonthCalendar: React.FC<{ notes: DNote[] }> = ({ notes }) => {
       s.add(color);
       map.set(key, s);
     };
-    for (const t of tasks) add(t.due || null, '#D92C9B');
+    for (const t of tasks) add(t.due || null, '#A34054');
     for (const n of notes) {
       const k = (n.createdAt || '').slice(0, 10);
-      if (/^\d{4}-\d{2}-\d{2}$/.test(k)) add(k, '#FFAD45');
+      if (/^\d{4}-\d{2}-\d{2}$/.test(k)) add(k, '#ED9E59');
     }
-    for (const s of sessions) add((s.startedAt || '').slice(0, 10), '#7028D9');
+    for (const s of sessions) add((s.startedAt || '').slice(0, 10), '#662249');
     return map;
   }, [tasks, notes, sessions]);
 

@@ -133,7 +133,7 @@ const BlogPage: React.FC = () => {
                 All Guides
               </Link>
             </Button>
-            <Link to="/" className="text-sm font-semibold text-primary hover:underline">
+            <Link to="/" className="text-sm font-semibold text-accent-rose hover:underline">
               Open NikNote Editor →
             </Link>
           </div>
@@ -151,7 +151,7 @@ const BlogPage: React.FC = () => {
           <article>
             <header className="mb-8">
               <div className="flex flex-wrap items-center gap-3 mb-4">
-                <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-accent-rose text-xs font-semibold">
                   {selectedPost.category}
                 </span>
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -176,7 +176,7 @@ const BlogPage: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => handleShare(selectedPost)}
-                  className="gap-1.5 text-green-600 border-green-200"
+                  className="gap-1.5 text-success border-[color:hsl(var(--success)/0.4)]"
                 >
                   <MessageCircle className="w-3.5 h-3.5" /> Share on WhatsApp
                 </Button>
@@ -200,7 +200,7 @@ const BlogPage: React.FC = () => {
             {/* Contextual Product Links (Phase 11 Internal Linking) */}
             <section aria-label="Related NikNote tools" className="mt-10 pt-8 border-t border-border/60">
               <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary" />
+                <Sparkles className="w-4 h-4 text-accent-rose" />
                 Try These NikNote Tools
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -210,7 +210,7 @@ const BlogPage: React.FC = () => {
                     to={tool.to}
                     className="p-4 rounded-xl border border-border/60 bg-card hover:border-primary/40 transition-colors block"
                   >
-                    <div className="text-sm font-semibold text-primary mb-1">{tool.label}</div>
+                    <div className="text-sm font-semibold text-accent-rose mb-1">{tool.label}</div>
                     <p className="text-xs text-muted-foreground leading-snug">{tool.desc}</p>
                   </Link>
                 ))}
@@ -235,7 +235,7 @@ const BlogPage: React.FC = () => {
                     });
                     navigate('/');
                   }}
-                  className="rounded-full bg-gradient-to-r from-primary to-blue-600"
+                  className="rounded-full bg-gradient-to-r from-primary to-nk-rose"
                 >
                   Start Writing Free
                 </Button>
@@ -256,7 +256,7 @@ const BlogPage: React.FC = () => {
                   to={`/blog/${post.slug}`}
                   className="p-4 rounded-xl border border-border/50 bg-card hover:border-primary/30 transition-all block"
                 >
-                  <span className="text-[11px] font-semibold text-primary">{post.category}</span>
+                  <span className="text-[11px] font-semibold text-accent-rose">{post.category}</span>
                   <h3 className="text-sm font-semibold text-foreground mt-1 line-clamp-2">{post.title}</h3>
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{post.excerpt}</p>
                 </Link>
@@ -281,7 +281,7 @@ const BlogPage: React.FC = () => {
               </Link>
             </Button>
             <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" />
+              <BookOpen className="w-5 h-5 text-accent-rose" />
               <span className="font-bold text-foreground">NikNote Blog</span>
             </div>
           </div>
@@ -320,7 +320,7 @@ const BlogPage: React.FC = () => {
                 className="block h-full p-6 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-lg transition-all"
               >
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-semibold">
+                  <span className="px-2 py-0.5 rounded-full bg-primary/10 text-accent-rose text-[11px] font-semibold">
                     {post.category}
                   </span>
                   <span className="text-[11px] text-muted-foreground flex items-center gap-1">
@@ -331,7 +331,7 @@ const BlogPage: React.FC = () => {
                     <span className="text-[11px] text-muted-foreground ml-auto">{post.date}</span>
                   )}
                 </div>
-                <h2 className="text-base font-bold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                <h2 className="text-base font-bold text-foreground mb-2 group-hover:text-accent-rose transition-colors line-clamp-2">
                   {post.title}
                 </h2>
                 <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{post.excerpt}</p>
@@ -346,7 +346,7 @@ const BlogPage: React.FC = () => {
                       </span>
                     ))}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-accent-rose transition-colors" />
                 </div>
               </Link>
             </motion.article>

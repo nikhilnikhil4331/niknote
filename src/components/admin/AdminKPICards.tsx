@@ -37,16 +37,16 @@ interface KPIConfig {
 }
 
 const kpiConfig: KPIConfig[] = [
-  { key: 'totalUsers', label: 'Total Users', icon: Users, color: 'bg-blue-500/10 text-blue-500' },
-  { key: 'todayUsers', label: 'Today Users', icon: Activity, color: 'bg-green-500/10 text-green-500' },
-  { key: 'activeNow', label: 'Active Now', icon: Zap, color: 'bg-emerald-500/10 text-emerald-500', subLabel: 'last 15 min' },
-  { key: 'premiumUsers', label: 'Active subscriptions', icon: Crown, color: 'bg-amber-500/10 text-amber-500' },
-  { key: 'totalPages', label: 'Total Pages', icon: FileText, color: 'bg-indigo-500/10 text-indigo-500' },
-  { key: 'totalNotebooks', label: 'Notebooks', icon: FileText, color: 'bg-purple-500/10 text-purple-500' },
-  { key: 'totalExports', label: 'Total Exports', icon: Download, color: 'bg-cyan-500/10 text-cyan-500' },
-  { key: 'aiRequests', label: 'AI Requests', icon: Brain, color: 'bg-violet-500/10 text-violet-500' },
-  { key: 'totalUploads', label: 'Uploads', icon: Upload, color: 'bg-rose-500/10 text-rose-500' },
-  { key: 'conversionRate', label: 'Subscriptions / users', icon: TrendingUp, color: 'bg-pink-500/10 text-pink-500', format: (v) => `${v}%` },
+  { key: 'totalUsers', label: 'Total Users', icon: Users, color: 'bg-[color:hsl(var(--accent-cool-hsl)/0.1)] text-accent-cool' },
+  { key: 'todayUsers', label: 'Today Users', icon: Activity, color: 'bg-success/10 text-success' },
+  { key: 'activeNow', label: 'Active Now', icon: Zap, color: 'bg-success/10 text-success', subLabel: 'last 15 min' },
+  { key: 'premiumUsers', label: 'Active subscriptions', icon: Crown, color: 'bg-nk-warm-600/10 text-accent-warm' },
+  { key: 'totalPages', label: 'Total Pages', icon: FileText, color: 'bg-primary/10 text-accent-cool' },
+  { key: 'totalNotebooks', label: 'Notebooks', icon: FileText, color: 'bg-primary/10 text-accent-cool' },
+  { key: 'totalExports', label: 'Total Exports', icon: Download, color: 'bg-[color:hsl(var(--accent-cool-hsl)/0.1)] text-accent-cool' },
+  { key: 'aiRequests', label: 'AI Requests', icon: Brain, color: 'bg-primary/10 text-accent-cool' },
+  { key: 'totalUploads', label: 'Uploads', icon: Upload, color: 'bg-primary/10 text-accent-rose' },
+  { key: 'conversionRate', label: 'Subscriptions / users', icon: TrendingUp, color: 'bg-primary/10 text-accent-rose', format: (v) => `${v}%` },
 ];
 
 export const AdminKPICards: React.FC<AdminKPICardsProps> = ({ data, loading }) => {

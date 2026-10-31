@@ -6,6 +6,7 @@ import { CountUp, TopBar } from '@/components/habits/ui';
 import { HABIT_CATEGORIES, bestStreakHistory, fmtHabitValue, habitStreak, isScheduled, toDay, weekCompletion } from '@/lib/trackers';
 import { habitSpring } from '@/lib/motion';
 import { haptic } from '@/hooks/useHaptics';
+import { readableInk } from '@/lib/readableInk';
 
 export function HabitsScreen({ go }: { go: (s: { name: string; id?: string }) => void }) {
   const { state, today, activeHabits, updateHabit, toggleHabitDone } = useRoutine();
@@ -73,7 +74,7 @@ export function HabitsScreen({ go }: { go: (s: { name: string; id?: string }) =>
               onClick={() => toggleHabitDone(h)}
               aria-label={done ? `Reopen ${h.name}` : `Complete ${h.name}`} aria-pressed={done}
               className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-2"
-              style={{ borderColor: done ? h.color : 'var(--nnh-line-strong)', background: done ? h.color : 'transparent', color: '#fff' }}>
+              style={{ borderColor: done ? h.color : 'var(--nnh-line-strong)', background: done ? h.color : 'transparent', color: done ? readableInk(h.color) : '#fff' }}>
               {done ? <Check size={15} strokeWidth={3.4} /> : <Plus size={14} style={{ color: 'var(--nnh-sub)' }} />}
             </motion.button>
           </>

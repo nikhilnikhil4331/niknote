@@ -70,7 +70,7 @@ export default function Hub() {
                   <Link to={it.to} onClick={() => haptic('light')}
                     className="block h-full rounded-3xl border border-border bg-card/80 backdrop-blur p-4 shadow-sm active:shadow-none">
                     {it.logo ? (
-                      <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3 bg-white border border-purple-200/70 shadow-sm">
+                      <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3 bg-surface border border-[color:hsl(var(--primary)/0.7)] shadow-sm">
                         <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-7 w-auto object-contain select-none" />
                       </div>
                     ) : (

@@ -195,9 +195,9 @@ export function Shell() {
 
 /** Phone-style frame on desktop, full-bleed on mobile, with desktop-only chrome outside it. */
 function Frame({ children, dark }: { children: React.ReactNode; dark?: boolean }) {
-  const brandInk = dark ? '#efeafe' : '#3b2f5c';
-  const brandSub = dark ? '#a79cc9' : '#6f648c';
-  const brandAccent = dark ? '#c4b5fd' : '#7c3aed';
+  const brandInk = dark ? '#f7eeec' : '#241b2e';
+  const brandSub = dark ? '#a79bae' : '#6b5a73';
+  const brandAccent = dark ? '#e9bcb9' : '#8c3149';
   return (
     <div
       /* Mobile: pin to the visual viewport so the floating nav can never end up
@@ -205,8 +205,8 @@ function Frame({ children, dark }: { children: React.ReactNode; dark?: boolean }
       className="fixed inset-0 flex h-[100dvh] w-full items-center justify-center gap-8 overflow-hidden px-0 py-0 md:static md:h-auto md:min-h-screen md:overflow-visible md:px-6 md:py-5"
       style={{
         background: dark
-          ? 'linear-gradient(135deg, #171331 0%, #1c1638 48%, #141127 100%)'
-          : 'linear-gradient(135deg, #fbe4f1 0%, #ece1fc 48%, #dce7ff 100%)',
+          ? 'linear-gradient(135deg, #121020 0%, #1b1931 48%, #2a1235 100%)'
+          : 'linear-gradient(135deg, #fdf4f1 0%, #f7e6e2 48%, #f6d9cb 100%)',
       }}
     >
       <div className="hidden max-w-[300px] flex-col gap-5 xl:flex">
@@ -222,7 +222,7 @@ function Frame({ children, dark }: { children: React.ReactNode; dark?: boolean }
         </div>
       </div>
 
-      <div className="relative h-full w-full max-w-[430px] overflow-hidden md:h-[844px] md:max-h-[92vh] md:rounded-[2.6rem] md:border-[10px] md:border-[#241d3a] md:shadow-[0_50px_100px_-40px_rgba(76,49,133,0.55)]">
+      <div className="relative h-full w-full max-w-[430px] overflow-hidden md:h-[844px] md:max-h-[92vh] md:rounded-[2.6rem] md:border-[10px] md:border-active md:shadow-[0_50px_100px_-40px_rgba(27,25,49,0.6)]">
         {children}
       </div>
     </div>

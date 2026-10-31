@@ -70,7 +70,7 @@ export const FAQSection: React.FC = () => {
           transition={{ duration: 0.5 }}
           className="text-center mb-12"
         >
-          <span className="text-sm font-semibold text-primary uppercase tracking-wider">FAQ</span>
+          <span className="text-sm font-semibold text-accent-rose uppercase tracking-wider">FAQ</span>
           <h2 className="text-3xl sm:text-4xl font-bold mt-3 mb-4 text-foreground">
             Sawaal Jawab 💡
           </h2>

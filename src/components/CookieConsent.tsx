@@ -70,10 +70,10 @@ export const CookieConsent: React.FC = () => {
       <div className="pointer-events-auto max-w-xl mx-auto rounded-2xl border border-border/80 bg-background/95 shadow-xl p-3.5 sm:p-4">
         <div className="flex items-start justify-between gap-2.5">
           <div className="flex items-center gap-2 min-w-0">
-            <Cookie className="w-4 h-4 text-primary flex-shrink-0" />
+            <Cookie className="w-4 h-4 text-accent-rose flex-shrink-0" />
             <p className="text-xs text-muted-foreground leading-snug">
               We use essential storage to keep your notes &amp; sign-in working, and optional analytics &amp; conversion cookies only with your permission.{' '}
-              <Link to="/privacy" className="text-primary underline font-medium">
+              <Link to="/privacy" className="text-accent-rose underline font-medium">
                 Privacy Policy
               </Link>
             </p>
