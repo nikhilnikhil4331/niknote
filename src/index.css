@@ -1474,3 +1474,9 @@
 @media (prefers-reduced-motion: reduce) {
   .nn-nikai-pop::after { animation: none; opacity: 0; }
 }
+
+/* ============================================================
+   Desktop shell — keep the bottom-left corner for the sidebar
+   profile card; global floating buttons must not cover it.
+   ============================================================ */
+body[data-nk-shell='desktop'] .nk-share-fab { display: none; }

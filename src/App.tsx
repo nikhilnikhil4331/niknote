@@ -158,8 +158,8 @@ const App = () => {
     // Android hardware Back (no-op on web)
     void initNativeShell();
     initTracking();
-    document.documentElement.classList.remove("dark");
-    localStorage.setItem("theme", "light");
+    // Theme is owned by /theme-init.js + useDarkMode (Sunset Plum Night by
+    // default, Daylight when the visitor picks it). Never force a palette here.
 
     if (import.meta.env.PROD) {
       try {

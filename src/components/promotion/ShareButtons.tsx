@@ -84,7 +84,7 @@ export const ShareButtons: React.FC<ShareButtonsProps> = ({ variant = 'floating'
     <>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 left-6 z-40 w-12 h-12 rounded-full bg-gradient-to-r from-success to-success/70 text-white shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow active:scale-90 md:flex hidden"
+        className="nk-share-fab fixed bottom-6 left-6 z-40 w-12 h-12 rounded-full bg-gradient-to-r from-success to-success/70 text-white shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow active:scale-90 md:flex hidden"
         title="Share NikNote"
         style={{ 
           WebkitTapHighlightColor: 'transparent',

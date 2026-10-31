@@ -203,7 +203,7 @@ const DesktopHome: React.FC = () => {
                 <span className="truncate">Search notes, tasks, files, templates…</span>
                 <kbd>Ctrl K</kbd>
               </button>
-              <span className="hidden md:block text-[12px] font-semibold ml-auto" style={{ color: 'var(--nd-text-3)' }}>
+              <span className="hidden md:block text-[12px] font-semibold ml-auto whitespace-nowrap" style={{ color: 'var(--nd-text-3)' }}>
                 {dateLine}
               </span>
               {!isPremium && (
@@ -283,23 +283,23 @@ const DesktopHome: React.FC = () => {
               />
               <div className="relative z-10 h-full flex flex-col justify-between p-6 md:p-7 min-h-[210px]">
                 <div className="max-w-[520px]">
-                  <h1 className="text-[26px] md:text-[30px] leading-[1.12] font-extrabold tracking-[-0.02em]" style={{ color: 'var(--nd-ink)' }}>
+                  <h1 className="text-[26px] md:text-[30px] leading-[1.12] font-extrabold tracking-[-0.02em]" style={{ color: 'var(--nd-art-ink)' }}>
                     {greet.text},<br />
-                    <span style={{ color: 'var(--nd-brand-deep)' }}>{displayName}</span>{' '}
+                    <span style={{ color: 'var(--nd-art-brand)' }}>{displayName}</span>{' '}
                     <span aria-hidden>{greet.emoji}</span>
                   </h1>
-                  <p className="mt-2 text-[13.5px] font-semibold italic transition-opacity duration-500" style={{ color: 'var(--nd-ink-2)' }} key={quoteIdx}>
+                  <p className="mt-2 text-[13.5px] font-semibold italic transition-opacity duration-500" style={{ color: 'var(--nd-art-ink-2)' }} key={quoteIdx}>
                     “{HERO_QUOTES[quoteIdx]}”
                   </p>
                   <p className="mt-1.5 text-[11.5px] font-semibold md:hidden" style={{ color: 'var(--nd-text-3)' }}>{dateLine}</p>
                   <div className="mt-3.5 flex items-center gap-2 flex-wrap">
-                    <span className="nd-chip !bg-surface-secondary" style={{ color: 'hsl(var(--accent-warm-hsl))' }} title="Consecutive active days">
+                    <span className="nd-chip nd-chip-on-art" style={{ color: '#9A4E14' }} title="Consecutive active days">
                       <Flame size={12} /> {streakDays} day streak
                     </span>
-                    <span className="nd-chip !bg-[color:hsl(var(--primary)/0.06)]" style={{ color: 'var(--nd-brand)' }}>
+                    <span className="nd-chip nd-chip-on-art" style={{ color: 'var(--nd-art-brand)' }}>
                       <NotebookPen size={12} /> {active.length} note{active.length === 1 ? '' : 's'}
                     </span>
-                    <span className="nd-chip !bg-surface-secondary" style={{ color: 'var(--nd-success)' }}>
+                    <span className="nd-chip nd-chip-on-art" style={{ color: '#2E6A45' }}>
                       <Check size={12} /> {doneToday} task{doneToday === 1 ? '' : 's'} done today
                     </span>
                   </div>
@@ -342,15 +342,13 @@ const DesktopHome: React.FC = () => {
                   );
                 }
                 return (
-                  <button key={q.label} className="nd-quick !p-3" onClick={q.onClick} title={`${q.label} — ${q.sub}`}>
-                    <span className="grid">
-                      <span className="nd-quick-ic !w-9 !h-9 mx-auto" style={{ background: q.bg, color: q.fg }}>
-                        <Icon size={16} />
-                      </span>
+                  <button key={q.label} className="nd-quick nd-quick-tile !p-3" onClick={q.onClick} title={`${q.label} — ${q.sub}`}>
+                    <span className="nd-quick-ic" style={{ background: q.bg, color: q.fg }}>
+                      <Icon size={16} />
                     </span>
-                    <span className="min-w-0">
-                      <span className="block text-[12.5px] font-bold truncate" style={{ color: 'var(--nd-ink)' }}>{q.label}</span>
-                      <span className="block text-[10.5px] truncate" style={{ color: 'var(--nd-text-3)' }}>{q.sub}</span>
+                    <span className="min-w-0 w-full">
+                      <span className="text-[12px] font-bold leading-[1.2] line-clamp-2" style={{ color: 'var(--nd-ink)' }}>{q.label}</span>
+                      <span className="hidden sm:block lg:hidden 2xl:block text-[10.5px] truncate mt-0.5" style={{ color: 'var(--nd-text-3)' }}>{q.sub}</span>
                     </span>
                   </button>
                 );

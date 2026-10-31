@@ -182,3 +182,23 @@ npm test
 ```
 
 Theme check: open **Account → Appearance** and switch Day/Night or a workspace style; the choice survives reload with no flash (applied by `/theme-init.js` before React boots).
+
+---
+
+## 11. Desktop screenshots
+
+Real renders of the shipped desktop dashboard (headless Chromium 150, 2× DPR, `/theme-init.js` + self-hosted Inter / Plus Jakarta Sans / Caveat):
+
+| File | Size | Theme |
+| --- | --- | --- |
+| `screenshots/desktop.png` | 1440 × 900 | Daylight |
+| `screenshots/desktop-dark.png` | 1440 × 900 | Night |
+| `screenshots/desktop-laptop.png` | 1280 × 800 | Daylight |
+
+### Polish landed while capturing them
+
+- **Quick actions** are now icon-over-label tiles with a clamped two-line label. The old `lg:grid-cols-7` row squeezed 38 px icons beside labels and rendered them as `Q…`, `N…`, `Te…`.
+- **Theme no longer resets on boot.** `App` used to run `classList.remove('dark')` + `localStorage.setItem('theme','light')` on every mount, so Night mode could never survive a reload; `useMood` also stripped `dark` on mount. Both are gone — `/theme-init.js` and `useDarkMode` own the palette, so Night is again the default and the toggle persists.
+- **Hero ink is theme-independent** (`--nd-art-ink`, `--nd-art-brand`, `.nd-chip-on-art`). Night mode previously painted pale text on the pale illustration (quote and greeting were effectively invisible).
+- **Floating “Share NikNote” button** no longer covers the sidebar profile card: the desktop shell sets `data-nk-shell` and the FAB opts out (`.nk-share-fab`).
+- **`Ctrl K` badge and the date line** stay on one line at 1280 px.

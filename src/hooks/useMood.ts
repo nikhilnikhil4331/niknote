@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MoodType } from '@/components/MoodSelector';
+import { setTheme } from '@/hooks/useDarkMode';
 
 interface MoodStyles {
   background: string;
@@ -50,11 +51,9 @@ export function useMood() {
   useEffect(() => {
     localStorage.setItem('nikhil-notes-mood', mood);
     
-    if (mood === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    // The editor mood must not fight the app theme: only the explicit "dark"
+    // mood asks the theme controller for the night palette.
+    if (mood === 'dark') setTheme('dark');
   }, [mood]);
 
   const changeMood = useCallback((newMood: MoodType) => {

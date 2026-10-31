@@ -105,6 +105,13 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
     localStorage.setItem('niknote.desktop.sidebar', collapsed ? '1' : '0');
   }, [collapsed]);
 
+  // The desktop shell owns the bottom-left corner (sidebar profile card), so
+  // global floating buttons opt out while it is mounted.
+  useEffect(() => {
+    document.body.dataset.nkShell = 'desktop';
+    return () => { delete document.body.dataset.nkShell; };
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
