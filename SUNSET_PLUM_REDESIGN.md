@@ -4,6 +4,12 @@
 **Status:** implemented, typechecked, production-built and tested.
 **Live preview:** `npm run preview` is serving the production build on port `4173`.
 
+**Deployed**
+- Production (Sunset Plum live): <https://niknote.online> · <https://www.niknote.online> — deployment `dpl_7L9AmPrGC7chjKCnbbmmtqYdnM9c` (READY, promoted)
+- Preview deployment (Vercel auth required): <https://niknote-rdgxunvz3-nikhil-s-projects-2fbdabcf.vercel.app>
+- Pull request: <https://github.com/nikhilnikhil4331/niknote/pull/45>
+- Sanity check: <https://niknote.online/theme-init.js> serves the Sunset Plum pre-paint bootstrap, and the homepage renders the redesigned desktop dashboard.
+
 | Gate | Command | Result |
 | --- | --- | --- |
 | Typecheck | `npx tsc -p tsconfig.app.json --noEmit` | ✅ 0 errors |
