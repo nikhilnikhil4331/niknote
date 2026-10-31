@@ -9,6 +9,7 @@
 - Preview deployment (Vercel auth required): <https://niknote-rdgxunvz3-nikhil-s-projects-2fbdabcf.vercel.app>
 - Pull request: <https://github.com/nikhilnikhil4331/niknote/pull/45>
 - Sanity check: <https://niknote.online/theme-init.js> serves the Sunset Plum pre-paint bootstrap, and the homepage renders the redesigned desktop dashboard.
+- Latest production build: `dpl_dyytwRypCrjyqxUH2dcvqzFXooac` from `f34683f` (desktop polish + screenshots, READY/promoted); branch preview `dpl_6j3Y6C2ey71FGoJMqt1HfAGa7UUp`.
 
 | Gate | Command | Result |
 | --- | --- | --- |
