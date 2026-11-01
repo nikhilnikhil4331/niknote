@@ -33,3 +33,13 @@ android/.gradle
 android/local.properties
 android/app/release
 verify/
+
+# Mailflare self-hosted email workspace build/runtime artifacts
+mailflare/node_modules
+mailflare/.wrangler
+mailflare/.next
+mailflare/dist
+mailflare/data
+mailflare/.dev.vars
+mailflare/.env.docker
+

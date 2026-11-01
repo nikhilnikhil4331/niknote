@@ -225,6 +225,7 @@ const App = () => {
                         <Route path="/admin" element={<Admin />} />
                         <Route path="/admin-login" element={<AdminLogin />} />
                         <Route path="/admin-panel-nikhil" element={<AdminPanelNikhil />} />
+                        <Route path="/admin-email" element={<Navigate to="/admin-panel-nikhil?tab=email" replace />} />
                         <Route path="/ai-solver" element={<AISolverPage />} />
                         <Route path="/documents" element={<DocumentIntelligence />} />
                         <Route path="/pdf-editor" element={<PdfStudioPage />} />

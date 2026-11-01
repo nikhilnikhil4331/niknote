@@ -19,7 +19,12 @@
     "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "android:aab": "npm run android:sync && cd android && ./gradlew bundleRelease",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
-    "prerender": "node scripts/prerender.mjs"
+    "prerender": "node scripts/prerender.mjs",
+    "mailflare:install": "npm --prefix mailflare install",
+    "mailflare:dev": "npm --prefix mailflare run dev",
+    "mailflare:build": "npm --prefix mailflare run build",
+    "mailflare:deploy": "npm --prefix mailflare run deploy",
+    "mailflare:docker": "docker compose -f mailflare/docker-compose.yml up -d --build"
   },
   "dependencies": {
     "@cantoo/pdf-lib": "^2.11.1",

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, ShieldCheck, LogOut, RefreshCw, Lock, Menu, X,
   LayoutDashboard, Users, Activity, Bug, Settings,
-  BarChart3, Download, Radio, MessageCircle
+  BarChart3, Download, Radio, MessageCircle, Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +24,8 @@ import { AdminFeatureHeatmap } from '@/components/admin/AdminFeatureHeatmap';
 import { AdminUserDrawer } from '@/components/admin/AdminUserDrawer';
 import { AdminCommandCenter } from '@/components/admin/AdminCommandCenter';
 import { AdminSalesOverview } from '@/components/admin/AdminSalesOverview';
+import { AdminMailflareStudio } from '@/components/admin/AdminMailflareStudio';
+import type { ComposePrefill } from '@/lib/mailflareClient';
 
 interface UserData {
   id: string;
@@ -147,7 +149,19 @@ const AdminPanelNikhil: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('sales');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const qTab = new URLSearchParams(window.location.search).get('tab');
+      if (qTab) return qTab;
+    }
+    return 'email';
+  });
+  const [emailPrefill, setEmailPrefill] = useState<ComposePrefill | null>(null);
+
+  const openEmailComposer = useCallback((draft: ComposePrefill) => {
+    setEmailPrefill(draft);
+    setActiveTab('email');
+  }, []);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [userDrawerOpen, setUserDrawerOpen] = useState(false);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
@@ -832,6 +846,7 @@ const AdminPanelNikhil: React.FC = () => {
 
 
   const tabs = [
+    { id: 'email', label: 'Email Manager', icon: Mail },
     { id: 'sales', label: 'Sales & Leads', icon: BarChart3 },
     { id: 'command', label: 'Command Center', icon: ShieldCheck },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -867,6 +882,15 @@ const AdminPanelNikhil: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant={activeTab === 'email' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('email')}
+              className="rounded-xl gap-1.5 h-9 px-3 text-xs font-semibold"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>Email Manager</span>
+            </Button>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -965,11 +989,27 @@ const AdminPanelNikhil: React.FC = () => {
             </Button>
           </div>
 
-          <TabsContent value="sales" className="mt-4"><AdminSalesOverview /></TabsContent>
+          <TabsContent value="sales" className="mt-4"><AdminSalesOverview onComposeEmail={openEmailComposer} /></TabsContent>
+
+          {/* Customer Email Studio (Mailflare) */}
+          <TabsContent value="email" className="mt-4">
+            <AdminMailflareStudio
+              prefill={emailPrefill}
+              onClearPrefill={() => setEmailPrefill(null)}
+              knownCustomers={users
+                .filter((u) => Boolean(u.email && u.email.includes('@')))
+                .map((u) => ({
+                  email: u.email!,
+                  name: u.display_name,
+                  plan: u.is_premium ? 'premium' : 'free',
+                  userId: u.id,
+                }))}
+            />
+          </TabsContent>
 
           {/* Command Center Tab — full per-user control */}
           <TabsContent value="command" className="mt-4">
-            <AdminCommandCenter />
+            <AdminCommandCenter onComposeEmail={openEmailComposer} />
           </TabsContent>
 
           {/* Dashboard Tab */}
@@ -1033,6 +1073,7 @@ const AdminPanelNikhil: React.FC = () => {
               onUpdateSetting={handleUpdateSetting}
               onClearLogs={handleClearLogs}
               onRunSystemCheck={handleRunSystemCheck}
+              onOpenEmailManager={() => setActiveTab('email')}
             />
           </TabsContent>
         </Tabs>
@@ -1046,6 +1087,10 @@ const AdminPanelNikhil: React.FC = () => {
         onTogglePremium={handleTogglePremium}
         onBanUser={handleBanUser}
         onDeleteUser={handleDeleteUser}
+        onComposeEmail={(draft) => {
+          setUserDrawerOpen(false);
+          openEmailComposer(draft);
+        }}
       />
 
       {/* Admin Chat Widget */}
