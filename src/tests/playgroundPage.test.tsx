@@ -47,18 +47,22 @@ describe('composed playground page', () => {
     expect(document.documentElement.classList.contains('pg-app-dark')).toBe(false);
   });
 
-  it('uses dedicated mobile navigation and collapsible panels at 390px', async () => {
+  it('uses the same workspace controls without a separate mobile UI at 390px', async () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
     render(<MemoryRouter initialEntries={['/playground']}><PlaygroundPage /></MemoryRouter>);
     await screen.findByLabelText('Infinite playground canvas');
-    expect(screen.getByRole('navigation', { name: 'Playground navigation' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Playground navigation' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Blocks' }));
+    const canvasListToggle = screen.getByRole('button', { name: 'Toggle canvas list' });
+    expect(canvasListToggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(canvasListToggle);
+    expect(canvasListToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Study Hub', { selector: 'strong' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Close workspace panel' }));
+
+    fireEvent.click(screen.getByTitle('Add a block'));
     expect(screen.getByRole('complementary', { name: 'Block library' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Close block library' }));
     expect(screen.queryByRole('complementary', { name: 'Block library' })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Canvases' }));
-    expect(screen.getByText('Study Hub', { selector: 'strong' })).toBeInTheDocument();
   });
 });

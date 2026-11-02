@@ -30,7 +30,7 @@ interface ShellProps {
 const NAV = [
   { label: 'Home', icon: Home, to: '/', match: (p: string, s: string) => p === '/' && !s.includes('editor') },
   { label: 'My Notes', icon: NotebookPen, to: '/notebooks', match: (p: string) => p === '/notebooks' || p === '/notes', countKey: 'notes' as const },
-  { label: 'Canvas', icon: Boxes, to: '/playground', match: (p: string) => p === '/playground' || p === '/canvas' },
+  { label: 'Playground', icon: Boxes, to: '/playground', match: (p: string) => p === '/playground' || p === '/canvas' },
   { label: 'AI Assistant', icon: Sparkles, to: '/ai', match: (p: string) => p === '/ai' },
   { label: 'Calendar', icon: CalendarDays, to: '/calendar', match: (p: string) => p === '/calendar' },
   { label: 'Tasks', icon: CheckSquare, to: '/tasks', match: (p: string) => p === '/tasks' },

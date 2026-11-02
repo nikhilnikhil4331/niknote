@@ -34,6 +34,7 @@ saare features dono jagah same rehte hain. (PHP use nahi hota — jaan-boojh kar
 - Editable text, headings, checklists, tables, sticky notes, images, shapes, freehand drawing and visual node connections
 - Move, resize, rotate, group, lock, layer, duplicate, copy/paste, right-click actions and undo/redo
 - Independent application theme (Light/Dark/System) and white/black canvas theme
+- One shared workspace interface across screen sizes, without a separate Playground mobile bottom navigation
 - Debounced device autosave for guests; signed-in users also sync through the owner-scoped Supabase `playgrounds` table
 - Existing notes can be inserted as real note-reference cards; text blocks can open in the existing document editor with a canvas reference
 - JSON backup and SVG export

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Boxes, Home, Moon, Plus, Sun, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import { DesktopShell } from '@/components/desktop/DesktopShell';
 import { useDesktopNotes } from '@/components/desktop/notes';
@@ -113,6 +113,8 @@ export default function PlaygroundPage() {
             syncMessage={playground.syncMessage}
             appMode={appMode}
             canvasTheme={playground.doc.theme}
+            documentsOpen={documentsOpen}
+            onToggleDocuments={() => setDocumentsOpen((value) => !value)}
             onTitle={(title) => playground.apply((draft) => { draft.title = title; })}
             onOpen={playground.openCanvas}
             onCloseTab={closeTab}
@@ -178,15 +180,6 @@ export default function PlaygroundPage() {
           )}
         </div>
 
-        {!presentation && (
-          <nav className="pg-mobile-nav" aria-label="Playground navigation">
-            <button onClick={() => navigate('/')}><Home size={18} /><span>Home</span></button>
-            <button className={documentsOpen ? 'is-active' : ''} onClick={() => setDocumentsOpen((value) => !value)}><Boxes size={18} /><span>Canvases</span></button>
-            <button className="pg-mobile-create" onClick={() => canvasRef.current?.addBlock('text')}><Plus size={20} /><span>Write</span></button>
-            <button className={libraryOpen ? 'is-active' : ''} onClick={() => setLibraryOpen((value) => !value)}><Plus size={18} /><span>Blocks</span></button>
-            <button onClick={() => setCanvasTheme(playground.doc.theme === 'dark' ? 'light' : 'dark')}>{playground.doc.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}<span>Theme</span></button>
-          </nav>
-        )}
       </div>
     </DesktopShell>
   );

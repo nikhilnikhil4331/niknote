@@ -30,7 +30,7 @@ Date: 2026-11-03 (Asia/Calcutta)
 | 11 | Canvas content persists after refresh | PASS | Unmount/remount test restores title, objects, geometry, rotation, edges, viewport and theme. |
 | 12 | Undo and redo work | PASS | Complete document-state history test passes. |
 | 13 | Documents and canvas objects can reference each other | PASS | Existing-note link insertion and selected-text document handoff tests pass. |
-| 14 | Mobile layout works without overflow | PASS | 390px composed smoke test verifies dedicated navigation and collapsible panels; page/canvas containers use bounded overflow layouts. |
+| 14 | Mobile layout works without overflow | PASS | 390px composed smoke test verifies the same canvas-list/library controls with no separate Playground mobile navigation; page/canvas containers use bounded overflow layouts. |
 | 15 | No major browser console errors remain | PASS | Playground composed and interaction tests complete without runtime errors; production build and route startup pass. Existing unrelated suites retain their offline/test-environment warnings. |
 | 16 | Existing NikNote features continue working | PASS | Full 706-test regression suite and production build pass. |
 

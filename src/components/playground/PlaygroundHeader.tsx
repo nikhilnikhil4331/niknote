@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, Bell, Check, ChevronRight, Cloud, CloudOff,
-  Home, Loader2, Monitor, Moon, Plus, Search, Sparkles, Sun, X,
+  Home, Loader2, Monitor, Moon, PanelLeft, Plus, Search, Sparkles, Sun, X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import type { PlaygroundIndexEntry, PlaygroundObject, PlaygroundTheme } from '@/lib/playground';
@@ -20,6 +20,8 @@ interface Props {
   syncMessage: string | null;
   appMode: AppThemeMode;
   canvasTheme: PlaygroundTheme;
+  documentsOpen: boolean;
+  onToggleDocuments: () => void;
   onTitle: (title: string) => void;
   onOpen: (id: string) => void;
   onCloseTab: (id: string) => void;
@@ -60,6 +62,15 @@ export function PlaygroundHeader(props: Props) {
   return (
     <div className="pg-header-wrap">
       <header className="pg-topbar">
+        <button
+          className="pg-canvas-list-toggle"
+          onClick={props.onToggleDocuments}
+          aria-label="Toggle canvas list"
+          aria-expanded={props.documentsOpen}
+          title="Canvas list"
+        >
+          <PanelLeft size={16} />
+        </button>
         <div className="pg-history-buttons">
           <button onClick={() => navigate(-1)} aria-label="Go back"><ArrowLeft size={15} /></button>
           <button onClick={() => navigate(1)} aria-label="Go forward"><ArrowRight size={15} /></button>

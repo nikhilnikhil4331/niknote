@@ -84,10 +84,11 @@
 .pg-header-wrap { flex: none; position: relative; z-index: 45; background: var(--pg-panel); border-bottom: 1px solid var(--pg-border); }
 .pg-topbar { height: 46px; display: flex; align-items: center; gap: 12px; padding: 0 14px; }
 .pg-history-buttons { display: flex; gap: 2px; }
-.pg-history-buttons button, .pg-topbar-actions > button, .pg-theme-control > button {
-  width: 30px; height: 30px; display: grid; place-items: center; border-radius: 7px; color: var(--pg-text-2);
+.pg-history-buttons button, .pg-canvas-list-toggle, .pg-topbar-actions > button, .pg-theme-control > button {
+  width: 30px; height: 30px; display: grid; place-items: center; flex: none; border-radius: 7px; color: var(--pg-text-2);
 }
-.pg-history-buttons button:hover, .pg-topbar-actions > button:hover, .pg-theme-control > button:hover { background: var(--pg-hover); color: var(--pg-text); }
+.pg-history-buttons button:hover, .pg-canvas-list-toggle:hover, .pg-topbar-actions > button:hover, .pg-theme-control > button:hover { background: var(--pg-hover); color: var(--pg-text); }
+.pg-canvas-list-toggle[aria-expanded="true"] { color: var(--pg-brand-magenta); background: var(--pg-panel-soft); }
 .pg-breadcrumbs { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 12px; color: var(--pg-text-2); }
 .pg-breadcrumbs button { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .pg-breadcrumbs button:hover { color: var(--pg-brand-magenta); }
@@ -404,9 +405,8 @@
 @keyframes pg-loading-pulse { to { opacity: .45; } }
 .pg-exit-presentation { position: absolute; z-index: 100; right: 14px; top: 14px; display: flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid var(--pg-border); border-radius: 8px; background: var(--pg-panel); box-shadow: var(--pg-shadow); font-size: 10px; }
 .pg-presenting .nik-desktop > aside { display: none; }
-.pg-mobile-nav { display: none; }
 
-/* Responsive layouts are reorganised, not simply scaled down. */
+/* One workspace UI at every size; no separate Playground mobile navigation. */
 @media (max-width: 1390px) {
   .pg-document-panel, .pg-library { width: 218px; }
   .pg-canvas-search { width: 185px; }
@@ -427,15 +427,6 @@
 }
 @media (max-width: 899px) {
   .pg-document-panel { position: absolute; left: 0; top: 0; bottom: 0; width: min(290px, 86vw); box-shadow: var(--pg-shadow); }
-  .pg-mobile-nav { position: absolute; z-index: 50; left: 10px; right: 10px; bottom: max(8px, env(safe-area-inset-bottom)); height: 57px; display: flex; align-items: center; justify-content: space-around; padding: 4px 8px; border: 1px solid var(--pg-border); border-radius: 16px; background: var(--pg-panel); box-shadow: var(--pg-shadow); }
-  .pg-mobile-nav button { min-width: 48px; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--pg-text-2); font-size: 8px; }
-  .pg-mobile-nav button.is-active { color: var(--pg-brand-magenta); }
-  .pg-mobile-nav .pg-mobile-create { width: 44px; height: 44px; min-width: 44px; justify-content: center; margin-top: -21px; border-radius: 13px; color: white; background: var(--pg-brand); box-shadow: 0 5px 15px rgba(128,32,162,.25); }
-  .pg-mobile-nav .pg-mobile-create span { display: none; }
-  .pg-quick-bar { bottom: 76px; }
-  .pg-zoom-bar { bottom: 76px; }
-  .pg-canvas-bottom-left { bottom: 77px; }
-  .pg-minimap-wrap { bottom: 123px; }
   .pg-canvas-search { width: 180px; }
 }
 @media (max-width: 700px) {
@@ -455,15 +446,15 @@
   .pg-library { width: min(300px, 88vw); }
   .pg-tool-rail { right: 8px; top: 10px; padding: 4px; }
   .pg-tool-rail > button { width: 30px; height: 30px; }
-  .pg-quick-bar { left: 8px; right: 8px; bottom: 75px; transform: none; justify-content: center; gap: 0; overflow-x: auto; }
+  .pg-quick-bar { left: 8px; right: 8px; bottom: 12px; transform: none; justify-content: center; gap: 0; overflow-x: auto; }
   .pg-quick-bar > button { width: 32px; height: 32px; }
   .pg-quick-bar > button:nth-child(4), .pg-quick-bar > button:nth-child(5) { display: none; }
-  .pg-zoom-bar { right: 8px; bottom: 127px; padding: 3px; }
+  .pg-zoom-bar { right: 8px; bottom: 64px; padding: 3px; }
   .pg-zoom-bar > button, .pg-export-control > button { width: 27px; height: 27px; }
   .pg-zoom-bar > button.pg-zoom-value { width: 42px; }
-  .pg-canvas-bottom-left { left: 8px; bottom: 128px; }
+  .pg-canvas-bottom-left { left: 8px; bottom: 66px; }
   .pg-context-toolbar { max-width: calc(100vw - 24px); overflow-x: auto; }
-  .pg-context-position { position: absolute; left: 50% !important; top: auto !important; bottom: 174px; transform: translate(-50%,0); }
+  .pg-context-position { position: absolute; left: 50% !important; top: auto !important; bottom: 116px; transform: translate(-50%,0); }
   .pg-context-position.is-edge { top: 10px !important; bottom: auto; }
   .pg-toolbar-delete { display: none !important; }
   .pg-context-menu { max-width: calc(100vw - 16px); }
