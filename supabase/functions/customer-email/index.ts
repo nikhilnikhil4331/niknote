@@ -95,9 +95,16 @@ function extractDisplayName(entry: string): string {
   return match ? match[1].trim() : '';
 }
 
+function sanitizeBrandSenderName(rawName: string): string {
+  const cleaned = rawName.replace(/["\r\n<>]/g, '').trim();
+  if (!cleaned) return 'Team of NikNote';
+  if (/nikhil|founder/i.test(cleaned)) return 'Team of NikNote';
+  return cleaned;
+}
+
 function formatFromHeader(fromEmail: string, fromName: string): string {
   const addr = extractEmail(fromEmail);
-  const safeName = fromName.replace(/["\r\n<>]/g, '').trim();
+  const safeName = sanitizeBrandSenderName(fromName);
   return safeName ? `"${safeName}" <${addr}>` : addr;
 }
 
@@ -1494,12 +1501,23 @@ Deno.serve(async (req: Request) => {
         if (!EMAIL_RE.test(extractEmail(testRecipient))) {
           return reply({ error: 'Enter a valid test recipient email address' }, 400);
         }
-        const subject = `NikNote × Mailflare Test (${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC)`;
+        const subject = `NikNote ✨ Handwritten Email Ready (${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC)`;
         const html = `
-          <div style="font-family:Inter,system-ui,sans-serif;max-width:560px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:16px;">
-            <h2 style="margin:0 0 12px;color:#111827;">NikNote Custom Email Connected</h2>
-            <p style="color:#374151;line-height:1.6;">Your <strong>${escapeHtml(cfg.provider === 'mailflare' ? 'Mailflare' : 'Resend')}</strong> outbound pipeline is active and delivering mail from <code>${escapeHtml(cfg.fromEmail)}</code>.</p>
-            <p style="color:#6b7280;font-size:12px;margin-top:20px;">Sent from NikNote Admin Email Manager</p>
+          <div style="margin:0;padding:24px 12px;background:#f6f0e4;font-family:'Kalam','Caveat','Segoe Print','Bradley Hand',cursive,Georgia,serif;">
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:580px;margin:0 auto;background:#fffdf7;border:1px solid #e7dcc8;border-radius:20px;overflow:hidden;">
+              <tr>
+                <td style="padding:18px 24px;border-bottom:2px solid #f5d0dc;background:#fffdf7;">
+                  <img src="https://www.niknote.online/niknote-email-logo.png" alt="NikNote" width="160" height="39" style="display:block;width:160px;height:auto;border:0;" />
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:24px 26px;background:#fffdf7;border-left:3px solid #f4afc0;">
+                  <h2 style="margin:0 0 12px;color:#4c1d95;font-size:25px;">NikNote Custom Email Connected ✨</h2>
+                  <p style="color:#1e293b;font-size:17px;line-height:1.8;margin:0 0 14px;">Your <strong>${escapeHtml(cfg.provider === 'mailflare' ? 'Mailflare' : 'Resend')}</strong> outbound pipeline is active and delivering aesthetic handwritten emails from <code>${escapeHtml(cfg.fromEmail)}</code>.</p>
+                  <p style="color:#1e293b;font-size:17px;line-height:1.8;margin:0;">With warmth,<br /><strong>Team of NikNote</strong></p>
+                </td>
+              </tr>
+            </table>
           </div>
         `.trim();
 

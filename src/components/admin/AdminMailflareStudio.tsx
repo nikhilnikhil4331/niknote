@@ -46,6 +46,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   CUSTOMER_EMAIL_TEMPLATES,
+  NIKNOTE_EMAIL_LOGO_URL,
   SENDER_PRESETS,
   addEmailDomain,
   buildNikNoteEmailHtml,
@@ -65,6 +66,7 @@ import {
   listCustomerEmailLogs,
   listWebmailMessages,
   parseRecipientInput,
+   sanitizeBrandSenderName,
   saveEmailDraft,
   saveMailflareConfig,
   sendCustomerCampaign,
@@ -83,6 +85,7 @@ import {
   type DiscoveredMailbox,
   type EmailAttachmentInput,
   type EmailProviderType,
+  type EmailVisualStyle,
   type MailflareConfigView,
   type WebmailCounts,
   type WebmailFolder,
@@ -127,15 +130,34 @@ const FALLBACK_MAILBOXES: AdminCustomMailbox[] = [
     local_part: 'support',
     hostname: 'niknote.online',
     address: 'support@niknote.online',
-    display_name: 'NikNote Support',
+    display_name: 'NikNote',
     mailbox_type: 'shared',
     color: '#7c3aed',
-    signature: 'Warm regards,\nNikNote Support Team\nhttps://www.niknote.online',
+    signature: 'Warmly,\nTeam of NikNote\nhttps://www.niknote.online',
     forward_to: '',
     auto_reply_enabled: false,
-    auto_reply_subject: 'We received your email — NikNote Support',
-    auto_reply_body: 'Thank you for contacting NikNote. Our team will get back to you shortly.',
+    auto_reply_subject: 'We received your message — NikNote',
+    auto_reply_body: 'Thank you for contacting NikNote. Team of NikNote will get back to you shortly.',
     is_default: true,
+    disabled: false,
+    mailflare_mailbox_id: '',
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'mbx_invite',
+    domain_id: 'dom_niknote_online',
+    local_part: 'invite',
+    hostname: 'niknote.online',
+    address: 'invite@niknote.online',
+    display_name: 'Team of NikNote',
+    mailbox_type: 'shared',
+    color: '#db2777',
+    signature: 'With warmth,\nTeam of NikNote\nhttps://www.niknote.online',
+    forward_to: '',
+    auto_reply_enabled: false,
+    auto_reply_subject: 'Thank you for replying to your NikNote invite',
+    auto_reply_body: 'Hi there! Team of NikNote is excited to welcome you onboard.',
+    is_default: false,
     disabled: false,
     mailflare_mailbox_id: '',
     created_at: new Date().toISOString(),
@@ -146,33 +168,33 @@ const FALLBACK_MAILBOXES: AdminCustomMailbox[] = [
     local_part: 'hello',
     hostname: 'niknote.online',
     address: 'hello@niknote.online',
-    display_name: 'NikNote Team',
+    display_name: 'Team of NikNote',
     mailbox_type: 'shared',
     color: '#2563eb',
-    signature: 'Best wishes,\nTeam NikNote\nhttps://www.niknote.online',
+    signature: 'With warmth,\nTeam of NikNote\nhttps://www.niknote.online',
     forward_to: '',
     auto_reply_enabled: false,
-    auto_reply_subject: 'Thanks for writing to NikNote',
-    auto_reply_body: 'Hi! Thanks for writing to NikNote.',
+    auto_reply_subject: 'Thanks for writing to Team of NikNote',
+    auto_reply_body: 'Hi! Thank you for writing to Team of NikNote.',
     is_default: false,
     disabled: false,
     mailflare_mailbox_id: '',
     created_at: new Date().toISOString(),
   },
   {
-    id: 'mbx_nikhil',
+    id: 'mbx_team',
     domain_id: 'dom_niknote_online',
-    local_part: 'nikhil',
+    local_part: 'team',
     hostname: 'niknote.online',
-    address: 'nikhil@niknote.online',
-    display_name: 'Nikhil — NikNote',
-    mailbox_type: 'personal',
-    color: '#ea580c',
-    signature: 'Best,\nNikhil\nFounder, NikNote · https://www.niknote.online',
+    address: 'team@niknote.online',
+    display_name: 'Team of NikNote',
+    mailbox_type: 'shared',
+    color: '#6366f1',
+    signature: 'Warmly,\nTeam of NikNote\nhttps://www.niknote.online',
     forward_to: '',
     auto_reply_enabled: false,
-    auto_reply_subject: 'Got your note — Nikhil',
-    auto_reply_body: 'Hey, thanks for reaching out. I will reply soon.',
+    auto_reply_subject: 'Message received — Team of NikNote',
+    auto_reply_body: 'Team of NikNote has received your message and will reply soon.',
     is_default: false,
     disabled: false,
     mailflare_mailbox_id: '',
@@ -184,14 +206,14 @@ const FALLBACK_MAILBOXES: AdminCustomMailbox[] = [
     local_part: 'billing',
     hostname: 'niknote.online',
     address: 'billing@niknote.online',
-    display_name: 'NikNote Billing',
+    display_name: 'NikNote',
     mailbox_type: 'shared',
     color: '#059669',
-    signature: 'Regards,\nNikNote Billing & Accounts\nhttps://www.niknote.online',
+    signature: 'Warm regards,\nTeam of NikNote\nhttps://www.niknote.online',
     forward_to: '',
     auto_reply_enabled: false,
-    auto_reply_subject: 'NikNote Billing Inquiry Received',
-    auto_reply_body: 'We have received your billing query and will assist you shortly.',
+    auto_reply_subject: 'Billing Inquiry Received — NikNote',
+    auto_reply_body: 'Team of NikNote has received your billing query and will assist you shortly.',
     is_default: false,
     disabled: false,
     mailflare_mailbox_id: '',
@@ -203,13 +225,13 @@ const FALLBACK_MAILBOXES: AdminCustomMailbox[] = [
     local_part: 'schools',
     hostname: 'niknote.online',
     address: 'schools@niknote.online',
-    display_name: 'NikNote Institutions',
+    display_name: 'Team of NikNote',
     mailbox_type: 'shared',
-    color: '#db2777',
-    signature: 'Warm regards,\nNikNote Institutions Desk\nhttps://www.niknote.online/schools',
+    color: '#ea580c',
+    signature: 'Warm regards,\nTeam of NikNote\nhttps://www.niknote.online/schools',
     forward_to: '',
     auto_reply_enabled: false,
-    auto_reply_subject: 'NikNote Institution Inquiry Received',
+    auto_reply_subject: 'Institution Inquiry Received — NikNote',
     auto_reply_body: 'Thank you for your interest in NikNote for your institution.',
     is_default: false,
     disabled: false,
@@ -268,7 +290,8 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
 
   // ---------------- Compose & Broadcast State ----------------
   const [mode, setMode] = useState<'single' | 'campaign'>('single');
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('welcome');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('invite');
+  const [emailStyle, setEmailStyle] = useState<EmailVisualStyle>('handwritten');
   const [draftId, setDraftId] = useState<string | undefined>(undefined);
   const [toInput, setToInput] = useState<string>('');
   const [ccInput, setCcInput] = useState<string>('');
@@ -286,9 +309,9 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
   const [customCampaignEmails, setCustomCampaignEmails] = useState<string>('');
   const [campaignLimit, setCampaignLimit] = useState<number>(25);
 
-  const [selectedSenderMailboxId, setSelectedSenderMailboxId] = useState<string>('mbx_support');
-  const [fromName, setFromName] = useState<string>('NikNote Support');
-  const [fromEmail, setFromEmail] = useState<string>('support@niknote.online');
+  const [selectedSenderMailboxId, setSelectedSenderMailboxId] = useState<string>('mbx_invite');
+  const [fromName, setFromName] = useState<string>('Team of NikNote');
+  const [fromEmail, setFromEmail] = useState<string>('invite@niknote.online');
   const [replyTo, setReplyTo] = useState<string>('');
   const [appendSignature, setAppendSignature] = useState<boolean>(true);
   const [subject, setSubject] = useState<string>(CUSTOMER_EMAIL_TEMPLATES[0].subject);
@@ -310,7 +333,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
   const [newMbxColor, setNewMbxColor] = useState<string>('#7c3aed');
   const [newMbxForwardTo, setNewMbxForwardTo] = useState<string>('');
   const [newMbxSignature, setNewMbxSignature] = useState<string>(
-    'Warm regards,\nNikNote Team\nhttps://www.niknote.online',
+    'Warmly,\nTeam of NikNote\nhttps://www.niknote.online',
   );
   const [creatingMailbox, setCreatingMailbox] = useState<boolean>(false);
   const [editingMailbox, setEditingMailbox] = useState<AdminCustomMailbox | null>(null);
@@ -327,7 +350,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
   const [cfgApiKey, setCfgApiKey] = useState<string>('');
   const [cfgAdminKey, setCfgAdminKey] = useState<string>('');
   const [cfgMailboxId, setCfgMailboxId] = useState<string>('');
-  const [cfgFromName, setCfgFromName] = useState<string>('NikNote Support');
+  const [cfgFromName, setCfgFromName] = useState<string>('Team of NikNote');
   const [cfgFromEmail, setCfgFromEmail] = useState<string>('support@niknote.online');
   const [cfgReplyTo, setCfgReplyTo] = useState<string>('');
   const [cfgResendKey, setCfgResendKey] = useState<string>('');
@@ -343,14 +366,15 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
   const [loadingLogs, setLoadingLogs] = useState<boolean>(false);
 
   const hydrateConfigFields = useCallback((cfg: MailflareConfigView) => {
+    const cleanBrandName = sanitizeBrandSenderName(cfg.fromName || 'Team of NikNote');
     setConfig(cfg);
     setCfgProvider(cfg.provider);
     setCfgUrl(cfg.mailflareUrl || '');
     setCfgMailboxId(cfg.mailboxId || '');
-    setCfgFromName(cfg.fromName || 'NikNote Support');
+    setCfgFromName(cleanBrandName);
     setCfgFromEmail(cfg.fromEmail || 'support@niknote.online');
     setCfgReplyTo(cfg.replyTo || '');
-    setFromName(cfg.fromName || 'NikNote Support');
+    setFromName(cleanBrandName);
     setFromEmail(cfg.fromEmail || 'support@niknote.online');
     setReplyTo(cfg.replyTo || '');
   }, []);
@@ -437,6 +461,11 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
     }
   }, [studioTab, activeFolder, activeMailboxFilter, loadMessages]);
 
+  const activeTemplate = useMemo(
+    () => CUSTOMER_EMAIL_TEMPLATES.find((t) => t.id === selectedTemplateId) || null,
+    [selectedTemplateId],
+  );
+
   const applyTemplate = useCallback(
     (templateId: string) => {
       setSelectedTemplateId(templateId);
@@ -447,6 +476,10 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
       setBodyText(tpl.body);
       setCtaLabel(tpl.ctaLabel);
       setCtaUrl(tpl.ctaUrl);
+      if (tpl.defaultStyle) {
+        setEmailStyle(tpl.defaultStyle);
+        setUseBrandedWrapper(true);
+      }
 
       const matchingMbx = mailboxes.find(
         (m) => m.local_part === tpl.defaultFromLocalPart && !m.disabled,
@@ -454,7 +487,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
       if (matchingMbx) {
         setSelectedSenderMailboxId(matchingMbx.id);
         setFromEmail(matchingMbx.address);
-        setFromName(matchingMbx.display_name);
+        setFromName(sanitizeBrandSenderName(matchingMbx.display_name));
       } else {
         const domain = extractDomainFromEmail(config?.fromEmail || fromEmail, 'niknote.online');
         const preset = SENDER_PRESETS.find((p) => p.localPart === tpl.defaultFromLocalPart);
@@ -505,6 +538,13 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
     const sig = activeSenderMailbox?.signature?.trim();
     if (!appendSignature || !sig) return bodyText;
     if (bodyText.includes(sig)) return bodyText;
+    if (
+      /(team of niknote|team niknote|happy studying,\s*\n\s*niknote|warmly,\s*\n\s*niknote|warm regards,\s*\n\s*niknote|with warmth,\s*\n\s*niknote)/i.test(
+        bodyText,
+      )
+    ) {
+      return bodyText;
+    }
     return `${bodyText.trimEnd()}\n\n--\n${sig}`;
   }, [appendSignature, activeSenderMailbox, bodyText]);
 
@@ -513,7 +553,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
     return {
       name:
         recipientName.trim() ||
-        (mode === 'campaign' ? 'Aarav Sharma' : firstRecipient.split('@')[0] || 'Student'),
+        (mode === 'campaign' ? 'Aarav Sharma' : firstRecipient.split('@')[0] || 'Friend'),
       email: firstRecipient,
       plan: customerPlan || 'premium',
       institution: institutionName.trim() || 'Delhi Public School',
@@ -539,10 +579,24 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
       bodyText: interpolatedBody,
       ctaLabel: interpolateEmailTemplate(ctaLabel, previewVars, false),
       ctaUrl,
-      fromName,
+      fromName: sanitizeBrandSenderName(fromName),
       fromEmail,
+      style: emailStyle,
+      noteTag: activeTemplate?.noteTag,
+      logoUrl: '/niknote-email-logo.png',
     });
-  }, [heading, effectiveBodyWithSignature, ctaLabel, ctaUrl, fromName, fromEmail, previewVars, useBrandedWrapper]);
+  }, [
+    heading,
+    effectiveBodyWithSignature,
+    ctaLabel,
+    ctaUrl,
+    fromName,
+    fromEmail,
+    previewVars,
+    useBrandedWrapper,
+    emailStyle,
+    activeTemplate,
+  ]);
 
   const filteredKnownCustomers = useMemo(() => {
     const q = customerSearch.trim().toLowerCase();
@@ -569,7 +623,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
     const found = mailboxes.find((m) => m.id === mbxId);
     if (found) {
       setFromEmail(found.address);
-      setFromName(found.display_name);
+      setFromName(sanitizeBrandSenderName(found.display_name));
     }
   };
 
@@ -593,13 +647,17 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
   const handleSaveDraft = async () => {
     setSavingDraft(true);
     try {
+      const cleanBrandFromName = sanitizeBrandSenderName(fromName);
       const htmlOut = buildNikNoteEmailHtml({
         heading,
         bodyText: effectiveBodyWithSignature,
         ctaLabel,
         ctaUrl,
-        fromName,
+        fromName: cleanBrandFromName,
         fromEmail,
+        style: emailStyle,
+        noteTag: activeTemplate?.noteTag,
+        logoUrl: NIKNOTE_EMAIL_LOGO_URL,
       });
       const textOut = buildNikNotePlainText({
         heading,
@@ -610,7 +668,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
       const res = await saveEmailDraft({
         draftId,
         fromEmail,
-        fromName,
+        fromName: cleanBrandFromName,
         to: toInput,
         cc: ccInput,
         bcc: bccInput,
@@ -653,6 +711,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
 
     setSending(true);
     try {
+      const cleanBrandFromName = sanitizeBrandSenderName(fromName);
       const finalSubject = interpolateEmailTemplate(subject.trim(), previewVars, false);
       const finalHeading = interpolateEmailTemplate(heading.trim(), previewVars, false);
       const finalBody = interpolateEmailTemplate(effectiveBodyWithSignature, previewVars, false);
@@ -664,8 +723,11 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
             bodyText: finalBody,
             ctaLabel: finalCtaLabel,
             ctaUrl: ctaUrl.trim(),
-            fromName,
+            fromName: cleanBrandFromName,
             fromEmail,
+            style: emailStyle,
+            noteTag: activeTemplate?.noteTag,
+            logoUrl: NIKNOTE_EMAIL_LOGO_URL,
           })
         : finalBody
             .split('\n')
@@ -686,7 +748,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
         subject: finalSubject,
         html: htmlOut,
         text: textOut,
-        fromName,
+        fromName: cleanBrandFromName,
         fromEmail,
         mailflareMailboxId: activeSenderMailbox?.mailflare_mailbox_id || undefined,
         replyTo: replyTo.trim() || undefined,
@@ -733,14 +795,18 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
 
     setSending(true);
     try {
+      const cleanBrandFromName = sanitizeBrandSenderName(fromName);
       const htmlTemplate = useBrandedWrapper
         ? buildNikNoteEmailHtml({
             heading: heading.trim(),
             bodyText: effectiveBodyWithSignature,
             ctaLabel: ctaLabel.trim(),
             ctaUrl: ctaUrl.trim(),
-            fromName,
+            fromName: cleanBrandFromName,
             fromEmail,
+            style: emailStyle,
+            noteTag: activeTemplate?.noteTag,
+            logoUrl: NIKNOTE_EMAIL_LOGO_URL,
           })
         : effectiveBodyWithSignature
             .split('\n')
@@ -760,7 +826,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
         subject: subject.trim(),
         html: htmlTemplate,
         text: textTemplate,
-        fromName,
+        fromName: cleanBrandFromName,
         fromEmail,
         mailflareMailboxId: activeSenderMailbox?.mailflare_mailbox_id || undefined,
         replyTo: replyTo.trim() || undefined,
@@ -926,7 +992,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
     e.preventDefault();
     const cleanLocal = newMbxLocalPart.trim().toLowerCase().replace(/@.*$/, '');
     if (!cleanLocal) {
-      toast.error('Enter a mailbox username (for example founder, help, admissions)');
+      toast.error('Enter a mailbox username (for example invite, team, help, admissions)');
       return;
     }
     setCreatingMailbox(true);
@@ -934,7 +1000,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
       const res = await createCustomMailbox({
         localPart: cleanLocal,
         domainId: newMbxDomainId,
-        displayName: newMbxDisplayName.trim() || `NikNote (${cleanLocal})`,
+        displayName: sanitizeBrandSenderName(newMbxDisplayName.trim() || 'Team of NikNote'),
         mailboxType: newMbxType,
         color: newMbxColor,
         signature: newMbxSignature,
@@ -1170,6 +1236,22 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
 
         <div className="flex flex-wrap items-center gap-2">
           <Button
+            size="sm"
+            onClick={() => {
+              setDraftId(undefined);
+              setMode('single');
+              applyTemplate('invite');
+              setEmailStyle('handwritten');
+              setUseBrandedWrapper(true);
+              setStudioTab('compose');
+            }}
+            className="gap-1.5 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white border-0 shadow-sm"
+          >
+            <Sparkles className="w-4 h-4" />
+            Invite User (Handwritten)
+          </Button>
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => {
               setDraftId(undefined);
@@ -1818,13 +1900,13 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                     <div className="space-y-1">
                       <Label htmlFor="mf-from-name" className="text-xs">
-                        Sender Display Name
+                        Sender Display Name (NikNote / Team of NikNote)
                       </Label>
                       <Input
                         id="mf-from-name"
                         value={fromName}
                         onChange={(e) => setFromName(e.target.value)}
-                        placeholder="NikNote Support"
+                        placeholder="Team of NikNote"
                         className="h-9 text-sm"
                       />
                     </div>
@@ -1836,7 +1918,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                         id="mf-from-email"
                         value={fromEmail}
                         onChange={(e) => setFromEmail(e.target.value)}
-                        placeholder="support@niknote.online"
+                        placeholder="invite@niknote.online"
                         className="h-9 text-sm font-mono"
                       />
                     </div>
@@ -2060,10 +2142,12 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                     </div>
                   )}
 
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="mf-body" className="text-xs font-semibold">
-                        Message Body
+                  {/* Aesthetic Email Style Selector */}
+                  <div className="space-y-1.5 rounded-xl border bg-amber-50/40 dark:bg-muted/20 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Label className="text-xs font-semibold flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-pink-600" />
+                        Email Design &amp; Typography Style
                       </Label>
                       <div className="flex items-center gap-3">
                         <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
@@ -2073,22 +2157,90 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                           />
                           Mailbox Signature
                         </label>
-                        <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-                          <Switch
-                            checked={useBrandedWrapper}
-                            onCheckedChange={setUseBrandedWrapper}
-                          />
-                          Branded Card
-                        </label>
                       </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUseBrandedWrapper(true);
+                          setEmailStyle('handwritten');
+                        }}
+                        className={`text-left p-2.5 rounded-lg border transition-all ${
+                          useBrandedWrapper && emailStyle === 'handwritten'
+                            ? 'border-pink-500 bg-pink-500/10 ring-1 ring-pink-500/30'
+                            : 'bg-background hover:bg-muted/60'
+                        }`}
+                      >
+                        <div className="text-xs font-semibold flex items-center justify-between">
+                          <span style={{ fontFamily: "'Kalam', 'Caveat', cursive", fontSize: '14px' }}>
+                            Handwritten Note ✨
+                          </span>
+                          <Badge className="bg-pink-600 hover:bg-pink-600 text-white text-[9px] px-1.5 py-0">
+                            Aesthetic
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          NikNote logo + warm ruled notebook paper + handwriting font
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUseBrandedWrapper(true);
+                          setEmailStyle('clean');
+                        }}
+                        className={`text-left p-2.5 rounded-lg border transition-all ${
+                          useBrandedWrapper && emailStyle === 'clean'
+                            ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
+                            : 'bg-background hover:bg-muted/60'
+                        }`}
+                      >
+                        <div className="text-xs font-semibold">Clean Branded Card</div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          NikNote logo + crisp minimal card + modern sans font
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setUseBrandedWrapper(false)}
+                        className={`text-left p-2.5 rounded-lg border transition-all ${
+                          !useBrandedWrapper
+                            ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
+                            : 'bg-background hover:bg-muted/60'
+                        }`}
+                      >
+                        <div className="text-xs font-semibold">Plain Simple Email</div>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Unstyled text without stationery card or button
+                        </p>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="mf-body" className="text-xs font-semibold">
+                        Message Body
+                      </Label>
+                      <span className="text-[11px] text-muted-foreground">
+                        Signed strictly as <strong>NikNote</strong> / <strong>Team of NikNote</strong>
+                      </span>
                     </div>
                     <Textarea
                       id="mf-body"
                       value={bodyText}
                       onChange={(e) => setBodyText(e.target.value)}
                       rows={8}
-                      placeholder="Write your message... Use **bold**, '- ' bullet points, and {{name}} variables."
+                      placeholder="Write your note... Use **bold**, '- ' bullet points, and {{name}} variables."
                       className="text-sm leading-relaxed"
+                      style={
+                        useBrandedWrapper && emailStyle === 'handwritten'
+                          ? { fontFamily: "'Kalam', 'Caveat', 'Segoe Print', cursive", fontSize: '16px' }
+                          : undefined
+                      }
                     />
                   </div>
 
@@ -2208,10 +2360,10 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1">
-                <div className="rounded-xl border overflow-hidden bg-slate-50 h-[520px]">
+                <div className="rounded-xl border overflow-hidden bg-[#f6f0e4] h-[560px]">
                   <iframe
                     title="Customer Email Preview"
-                    sandbox=""
+                    sandbox="allow-same-origin"
                     srcDoc={renderedPreviewHtml}
                     className="w-full h-full border-0"
                   />
@@ -2234,8 +2386,8 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                   Create Custom Mailbox
                 </CardTitle>
                 <CardDescription>
-                  Create unlimited custom addresses like <code>founder@niknote.online</code>,{' '}
-                  <code>help@niknote.online</code>, or <code>admissions@niknote.online</code>.
+                  Create unlimited custom addresses like <code>invite@niknote.online</code>,{' '}
+                  <code>team@niknote.online</code>, or <code>help@niknote.online</code>.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -2246,7 +2398,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                       <Input
                         value={newMbxLocalPart}
                         onChange={(e) => setNewMbxLocalPart(e.target.value)}
-                        placeholder="founder"
+                        placeholder="invite"
                         className="font-mono text-sm"
                       />
                       <span className="text-muted-foreground font-mono text-sm">@</span>
@@ -2270,7 +2422,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                       <Input
                         value={newMbxDisplayName}
                         onChange={(e) => setNewMbxDisplayName(e.target.value)}
-                        placeholder="Nikhil — Founder"
+                        placeholder="Team of NikNote"
                         className="text-sm"
                       />
                     </div>

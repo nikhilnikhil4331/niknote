@@ -11,10 +11,14 @@ vi.mock('@/integrations/supabase/client', () => ({
 }));
 
 import {
+  CUSTOMER_EMAIL_TEMPLATES,
+  NIKNOTE_EMAIL_LOGO_URL,
+  SENDER_PRESETS,
   buildNikNoteEmailHtml,
   buildNikNotePlainText,
   interpolateEmailTemplate,
   parseRecipientInput,
+  sanitizeBrandSenderName,
 } from '@/lib/mailflareClient';
 import { AdminMailflareStudio } from '@/components/admin/AdminMailflareStudio';
 
@@ -217,19 +221,34 @@ describe('mailflareClient pure helpers', () => {
     expect(out).toBe('<p>Hello &lt;script&gt;alert(1)&lt;/script&gt;</p>');
   });
 
-  it('builds clean branded HTML and plain-text emails without script injection', () => {
-    const html = buildNikNoteEmailHtml({
+  it('builds aesthetic handwritten HTML (with NikNote logo & notebook styling) and clean HTML without script injection', () => {
+    const handwrittenHtml = buildNikNoteEmailHtml({
       heading: 'Welcome <Student>',
       bodyText: 'Hi **Aarav**,\n\n- Notebook ready\n- PDF Studio ready',
       ctaLabel: 'Open NikNote',
       ctaUrl: 'https://www.niknote.online',
-      fromName: 'NikNote Support',
+      fromName: 'Team of NikNote',
+      fromEmail: 'invite@niknote.online',
+    });
+    expect(handwrittenHtml).toContain('Welcome &lt;Student&gt;');
+    expect(handwrittenHtml).toContain('<strong>Aarav</strong>');
+    expect(handwrittenHtml).toContain(NIKNOTE_EMAIL_LOGO_URL);
+    expect(handwrittenHtml).toContain('Caveat');
+    expect(handwrittenHtml).toContain('Kalam');
+    expect(handwrittenHtml).toContain('#f4afc0');
+    expect(handwrittenHtml).toContain('&#10022;');
+    expect(handwrittenHtml).toContain('href="https://www.niknote.online"');
+    expect(handwrittenHtml).toContain('Team of NikNote');
+
+    const cleanHtml = buildNikNoteEmailHtml({
+      heading: 'Welcome <Student>',
+      bodyText: '- Clean item',
+      style: 'clean',
+      fromName: 'NikNote',
       fromEmail: 'support@niknote.online',
     });
-    expect(html).toContain('Welcome &lt;Student&gt;');
-    expect(html).toContain('<strong>Aarav</strong>');
-    expect(html).toContain('<li style=');
-    expect(html).toContain('href="https://www.niknote.online"');
+    expect(cleanHtml).toContain('<li style=');
+    expect(cleanHtml).toContain(NIKNOTE_EMAIL_LOGO_URL);
 
     const text = buildNikNotePlainText({
       heading: 'Welcome',
@@ -238,6 +257,21 @@ describe('mailflareClient pure helpers', () => {
       ctaUrl: 'https://www.niknote.online',
     });
     expect(text).toContain('Open NikNote: https://www.niknote.online');
+    expect(text).toContain('Team of NikNote');
+  });
+
+  it('never mentions founder or personal names in templates, presets, or sanitized sender names', () => {
+    expect(CUSTOMER_EMAIL_TEMPLATES[0].id).toBe('invite');
+    for (const tpl of CUSTOMER_EMAIL_TEMPLATES) {
+      const combined = `${tpl.label} ${tpl.description} ${tpl.subject} ${tpl.heading} ${tpl.body}`;
+      expect(combined).not.toMatch(/founder|nikhil/i);
+    }
+    for (const preset of SENDER_PRESETS) {
+      expect(`${preset.label} ${preset.fromName}`).not.toMatch(/founder|nikhil/i);
+    }
+    expect(sanitizeBrandSenderName('Nikhil — Founder')).toBe('Team of NikNote');
+    expect(sanitizeBrandSenderName('NikNote')).toBe('NikNote');
+    expect(sanitizeBrandSenderName('Team of NikNote')).toBe('Team of NikNote');
   });
 });
 
@@ -384,10 +418,10 @@ describe('customer-email Edge Function (Mailflare integration & security)', () =
         {
           action: 'create_mailbox',
           payload: {
-            localPart: 'founder',
+            localPart: 'invite',
             domainId: 'dom_niknote_online',
-            displayName: 'Nikhil — Founder',
-            mailboxType: 'personal',
+            displayName: 'Team of NikNote',
+            mailboxType: 'shared',
           },
         },
         { 'x-admin-token': 'valid-admin-token' },
@@ -395,18 +429,18 @@ describe('customer-email Edge Function (Mailflare integration & security)', () =
     );
     expect(mbxRes.status).toBe(200);
     const mbxJson = await mbxRes.json();
-    expect(mbxJson.mailbox.address).toBe('founder@niknote.online');
+    expect(mbxJson.mailbox.address).toBe('invite@niknote.online');
 
     const draftRes = await ctx.handler(
       makeEdgePost(
         {
           action: 'save_draft',
           payload: {
-            fromEmail: 'founder@niknote.online',
-            fromName: 'Nikhil — Founder',
+            fromEmail: 'invite@niknote.online',
+            fromName: 'Team of NikNote',
             to: 'student@example.com',
-            subject: 'Draft Follow-up',
-            text: 'Working on your request!',
+            subject: 'Draft Invite',
+            text: 'We saved a spot for you on NikNote!',
           },
         },
         { 'x-admin-token': 'valid-admin-token' },
@@ -415,8 +449,8 @@ describe('customer-email Edge Function (Mailflare integration & security)', () =
     expect(draftRes.status).toBe(200);
     expect(ctx.webmailMessages[0]).toMatchObject({
       folder: 'drafts',
-      mailbox_address: 'founder@niknote.online',
-      subject: 'Draft Follow-up',
+      mailbox_address: 'invite@niknote.online',
+      subject: 'Draft Invite',
     });
   });
 
@@ -539,7 +573,8 @@ describe('AdminMailflareStudio component', () => {
             action: 'send_email',
             payload: expect.objectContaining({
               to: ['principal@dps.edu.in'],
-              subject: 'Re: NikNote for DPS Dehradun',
+              subject: 'NikNote for DPS Dehradun — handwritten worksheets & study workspace',
+              fromName: 'Team of NikNote',
               fromEmail: 'schools@niknote.online',
             }),
           }),
