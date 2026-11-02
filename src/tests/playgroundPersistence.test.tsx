@@ -4,6 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePlayground } from '@/hooks/usePlayground';
 import { createPlaygroundObject } from '@/lib/playground';
+import { PLAYGROUND_NOTE_IMPORT_KEY } from '@/lib/playgroundNoteImport';
+import { createBlock } from '@/types/block';
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ user: null, loading: false }),
@@ -19,7 +21,7 @@ function wrapper(route = '/playground') {
 }
 
 describe('playground history and persistence', () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
 
   it('undoes and redoes complete document states', async () => {
     const { result } = renderHook(() => usePlayground(), { wrapper: wrapper() });
@@ -38,6 +40,47 @@ describe('playground history and persistence', () => {
     act(() => { undone = result.current.redo(); });
     expect(result.current.doc.title).toBe('Second revision');
     expect(result.current.doc.title).not.toBe(original);
+  });
+
+  it('flushes the latest draft before Notes Taking navigation', async () => {
+    const { result } = renderHook(() => usePlayground(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    const id = result.current.doc.id;
+    act(() => result.current.apply((draft) => { draft.title = 'Latest unsaved keystroke'; }));
+
+    let flushed = false;
+    act(() => { flushed = result.current.flushLocal(); });
+    expect(flushed).toBe(true);
+    expect(localStorage.getItem(`niknote.playground.doc.v1.device.${id}`)).toContain('Latest unsaved keystroke');
+  });
+
+  it('saves the current draft before creating another canvas', async () => {
+    const { result } = renderHook(() => usePlayground(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    const originalId = result.current.doc.id;
+    act(() => result.current.apply((draft) => { draft.title = 'Draft before new canvas'; }));
+    act(() => { result.current.createCanvas(); });
+    expect(localStorage.getItem(`niknote.playground.doc.v1.device.${originalId}`)).toContain('Draft before new canvas');
+  });
+
+  it('imports Notes Taking as a new canvas without replacing existing work', async () => {
+    const first = renderHook(() => usePlayground(), { wrapper: wrapper() });
+    await waitFor(() => expect(first.result.current.ready).toBe(true));
+    const originalId = first.result.current.doc.id;
+    first.unmount();
+
+    sessionStorage.setItem(PLAYGROUND_NOTE_IMPORT_KEY, JSON.stringify({
+      title: 'Imported lesson',
+      noteId: 'note-1',
+      blocks: [createBlock('heading1', 'Chapter'), createBlock('text', 'Real imported writing')],
+    }));
+    const second = renderHook(() => usePlayground(), { wrapper: wrapper() });
+    await waitFor(() => expect(second.result.current.ready).toBe(true));
+    expect(second.result.current.doc.title).toBe('Imported lesson · Playground');
+    expect(second.result.current.doc.id).not.toBe(originalId);
+    expect(second.result.current.index).toHaveLength(2);
+    expect(second.result.current.doc.objects.some((object) => object.text === 'Real imported writing')).toBe(true);
+    expect(localStorage.getItem(`niknote.playground.doc.v1.device.${originalId}`)).toBeTruthy();
   });
 
   it('restores content, object geometry, connections and theme after a reload', async () => {

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { History } from '@/lib/board';
+import { consumePlaygroundNoteImport } from '@/lib/playgroundNoteImport';
 import {
   clonePlaygroundDocument,
   emptyPlayground,
@@ -104,7 +105,13 @@ export function usePlayground() {
     let chosenId = requestedId || readJSON<string | null>(lastKey, null);
     if (chosenId && !entries.some((entry) => entry.id === chosenId)) chosenId = null;
 
-    if (!entries.length) {
+    const imported = consumePlaygroundNoteImport();
+    if (imported) {
+      try { writeJSON(`${DOC_PREFIX}${scope}.${imported.id}`, imported); } catch { /* autosave will report storage failures */ }
+      entries = [...entries, { id: imported.id, title: imported.title, updatedAt: imported.updatedAt, position: entries.length }];
+      replaceIndex(entries);
+      chosenId = imported.id;
+    } else if (!entries.length) {
       const starter = starterPlayground();
       try {
         writeJSON(`${DOC_PREFIX}${scope}.${starter.id}`, starter);
@@ -324,12 +331,15 @@ export function usePlayground() {
   }, [persistLocal, setParams]);
 
   const installCanvas = useCallback((value: PlaygroundDocument) => {
+    if (dirty.current) {
+      try { persistLocal(docRef.current); dirty.current = false; } catch { /* the visible save status remains available */ }
+    }
     try { writeJSON(`${DOC_PREFIX}${scope}.${value.id}`, value); } catch { /* handled on next autosave */ }
     const nextEntry = { id: value.id, title: value.title, updatedAt: value.updatedAt, position: indexRef.current.length };
     replaceIndex([...indexRef.current, nextEntry]);
     setParams({ id: value.id });
     return value.id;
-  }, [replaceIndex, scope, setParams]);
+  }, [persistLocal, replaceIndex, scope, setParams]);
 
   const createCanvas = useCallback((title = 'Untitled playground') => {
     const next = emptyPlayground(title);
@@ -405,6 +415,20 @@ export function usePlayground() {
     replaceIndex(ordered.map((entry, position) => ({ ...entry, position })));
   }, [replaceIndex]);
 
+  /** Flush the latest draft before an in-app navigation cancels the debounce. */
+  const flushLocal = useCallback(() => {
+    if (!ready || !dirty.current) return true;
+    try {
+      persistLocal(docRef.current);
+      dirty.current = false;
+      return true;
+    } catch {
+      setSaveState('error');
+      setSyncMessage('The latest canvas draft could not be saved on this device.');
+      return false;
+    }
+  }, [persistLocal, ready]);
+
   return {
     doc,
     index,
@@ -413,6 +437,7 @@ export function usePlayground() {
     syncMessage,
     isCloud: Boolean(cloudUserId),
     apply,
+    flushLocal,
     beginTransaction,
     undo,
     redo,

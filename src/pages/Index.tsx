@@ -42,7 +42,7 @@ import {
   Settings2, Edit3, FileDown, Palette, Crown, LogIn, Cloud, RefreshCw, CheckCircle2,
   Gem, MoreVertical, Moon, Sun, RotateCcw, Share2, Image, FileText,
   LayoutGrid, Scan, Brain, PanelLeft, ChevronDown, MessageSquare, Zap, Undo2, Redo2, Save, Eye, PenLine, Upload,
-  Calculator, ListChecks, FileUp, Sparkles
+  Calculator, ListChecks, FileUp, Sparkles, Boxes
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -71,6 +71,7 @@ const CommandPalette = lazy(() => import('@/components/command-palette/CommandPa
 import { useUITheme, UI_THEMES, UITheme, getThemeClasses } from '@/utils/uiThemes';
 import { cn } from '@/lib/utils';
 import { persistMobileDraftNotebook } from '@/lib/mobileDraft';
+import { PLAYGROUND_NOTE_IMPORT_KEY } from '@/lib/playgroundNoteImport';
 import { HeaderProfileButton } from '@/components/HeaderProfileButton';
 const DiagramToolbar = lazy(() => import('@/components/DiagramToolbar').then(m => ({ default: m.DiagramToolbar })));
 import { useInlineContent } from '@/hooks/useInlineContent';
@@ -91,6 +92,7 @@ const HandwritingStudio = lazy(() => import('@/components/handwriting-dna/Handwr
 const Index = () => {
   const navigate = useNavigate();
   const { search } = useLocation();
+  const canvasReturnId = new URLSearchParams(search).get('canvas');
   const mobileAppearance = useMobileAppearance();
   const [noteTitle, setNoteTitle] = useState(() => localStorage.getItem('niknote-mobile-draft-title') || 'Untitled Note');
   useEffect(() => { localStorage.setItem('niknote-mobile-draft-title', noteTitle); }, [noteTitle]);
@@ -1089,6 +1091,20 @@ const Index = () => {
     exit: (d: string) => ({ x: d === 'right' ? -300 : d === 'left' ? 300 : 0, opacity: 0, scale: 0.95 })
   };
 
+  const openCurrentNoteInPlayground = () => {
+    try {
+      sessionStorage.setItem(PLAYGROUND_NOTE_IMPORT_KEY, JSON.stringify({
+        title: noteTitle,
+        noteId: cloudNotebookId,
+        blocks: blockEditor.blocks,
+      }));
+    } catch {
+      toast.error('This note could not be prepared for Playground');
+      return;
+    }
+    navigate('/playground');
+  };
+
   // ===================== RENDER =====================
   return (
     <div className={cn("flex flex-col transition-all duration-500 touch-manipulation", moodStyles.background, glassMode && "glass-mode", themeClasses.wrapper, isMobile ? "min-h-screen nn-mobile nn-editor-root" : "h-[100dvh] overflow-hidden")}
@@ -1206,6 +1222,14 @@ const Index = () => {
               </>
             ) : (
               <>
+                <button
+                  type="button"
+                  onClick={canvasReturnId ? () => navigate(`/playground?id=${encodeURIComponent(canvasReturnId)}`) : openCurrentNoteInPlayground}
+                  className="flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-semibold bg-white/25 hover:bg-white/40 border border-white/30 text-foreground transition-all"
+                  title={canvasReturnId ? 'Return to the linked playground' : 'Open this note in Playground'}
+                >
+                  <Boxes className="w-4 h-4" /> Playground
+                </button>
                 {/* Live Cloud Sync Pill — Shows live sync state & triggers instant full sync on click */}
                 <button
                   type="button"
@@ -1349,6 +1373,7 @@ const Index = () => {
           {isMobile && (
             <div className="nn-editor-page">
               <div className="nn-board-controls">
+                <Button variant="ghost" size="icon" onClick={canvasReturnId ? () => navigate(`/playground?id=${encodeURIComponent(canvasReturnId)}`) : openCurrentNoteInPlayground} aria-label={canvasReturnId ? 'Back to Playground' : 'Open in Playground'} title={canvasReturnId ? 'Back to Playground' : 'Open in Playground'}><Boxes className="h-4 w-4" /></Button>
                 <div className="nn-board-tabs" role="tablist" aria-label="Note view">
                   <Button variant="ghost" role="tab" aria-selected={mobileView === 'write'} onClick={() => setMobileView('write')}><PenLine className="h-4 w-4" />Write</Button>
                   <Button variant="ghost" role="tab" aria-selected={mobileView === 'preview'} onClick={() => setMobileView('preview')}><Eye className="h-4 w-4" />Preview</Button>

@@ -227,7 +227,7 @@ export function useDesktopNotes() {
 
   /** Open a brand-new editor draft (optionally seeded with template/sample text). */
   const openNew = useCallback(
-    (opts?: { title?: string; text?: string; style?: string }) => {
+    (opts?: { title?: string; text?: string; style?: string; canvasId?: string }) => {
       if (opts?.text !== undefined || opts?.title) {
         sessionStorage.setItem(
           'niknote-mobile-open',
@@ -237,7 +237,7 @@ export function useDesktopNotes() {
             style: opts?.style,
           }),
         );
-        navigate('/?editor=1');
+        navigate(`/?editor=1${opts?.canvasId ? `&canvas=${encodeURIComponent(opts.canvasId)}` : ''}`);
       } else {
         navigate('/?editor=1&new=1');
       }

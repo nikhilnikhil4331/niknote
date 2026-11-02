@@ -39,6 +39,7 @@ import { Minimap } from './Minimap';
 
 export interface PlaygroundCanvasHandle {
   addBlock: (kind: PlaygroundBlockKind, overrides?: Partial<PlaygroundObject>) => void;
+  writeText: (overrides?: Partial<PlaygroundObject>) => void;
   openImagePicker: () => void;
   setTool: (tool: PlaygroundTool) => void;
   focusObject: (id: string) => void;
@@ -161,6 +162,17 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
     updateViewport(zoomAt(current, sizeRef.current.width / 2, sizeRef.current.height / 2, requested));
   }, [updateViewport]);
 
+  // Read the ref for every step so rapid clicks never reuse a stale rendered zoom.
+  const zoomBy = useCallback((factor: number) => {
+    const current = viewportRef.current;
+    updateViewport(zoomAt(
+      current,
+      sizeRef.current.width / 2,
+      sizeRef.current.height / 2,
+      current.zoom * factor,
+    ));
+  }, [updateViewport]);
+
   const focusObject = useCallback((id: string) => {
     const object = doc.objects.find((candidate) => candidate.id === id);
     if (!object) return;
@@ -177,7 +189,7 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
   const addBlock = useCallback((kind: PlaygroundBlockKind, overrides: Partial<PlaygroundObject> = {}, at?: { x: number; y: number }) => {
     const centre = at || screenToWorld(viewportRef.current, sizeRef.current.width / 2, sizeRef.current.height / 2);
     const object = createPlaygroundObject(kind, 0, 0, overrides);
-    const offset = (doc.objects.length % 5) * 18;
+    const offset = at ? 0 : (doc.objects.length % 5) * 18;
     object.x = centre.x - object.width / 2 + offset;
     object.y = centre.y - object.height / 2 + offset;
     if (doc.snap) {
@@ -191,13 +203,24 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
     return object.id;
   }, [apply, doc.objects.length, doc.snap]);
 
+  const startEditing = useCallback((id: string | null) => {
+    if (id && id !== editingId) beginTransaction();
+    setEditingId(id);
+  }, [beginTransaction, editingId]);
+
+  const writeText = useCallback((overrides: Partial<PlaygroundObject> = {}, at?: { x: number; y: number }) => {
+    const id = addBlock('text', { text: '', ...overrides }, at);
+    startEditing(id);
+  }, [addBlock, startEditing]);
+
   useImperativeHandle(ref, () => ({
     addBlock: (kind, overrides) => { addBlock(kind, overrides); },
+    writeText: (overrides) => { writeText(overrides); },
     openImagePicker: () => imageInputRef.current?.click(),
     setTool: (next) => setToolState(next),
     focusObject,
     fit,
-  }), [addBlock, focusObject, fit]);
+  }), [addBlock, writeText, focusObject, fit]);
 
   const patchObject = useCallback((id: string, patch: Partial<PlaygroundObject>, record = true) => {
     apply((draft) => {
@@ -212,11 +235,6 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
       if (edge) Object.assign(edge, patch);
     });
   }, [apply]);
-
-  const startEditing = useCallback((id: string | null) => {
-    if (id && id !== editingId) beginTransaction();
-    setEditingId(id);
-  }, [beginTransaction, editingId]);
 
   const deleteSelection = useCallback(() => {
     if (selectedEdgeId) {
@@ -374,9 +392,7 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
       event.preventDefault();
       gesture.current = { type: 'pan', pointerId: event.pointerId, startClientX: event.clientX, startClientY: event.clientY, viewport: viewportRef.current };
     } else if (tool === 'text') {
-      const point = worldPoint(event);
-      const newId = addBlock('text', { text: '' }, point);
-      startEditing(newId);
+      writeText({}, worldPoint(event));
     } else if (tool === 'pen') {
       event.preventDefault();
       beginTransaction();
@@ -722,7 +738,7 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
           <span><Layers size={25} /></span>
           <h2>A clear space for your next idea</h2>
           <p>Write, connect, draw or drop a block anywhere.</p>
-          <div><button onClick={() => addBlock('text')}><Type size={14} /> Start writing</button><button onClick={() => addBlock('sticky')}><StickyNote size={14} /> Add sticky note</button></div>
+          <div><button onClick={() => writeText()}><Type size={14} /> Start writing</button><button onClick={() => addBlock('sticky')}><StickyNote size={14} /> Add sticky note</button></div>
         </div>
       )}
 
@@ -776,7 +792,7 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
 
       <div className="pg-quick-bar pg-canvas-ui">
         <button className="pg-quick-add" onClick={onToggleLibrary} title="Add a block"><Plus size={18} /></button>
-        <button onClick={() => addBlock('text')} title="Text"><Type size={16} /></button>
+        <button onClick={() => writeText()} title="Text"><Type size={16} /></button>
         <button onClick={() => imageInputRef.current?.click()} title="Image"><ImageIcon size={16} /></button>
         <button onClick={() => addBlock('code')} title="Code"><Code2 size={16} /></button>
         <button onClick={() => addBlock('table')} title="Table"><Table2 size={16} /></button>
@@ -793,9 +809,9 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
       </div>
 
       <div className="pg-zoom-bar pg-canvas-ui">
-        <button onClick={() => setZoom(doc.viewport.zoom / 1.15)} aria-label="Zoom out"><Minus size={15} /></button>
+        <button onClick={() => zoomBy(1 / 1.15)} aria-label="Zoom out"><Minus size={15} /></button>
         <button className="pg-zoom-value" onClick={() => setZoom(1)} title="Reset to 100%">{Math.round(doc.viewport.zoom * 100)}%</button>
-        <button onClick={() => setZoom(doc.viewport.zoom * 1.15)} aria-label="Zoom in"><Plus size={15} /></button>
+        <button onClick={() => zoomBy(1.15)} aria-label="Zoom in"><Plus size={15} /></button>
         <button onClick={fit} title="Fit to screen (0)"><Maximize2 size={15} /></button>
         <button className={showMinimap ? 'is-active' : ''} onClick={() => setShowMinimap((value) => !value)} title="Toggle minimap"><Map size={15} /></button>
         <button onClick={onPresentation} title="Presentation mode"><Expand size={15} /></button>

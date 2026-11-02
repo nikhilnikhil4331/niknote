@@ -4,6 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PlaygroundPage from '@/pages/Playground';
 
+const mocks = vi.hoisted(() => ({ openNew: vi.fn() }));
+
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ user: null, loading: false }),
 }));
@@ -14,11 +16,12 @@ vi.mock('@/components/desktop/DesktopShell', () => ({
   DesktopShell: ({ children }: { children: React.ReactNode }) => <div className="nik-desktop">{children}</div>,
 }));
 vi.mock('@/components/desktop/notes', () => ({
-  useDesktopNotes: () => ({ active: [], openNew: vi.fn() }),
+  useDesktopNotes: () => ({ active: [], openNew: mocks.openNew }),
 }));
 
 describe('composed playground page', () => {
   beforeEach(() => {
+    mocks.openNew.mockReset();
     localStorage.clear();
     document.documentElement.className = '';
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
@@ -45,6 +48,28 @@ describe('composed playground page', () => {
     expect(container.querySelectorAll('[data-object-id]')).toHaveLength(0);
     unmount();
     expect(document.documentElement.classList.contains('pg-app-dark')).toBe(false);
+  });
+
+  it('previews real canvas notes and opens them in the existing Notes Taking editor', async () => {
+    render(<MemoryRouter initialEntries={['/playground']}><PlaygroundPage /></MemoryRouter>);
+    await screen.findByLabelText('Infinite playground canvas');
+    fireEvent.click(screen.getByRole('button', { name: 'Notes preview' }));
+
+    expect(screen.getByRole('region', { name: 'Canvas notes preview' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Model Design Playground' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Infinite playground canvas')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit in Notes Taking' }));
+
+    expect(mocks.openNew).toHaveBeenCalledOnce();
+    const handoff = mocks.openNew.mock.calls[0][0];
+    expect(handoff.title).toBe('Model Design');
+    expect(handoff.canvasId).toBeTruthy();
+    expect(handoff.text).toContain('## Model Design Playground');
+    expect(handoff.text).toContain('Dataset');
+    expect(handoff.text).toContain(`Canvas reference: ${window.location.origin}/playground?id=${handoff.canvasId}`);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to canvas' }));
+    expect(await screen.findByLabelText('Infinite playground canvas')).toBeInTheDocument();
   });
 
   it('uses the same workspace controls without a separate mobile UI at 390px', async () => {

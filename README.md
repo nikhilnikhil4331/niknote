@@ -37,6 +37,7 @@ saare features dono jagah same rehte hain. (PHP use nahi hota — jaan-boojh kar
 - One shared workspace interface across screen sizes, without a separate Playground mobile bottom navigation
 - Debounced device autosave for guests; signed-in users also sync through the owner-scoped Supabase `playgrounds` table
 - Existing notes can be inserted as real note-reference cards; text blocks can open in the existing document editor with a canvas reference
+- Live Notes Preview plus two-way Notes Taking handoff: edit canvas content in the real note editor, or import the current note into a new playground with return links
 - JSON backup and SVG export
 
 Visual connections are planning aids only. No execution status is shown unless a real configured backend runner completes.

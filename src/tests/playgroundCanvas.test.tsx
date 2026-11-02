@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { PlaygroundCanvas } from '@/components/playground/PlaygroundCanvas';
 import { History } from '@/lib/board';
@@ -68,10 +68,8 @@ describe('playground canvas interactions', () => {
     const { container } = render(<Harness />);
     const canvas = container.querySelector('.pg-canvas')!;
     fireEvent.click(screen.getByTitle('Text'));
-    expect(screen.getByText('Write something…')).toBeInTheDocument();
-
-    fireEvent.doubleClick(screen.getByText('Write something…'));
     const editor = screen.getByLabelText('Edit text');
+    expect(editor).toHaveFocus();
     fireEvent.change(editor, { target: { value: 'Persistent thought' } });
     fireEvent.blur(editor);
     const text = screen.getByText('Persistent thought');
@@ -134,6 +132,39 @@ describe('playground canvas interactions', () => {
     fireEvent.change(editor, { target: { value: 'Written anywhere' } });
     fireEvent.blur(editor);
     expect(screen.getByText('Written anywhere')).toBeInTheDocument();
+  });
+
+  it('writes at the exact clicked point and grows instead of clipping long notes', () => {
+    const doc = emptyPlayground('Writing position');
+    doc.objects = [createPlaygroundObject('shape', 0, 0)];
+    const { container } = render(<Harness initialDoc={doc} />);
+    const canvas = container.querySelector('.pg-canvas')!;
+    fireEvent.click(screen.getByLabelText('Text (T)'));
+    fireEvent.pointerDown(canvas, { ...pointer, clientX: 320, clientY: 220 });
+    fireEvent.pointerUp(canvas, { ...pointer, clientX: 320, clientY: 220 });
+
+    const editor = screen.getByLabelText('Edit text');
+    const object = editor.closest('[data-object-id]') as HTMLElement;
+    expect(object.style.left).toBe('120px');
+    expect(object.style.top).toBe('120px');
+    Object.defineProperty(editor, 'scrollHeight', { configurable: true, value: 240 });
+    fireEvent.change(editor, { target: { value: 'A long note\nwith multiple lines\nthat must remain visible' } });
+    expect(parseFloat(object.style.height)).toBeGreaterThanOrEqual(256);
+  });
+
+  it('applies consecutive zoom buttons to the latest viewport without stale jumps', () => {
+    render(<Harness />);
+    const zoomIn = screen.getByLabelText('Zoom in');
+    act(() => {
+      zoomIn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      zoomIn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(screen.getByTitle('Reset to 100%')).toHaveTextContent('132%');
+
+    fireEvent.click(screen.getByLabelText('Zoom out'));
+    expect(screen.getByTitle('Reset to 100%')).toHaveTextContent('115%');
+    fireEvent.click(screen.getByTitle('Reset to 100%'));
+    expect(screen.getByTitle('Reset to 100%')).toHaveTextContent('100%');
   });
 
   it('drags, resizes and rotates an image object', () => {

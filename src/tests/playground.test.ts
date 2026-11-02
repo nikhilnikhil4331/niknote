@@ -11,6 +11,7 @@ import {
   objectBounds,
   objectsInRect,
   playgroundId,
+  playgroundToNoteText,
   screenToWorld,
   starterPlayground,
   zoomAt,
@@ -103,5 +104,21 @@ describe('infinite playground model', () => {
     const path = connectionPath({ from: from.id, to: to.id }, [from, to]);
     expect(path).toContain('M 200 50');
     expect(path).toContain('400 50');
+  });
+
+  it('hands real canvas content to Notes Taking in reading order', () => {
+    const doc = emptyPlayground('Research');
+    const later = createPlaygroundObject('todo', 0, 300, {
+      text: 'Tasks',
+      items: [{ id: 'task-1', text: 'Review evidence', done: true }],
+    });
+    const first = createPlaygroundObject('heading', 0, 0, { text: 'Study plan' });
+    const middle = createPlaygroundObject('text', 0, 120, { text: 'Actual canvas writing' });
+    doc.objects = [later, middle, first];
+    const handoff = playgroundToNoteText(doc, 'https://niknote.test/playground?id=canvas-1');
+    expect(handoff.indexOf('## Study plan')).toBeLessThan(handoff.indexOf('Actual canvas writing'));
+    expect(handoff.indexOf('Actual canvas writing')).toBeLessThan(handoff.indexOf('### Tasks'));
+    expect(handoff).toContain('[x] Review evidence');
+    expect(handoff).toContain('Canvas reference: https://niknote.test/playground?id=canvas-1');
   });
 });

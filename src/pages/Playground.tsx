@@ -7,9 +7,10 @@ import { useDesktopNotes } from '@/components/desktop/notes';
 import { PlaygroundCanvas, type PlaygroundCanvasHandle } from '@/components/playground/PlaygroundCanvas';
 import { PlaygroundHeader, type AppThemeMode } from '@/components/playground/PlaygroundHeader';
 import { PlaygroundSidebar } from '@/components/playground/PlaygroundSidebar';
+import { PlaygroundNotesPreview } from '@/components/playground/PlaygroundNotesPreview';
 import { BlockLibrary } from '@/components/playground/BlockLibrary';
 import { usePlayground } from '@/hooks/usePlayground';
-import type { PlaygroundIndexEntry, PlaygroundTheme } from '@/lib/playground';
+import { playgroundToNoteText, type PlaygroundTheme } from '@/lib/playground';
 import '@/components/playground/playground.css';
 
 export default function PlaygroundPage() {
@@ -20,6 +21,7 @@ export default function PlaygroundPage() {
   const [libraryOpen, setLibraryOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 1180);
   const [documentsOpen, setDocumentsOpen] = useState(() => typeof window === 'undefined' || window.innerWidth >= 900);
   const [presentation, setPresentation] = useState(false);
+  const [notesPreview, setNotesPreview] = useState(false);
   const [appMode, setAppMode] = useState<AppThemeMode>(() => {
     const value = localStorage.getItem('niknote.playground.appTheme');
     return value === 'dark' || value === 'system' ? value : 'light';
@@ -66,6 +68,7 @@ export default function PlaygroundPage() {
   }, [playground.doc.id, playground.doc.theme, playground.index, playground.ready]);
 
   const createCanvas = useCallback(() => {
+    setNotesPreview(false);
     playground.createCanvas();
     if (window.innerWidth < 900) setDocumentsOpen(false);
   }, [playground]);
@@ -99,6 +102,23 @@ export default function PlaygroundPage() {
     playground.apply((draft) => { draft.theme = theme; }, { touch: false });
   };
 
+  const openNoteDraft = (options: { title: string; text: string; canvasId: string }) => {
+    if (!playground.flushLocal()) {
+      toast.error('Save the canvas on this device before opening Notes Taking.');
+      return;
+    }
+    openNoteEditor(options);
+  };
+
+  const openCanvasInNotes = () => {
+    const reference = `${window.location.origin}/playground?id=${encodeURIComponent(playground.doc.id)}`;
+    openNoteDraft({
+      title: playground.doc.title || 'Untitled playground',
+      text: playgroundToNoteText(playground.doc, reference),
+      canvasId: playground.doc.id,
+    });
+  };
+
   return (
     <DesktopShell>
       <div className={`pg-page${presentation ? ' is-presenting' : ''}`}>
@@ -114,7 +134,9 @@ export default function PlaygroundPage() {
             appMode={appMode}
             canvasTheme={playground.doc.theme}
             documentsOpen={documentsOpen}
+            notesPreview={notesPreview}
             onToggleDocuments={() => setDocumentsOpen((value) => !value)}
+            onToggleNotesPreview={() => setNotesPreview((value) => !value)}
             onTitle={(title) => playground.apply((draft) => { draft.title = title; })}
             onOpen={playground.openCanvas}
             onCloseTab={closeTab}
@@ -144,32 +166,41 @@ export default function PlaygroundPage() {
           )}
           <main className="pg-canvas-main">
             {playground.ready ? (
-              <PlaygroundCanvas
-                ref={canvasRef}
-                doc={playground.doc}
-                apply={playground.apply}
-                beginTransaction={playground.beginTransaction}
-                undo={playground.undo}
-                redo={playground.redo}
-                canUndo={playground.canUndo}
-                canRedo={playground.canRedo}
-                libraryOpen={libraryOpen}
-                onToggleLibrary={() => setLibraryOpen((value) => !value)}
-                onPresentation={() => setPresentation(true)}
-                onOpenDocument={(object) => openNoteEditor({
-                  title: (object.text || 'Canvas note').split('\n')[0].slice(0, 80),
-                  text: `${object.text || object.subtitle || ''}\n\nCanvas reference: ${window.location.origin}/playground?id=${encodeURIComponent(playground.doc.id)}`,
-                })}
-              />
+              notesPreview ? (
+                <PlaygroundNotesPreview doc={playground.doc} onBack={() => setNotesPreview(false)} onOpenNotes={openCanvasInNotes} />
+              ) : (
+                <PlaygroundCanvas
+                  ref={canvasRef}
+                  doc={playground.doc}
+                  apply={playground.apply}
+                  beginTransaction={playground.beginTransaction}
+                  undo={playground.undo}
+                  redo={playground.redo}
+                  canUndo={playground.canUndo}
+                  canRedo={playground.canRedo}
+                  libraryOpen={libraryOpen}
+                  onToggleLibrary={() => setLibraryOpen((value) => !value)}
+                  onPresentation={() => setPresentation(true)}
+                  onOpenDocument={(object) => openNoteDraft({
+                    title: (object.text || 'Canvas note').split('\n')[0].slice(0, 80),
+                    text: `${object.text || object.subtitle || ''}\n\nCanvas reference: ${window.location.origin}/playground?id=${encodeURIComponent(playground.doc.id)}`,
+                    canvasId: playground.doc.id,
+                  })}
+                />
+              )
             ) : (
               <div className="pg-loading"><img src="/niknote-logo.png" alt="NikNote" /><span>Opening your playground…</span></div>
             )}
           </main>
-          {!presentation && libraryOpen && (
+          {!presentation && !notesPreview && libraryOpen && (
             <BlockLibrary
               notes={notes.map((note) => ({ id: note.id, title: note.title }))}
               onAdd={(kind, overrides) => {
-                canvasRef.current?.addBlock(kind, overrides);
+                const linkedOverrides = kind === 'link' && overrides?.href?.includes('editor=1')
+                  ? { ...overrides, href: `${overrides.href}&canvas=${encodeURIComponent(playground.doc.id)}` }
+                  : overrides;
+                if (kind === 'text') canvasRef.current?.writeText(linkedOverrides);
+                else canvasRef.current?.addBlock(kind, linkedOverrides);
                 if (window.innerWidth < 700) setLibraryOpen(false);
               }}
               onImage={() => canvasRef.current?.openImagePicker()}

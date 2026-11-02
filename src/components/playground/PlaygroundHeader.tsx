@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, ArrowRight, Bell, Check, ChevronRight, Cloud, CloudOff,
+  ArrowLeft, ArrowRight, Bell, Check, ChevronRight, Cloud, CloudOff, Eye,
   Home, Loader2, Monitor, Moon, PanelLeft, Plus, Search, Sparkles, Sun, X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,7 +21,9 @@ interface Props {
   appMode: AppThemeMode;
   canvasTheme: PlaygroundTheme;
   documentsOpen: boolean;
+  notesPreview: boolean;
   onToggleDocuments: () => void;
+  onToggleNotesPreview: () => void;
   onTitle: (title: string) => void;
   onOpen: (id: string) => void;
   onCloseTab: (id: string) => void;
@@ -81,7 +83,16 @@ export function PlaygroundHeader(props: Props) {
           <input value={props.title} onChange={(e) => props.onTitle(e.target.value)} aria-label="Playground title" />
         </div>
         <div className="pg-topbar-actions">
-          <div className="pg-canvas-search">
+          <button
+            className={`pg-notes-preview-toggle${props.notesPreview ? ' is-active' : ''}`}
+            onClick={props.onToggleNotesPreview}
+            title={props.notesPreview ? 'Return to canvas' : 'Notes preview'}
+            aria-label={props.notesPreview ? 'Return to canvas' : 'Notes preview'}
+            aria-pressed={props.notesPreview}
+          >
+            <Eye size={15} /><span>{props.notesPreview ? 'Canvas' : 'Preview'}</span>
+          </button>
+          {!props.notesPreview && <div className="pg-canvas-search">
             <Search size={14} />
             <input
               ref={searchRef}
@@ -111,7 +122,7 @@ export function PlaygroundHeader(props: Props) {
                 {!results.length && <p>No objects found.</p>}
               </div>
             )}
-          </div>
+          </div>}
           <button className="pg-topbar-ai" onClick={() => navigate('/ai')} title="Open NikAI"><Sparkles size={16} /><span>Ask AI</span></button>
           <button onClick={() => navigate('/tasks')} title="Tasks and reminders"><Bell size={16} /></button>
           <div className="pg-theme-control">

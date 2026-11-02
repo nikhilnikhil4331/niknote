@@ -77,7 +77,10 @@ export const PlaygroundObjectView = React.memo(function PlaygroundObjectView({
             value={object.text || ''}
             aria-label={`Edit ${object.kind}`}
             style={sharedStyle}
-            onChange={(event) => onPatch(object.id, { text: event.target.value }, false)}
+            onChange={(event) => {
+              const height = Math.max(object.height, event.target.scrollHeight + 16);
+              onPatch(object.id, { text: event.target.value, ...(height > object.height ? { height } : {}) }, false);
+            }}
             onBlur={() => onEdit(null)}
             onPointerDown={stop}
             onKeyDown={(event) => {

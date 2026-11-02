@@ -466,3 +466,33 @@ export function temporaryConnectionPath(from: PlaygroundObject, point: { x: numb
   const bend = Math.max(56, Math.abs(point.x - a.x) * 0.45);
   return `M ${a.x} ${a.y} C ${a.x + bend} ${a.y}, ${point.x - bend} ${point.y}, ${point.x} ${point.y}`;
 }
+
+/** Stable top-to-bottom reading order shared by Notes Preview and Notes Taking. */
+export function playgroundReadingOrder(objects: PlaygroundObject[]) {
+  return [...objects].sort((a, b) => a.y - b.y || a.x - b.x || a.z - b.z);
+}
+
+/** Convert real canvas content to the plain-text/Markdown handoff used by the existing note editor. */
+export function playgroundToNoteText(doc: PlaygroundDocument, canvasUrl?: string) {
+  const sections: string[] = [];
+  for (const object of playgroundReadingOrder(doc.objects)) {
+    const text = object.text?.trim();
+    if (object.kind === 'heading' && text) sections.push(`## ${text}`);
+    else if ((object.kind === 'text' || object.kind === 'sticky') && text) sections.push(text);
+    else if (object.kind === 'code' && text) sections.push(`\`\`\`\n${text}\n\`\`\``);
+    else if (object.kind === 'todo') {
+      const items = (object.items || []).map((item) => `${item.done ? '[x]' : '[]'} ${item.text}`);
+      if (text || items.length) sections.push([text ? `### ${text}` : '', ...items].filter(Boolean).join('\n'));
+    } else if (object.kind === 'table') {
+      const rows = (object.rows || []).map((row) => row.join(' | '));
+      if (text || rows.length) sections.push([text ? `### ${text}` : '', ...rows].filter(Boolean).join('\n'));
+    } else if (object.kind === 'node' && (text || object.subtitle)) {
+      sections.push([text ? `### ${text}` : '', object.subtitle || ''].filter(Boolean).join('\n'));
+    } else if (object.kind === 'link' && (text || object.href)) {
+      sections.push([text, object.href].filter(Boolean).join('\n'));
+    } else if (object.kind === 'image' && object.alt) sections.push(`[Image: ${object.alt}]`);
+    else if (object.kind === 'divider') sections.push('---');
+  }
+  if (canvasUrl) sections.push(`Canvas reference: ${canvasUrl}`);
+  return sections.join('\n\n');
+}
