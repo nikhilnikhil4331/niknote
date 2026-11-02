@@ -81,6 +81,7 @@ const FlashcardsPage = lazy(() => import("@/pages/Flashcards"));
 const HubPage = lazy(() => import("@/pages/Hub"));
 const MoneyTrackerPage = lazy(() => import("@/pages/MoneyTracker"));
 const BoardPageRoute = lazy(() => import("@/pages/Board"));
+const PlaygroundPage = lazy(() => import("@/pages/Playground"));
 const RoutineTrackerPage = lazy(() => import("@/pages/RoutineTracker"));
 const NikHabitPage = lazy(() => import("@/pages/RoutineApp"));
 // Desktop workspace (Notion-style enhanced UI) — desktop routes only;
@@ -133,7 +134,7 @@ const NIKAI_FULLSCREEN_ROUTES = ['/ai', '/nikai', '/ai-workspace', '/agents'];
 function DesktopFloatingShare() {
   const mobile = useIsMobile();
   const { pathname } = useLocation();
-  if (mobile || NIKAI_FULLSCREEN_ROUTES.includes(pathname) || pathname.startsWith('/habit')) {
+  if (mobile || NIKAI_FULLSCREEN_ROUTES.includes(pathname) || pathname.startsWith('/habit') || pathname === '/playground' || pathname === '/canvas') {
     return null;
   }
   return <ShareButtons variant="floating" />;
@@ -173,12 +174,12 @@ const App = () => {
             });
           });
         }
-      } catch {}
+      } catch { /* Cache cleanup is optional on restricted browsers. */ }
 
       registerServiceWorker();
     }
 
-    try { checkReferral(); } catch {}
+    try { checkReferral(); } catch { /* Referral storage must never block app startup. */ }
   }, []);
 
   return (
@@ -251,6 +252,8 @@ const App = () => {
                         <Route path="/flashcards" element={<FlashcardsPage />} />
                         <Route path="/hub" element={<ResponsivePage><HubPage /></ResponsivePage>} />
                         <Route path="/board" element={<Suspense fallback={<PageLoader />}><BoardPageRoute /></Suspense>} />
+                        <Route path="/playground" element={<PlaygroundPage />} />
+                        <Route path="/canvas" element={<PlaygroundPage />} />
                         <Route path="/money" element={<MoneyTrackerPage />} />
                         <Route path="/routine" element={<RoutineTrackerPage />} />
                         <Route path="/habit" element={<NikHabitPage />} />

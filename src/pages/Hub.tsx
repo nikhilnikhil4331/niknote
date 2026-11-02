@@ -20,6 +20,7 @@ const GROUPS: { title: string; items: HubItem[] }[] = [
   { title: 'Write', items: [
     { to: '/', label: 'Handwriting Notes', desc: 'Type → your handwriting', icon: PenLine, hue: 330 },
     { to: '/notebooks', label: 'My Notebooks', desc: 'All your pages', icon: BookOpen, hue: 270 },
+    { to: '/playground', label: 'Infinite Playground', desc: 'Write, draw & connect ideas', icon: Layers, hue: 300 },
     { to: '/documents', label: 'Documents', desc: 'Upload PDF & images', icon: FileText, hue: 210 },
     { to: '/pdf-editor', label: 'PDF Studio', desc: 'Edit, sign & annotate PDFs', icon: PenLine, hue: 350 },
     { to: '/pdf-tools', label: 'PDF Tools', desc: 'Word, Excel, OCR, protect, merge', icon: Combine, hue: 0 },

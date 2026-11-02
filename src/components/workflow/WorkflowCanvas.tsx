@@ -32,7 +32,7 @@ interface CanvasNode {
   label: string;
   x: number;
   y: number;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   status: 'idle' | 'running' | 'done' | 'error';
 }
 
@@ -74,7 +74,7 @@ const NODE_CONFIG: Record<CanvasNodeType, { icon: React.ReactNode; color: string
 
 export const WorkflowCanvas: React.FC<{
   onClose?: () => void;
-  onRun?: (nodes: CanvasNode[], edges: CanvasEdge[]) => void;
+  onRun?: (nodes: CanvasNode[], edges: CanvasEdge[]) => void | Promise<void>;
 }> = ({ onClose, onRun }) => {
   const [nodes, setNodes] = useState<CanvasNode[]>([
     { id: 'node-1', type: 'start', label: 'Start', x: 100, y: 200, config: {}, status: 'idle' },
@@ -165,14 +165,21 @@ export const WorkflowCanvas: React.FC<{
     setDraggingNode(null);
   }, []);
 
-  const handleRun = useCallback(() => {
-    // Mark all nodes as running then done
+  const handleRun = useCallback(async () => {
+    if (!onRun) {
+      toast.info('Workflow execution is not configured. These connections are visual only.');
+      return;
+    }
     setNodes(prev => prev.map(n => ({ ...n, status: 'running' as const })));
-    setTimeout(() => {
+    try {
+      // A real runner resolves only after its backend operation completes.
+      await onRun(nodes, edges);
       setNodes(prev => prev.map(n => ({ ...n, status: 'done' as const })));
-      toast.success('Workflow completed! ✅');
-      onRun?.(nodes, edges);
-    }, 2000);
+      toast.success('Workflow completed');
+    } catch (error) {
+      setNodes(prev => prev.map(n => ({ ...n, status: 'error' as const })));
+      toast.error(error instanceof Error ? error.message : 'Workflow execution failed');
+    }
   }, [nodes, edges, onRun]);
 
   // Render edges as SVG lines

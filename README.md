@@ -19,6 +19,7 @@ saare features dono jagah same rehte hain. (PHP use nahi hota — jaan-boojh kar
 | --- | --- | --- |
 | ✍️ Handwriting notes | `/` | Type karo → aapki handwriting me notebook pages |
 | 🧠 NikAI (Astra Core) | `/ai` | Streaming chat, memory, Smart Notes, quiz, vision |
+| ♾️ **Infinite Playground** | `/playground` | Writing, images, sticky notes, drawing, visual nodes, white/black canvas |
 | 📄 **PDF Studio** | `/pdf-editor` | Kisi bhi PDF ko **detail me edit** karo — neeche dekho |
 | 🩺 **Check-up** | `/checkup` | AI, PDF engine, OCR aur storage ek tap me test karo (APK/web dono) |
 | 🔍 **AI probe** | `/api/ai?probe=1` · `/api/ai?models=1` | Asli completion se AI ka proof; provider ke live model ids dekho |
@@ -26,6 +27,22 @@ saare features dono jagah same rehte hain. (PHP use nahi hota — jaan-boojh kar
 | 🃏 Flashcards | `/flashcards` | Smart revision decks |
 | 💰 Money / Routine / Habit | `/money` `/routine` `/habit` | Trackers |
 | 📚 Documents | `/documents` | PDF/image upload → AI summary |
+
+### Infinite Playground (`/playground`)
+
+- Infinite pan/zoom canvas, dotted grid, snap/alignment, minimap, fit-to-screen and multi-selection
+- Editable text, headings, checklists, tables, sticky notes, images, shapes, freehand drawing and visual node connections
+- Move, resize, rotate, group, lock, layer, duplicate, copy/paste, right-click actions and undo/redo
+- Independent application theme (Light/Dark/System) and white/black canvas theme
+- Debounced device autosave for guests; signed-in users also sync through the owner-scoped Supabase `playgrounds` table
+- Existing notes can be inserted as real note-reference cards; text blocks can open in the existing document editor with a canvas reference
+- JSON backup and SVG export
+
+Visual connections are planning aids only. No execution status is shown unless a real configured backend runner completes.
+
+Shortcuts: `V` select, `H` pan, `T` text, `P` pen, `C` connect, `Space + drag` pan, `Ctrl/Cmd+Z` undo, `Ctrl/Cmd+Shift+Z` redo, `Ctrl/Cmd+D` duplicate, `0` fit, `1` 100% zoom, `/` canvas search.
+
+The cloud schema is in `supabase/migrations/20261102190000_create_playgrounds.sql` and uses RLS on every operation. Local device persistence remains available when cloud sync is unavailable.
 
 ### PDF Studio (`/pdf-editor`)
 

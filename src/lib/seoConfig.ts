@@ -437,6 +437,20 @@ const NON_INDEXABLE_ROUTES: Record<string, Omit<RouteSeoEntry, 'path' | 'inSitem
     robots: 'noindex, nofollow',
     pageType: 'workspace',
   },
+  '/playground': {
+    title: 'Infinite Canvas Playground — NikNote',
+    description: 'Write, draw, connect ideas and build visual plans on your NikNote infinite canvas.',
+    canonicalPath: '/playground',
+    robots: 'noindex, nofollow',
+    pageType: 'workspace',
+  },
+  '/canvas': {
+    title: 'Infinite Canvas Playground — NikNote',
+    description: 'Write, draw, connect ideas and build visual plans on your NikNote infinite canvas.',
+    canonicalPath: '/playground',
+    robots: 'noindex, nofollow',
+    pageType: 'workspace',
+  },
   '/money': {
     title: 'Student Budget Tracker — NikNote',
     description: 'Personal expense and budget tracker inside NikNote.',

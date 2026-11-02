@@ -18,6 +18,8 @@ export function InstallBanner() {
     pathname === '/ai' ||
     pathname === '/nikai' ||
     pathname === '/ai-workspace' ||
+    pathname === '/playground' ||
+    pathname === '/canvas' ||
     pathname === '/agents'
   ) {
     return null;

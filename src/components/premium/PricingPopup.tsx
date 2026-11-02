@@ -54,6 +54,8 @@ const SUPPRESSED_PREFIXES = [
   '/terms',
   '/refunds',
   '/welcome',
+  '/playground',
+  '/canvas',
 ];
 
 const isSuppressed = (pathname: string) =>

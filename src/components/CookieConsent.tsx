@@ -57,7 +57,7 @@ export const CookieConsent: React.FC = () => {
   const handleSavePreferences = () => persistChoice(analytics, marketing);
 
   // Never cover full-screen immersive workspaces unless explicitly opened via Cookie settings
-  if (!visible || (!forcedOpen && (pathname === '/habit' || pathname === '/board' || pathname === '/ai'))) {
+  if (!visible || (!forcedOpen && (pathname === '/habit' || pathname === '/board' || pathname === '/playground' || pathname === '/canvas' || pathname === '/ai'))) {
     return null;
   }
 
