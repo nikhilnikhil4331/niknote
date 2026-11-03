@@ -11,6 +11,8 @@ import {
   starterPlayground,
   type PlaygroundDocument,
   type PlaygroundIndexEntry,
+  type PlaygroundObject,
+  type PlaygroundViewport,
 } from '@/lib/playground';
 
 export type PlaygroundSaveState = 'loading' | 'saving' | 'synced' | 'local' | 'error';
@@ -41,13 +43,34 @@ function sortedIndex(entries: PlaygroundIndexEntry[]) {
   );
 }
 
-// apply() works on a defensive draft, then restores references for unchanged
-// objects. React.memo can therefore skip unchanged blocks during pointer moves.
+// Clone only the mutable model branches. Unlike JSON serialization this does
+// not copy large image data URLs on every pointer move or text keystroke.
+function objectDraft(object: PlaygroundObject): PlaygroundObject {
+  return {
+    ...object,
+    items: object.items?.map((item) => ({ ...item })),
+    rows: object.rows?.map((row) => [...row]),
+    points: object.points?.map((point) => ({ ...point })),
+  };
+}
+
+function documentDraft(previous: PlaygroundDocument): PlaygroundDocument {
+  return {
+    ...previous,
+    viewport: { ...previous.viewport },
+    objects: previous.objects.map(objectDraft),
+    edges: previous.edges.map((edge) => ({ ...edge })),
+  };
+}
+
+// Restore references for unchanged blocks so React.memo can skip them.
 function sameBlockValue(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
-    return JSON.stringify(a) === JSON.stringify(b);
+    return a.length === b.length && a.every((value, index) => sameBlockValue(value, b[index]));
+  }
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    return sameBlock(a as Record<string, unknown>, b as Record<string, unknown>);
   }
   return false;
 }
@@ -274,6 +297,16 @@ export function usePlayground() {
     return () => window.removeEventListener('beforeunload', flush);
   }, [persistLocal, ready]);
 
+  // Pan/zoom only changes three numbers. Keep all object and edge references
+  // intact so the canvas can update without cloning or reconciling its blocks.
+  const updateViewport = useCallback((viewport: PlaygroundViewport) => {
+    const previous = docRef.current;
+    const current = previous.viewport;
+    if (current.x === viewport.x && current.y === viewport.y && current.zoom === viewport.zoom) return;
+    dirty.current = true;
+    setCurrentDocument({ ...previous, viewport });
+  }, [setCurrentDocument]);
+
   const apply = useCallback((
     recipe: (draft: PlaygroundDocument) => void,
     options: { record?: boolean; touch?: boolean } = {},
@@ -281,7 +314,7 @@ export function usePlayground() {
     const { record = true, touch = true } = options;
     const previous = docRef.current;
     if (record) history.current.push(clonePlaygroundDocument(previous));
-    const next = clonePlaygroundDocument(previous);
+    const next = documentDraft(previous);
     recipe(next);
     const previousObjects = new Map(previous.objects.map((object) => [object.id, object]));
     const previousEdges = new Map(previous.edges.map((edge) => [edge.id, edge]));
@@ -437,6 +470,7 @@ export function usePlayground() {
     syncMessage,
     isCloud: Boolean(cloudUserId),
     apply,
+    updateViewport,
     flushLocal,
     beginTransaction,
     undo,

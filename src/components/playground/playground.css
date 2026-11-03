@@ -261,7 +261,7 @@
 
 /* Canvas objects */
 .pg-object { position: absolute; box-sizing: border-box; transform-origin: center; color: var(--canvas-text); }
-.pg-object::after { content: ""; position: absolute; inset: -3px; border-radius: 8px; pointer-events: none; opacity: 0; }
+.pg-object::after { content: ""; position: absolute; inset: -3px; border-radius: 8px; pointer-events: none; opacity: 0; transition: opacity .14s ease; }
 .pg-object.is-selected::after {
   opacity: 1;
   padding: 2px;
@@ -359,6 +359,11 @@
 .pg-zoom-bar > button, .pg-export-control > button { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 6px; color: var(--pg-text-2); }
 .pg-zoom-bar button:hover, .pg-zoom-bar button.is-active { background: var(--pg-hover); color: var(--pg-brand-magenta); }
 .pg-zoom-bar > button.pg-zoom-value { width: 48px; font-size: 10px; font-weight: 650; }
+.pg-tool-rail > button, .pg-quick-bar > button, .pg-zoom-bar button, .pg-canvas-bottom-left button {
+  transition: background-color .14s ease, color .14s ease, transform .14s ease, opacity .14s ease;
+}
+.pg-tool-rail > button:active:not(:disabled), .pg-quick-bar > button:active:not(:disabled), .pg-zoom-bar button:active:not(:disabled), .pg-canvas-bottom-left button:active:not(:disabled) { transform: scale(.94); }
+.pg-zoom-bar button:disabled { opacity: .32; cursor: not-allowed; }
 .pg-export-control { position: relative; }
 .pg-export-menu { position: absolute; right: 0; bottom: 36px; width: 145px; padding: 5px; border: 1px solid var(--pg-border); border-radius: 9px; background: var(--pg-panel); box-shadow: var(--pg-shadow); }
 .pg-minimap-wrap { position: absolute; z-index: 21; right: 12px; bottom: 65px; }

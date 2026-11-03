@@ -83,6 +83,49 @@ describe('playground history and persistence', () => {
     expect(localStorage.getItem(`niknote.playground.doc.v1.device.${originalId}`)).toBeTruthy();
   });
 
+  it('updates pan and zoom without cloning or reconciling canvas objects', async () => {
+    const { result } = renderHook(() => usePlayground(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    act(() => result.current.apply((draft) => {
+      draft.objects = [
+        createPlaygroundObject('node', 20, 30, { id: 'smooth-from' }),
+        createPlaygroundObject('node', 420, 160, { id: 'smooth-to' }),
+      ];
+      draft.edges = [{ id: 'smooth-edge', from: 'smooth-from', to: 'smooth-to' }];
+    }));
+    const before = result.current.doc;
+
+    act(() => result.current.updateViewport({ x: -180, y: 95, zoom: 1.4 }));
+
+    expect(result.current.doc.viewport).toEqual({ x: -180, y: 95, zoom: 1.4 });
+    expect(result.current.doc.objects).toBe(before.objects);
+    expect(result.current.doc.objects[0]).toBe(before.objects[0]);
+    expect(result.current.doc.edges).toBe(before.edges);
+    expect(result.current.doc.updatedAt).toBe(before.updatedAt);
+  });
+
+  it('keeps unchanged object references and protects nested history during fast edits', async () => {
+    const { result } = renderHook(() => usePlayground(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    act(() => result.current.apply((draft) => {
+      draft.objects = [
+        createPlaygroundObject('drawing', 10, 20, { id: 'draft-drawing', points: [{ x: 1, y: 2 }] }),
+        createPlaygroundObject('text', 300, 200, { id: 'unchanged-text', text: 'Keep my reference' }),
+      ];
+    }));
+    const before = result.current.doc;
+    act(() => result.current.beginTransaction());
+    act(() => result.current.apply((draft) => {
+      draft.objects[0].points![0].x = 99;
+    }, { record: false }));
+
+    expect(result.current.doc.objects[0].points![0].x).toBe(99);
+    expect(result.current.doc.objects[1]).toBe(before.objects[1]);
+    act(() => { result.current.undo(); });
+    expect(result.current.doc.objects[0].points![0].x).toBe(1);
+    expect(result.current.doc.objects[1].text).toBe('Keep my reference');
+  });
+
   it('restores content, object geometry, connections and theme after a reload', async () => {
     const first = renderHook(() => usePlayground(), { wrapper: wrapper() });
     await waitFor(() => expect(first.result.current.ready).toBe(true));

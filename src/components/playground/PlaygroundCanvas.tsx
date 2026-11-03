@@ -10,9 +10,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
+  MAX_ZOOM,
+  MIN_ZOOM,
   PLAYGROUND_GRID,
   alignPlaygroundObject,
-  clampZoom,
   connectionPath,
   createPlaygroundObject,
   duplicatePlaygroundObjects,
@@ -22,7 +23,6 @@ import {
   objectsInRect,
   playgroundId,
   screenToWorld,
-  temporaryConnectionPath,
   zoomAt,
   type PlaygroundBlockKind,
   type PlaygroundDocument,
@@ -34,6 +34,7 @@ import {
   type Rect,
 } from '@/lib/playground';
 import { PlaygroundObjectView } from './PlaygroundObjectView';
+import { PlaygroundConnections } from './PlaygroundConnections';
 import { ContextToolbar } from './ContextToolbar';
 import { Minimap } from './Minimap';
 
@@ -49,6 +50,7 @@ export interface PlaygroundCanvasHandle {
 interface Props {
   doc: PlaygroundDocument;
   apply: (recipe: (draft: PlaygroundDocument) => void, options?: { record?: boolean; touch?: boolean }) => void;
+  onViewportChange?: (viewport: PlaygroundViewport) => void;
   beginTransaction: () => void;
   undo: () => boolean;
   redo: () => boolean;
@@ -83,7 +85,7 @@ const isTypingTarget = (target: EventTarget | null) =>
   target instanceof HTMLElement && Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
 
 export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(function PlaygroundCanvas({
-  doc, apply, beginTransaction, undo, redo, canUndo, canRedo, libraryOpen, onToggleLibrary, onPresentation, onOpenDocument,
+  doc, apply, onViewportChange, beginTransaction, undo, redo, canUndo, canRedo, libraryOpen, onToggleLibrary, onPresentation, onOpenDocument,
 }, ref) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -149,8 +151,9 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
 
   const updateViewport = useCallback((viewport: PlaygroundViewport) => {
     viewportRef.current = viewport;
-    apply((draft) => { draft.viewport = viewport; }, { record: false, touch: false });
-  }, [apply]);
+    if (onViewportChange) onViewportChange(viewport);
+    else apply((draft) => { draft.viewport = viewport; }, { record: false, touch: false });
+  }, [apply, onViewportChange]);
 
   const fit = useCallback(() => {
     const viewport = fitViewport(objectBounds(doc.objects), sizeRef.current.width, sizeRef.current.height);
@@ -235,6 +238,11 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
       if (edge) Object.assign(edge, patch);
     });
   }, [apply]);
+
+  const selectEdge = useCallback((id: string) => {
+    setSelectedEdgeId(id);
+    setSelectedIds([]);
+  }, []);
 
   const deleteSelection = useCallback(() => {
     if (selectedEdgeId) {
@@ -525,6 +533,13 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
     if (canvasRef.current?.hasPointerCapture(event.pointerId)) canvasRef.current.releasePointerCapture(event.pointerId);
   };
 
+  const onDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target as Element;
+    if (target.closest('.pg-canvas-ui, [data-object-id], .pg-connections, input, textarea, select, a, button')) return;
+    event.preventDefault();
+    writeText({}, worldPoint(event));
+  };
+
   const onContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
     const target = (event.target as Element).closest('[data-object-id]');
     const id = target?.getAttribute('data-object-id');
@@ -545,11 +560,17 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
       event.preventDefault();
       const rect = element.getBoundingClientRect();
       const current = viewportRef.current;
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? rect.height : 1;
+      const deltaX = event.deltaX * unit;
+      const deltaY = event.deltaY * unit;
       if (event.shiftKey && !event.ctrlKey && !event.metaKey) {
-        updateViewport({ ...current, x: current.x - event.deltaY, y: current.y - event.deltaX });
+        updateViewport({ ...current, x: current.x - deltaY, y: current.y - deltaX });
         return;
       }
-      const factor = Math.exp(-event.deltaY * (event.ctrlKey || event.metaKey ? 0.012 : 0.0015));
+      // Normalise mouse, trackpad and line-scroll devices, and bound each
+      // event so a single aggressive wheel tick cannot jump across the canvas.
+      const boundedDelta = Math.max(-160, Math.min(160, deltaY));
+      const factor = Math.exp(-boundedDelta * (event.ctrlKey || event.metaKey ? 0.008 : 0.0015));
       updateViewport(zoomAt(current, event.clientX - rect.left, event.clientY - rect.top, current.zoom * factor));
     };
     element.addEventListener('wheel', wheel, { passive: false });
@@ -679,6 +700,7 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
       onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; }}
       onDrop={(event) => {
@@ -698,24 +720,15 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
       aria-label="Infinite playground canvas"
     >
       <div className="pg-world" style={{ transform: `translate(${doc.viewport.x}px, ${doc.viewport.y}px) scale(${doc.viewport.zoom})` }}>
-        <svg className="pg-connections" width="1" height="1" overflow="visible">
-          <defs>
-            <marker id="pg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" /></marker>
-          </defs>
-          {doc.edges.map((edge) => {
-            const path = connectionPath(edge, doc.objects);
-            return (
-              <g key={edge.id} className={selectedEdgeId === edge.id ? 'is-selected' : ''}>
-                <path d={path} className="pg-edge-hit" onPointerDown={(event) => { event.stopPropagation(); setSelectedEdgeId(edge.id); setSelectedIds([]); }} />
-                <path d={path} className="pg-edge" stroke={edge.color || '#A02AA4'} strokeWidth={edge.width || 2} strokeDasharray={edge.style === 'dashed' ? '8 6' : undefined} markerEnd={edge.arrow !== 'none' ? 'url(#pg-arrow)' : undefined} markerStart={edge.arrow === 'both' ? 'url(#pg-arrow)' : undefined} pointerEvents="none" />
-                {edge.label && <EdgeLabel edge={edge} objects={doc.objects} />}
-              </g>
-            );
-          })}
-          {connectingObject && connectionPoint && <path d={temporaryConnectionPath(connectingObject, connectionPoint)} className="pg-edge-temp" />}
-          {guides.vertical !== undefined && <line x1={guides.vertical} y1={-100000} x2={guides.vertical} y2={100000} className="pg-align-guide" />}
-          {guides.horizontal !== undefined && <line x1={-100000} y1={guides.horizontal} x2={100000} y2={guides.horizontal} className="pg-align-guide" />}
-        </svg>
+        <PlaygroundConnections
+          objects={doc.objects}
+          edges={doc.edges}
+          selectedEdgeId={selectedEdgeId}
+          onSelectEdge={selectEdge}
+          connectingObject={connectingObject || null}
+          connectionPoint={connectionPoint}
+          guides={guides}
+        />
         {orderedObjects.map((object, layer) => (
           <PlaygroundObjectView
             key={object.id}
@@ -809,9 +822,9 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
       </div>
 
       <div className="pg-zoom-bar pg-canvas-ui">
-        <button onClick={() => zoomBy(1 / 1.15)} aria-label="Zoom out"><Minus size={15} /></button>
+        <button onClick={() => zoomBy(1 / 1.15)} aria-label="Zoom out" disabled={doc.viewport.zoom <= MIN_ZOOM + 0.0001}><Minus size={15} /></button>
         <button className="pg-zoom-value" onClick={() => setZoom(1)} title="Reset to 100%">{Math.round(doc.viewport.zoom * 100)}%</button>
-        <button onClick={() => zoomBy(1.15)} aria-label="Zoom in"><Plus size={15} /></button>
+        <button onClick={() => zoomBy(1.15)} aria-label="Zoom in" disabled={doc.viewport.zoom >= MAX_ZOOM - 0.0001}><Plus size={15} /></button>
         <button onClick={fit} title="Fit to screen (0)"><Maximize2 size={15} /></button>
         <button className={showMinimap ? 'is-active' : ''} onClick={() => setShowMinimap((value) => !value)} title="Toggle minimap"><Map size={15} /></button>
         <button onClick={onPresentation} title="Presentation mode"><Expand size={15} /></button>
@@ -829,15 +842,6 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
 
 function ToolButton({ label, active, onClick, children }: { label: string; active?: boolean; onClick: () => void; children: React.ReactNode }) {
   return <button className={active ? 'is-active' : ''} onClick={onClick} title={label} aria-label={label}>{children}</button>;
-}
-
-function EdgeLabel({ edge, objects }: { edge: PlaygroundEdge; objects: PlaygroundObject[] }) {
-  const from = objects.find((object) => object.id === edge.from);
-  const to = objects.find((object) => object.id === edge.to);
-  if (!from || !to) return null;
-  const x = (from.x + from.width + to.x) / 2;
-  const y = (from.y + from.height / 2 + to.y + to.height / 2) / 2 - 10;
-  return <text x={x} y={y} className="pg-edge-label" textAnchor="middle">{edge.label}</text>;
 }
 
 function safeFilename(title: string) {

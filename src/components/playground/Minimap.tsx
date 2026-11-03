@@ -1,5 +1,5 @@
-import React from 'react';
-import { objectBounds, type PlaygroundDocument, type PlaygroundViewport } from '@/lib/playground';
+import React, { useMemo } from 'react';
+import { objectBounds, type PlaygroundDocument, type PlaygroundObject, type PlaygroundViewport } from '@/lib/playground';
 
 interface Props {
   doc: PlaygroundDocument;
@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function Minimap({ doc, width, height, onNavigate }: Props) {
-  const bounds = objectBounds(doc.objects) || { x: 0, y: 0, width: 800, height: 600 };
+  const bounds = useMemo(() => objectBounds(doc.objects) || { x: 0, y: 0, width: 800, height: 600 }, [doc.objects]);
   const scale = Math.min(150 / Math.max(1, bounds.width), 88 / Math.max(1, bounds.height));
   const offsetX = (158 - bounds.width * scale) / 2;
   const offsetY = (96 - bounds.height * scale) / 2;
@@ -28,9 +28,7 @@ export function Minimap({ doc, width, height, onNavigate }: Props) {
     >
       <svg viewBox="0 0 166 104" aria-hidden>
         <g transform={`translate(${8 + offsetX} ${4 + offsetY}) scale(${scale})`}>
-          {doc.objects.map((object) => (
-            <rect key={object.id} x={object.x} y={object.y} width={object.width} height={object.height} rx={Math.min(8, object.height / 8)} className={`pg-mini-${object.kind}`} />
-          ))}
+          <MinimapObjects objects={doc.objects} />
           <rect
             x={-doc.viewport.x / doc.viewport.zoom}
             y={-doc.viewport.y / doc.viewport.zoom}
@@ -45,3 +43,9 @@ export function Minimap({ doc, width, height, onNavigate }: Props) {
     </button>
   );
 }
+
+const MinimapObjects = React.memo(function MinimapObjects({ objects }: { objects: PlaygroundObject[] }) {
+  return objects.map((object) => (
+    <rect key={object.id} x={object.x} y={object.y} width={object.width} height={object.height} rx={Math.min(8, object.height / 8)} className={`pg-mini-${object.kind}`} />
+  ));
+});

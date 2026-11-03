@@ -173,6 +173,7 @@ export default function PlaygroundPage() {
                   ref={canvasRef}
                   doc={playground.doc}
                   apply={playground.apply}
+                  onViewportChange={playground.updateViewport}
                   beginTransaction={playground.beginTransaction}
                   undo={playground.undo}
                   redo={playground.redo}

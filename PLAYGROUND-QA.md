@@ -6,7 +6,7 @@ Date: 2026-11-03 (Asia/Calcutta)
 
 | Check | Result | Evidence |
 | --- | --- | --- |
-| Full regression suite | PASS | 43 test files, 715 tests passed |
+| Full regression suite | PASS | 43 test files, 719 tests passed |
 | TypeScript | PASS | `npm run typecheck` |
 | Playground change-set ESLint | PASS | Playground components, hooks, helpers and tests report no errors or warnings |
 | Production build | PASS | Vite build + 35 prerendered route HTML files |
@@ -32,7 +32,7 @@ Date: 2026-11-03 (Asia/Calcutta)
 | 13 | Documents and canvas objects can reference each other | PASS | Live Notes Preview, Notes Taking handoff/return links and reverse note-to-canvas import tests pass without overwriting work. |
 | 14 | Mobile layout works without overflow | PASS | 390px composed smoke test verifies the same canvas-list/library controls with no separate Playground mobile navigation; page/canvas containers use bounded overflow layouts. |
 | 15 | No major browser console errors remain | PASS | Playground composed and interaction tests complete without runtime errors; production build and route startup pass. Existing unrelated suites retain their offline/test-environment warnings. |
-| 16 | Existing NikNote features continue working | PASS | Full 715-test regression suite and production build pass. |
+| 16 | Existing NikNote features continue working | PASS | Full 719-test regression suite and production build pass. |
 
 ## Zoom, writing and Notes Taking stability follow-up
 
@@ -44,6 +44,17 @@ Date: 2026-11-03 (Asia/Calcutta)
 - Edit in Notes Taking transfers actual content to the existing editor and provides a return link to the same canvas.
 - Open in Playground imports current note blocks into a new canvas, once per handoff, without replacing existing canvases.
 - Latest local drafts are flushed before Notes Taking navigation and before creating or duplicating another canvas.
+
+## Smoothness and interaction pass
+
+- Pan/zoom uses a dedicated lightweight viewport update; object and edge arrays retain their references.
+- Draft updates clone only mutable model branches instead of serializing complete documents and large image data URLs on every keystroke/pointer move.
+- Memoized object, connection and minimap layers avoid unnecessary rendering while the viewport moves.
+- Mouse, trackpad and line-based wheel input is normalized and bounded to prevent abrupt zoom jumps.
+- Zoom controls expose disabled states at the real 20%–250% limits.
+- Double-clicking empty canvas space opens an immediately focused text editor at that point.
+- Selection and button feedback has restrained transitions, disabled by the existing reduced-motion preference.
+- Regression coverage verifies reference stability, nested undo safety, double-click writing, aggressive wheel input and zoom limits.
 
 ## Honest workflow/AI behavior
 

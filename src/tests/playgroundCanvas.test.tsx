@@ -167,6 +167,31 @@ describe('playground canvas interactions', () => {
     expect(screen.getByTitle('Reset to 100%')).toHaveTextContent('100%');
   });
 
+  it('double-clicks empty canvas space to start writing immediately', () => {
+    const { container } = render(<Harness />);
+    const canvas = container.querySelector('.pg-canvas')!;
+    fireEvent.doubleClick(canvas, { clientX: 320, clientY: 220, button: 0 });
+    const editor = screen.getByLabelText('Edit text');
+    expect(editor).toHaveFocus();
+    const object = editor.closest('[data-object-id]') as HTMLElement;
+    expect(object.style.left).toBe('120px');
+    expect(object.style.top).toBe('120px');
+  });
+
+  it('normalises aggressive wheel input and disables controls at zoom limits', () => {
+    const { container, unmount } = render(<Harness />);
+    const canvas = container.querySelector('.pg-canvas')!;
+    fireEvent.wheel(canvas, { deltaY: -5000, deltaMode: 0, clientX: 400, clientY: 300 });
+    expect(screen.getByTitle('Reset to 100%')).toHaveTextContent('127%');
+    unmount();
+
+    const atMaximum = emptyPlayground('Maximum zoom');
+    atMaximum.viewport.zoom = 2.5;
+    render(<Harness initialDoc={atMaximum} />);
+    expect(screen.getByLabelText('Zoom in')).toBeDisabled();
+    expect(screen.getByLabelText('Zoom out')).toBeEnabled();
+  });
+
   it('drags, resizes and rotates an image object', () => {
     const doc = emptyPlayground('Image test');
     doc.objects = [createPlaygroundObject('image', 40, 60, {
