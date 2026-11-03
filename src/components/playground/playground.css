@@ -339,6 +339,48 @@
 .pg-table-actions { flex: none; display: flex; gap: 10px; padding: 6px 3px 0; }
 .pg-table-actions button { color: var(--pg-brand-magenta); font-size: 9px; }
 
+/* Real, editable chart plugin. All geometry comes from the object's own data. */
+.pg-object-chart { border: 1px solid var(--canvas-border); border-radius: 12px; background: var(--canvas-panel); box-shadow: var(--canvas-shadow); }
+.pg-chart-wrap { height: 100%; display: flex; flex-direction: column; gap: 5px; padding: 12px; }
+.pg-chart-wrap > header { min-height: 24px; display: flex; align-items: center; gap: 8px; }
+.pg-chart-wrap > header strong { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 650; }
+.pg-chart-wrap > header > span { color: var(--canvas-text-2); font-size: 8px; text-transform: uppercase; letter-spacing: .08em; }
+.pg-chart-wrap > header button { flex: none; padding: 4px 7px; border: 1px solid var(--canvas-border); border-radius: 5px; color: var(--pg-brand-magenta); background: var(--canvas-panel); font-size: 9px; }
+.pg-chart-wrap > header button:hover { background: var(--pg-hover); }
+.pg-chart-graphic { display: block; width: 100%; height: 190px; overflow: visible; }
+.pg-chart-wrap .pg-chart-graphic { flex: 1; min-height: 0; height: auto; }
+.pg-chart-grid { stroke: var(--canvas-border, var(--pg-border)); stroke-width: 1; }
+.pg-chart-zero { stroke: var(--canvas-text-2, var(--pg-text-2)); stroke-width: 1; opacity: .7; }
+.pg-chart-value-label, .pg-chart-axis-label { fill: var(--canvas-text-2, var(--pg-text-2)); font-family: Inter, sans-serif; font-size: 8px; }
+.pg-chart-axis-label { font-size: 9px; }
+.pg-chart-bar { fill: #8020A2; transition: fill .14s ease, opacity .14s ease; }
+.pg-chart-bar:hover { fill: #CB289D; }
+.pg-chart-line { fill: none; stroke: #CB289D; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.pg-chart-area { fill: #CB289D; fill-opacity: .14; }
+.pg-chart-point { fill: var(--canvas-panel, var(--pg-panel)); stroke: #CB289D; stroke-width: 2; }
+.pg-chart-empty { flex: 1; min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--canvas-text-2, var(--pg-text-2)); text-align: center; }
+.pg-chart-empty svg { color: var(--pg-brand-magenta); opacity: .75; }
+.pg-chart-empty span { font-size: 12px; font-weight: 600; }
+.pg-chart-empty small { max-width: 210px; font-size: 9px; line-height: 1.5; }
+.pg-chart-editor { height: 100%; display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--canvas-panel); user-select: text; }
+.pg-chart-editor-head { display: flex; align-items: center; gap: 6px; }
+.pg-chart-editor-head input { min-width: 0; flex: 1; padding: 5px 6px; border: 0; border-bottom: 1px solid var(--canvas-border); outline: 0; background: transparent; font-size: 13px; font-weight: 650; }
+.pg-chart-editor-head button { display: flex; align-items: center; gap: 4px; padding: 5px 7px; border-radius: 5px; background: var(--pg-brand); color: white; font-size: 9px; }
+.pg-chart-type-label { display: flex; align-items: center; gap: 8px; color: var(--canvas-text-2); font-size: 9px; }
+.pg-chart-type-label select { flex: 1; padding: 5px 6px; border: 1px solid var(--canvas-border); border-radius: 5px; background: var(--canvas-panel); color: var(--canvas-text); font-size: 10px; }
+.pg-chart-data-head, .pg-chart-data-row { display: grid; grid-template-columns: minmax(0,1fr) 78px 24px; align-items: center; gap: 5px; }
+.pg-chart-data-head { padding: 0 2px; color: var(--canvas-text-2); font-size: 8px; text-transform: uppercase; letter-spacing: .06em; }
+.pg-chart-data-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+.pg-chart-data-row input { min-width: 0; width: 100%; padding: 5px 6px; border: 1px solid var(--canvas-border); border-radius: 5px; outline: 0; background: var(--pg-panel-soft); color: var(--canvas-text); font-size: 10px; }
+.pg-chart-data-row input:focus { border-color: var(--pg-brand-magenta); }
+.pg-chart-data-row button { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 5px; color: var(--canvas-text-2); }
+.pg-chart-data-row button:hover { background: #FDECEF; color: #C23B55; }
+.pg-chart-editor-empty { margin: auto; padding: 18px 8px; color: var(--canvas-text-2); text-align: center; font-size: 10px; line-height: 1.5; }
+.pg-chart-add-point { flex: none; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px; border: 1px dashed var(--canvas-border); border-radius: 6px; color: var(--pg-brand-magenta); font-size: 10px; }
+.pg-chart-add-point:hover { background: var(--pg-hover); }
+.pg-note-chart .pg-chart-graphic { height: 240px; margin-top: 12px; }
+.pg-note-chart .pg-chart-empty { min-height: 210px; }
+
 /* Floating, contextual controls */
 .pg-canvas-ui { user-select: none; }
 .pg-tool-rail { position: absolute; z-index: 25; right: 12px; top: 16px; display: flex; flex-direction: column; gap: 3px; padding: 5px; border: 1px solid var(--pg-border); border-radius: 11px; background: var(--pg-panel); box-shadow: var(--pg-shadow); }

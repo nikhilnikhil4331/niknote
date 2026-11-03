@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, Check, FileText, NotebookPen } from 'lucide-react';
 import { playgroundReadingOrder, type PlaygroundDocument, type PlaygroundObject } from '@/lib/playground';
+import { ChartGraphic } from './PlaygroundChart';
 
 interface Props {
   doc: PlaygroundDocument;
@@ -59,6 +60,15 @@ function PreviewSection({ object }: { object: PlaygroundObject }) {
         <ul className="pg-note-checklist">
           {(object.items || []).map((item) => <li key={item.id} className={item.done ? 'is-done' : ''}><span>{item.done && <Check size={12} />}</span>{item.text}</li>)}
         </ul>
+      </section>
+    );
+  }
+  if (object.kind === 'chart') {
+    return (
+      <section className="pg-note-section pg-note-chart" data-note-kind="chart">
+        <span className="pg-note-kind">Chart · canvas data</span>
+        <h2>{object.text || 'Untitled chart'}</h2>
+        <ChartGraphic data={object.chartData || []} type={object.chartType} title={object.text || 'Chart'} />
       </section>
     );
   }

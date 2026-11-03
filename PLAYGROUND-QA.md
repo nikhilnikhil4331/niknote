@@ -6,7 +6,7 @@ Date: 2026-11-03 (Asia/Calcutta)
 
 | Check | Result | Evidence |
 | --- | --- | --- |
-| Full regression suite | PASS | 43 test files, 719 tests passed |
+| Full regression suite | PASS | 44 test files, 724 tests passed |
 | TypeScript | PASS | `npm run typecheck` |
 | Playground change-set ESLint | PASS | Playground components, hooks, helpers and tests report no errors or warnings |
 | Production build | PASS | Vite build + 35 prerendered route HTML files |
@@ -32,7 +32,7 @@ Date: 2026-11-03 (Asia/Calcutta)
 | 13 | Documents and canvas objects can reference each other | PASS | Live Notes Preview, Notes Taking handoff/return links and reverse note-to-canvas import tests pass without overwriting work. |
 | 14 | Mobile layout works without overflow | PASS | 390px composed smoke test verifies the same canvas-list/library controls with no separate Playground mobile navigation; page/canvas containers use bounded overflow layouts. |
 | 15 | No major browser console errors remain | PASS | Playground composed and interaction tests complete without runtime errors; production build and route startup pass. Existing unrelated suites retain their offline/test-environment warnings. |
-| 16 | Existing NikNote features continue working | PASS | Full 719-test regression suite and production build pass. |
+| 16 | Existing NikNote features continue working | PASS | Full 724-test regression suite and production build pass. |
 
 ## Zoom, writing and Notes Taking stability follow-up
 
@@ -55,6 +55,16 @@ Date: 2026-11-03 (Asia/Calcutta)
 - Double-clicking empty canvas space opens an immediately focused text editor at that point.
 - Selection and button feedback has restrained transitions, disabled by the existing reduced-motion preference.
 - Regression coverage verifies reference stability, nested undo safety, double-click writing, aggressive wheel input and zoom limits.
+
+## Editable plugin blocks and attachments
+
+- The chart plugin creates real bar, line and area graphics from user-entered labels and numeric values; empty charts show an honest data-entry state.
+- Chart title, type and data points are editable, including add/remove and negative values; no statistics are fabricated.
+- Charts persist locally/cloud through the existing playground document, survive reload, participate in undo and duplicate with the canvas.
+- The same actual chart data appears in Notes Preview, Notes Taking text handoff and self-contained SVG export.
+- Chart blocks can be inserted from the quick bar/library or dragged to an exact canvas point.
+- Existing notes remain reusable note-link attachments; both click insertion and drag/drop preserve a return link to the current canvas.
+- Writing, sticky, code, checklist, table, image, link, drawing and workflow blocks remain available in the same modular library.
 
 ## Honest workflow/AI behavior
 

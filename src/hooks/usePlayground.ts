@@ -50,6 +50,7 @@ function objectDraft(object: PlaygroundObject): PlaygroundObject {
     ...object,
     items: object.items?.map((item) => ({ ...item })),
     rows: object.rows?.map((row) => [...row]),
+    chartData: object.chartData?.map((datum) => ({ ...datum })),
     points: object.points?.map((point) => ({ ...point })),
   };
 }

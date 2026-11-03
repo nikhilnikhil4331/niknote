@@ -2,7 +2,7 @@ import React, {
   forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState,
 } from 'react';
 import {
-  ArrowDownToLine, ArrowUpToLine, Check, ChevronDown, Code2, Copy, Download,
+  ArrowDownToLine, ArrowUpToLine, BarChart3, Check, ChevronDown, Code2, Copy, Download,
   Expand, FileJson, Grid3X3, Group, Hand, Image as ImageIcon, Layers,
   Lock, Map, Maximize2, Minus, MousePointer2, Plus, Redo2, RotateCw,
   Shapes, StickyNote, Table2, Trash2, Type, Undo2, Unlock, Workflow, X,
@@ -33,14 +33,16 @@ import {
   type PlaygroundViewport,
   type Rect,
 } from '@/lib/playground';
+import { chartSvgMarkup } from '@/lib/playgroundChart';
 import { PlaygroundObjectView } from './PlaygroundObjectView';
 import { PlaygroundConnections } from './PlaygroundConnections';
 import { ContextToolbar } from './ContextToolbar';
 import { Minimap } from './Minimap';
 
 export interface PlaygroundCanvasHandle {
-  addBlock: (kind: PlaygroundBlockKind, overrides?: Partial<PlaygroundObject>) => void;
+  addBlock: (kind: PlaygroundBlockKind, overrides?: Partial<PlaygroundObject>) => string;
   writeText: (overrides?: Partial<PlaygroundObject>) => void;
+  editObject: (id: string) => void;
   openImagePicker: () => void;
   setTool: (tool: PlaygroundTool) => void;
   focusObject: (id: string) => void;
@@ -216,14 +218,20 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
     startEditing(id);
   }, [addBlock, startEditing]);
 
+  const addChart = useCallback((overrides: Partial<PlaygroundObject> = {}, at?: { x: number; y: number }) => {
+    const id = addBlock('chart', overrides, at);
+    startEditing(id);
+  }, [addBlock, startEditing]);
+
   useImperativeHandle(ref, () => ({
-    addBlock: (kind, overrides) => { addBlock(kind, overrides); },
+    addBlock: (kind, overrides) => addBlock(kind, overrides),
     writeText: (overrides) => { writeText(overrides); },
+    editObject: (id) => startEditing(id),
     openImagePicker: () => imageInputRef.current?.click(),
     setTool: (next) => setToolState(next),
     focusObject,
     fit,
-  }), [addBlock, writeText, focusObject, fit]);
+  }), [addBlock, writeText, startEditing, focusObject, fit]);
 
   const patchObject = useCallback((id: string, patch: Partial<PlaygroundObject>, record = true) => {
     apply((draft) => {
@@ -668,6 +676,7 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
       ...orderedObjects.map((object) => {
         const common = `transform="rotate(${object.rotation} ${object.x + object.width / 2} ${object.y + object.height / 2})" opacity="${object.opacity ?? 1}"`;
         if (object.kind === 'image' && object.src) return `<image href="${object.src}" x="${object.x}" y="${object.y}" width="${object.width}" height="${object.height}" preserveAspectRatio="xMidYMid slice" ${common}/>`;
+        if (object.kind === 'chart') return `<g ${common}>${chartSvgMarkup({ x: object.x, y: object.y, width: object.width, height: object.height, title: object.text, data: object.chartData, type: object.chartType, dark: doc.theme === 'dark' })}</g>`;
         if (object.kind === 'shape') return `<rect x="${object.x}" y="${object.y}" width="${object.width}" height="${object.height}" rx="${object.shape === 'circle' ? object.width / 2 : object.radius || 4}" fill="${object.background || '#EEE7F5'}" stroke="${object.borderColor || '#8020A2'}" ${common}/>`;
         if (object.kind === 'drawing') return `<path d="${(object.points || []).map((point, index) => `${index ? 'L' : 'M'} ${object.x + point.x} ${object.y + point.y}`).join(' ')}" fill="none" stroke="${object.color || '#8020A2'}" stroke-width="${object.strokeWidth || 3}" stroke-linecap="round" stroke-linejoin="round"/>`;
         if (object.kind === 'divider') return `<line x1="${object.x}" y1="${object.y + object.height / 2}" x2="${object.x + object.width}" y2="${object.y + object.height / 2}" stroke="#B8AEBD"/>`;
@@ -709,7 +718,11 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
         if (!raw) return;
         try {
           const spec = JSON.parse(raw) as { kind: PlaygroundBlockKind; overrides?: Partial<PlaygroundObject> };
-          addBlock(spec.kind, spec.overrides, worldPoint(event));
+          const overrides = spec.kind === 'link' && spec.overrides?.href?.includes('editor=1')
+            ? { ...spec.overrides, href: `${spec.overrides.href}&canvas=${encodeURIComponent(doc.id)}` }
+            : spec.overrides;
+          if (spec.kind === 'chart') addChart(overrides, worldPoint(event));
+          else addBlock(spec.kind, overrides, worldPoint(event));
         } catch { /* external drag data is ignored */ }
       }}
       style={{
@@ -812,6 +825,7 @@ export const PlaygroundCanvas = forwardRef<PlaygroundCanvasHandle, Props>(functi
         <button onClick={() => addBlock('node')} title="Workflow node"><Workflow size={16} /></button>
         <button onClick={() => addBlock('sticky')} title="Sticky note"><StickyNote size={16} /></button>
         <button onClick={() => setToolState('pen')} title="Draw"><PenLine size={16} /></button>
+        <button onClick={() => addChart()} title="Editable chart"><BarChart3 size={16} /></button>
         <button onClick={onToggleLibrary} className={libraryOpen ? 'is-active' : ''} title="More blocks"><MoreHorizontal size={17} /></button>
       </div>
 

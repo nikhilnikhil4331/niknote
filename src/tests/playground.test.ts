@@ -114,11 +114,17 @@ describe('infinite playground model', () => {
     });
     const first = createPlaygroundObject('heading', 0, 0, { text: 'Study plan' });
     const middle = createPlaygroundObject('text', 0, 120, { text: 'Actual canvas writing' });
-    doc.objects = [later, middle, first];
+    const chart = createPlaygroundObject('chart', 0, 200, {
+      text: 'Real chart data',
+      chartData: [{ id: 'math', label: 'Math', value: 8 }],
+    });
+    doc.objects = [later, middle, chart, first];
     const handoff = playgroundToNoteText(doc, 'https://niknote.test/playground?id=canvas-1');
     expect(handoff.indexOf('## Study plan')).toBeLessThan(handoff.indexOf('Actual canvas writing'));
     expect(handoff.indexOf('Actual canvas writing')).toBeLessThan(handoff.indexOf('### Tasks'));
     expect(handoff).toContain('[x] Review evidence');
+    expect(handoff).toContain('### Real chart data');
+    expect(handoff).toContain('Math | 8');
     expect(handoff).toContain('Canvas reference: https://niknote.test/playground?id=canvas-1');
   });
 });

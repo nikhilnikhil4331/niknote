@@ -1,5 +1,11 @@
 // Pure, serialisable model for the NikNote infinite playground.
 // React, pointer gestures and persistence deliberately live outside this file.
+import {
+  normalizeChartData,
+  normalizeChartType,
+  type PlaygroundChartDatum,
+  type PlaygroundChartType,
+} from './playgroundChart';
 
 export type PlaygroundTheme = 'light' | 'dark';
 export type PlaygroundTool = 'select' | 'pan' | 'text' | 'pen' | 'connect';
@@ -13,6 +19,7 @@ export type PlaygroundBlockKind =
   | 'node'
   | 'code'
   | 'table'
+  | 'chart'
   | 'divider'
   | 'drawing'
   | 'link';
@@ -59,6 +66,8 @@ export interface PlaygroundObject {
   href?: string;
   items?: PlaygroundTodo[];
   rows?: string[][];
+  chartType?: PlaygroundChartType;
+  chartData?: PlaygroundChartDatum[];
   points?: PlaygroundPoint[];
   strokeWidth?: number;
   nodeCategory?: 'Input' | 'Data' | 'AI' | 'Logic' | 'Processing' | 'Output' | 'Integration';
@@ -152,6 +161,7 @@ const DEFAULT_SIZES: Partial<Record<PlaygroundBlockKind, [number, number]>> = {
   node: [210, 124],
   code: [380, 210],
   table: [420, 190],
+  chart: [440, 300],
   divider: [360, 24],
   drawing: [180, 140],
   link: [300, 110],
@@ -221,6 +231,11 @@ export function createPlaygroundObject(
       ['Research', '', 'Not started'],
       ['Prototype', '', 'Not started'],
     ];
+  }
+  if (kind === 'chart') {
+    base.text = 'Untitled chart';
+    base.chartType = 'bar';
+    base.chartData = [];
   }
   if (kind === 'link') {
     base.text = 'Useful link';
@@ -303,6 +318,10 @@ export function normalizePlayground(raw: unknown, fallbackId?: string): Playgrou
         height: Math.max(8, finite(o.height, 120)),
         rotation: finite(o.rotation, 0),
         z: finite(o.z, index + 1),
+        ...(o.kind === 'chart' ? {
+          chartType: normalizeChartType(o.chartType),
+          chartData: normalizeChartData(o.chartData),
+        } : {}),
       }))
     : [];
   const objectIds = new Set(objects.map((o) => o.id));
@@ -483,6 +502,9 @@ export function playgroundToNoteText(doc: PlaygroundDocument, canvasUrl?: string
     else if (object.kind === 'todo') {
       const items = (object.items || []).map((item) => `${item.done ? '[x]' : '[]'} ${item.text}`);
       if (text || items.length) sections.push([text ? `### ${text}` : '', ...items].filter(Boolean).join('\n'));
+    } else if (object.kind === 'chart') {
+      const rows = (object.chartData || []).map((datum) => `${datum.label} | ${datum.value}`);
+      if (text || rows.length) sections.push([text ? `### ${text}` : '', 'Label | Value', ...rows].filter(Boolean).join('\n'));
     } else if (object.kind === 'table') {
       const rows = (object.rows || []).map((row) => row.join(' | '));
       if (text || rows.length) sections.push([text ? `### ${text}` : '', ...rows].filter(Boolean).join('\n'));

@@ -40,6 +40,8 @@ saare features dono jagah same rehte hain. (PHP use nahi hota — jaan-boojh kar
 - Live Notes Preview plus two-way Notes Taking handoff: edit canvas content in the real note editor, or import the current note into a new playground with return links
 - Lightweight viewport updates and memoized canvas layers keep pan/zoom smooth without repeatedly copying large image data
 - Double-click empty space to write; normalized wheel/trackpad zoom with clear 20%–250% limits
+- Editable bar, line and area chart plugin with real user data, negative-value geometry, Notes Preview/handoff and vector export
+- Click or drag existing-note attachments anywhere; return links point back to the current canvas
 - JSON backup and SVG export
 
 Visual connections are planning aids only. No execution status is shown unless a real configured backend runner completes.

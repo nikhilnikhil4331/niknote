@@ -111,19 +111,23 @@ describe('playground history and persistence', () => {
       draft.objects = [
         createPlaygroundObject('drawing', 10, 20, { id: 'draft-drawing', points: [{ x: 1, y: 2 }] }),
         createPlaygroundObject('text', 300, 200, { id: 'unchanged-text', text: 'Keep my reference' }),
+        createPlaygroundObject('chart', 500, 300, { id: 'draft-chart', chartData: [{ id: 'datum', label: 'Real value', value: 3 }] }),
       ];
     }));
     const before = result.current.doc;
     act(() => result.current.beginTransaction());
     act(() => result.current.apply((draft) => {
       draft.objects[0].points![0].x = 99;
+      draft.objects[2].chartData![0].value = 42;
     }, { record: false }));
 
     expect(result.current.doc.objects[0].points![0].x).toBe(99);
+    expect(result.current.doc.objects[2].chartData![0].value).toBe(42);
     expect(result.current.doc.objects[1]).toBe(before.objects[1]);
     act(() => { result.current.undo(); });
     expect(result.current.doc.objects[0].points![0].x).toBe(1);
     expect(result.current.doc.objects[1].text).toBe('Keep my reference');
+    expect(result.current.doc.objects[2].chartData![0].value).toBe(3);
   });
 
   it('restores content, object geometry, connections and theme after a reload', async () => {
@@ -136,7 +140,13 @@ describe('playground history and persistence', () => {
       draft.theme = 'dark';
       const from = createPlaygroundObject('node', 120, 180, { id: 'persist-from', width: 222, height: 111, rotation: 15 });
       const to = createPlaygroundObject('node', 500, 240, { id: 'persist-to' });
-      draft.objects = [from, to];
+      const chart = createPlaygroundObject('chart', 100, 420, {
+        id: 'persist-chart',
+        text: 'Saved chart',
+        chartType: 'area',
+        chartData: [{ id: 'saved-point', label: 'Actual', value: 11 }],
+      });
+      draft.objects = [from, to, chart];
       draft.edges = [{ id: 'persist-edge', from: from.id, to: to.id, label: 'feeds' }];
       draft.viewport = { x: -240, y: 90, zoom: 1.35 };
     }));
@@ -153,6 +163,11 @@ describe('playground history and persistence', () => {
     expect(second.result.current.doc.title).toBe('Persistent research');
     expect(second.result.current.doc.theme).toBe('dark');
     expect(second.result.current.doc.objects[0]).toMatchObject({ id: 'persist-from', x: 120, y: 180, width: 222, height: 111, rotation: 15 });
+    expect(second.result.current.doc.objects[2]).toMatchObject({
+      id: 'persist-chart',
+      chartType: 'area',
+      chartData: [{ id: 'saved-point', label: 'Actual', value: 11 }],
+    });
     expect(second.result.current.doc.edges[0]).toMatchObject({ id: 'persist-edge', label: 'feeds' });
     expect(second.result.current.doc.viewport).toEqual({ x: -240, y: 90, zoom: 1.35 });
   });

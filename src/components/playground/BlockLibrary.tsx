@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  Brain, CheckSquare, ChevronDown, ChevronRight, Code2, Database, FileText,
+  BarChart3, Brain, CheckSquare, ChevronDown, ChevronRight, Code2, Database, FileText,
   Heading1, Image, Lightbulb, Link2, List, ListOrdered, Minus, MousePointer2,
   PenLine, Quote, Search, Shapes, Sparkles, Square, Circle, Triangle, ArrowRight,
   StickyNote, Table2, Type, Workflow, X,
@@ -30,6 +30,7 @@ const PLAYGROUND_BLOCKS: BlockSpec[] = [
   { id: 'image', label: 'Upload image', category: 'Media', icon: Image, action: 'image' },
   { id: 'link', label: 'Link card', category: 'Media', icon: Link2, kind: 'link' },
   { id: 'table', label: 'Table', category: 'Productivity', icon: Table2, kind: 'table' },
+  { id: 'chart', label: 'Editable chart / graph', category: 'Productivity', icon: BarChart3, kind: 'chart' },
   { id: 'database', label: 'Data table', category: 'Productivity', icon: Database, kind: 'table', overrides: { text: 'Research database', rows: [['Idea', 'Owner', 'Status'], ['', '', 'Not started'], ['', '', 'Not started']] } },
   { id: 'sticky', label: 'Sticky note', category: 'Creative', icon: StickyNote, kind: 'sticky' },
   { id: 'rectangle', label: 'Rectangle', category: 'Creative', icon: Square, kind: 'shape', overrides: { shape: 'rectangle' } },
@@ -57,7 +58,7 @@ interface Props {
 
 export function BlockLibrary({ notes = [], onAdd, onImage, onPen, onAI, onClose }: Props) {
   const [query, setQuery] = useState('');
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['Basic', 'Creative', 'Workflow']));
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['Basic', 'Productivity', 'Notes', 'Creative', 'Workflow']));
   const [recent, setRecent] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem('niknote.playground.recentBlocks') || '[]'); } catch { return []; }
   });
@@ -130,7 +131,7 @@ export function BlockLibrary({ notes = [], onAdd, onImage, onPen, onAI, onClose 
           <div className="pg-library-empty"><FileText size={24} /><p>No blocks match “{query}”.</p></div>
         )}
       </div>
-      <p className="pg-library-hint">Click to insert · drag onto the canvas</p>
+      <p className="pg-library-hint">Click or drag anywhere · double-click blocks to edit</p>
     </aside>
   );
 }

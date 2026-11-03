@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Check, Plus, RotateCw } from 'lucide-react';
 import type { PlaygroundObject, PlaygroundTodo } from '@/lib/playground';
+import { PlaygroundChart } from './PlaygroundChart';
 
 interface Props {
   object: PlaygroundObject;
@@ -175,6 +176,7 @@ export const PlaygroundObjectView = React.memo(function PlaygroundObjectView({
         </div>
       )}
 
+      {object.kind === 'chart' && <PlaygroundChart object={object} selected={selected} editing={editing} onPatch={onPatch} onEdit={onEdit} />}
       {object.kind === 'shape' && <Shape object={object} />}
       {object.kind === 'drawing' && <Drawing object={object} />}
       {object.kind === 'image' && (

@@ -192,6 +192,44 @@ describe('playground canvas interactions', () => {
     expect(screen.getByLabelText('Zoom out')).toBeEnabled();
   });
 
+  it('creates and edits a real chart with user-provided data', () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByTitle('Editable chart'));
+    expect(screen.getByText('Add a data point to build your real chart.')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Chart title'), { target: { value: 'Study hours' } });
+    fireEvent.change(screen.getByLabelText('Chart type'), { target: { value: 'line' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add data point' }));
+    fireEvent.change(screen.getByLabelText('Chart label 1'), { target: { value: 'Math' } });
+    fireEvent.change(screen.getByLabelText('Chart value 1'), { target: { value: '8' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+
+    expect(screen.getByLabelText('Study hours, line chart with 1 data point')).toBeInTheDocument();
+    expect(screen.getByText('Math: 8')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Edit data' }));
+    expect(screen.getByLabelText('Chart label 1')).toHaveValue('Math');
+    expect(screen.getByLabelText('Chart value 1')).toHaveValue(8);
+  });
+
+  it('drags a real note attachment anywhere and preserves its canvas return link', () => {
+    const doc = emptyPlayground('Attachment target');
+    const { container } = render(<Harness initialDoc={doc} />);
+    const canvas = container.querySelector('.pg-canvas')!;
+    const drop = new MouseEvent('drop', { bubbles: true, clientX: 360, clientY: 240 });
+    Object.defineProperty(drop, 'dataTransfer', {
+      value: {
+        getData: () => JSON.stringify({
+          kind: 'link',
+          overrides: { text: 'Research note', href: '/?editor=1&notebook=note-7' },
+        }),
+      },
+    });
+    fireEvent(canvas, drop);
+
+    const link = screen.getByRole('link', { name: /Research note/ });
+    expect(link).toHaveAttribute('href', `/?editor=1&notebook=note-7&canvas=${doc.id}`);
+  });
+
   it('drags, resizes and rotates an image object', () => {
     const doc = emptyPlayground('Image test');
     doc.objects = [createPlaygroundObject('image', 40, 60, {

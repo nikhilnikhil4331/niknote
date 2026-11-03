@@ -201,7 +201,10 @@ export default function PlaygroundPage() {
                   ? { ...overrides, href: `${overrides.href}&canvas=${encodeURIComponent(playground.doc.id)}` }
                   : overrides;
                 if (kind === 'text') canvasRef.current?.writeText(linkedOverrides);
-                else canvasRef.current?.addBlock(kind, linkedOverrides);
+                else {
+                  const id = canvasRef.current?.addBlock(kind, linkedOverrides);
+                  if (kind === 'chart' && id) canvasRef.current?.editObject(id);
+                }
                 if (window.innerWidth < 700) setLibraryOpen(false);
               }}
               onImage={() => canvasRef.current?.openImagePicker()}
