@@ -2,6 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles, Play, MessageCircle, BookOpen, Brain, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { FloatingDoodles } from '@/components/brand/motion';
+import { Notebook, Pencil } from '@/components/brand/illustrations';
 
 interface HeroSectionProps {
   onStartWriting: () => void;
@@ -24,22 +26,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       {/* Ambient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-primary/5" />
 
-      {/* Floating Orbs */}
-      <motion.div
-        className="absolute top-20 left-[10%] w-72 h-72 bg-primary/10 rounded-full blur-3xl"
-        animate={{ y: [0, 30, 0], scale: [1, 1.1, 1] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute bottom-20 right-[10%] w-96 h-96 bg-accent/10 rounded-full blur-3xl"
-        animate={{ y: [0, -40, 0], scale: [1, 1.15, 1] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl"
-        animate={{ scale: [1, 1.2, 1] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-      />
+      {/* Brand ambience: floating doodles + paper illustrations */}
+      <FloatingDoodles count={6} />
+      <Notebook className="nn-float absolute left-[6%] top-[18%] hidden h-24 w-24 lg:block" />
+      <Pencil className="nn-float absolute right-[7%] bottom-[20%] hidden h-24 w-24 lg:block" />
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 lg:px-6">
@@ -69,11 +59,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6"
+            className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight mb-6"
           >
             <span className="text-foreground">AI Notes + Handwriting</span>
             <br />
-            <span className="bg-gradient-to-r from-primary via-blue-500 to-accent bg-clip-text text-transparent">
+            <span className="inline-block -rotate-1 rounded-lg bg-[hsl(var(--brand-yellow))] px-3 text-[hsl(var(--brand-ink))]">
               Made for Bharat
             </span>
             <br />
