@@ -9,6 +9,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   PenLine, Zap, CheckSquare, LayoutTemplate, FileUp, Sparkles, ScanLine,
   Plus, Check, Flame, NotebookPen, Search, LayoutGrid, List, Star, Pin,
@@ -17,6 +18,7 @@ import {
 import { DesktopShell } from '@/components/desktop/DesktopShell';
 import { NoteCard, SectionHeader } from '@/components/desktop/widgets';
 import { RightRail } from '@/components/desktop/RightRail';
+import { NikoBuddy } from '@/components/desktop/NikoBuddy';
 import { ProductivityOverview } from '@/components/desktop/analytics/ProductivityOverview';
 import { FocusInsights } from '@/components/desktop/analytics/FocusInsights';
 import { useDesktopNotes, SAMPLE_NOTES, type DNote } from '@/components/desktop/notes';
@@ -30,6 +32,7 @@ import { useStreak } from '@/hooks/useStreak';
 import { usePremiumContext } from '@/contexts/PremiumContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { duration, ease, spring, staggerDelay } from '@/lib/motion';
 
 type NotesTab = 'all' | 'quick' | 'pinned' | 'recent' | 'favorites';
 
@@ -59,15 +62,17 @@ const DesktopHome: React.FC = () => {
   const { isFav, toggleFav, isPinned, togglePinned } = useNoteMeta();
   const { habits } = useDesktopHabits();
   const { streak } = useStreak();
+  const reduceMotion = useReducedMotion();
   
   // ---------- greeting + hero ----------
   const greet = greeting();
   const dateLine = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const [quoteIdx, setQuoteIdx] = useState(0);
   useEffect(() => {
+    if (reduceMotion) return;
     const id = window.setInterval(() => setQuoteIdx((i) => (i + 1) % HERO_QUOTES.length), 9000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [reduceMotion]);
 
   // ---------- heroic badges (all real) ----------
   const localStreak = useMemo(() => {
@@ -139,14 +144,39 @@ const DesktopHome: React.FC = () => {
   const [taskTag, setTaskTag] = useState<string>(TASK_TAGS[0].name);
   const [taskTime, setTaskTime] = useState('');
   const taskTitleRef = useRef<HTMLInputElement>(null);
+  const [buddyMoment, setBuddyMoment] = useState<'task' | 'poke' | null>(null);
+  const buddyTimerRef = useRef<number | null>(null);
   useEffect(() => {
     if (taskModalOpen) window.setTimeout(() => taskTitleRef.current?.focus(), 60);
   }, [taskModalOpen]);
+  useEffect(() => () => {
+    if (buddyTimerRef.current !== null) window.clearTimeout(buddyTimerRef.current);
+  }, []);
+
+  const celebrateBuddy = (moment: 'task' | 'poke') => {
+    if (buddyTimerRef.current !== null) window.clearTimeout(buddyTimerRef.current);
+    setBuddyMoment(moment);
+    buddyTimerRef.current = window.setTimeout(() => {
+      setBuddyMoment(null);
+      buddyTimerRef.current = null;
+    }, 2400);
+  };
+  const buddyState = buddyMoment ? 'celebrating' : loading ? 'working' : taskModalOpen ? 'listening' : 'idle';
+  const buddyLabel = buddyMoment === 'task'
+    ? 'Task added — Niko is celebrating with you!'
+    : buddyMoment === 'poke'
+      ? 'Niko says hi — ready for your next idea!'
+      : loading
+        ? 'Niko is loading your notes…'
+        : taskModalOpen
+          ? 'Niko is listening for your next task.'
+          : 'Niko is ready for your next idea.';
 
   const submitNewTask = () => {
     const title = taskTitle.trim();
     if (!title) return;
     addTask(title, 'todo', today, { tag: taskTag, time: taskTime || undefined });
+    celebrateBuddy('task');
     toast.success(`Task added to today: “${title}”`);
     setTaskTitle('');
     setTaskTime('');
@@ -286,9 +316,21 @@ const DesktopHome: React.FC = () => {
                     <span style={{ color: 'var(--nd-brand-deep)' }}>{displayName}</span>{' '}
                     <span aria-hidden>{greet.emoji}</span>
                   </h1>
-                  <p className="mt-2 text-[13.5px] font-semibold italic transition-opacity duration-500" style={{ color: 'var(--nd-ink-2)' }} key={quoteIdx}>
-                    “{HERO_QUOTES[quoteIdx]}”
-                  </p>
+                  <div className="relative mt-2 min-h-[21px]">
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.p
+                        className="m-0 text-[13.5px] font-semibold italic"
+                        style={{ color: 'var(--nd-ink-2)' }}
+                        key={quoteIdx}
+                        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 7 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -5 }}
+                        transition={reduceMotion ? { duration: 0.01 } : { duration: duration.base, ease: ease.out }}
+                      >
+                        “{HERO_QUOTES[quoteIdx]}”
+                      </motion.p>
+                    </AnimatePresence>
+                  </div>
                   <p className="mt-1.5 text-[11.5px] font-semibold md:hidden" style={{ color: 'var(--nd-text-3)' }}>{dateLine}</p>
                   <div className="mt-3.5 flex items-center gap-2 flex-wrap">
                     <span className="nd-chip !bg-[#FFF3CF]" style={{ color: '#B87908' }} title="Consecutive active days">
@@ -302,58 +344,79 @@ const DesktopHome: React.FC = () => {
                     </span>
                   </div>
                 </div>
-                <div className="hidden sm:block absolute right-7 top-7 text-right select-none" aria-hidden>
-                  <div className="nd-hero-script text-[30px] md:text-[36px] leading-[1.05]">
+                <div className="nd-hero-companion">
+                  <div className="nd-hero-script hidden 2xl:block text-[25px] leading-[1.05] text-center select-none" aria-hidden>
                     Stay Focused ✦<br />Keep Growing
                   </div>
-                </div>
-                <div
-                  className="hidden sm:block absolute right-6 bottom-5 px-3.5 py-2 rounded-xl text-[12px] font-bold italic"
-                  style={{
-                    background: 'rgba(255,255,255,0.68)', backdropFilter: 'blur(6px)',
-                    color: 'var(--nd-brand-deep)', border: '1px solid rgba(255,255,255,0.8)',
-                  }}
-                >
-                  “Better Notes. Better You.”
+                  <NikoBuddy
+                    state={buddyState}
+                    label={buddyLabel}
+                    size={124}
+                    className="nd-hero-niko"
+                    onPoke={() => celebrateBuddy('poke')}
+                  />
                 </div>
               </div>
             </div>
 
             {/* ---------- quick actions ---------- */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 mt-4 nd-anim nd-anim-2">
-              {QUICK.map((q) => {
+            <motion.div
+              className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 mt-4"
+              initial={reduceMotion ? false : 'hidden'}
+              animate="show"
+            >
+              {QUICK.map((q, index) => {
                 const Icon = q.icon;
                 if (q.cta) {
                   return (
-                    <button key={q.label} className="nd-btn-cta !flex-col !items-start !gap-2 !p-3.5 !rounded-2xl text-left col-span-2 sm:col-span-1"
-                      onClick={q.onClick} title={`${q.label} — ${q.sub}`}>
-                      <span className="grid place-items-center rounded-xl w-9 h-9" style={{ background: 'rgba(255,255,255,0.22)' }}>
-                        <Icon size={17} />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="flex items-center gap-1 text-[13px] font-extrabold truncate">
-                          {q.label} <ChevronIc />
+                    <motion.div
+                      key={q.label}
+                      className="col-span-2 sm:col-span-1"
+                      custom={index}
+                      variants={{
+                        hidden: { opacity: 0, y: 14, scale: 0.97 },
+                        show: (i: number) => ({ opacity: 1, y: 0, scale: 1, transition: { duration: duration.base, delay: staggerDelay(i), ease: ease.out } }),
+                      }}
+                    >
+                      <button className="nd-btn-cta nd-motion-cta !flex-col !items-start !gap-2 !p-3.5 !rounded-2xl text-left w-full h-full"
+                        onClick={q.onClick} title={`${q.label} — ${q.sub}`}>
+                        <span className="nd-motion-icon grid place-items-center rounded-xl w-9 h-9" style={{ background: 'rgba(255,255,255,0.22)' }}>
+                          <Icon size={17} />
                         </span>
-                        <span className="block text-[10.5px] font-medium opacity-90 truncate">{q.sub}</span>
-                      </span>
-                    </button>
+                        <span className="min-w-0">
+                          <span className="flex items-center gap-1 text-[13px] font-extrabold truncate">
+                            {q.label} <ChevronIc />
+                          </span>
+                          <span className="block text-[10.5px] font-medium opacity-90 truncate">{q.sub}</span>
+                        </span>
+                      </button>
+                    </motion.div>
                   );
                 }
                 return (
-                  <button key={q.label} className="nd-quick !p-3" onClick={q.onClick} title={`${q.label} — ${q.sub}`}>
-                    <span className="grid">
-                      <span className="nd-quick-ic !w-9 !h-9 mx-auto" style={{ background: q.bg, color: q.fg }}>
-                        <Icon size={16} />
+                  <motion.div
+                    key={q.label}
+                    custom={index}
+                    variants={{
+                      hidden: { opacity: 0, y: 14, scale: 0.97 },
+                      show: (i: number) => ({ opacity: 1, y: 0, scale: 1, transition: { duration: duration.base, delay: staggerDelay(i), ease: ease.out } }),
+                    }}
+                  >
+                    <button className="nd-quick nd-motion-quick !p-3 h-full !flex-col !items-center !justify-center !gap-2 !text-center" onClick={q.onClick} title={`${q.label} — ${q.sub}`}>
+                      <span className="grid">
+                        <span className="nd-quick-ic nd-motion-icon !w-9 !h-9 mx-auto" style={{ background: q.bg, color: q.fg }}>
+                          <Icon size={16} />
+                        </span>
                       </span>
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block text-[12.5px] font-bold truncate" style={{ color: 'var(--nd-ink)' }}>{q.label}</span>
-                      <span className="block text-[10.5px] truncate" style={{ color: 'var(--nd-text-3)' }}>{q.sub}</span>
-                    </span>
-                  </button>
+                      <span className="min-w-0 w-full">
+                        <span className="flex items-center justify-center min-h-[29px] text-[12.5px] font-bold leading-[1.15]" style={{ color: 'var(--nd-ink)' }}>{q.label}</span>
+                        <span className="block text-[10.5px] truncate" style={{ color: 'var(--nd-text-3)' }}>{q.sub}</span>
+                      </span>
+                    </button>
+                  </motion.div>
                 );
               })}
-            </div>
+            </motion.div>
 
             {/* ---------- folder strip ---------- */}
             {folders.length > 0 && (
@@ -384,7 +447,7 @@ const DesktopHome: React.FC = () => {
                 <h2 className="text-[16px] font-extrabold tracking-[-0.01em] flex items-center gap-2" style={{ color: 'var(--nd-ink)' }}>
                   <NotebookPen size={17} style={{ color: 'var(--nd-brand-magenta)' }} /> My Notes
                 </h2>
-                <div className="nd-utabs" role="tablist" aria-label="Filter notes">
+                <div className={cn('nd-utabs', !reduceMotion && 'nd-motion-tabs')} role="tablist" aria-label="Filter notes">
                   {NOTES_TABS.map((t) => (
                     <button
                       key={t.id}
@@ -394,6 +457,9 @@ const DesktopHome: React.FC = () => {
                       onClick={() => setTab(t.id)}
                     >
                       {t.label}
+                      {tab === t.id && !reduceMotion && (
+                        <motion.span layoutId="home-notes-tab-underline" className="nd-tab-glider" transition={spring.snappy} aria-hidden />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -465,19 +531,30 @@ const DesktopHome: React.FC = () => {
               ) : (
                 <div className={cn(view === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5' : 'flex flex-col gap-2.5')}>
                   <CreateTile onClick={() => openNew()} compact={view === 'list'} />
-                  {shownNotes.map((n) => (
-                    <HomeNoteCard
-                      key={n.id}
-                      note={n}
-                      list={view === 'list'}
-                      fav={isFav(n.id)}
-                      pinned={isPinned(n.id)}
-                      onOpen={() => openNote(n)}
-                      onTogglePin={() => togglePinned(n.id)}
-                      onToggleFav={() => toggleFav(n.id)}
-                      onTrash={() => trashNote(n)}
-                    />
-                  ))}
+                  <AnimatePresence mode="popLayout" initial={!reduceMotion}>
+                    {shownNotes.map((n) => (
+                      <motion.div
+                        key={n.id}
+                        className="relative nd-note-motion"
+                        layout={!reduceMotion}
+                        initial={reduceMotion ? false : { opacity: 0, y: 12, scale: 0.985 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
+                        transition={reduceMotion ? { duration: 0.01 } : { duration: duration.base, ease: ease.out, layout: spring.gentle }}
+                      >
+                        <HomeNoteCard
+                          note={n}
+                          list={view === 'list'}
+                          fav={isFav(n.id)}
+                          pinned={isPinned(n.id)}
+                          onOpen={() => openNote(n)}
+                          onTogglePin={() => togglePinned(n.id)}
+                          onToggleFav={() => toggleFav(n.id)}
+                          onTrash={() => trashNote(n)}
+                        />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                   {filteredNotes.length > shownNotes.length && (
                     <button className="nd-btn-ghost justify-center" onClick={() => navigate(tab === 'favorites' ? '/notebooks' : `/notebooks`)}>
                       View all {filteredNotes.length} notes
@@ -509,9 +586,28 @@ const DesktopHome: React.FC = () => {
       </div>
 
       {/* ---------- New Task modal ---------- */}
-      {taskModalOpen && (
-        <div className="nd-modal-back" onClick={() => setTaskModalOpen(false)}>
-          <div className="nd-modal" role="dialog" aria-modal="true" aria-label="New task" onClick={(e) => e.stopPropagation()}>
+      <AnimatePresence>
+        {taskModalOpen && (
+          <motion.div
+            key="new-task-modal"
+            className="nd-modal-back"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0.01 : duration.fast }}
+            onClick={() => setTaskModalOpen(false)}
+          >
+            <motion.div
+              className="nd-modal nd-motion-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="New task"
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.98 }}
+              transition={reduceMotion ? { duration: 0.01 } : { duration: duration.base, ease: ease.out }}
+              onClick={(e) => e.stopPropagation()}
+            >
             <h3 className="text-[16px] font-extrabold mb-1" style={{ color: 'var(--nd-ink)' }}>New Task</h3>
             <p className="text-[12px] mb-4" style={{ color: 'var(--nd-text-3)' }}>Added to today&apos;s list — appears on Home, Tasks and the calendar.</p>
             <input
@@ -556,9 +652,10 @@ const DesktopHome: React.FC = () => {
                 <Check size={14} /> Add task
               </button>
             </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </DesktopShell>
   );
 };

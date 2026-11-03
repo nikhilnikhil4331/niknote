@@ -535,3 +535,69 @@
 @media (prefers-reduced-motion: reduce) {
   .nd-hero .nd-kenburns, .nd-dial-running .nd-dial-progress-glow, .nd-focus-live, .nd-complete-pop { animation: none; }
 }
+
+
+/* ============================================================
+   Niko + coordinated motion polish. Kept scoped to the desktop
+   workspace; Wobnimo handles canvas reduced motion internally.
+   ============================================================ */
+.nd-niko { display: flex; flex-direction: column; align-items: center; flex: none; min-width: 0; }
+.nd-niko-art { position: relative; flex: none; opacity: 1; transition: opacity .28s cubic-bezier(.22,1,.36,1); }
+.nd-niko-art.nd-niko-live { opacity: 0; }
+.nd-niko-art.nd-niko-live.nd-niko-ready { opacity: 1; }
+.nd-niko-fallback {
+  width: 100%; height: 100%; display: grid; place-items: center;
+  color: var(--nd-brand); background: linear-gradient(145deg, #fff, #f2e9ff 62%, #ffe9f5);
+  border: 1px solid rgba(128,32,162,.16); border-radius: 28%;
+  box-shadow: 0 9px 24px rgba(77,22,143,.12);
+}
+.nd-niko-compact .nd-niko-fallback { border-radius: 9px; box-shadow: none; }
+.nd-niko-label {
+  position: relative; z-index: 2; max-width: 176px; margin-top: -7px;
+  padding: 5px 9px; border: 1px solid rgba(255,255,255,.82); border-radius: 10px;
+  background: rgba(255,255,255,.76); backdrop-filter: blur(8px);
+  color: var(--nd-brand-deep); box-shadow: 0 5px 16px rgba(77,22,143,.09);
+  font-size: 10.5px; font-weight: 700; line-height: 1.25; text-align: center;
+}
+.nd-hero-companion {
+  position: absolute; z-index: 11; right: 18px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+  pointer-events: none;
+}
+.nd-hero-companion .nd-niko { pointer-events: auto; }
+.nd-hero-companion .nd-hero-script { color: rgba(255,255,255,.94); text-shadow: 0 2px 14px rgba(77,22,143,.32); }
+.nd-hero-niko .nd-niko-label { background: rgba(255,255,255,.84); }
+
+/* Quick-action entrance is handled by Framer Motion; CSS owns tactile feedback. */
+.nd-motion-quick, .nd-motion-cta { position: relative; overflow: hidden; isolation: isolate; }
+.nd-motion-quick::after, .nd-motion-cta::after {
+  content: ''; position: absolute; z-index: 0; top: -60%; bottom: -60%; left: -70%; width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.58), transparent);
+  transform: skewX(-18deg); transition: left .55s cubic-bezier(.22,1,.36,1); pointer-events: none;
+}
+.nd-motion-quick:hover::after, .nd-motion-cta:hover::after { left: 135%; }
+.nd-motion-quick > *, .nd-motion-cta > * { position: relative; z-index: 1; }
+.nd-motion-icon { transition: transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s ease; }
+.nd-motion-quick:hover .nd-motion-icon { transform: translateY(-2px) rotate(-5deg) scale(1.08); }
+.nd-motion-cta:hover .nd-motion-icon { transform: translateY(-2px) rotate(5deg) scale(1.08); }
+.nd-motion-quick:focus-visible, .nd-motion-cta:focus-visible { outline: 3px solid rgba(128,32,162,.28); outline-offset: 3px; }
+
+/* Sliding active-tab ink and layout-animated note cards. */
+.nd-motion-tabs button.nd-on::after { display: none; }
+.nd-tab-glider {
+  position: absolute; left: 11px; right: 11px; bottom: 2px; height: 2.5px;
+  border-radius: 99px; background: var(--nd-grad-brand); pointer-events: none;
+}
+.nd-note-motion { transform-origin: center; }
+.nd-motion-modal { animation: none; }
+.nd-create-plus { transition: transform .2s cubic-bezier(.22,1,.36,1), background .2s ease; }
+.nd-create-tile:hover .nd-create-plus { transform: scale(1.1) rotate(8deg); background: #fff; }
+.nd-create-tile:active .nd-create-plus { transform: scale(.96); }
+
+@media (prefers-reduced-motion: reduce) {
+  .nd-niko-art, .nd-motion-icon, .nd-create-plus,
+  .nd-motion-quick::after, .nd-motion-cta::after { transition: none; }
+  .nd-motion-quick::after, .nd-motion-cta::after { display: none; }
+  .nd-motion-quick:hover .nd-motion-icon, .nd-motion-cta:hover .nd-motion-icon,
+  .nd-create-tile:hover .nd-create-plus, .nd-create-tile:active .nd-create-plus { transform: none; }
+}

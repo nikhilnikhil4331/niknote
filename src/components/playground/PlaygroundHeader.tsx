@@ -7,6 +7,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import type { PlaygroundIndexEntry, PlaygroundObject, PlaygroundTheme } from '@/lib/playground';
 import type { PlaygroundSaveState } from '@/hooks/usePlayground';
+import { NikoBuddy } from '@/components/desktop/NikoBuddy';
 
 export type AppThemeMode = 'light' | 'dark' | 'system';
 
@@ -49,6 +50,29 @@ export function PlaygroundHeader(props: Props) {
   const initial = (user?.user_metadata?.full_name || user?.email || 'G').charAt(0).toUpperCase();
 
   const saveLabel = props.saveState === 'saving' ? 'Saving…' : props.saveState === 'synced' ? 'Cloud saved' : props.saveState === 'error' ? 'Save failed' : props.saveState === 'loading' ? 'Loading…' : 'Device saved';
+  const previousSaveState = useRef(props.saveState);
+  const [justSaved, setJustSaved] = useState(false);
+
+  useEffect(() => {
+    const previous = previousSaveState.current;
+    previousSaveState.current = props.saveState;
+    let timer: number | undefined;
+    if (previous === 'saving' && (props.saveState === 'synced' || props.saveState === 'local')) {
+      setJustSaved(true);
+      timer = window.setTimeout(() => setJustSaved(false), 2200);
+    } else if (props.saveState === 'saving' || props.saveState === 'loading' || props.saveState === 'error') {
+      setJustSaved(false);
+    }
+    return () => { if (timer !== undefined) window.clearTimeout(timer); };
+  }, [props.saveState]);
+
+  const nikoState = props.saveState === 'error'
+    ? 'error'
+    : props.saveState === 'saving' || props.saveState === 'loading'
+      ? 'working'
+      : justSaved
+        ? 'celebrating'
+        : 'idle';
 
   useEffect(() => {
     const focusSearch = (event: KeyboardEvent) => {
@@ -163,6 +187,7 @@ export function PlaygroundHeader(props: Props) {
         ))}
         <button className="pg-add-tab" onClick={props.onCreate} aria-label="New canvas tab"><Plus size={16} /></button>
         <div className={`pg-save-state is-${props.saveState}`} title={props.syncMessage || saveLabel}>
+          <NikoBuddy state={nikoState} label={`Niko: ${saveLabel}`} size={30} compact showLabel={false} className="pg-save-niko" />
           {props.saveState === 'saving' || props.saveState === 'loading' ? <Loader2 size={12} className="animate-spin" /> : props.saveState === 'synced' ? <Cloud size={12} /> : props.saveState === 'error' || props.syncMessage ? <CloudOff size={12} /> : <Check size={12} />}
           <span>{saveLabel}</span>
         </div>

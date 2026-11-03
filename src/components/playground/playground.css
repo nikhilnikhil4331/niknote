@@ -130,7 +130,8 @@
 .pg-open-tab > button:last-child:hover { background: var(--pg-hover); }
 .pg-tab-gradient-icon { font-size: 18px; line-height: 1; background: var(--pg-brand); color: transparent; background-clip: text; -webkit-background-clip: text; }
 .pg-add-tab { width: 32px; justify-content: center; }
-.pg-save-state { margin: auto 2px 7px auto; display: flex; align-items: center; gap: 5px; white-space: nowrap; color: var(--pg-text-3); font-size: 10px; }
+.pg-save-state { margin: auto 2px 7px auto; display: flex; align-items: center; gap: 5px; white-space: nowrap; color: var(--pg-text-3); font-size: 10px; transition: color .2s ease; }
+.pg-save-state .pg-save-niko { flex: none; margin: -5px 1px -4px -3px; }
 .pg-save-state.is-error { color: #D64550; }
 .pg-save-state.is-local { color: var(--pg-text-2); }
 .pg-save-state.is-synced { color: #29865D; }
@@ -542,7 +543,7 @@
   .pg-document-tabs-bar { padding: 0 7px; }
   .pg-mode-tab { display: none; }
   .pg-open-tab { max-width: 155px; }
-  .pg-save-state span { display: none; }
+  .pg-save-state > span { display: none; }
   .pg-sync-notice { top: 84px; font-size: 9px; }
   .pg-library { width: min(300px, 88vw); }
   .pg-tool-rail { right: 8px; top: 10px; padding: 4px; }

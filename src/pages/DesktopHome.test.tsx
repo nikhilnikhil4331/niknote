@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, act, cleanup, within } from '@testing-library/react';
+import { render, screen, fireEvent, act, cleanup, within, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 // ---- context/hook mocks: keep the test 100% local (guest mode) ----
@@ -97,6 +97,7 @@ describe('DesktopHome — redesigned dashboard (guest)', () => {
     // and it persisted to the shared task store
     const saved = JSON.parse(localStorage.getItem('niknote.desktop.tasks.v1') || '[]');
     expect(saved.some((t: { title: string }) => t.title === 'Revise physics formulas')).toBe(true);
+    expect(screen.getAllByText(/Niko is celebrating with you/i).length).toBeGreaterThan(0);
   });
 
   it('pinned notes float to the top of All Notes and appear in the Pinned tab', async () => {
@@ -125,6 +126,6 @@ describe('DesktopHome — redesigned dashboard (guest)', () => {
     const tabs = screen.getAllByRole('tab', { name: 'Pinned' });
     fireEvent.click(tabs[0]);
     expect(screen.getAllByText('Physics rotation').length).toBeGreaterThan(0);
-    expect(screen.queryAllByText('Exam plan').length).toBe(0);
+    await waitFor(() => expect(screen.queryAllByText('Exam plan').length).toBe(0));
   });
 });
