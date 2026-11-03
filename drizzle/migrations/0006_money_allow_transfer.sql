@@ -1,2 +1,0 @@
-ALTER TABLE public.money_transactions DROP CONSTRAINT money_transactions_kind_check;
-ALTER TABLE public.money_transactions ADD CONSTRAINT money_transactions_kind_check CHECK (kind = ANY (ARRAY['income'::text, 'expense'::text, 'transfer'::text]));
