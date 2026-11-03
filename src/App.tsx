@@ -98,6 +98,7 @@ const PageLoader = () => <NiknoteLoader />;
 
 import { registerServiceWorker } from "@/hooks/useServiceWorkerRegistration";
 import { checkReferral } from "@/utils/referral";
+import { BrandIntro } from "@/components/brand/motion";
 
 const queryClient = new QueryClient();
 
@@ -183,6 +184,7 @@ const App = () => {
 
   return (
     <ErrorBoundary>
+      <BrandIntro />
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <PremiumProvider>
