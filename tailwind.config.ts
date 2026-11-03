@@ -14,6 +14,20 @@ export default {
     },
     extend: {
       colors: {
+        brand: {
+
+            coral: 'hsl(var(--brand-coral))',
+            'coral-deep': 'hsl(var(--brand-coral-deep))',
+            blue: 'hsl(var(--brand-blue))',
+            'blue-deep': 'hsl(var(--brand-blue-deep))',
+            yellow: 'hsl(var(--brand-yellow))',
+            'yellow-deep': 'hsl(var(--brand-yellow-deep))',
+            cream: 'hsl(var(--brand-cream))',
+            ink: 'hsl(var(--brand-ink))',
+            'pink-wash': 'hsl(var(--brand-pink-wash))',
+            'blue-wash': 'hsl(var(--brand-blue-wash))',
+            'yellow-wash': 'hsl(var(--brand-yellow-wash))',
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -82,7 +96,8 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['"Lilita One"', 'Inter', 'system-ui', 'sans-serif'],
+        brand: ['"Lilita One"', 'Inter', 'system-ui', 'sans-serif'],
         handwriting: {
           1: ['Caveat', 'cursive'],
           2: ['Kalam', 'cursive'],

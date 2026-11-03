@@ -1,0 +1,122 @@
+/* NikNote brand layer — coral/blue/yellow/cream identity.
+   Unlayered on purpose: these overrides win over index.css @layer base tokens
+   without touching that file. Editor ink colours (--ink-*) are user pen inks
+   and are deliberately NOT overridden. */
+
+:root {
+  /* brand palette */
+  --brand-coral: 355 100% 76%;
+  --brand-coral-deep: 354 85% 66%;
+  --brand-blue: 216 86% 57%;
+  --brand-blue-deep: 216 80% 48%;
+  --brand-yellow: 50 100% 68%;
+  --brand-yellow-deep: 47 91% 55%;
+  --brand-cream: 48 100% 98%;
+  --brand-ink: 0 10% 8%;
+  --brand-pink-wash: 0 100% 97%;
+  --brand-blue-wash: 219 100% 97%;
+  --brand-yellow-wash: 50 100% 93%;
+
+  /* chrome tokens, light */
+  --background: 48 100% 98%;
+  --foreground: 0 10% 8%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 10% 8%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 10% 8%;
+  --primary: 216 80% 48%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 40 30% 95%;
+  --secondary-foreground: 0 10% 8%;
+  --muted: 40 25% 93%;
+  --muted-foreground: 33 6% 40%;
+  --accent: 355 100% 76%;
+  --accent-foreground: 0 10% 8%;
+  --border: 35 20% 86%;
+  --input: 35 20% 82%;
+  --ring: 216 86% 57%;
+  --paper: 48 60% 96%;
+  --paper-ruled: 48 55% 93%;
+}
+
+/* Dark theme: warm ink black with the same brand hues, adjusted — not inverted. */
+.dark {
+  --background: 0 12% 7%;
+  --foreground: 48 60% 96%;
+  --card: 0 10% 10%;
+  --card-foreground: 48 60% 96%;
+  --popover: 0 10% 10%;
+  --popover-foreground: 48 60% 96%;
+  --primary: 216 90% 64%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 8% 14%;
+  --secondary-foreground: 48 60% 96%;
+  --muted: 0 8% 16%;
+  --muted-foreground: 35 10% 70%;
+  --accent: 355 85% 70%;
+  --accent-foreground: 0 10% 8%;
+  --border: 0 8% 20%;
+  --input: 0 8% 24%;
+  --ring: 216 90% 64%;
+  --paper: 0 10% 9%;
+  --paper-ruled: 0 10% 8%;
+  --brand-cream: 0 10% 9%;
+}
+
+/* ---- brand surfaces & print-style components ---- */
+.nn-card {
+  background: hsl(var(--card));
+  border: 2px solid hsl(var(--brand-ink));
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 hsl(var(--brand-ink) / 0.9);
+}
+.dark .nn-card {
+  border-color: hsl(var(--foreground) / 0.7);
+  box-shadow: 4px 4px 0 hsl(0 0% 0% / 0.6);
+}
+.nn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 999px;
+  border: 2px solid hsl(var(--brand-ink));
+  background: hsl(var(--brand-yellow));
+  color: hsl(var(--brand-ink));
+  padding: 0.125rem 0.75rem;
+  font-weight: 700;
+}
+.nn-ruled {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 27px,
+    hsl(var(--brand-blue) / 0.18) 27px,
+    hsl(var(--brand-blue) / 0.18) 28px
+  );
+}
+.nn-press { transition: transform 120ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+.nn-press:hover { transform: scale(1.03); }
+.nn-press:active { transform: scale(0.96); }
+
+/* ---- signature motion ---- */
+@keyframes nn-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes nn-bob { 0%, 100% { transform: translateY(0) rotate(var(--nn-rot, 0deg)); } 50% { transform: translateY(-3px) rotate(var(--nn-rot, 0deg)); } }
+@keyframes nn-pop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes nn-sparkle { 0% { transform: rotate(-20deg) scale(0.4); opacity: 0; } 60% { transform: rotate(8deg) scale(1.1); opacity: 1; } 100% { transform: rotate(0deg) scale(1); opacity: 1; } }
+@keyframes nn-wiggle { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+@keyframes nn-draw { to { stroke-dashoffset: 0; } }
+
+.nn-float { animation: nn-float 6s ease-in-out infinite; }
+.nn-bob { animation: nn-bob 3s ease-in-out infinite; }
+.nn-pop { animation: nn-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.nn-sparkle { animation: nn-sparkle 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.nn-wiggle { animation: nn-wiggle 2.4s ease-in-out infinite; }
+.nn-draw { stroke-dasharray: 400; stroke-dashoffset: 400; animation: nn-draw 900ms ease-out forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nn-float, .nn-bob, .nn-pop, .nn-sparkle, .nn-wiggle, .nn-draw, .nn-press {
+    animation: none !important;
+    transition: none !important;
+  }
+  .nn-draw { stroke-dashoffset: 0; }
+}

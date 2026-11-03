@@ -1,6 +1,8 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import "@fontsource/lilita-one";
+import "./brand/brand.css";
 
 // Ensure any legacy cached service workers (< v8.1.0) update & purge stale bundles immediately
 const ACTIVE_SW_RELEASE = 'v8.1.0';
