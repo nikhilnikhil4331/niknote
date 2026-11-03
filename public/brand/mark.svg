@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="NikNote mark">
+  <circle cx="64" cy="64" r="60" fill="#FF858F"/>
+  <path d="M38 46 L84 40 L90 92 L44 98 Z" fill="#FFFDF5" stroke="#171313" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M48 74 C52 62 56 62 58 70 C60 78 64 78 66 68 C68 58 72 58 74 66" fill="none" stroke="#347FF0" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="52" cy="86" r="4" fill="#171313"/>
+  <rect x="60" y="83" width="15" height="5" rx="2.5" fill="#171313"/>
+  <path d="M92 10 Q96 32 118 36 Q96 40 92 62 Q88 40 66 36 Q88 32 92 10 Z" fill="#FFE45C" stroke="#171313" stroke-width="4" stroke-linejoin="round"/>
+</svg>
