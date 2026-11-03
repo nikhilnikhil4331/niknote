@@ -52,6 +52,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { AstaMarkdown } from '@/components/asta/AstaMarkdown';
+import { AgentWorkflows } from './AgentWorkflows';
 import {
   streamAstaAI,
   readCustomAIKeys,
@@ -1462,6 +1463,8 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             )}
           </div>
         </header>
+
+        <AgentWorkflows />
 
         {/* Scrollable Center Stage */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-8 flex flex-col">
