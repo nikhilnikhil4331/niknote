@@ -278,7 +278,7 @@ const Index = () => {
             .insert({
               user_id: user.id,
               title: noteTitle || 'PC Notebook',
-              cover_color: '#7c3aed',
+              cover_color: '#2869d5',
               page_style: settings.pageStyle,
               page_size: settings.pageSize,
               tags: ['PC Studio'],
@@ -1154,11 +1154,11 @@ const Index = () => {
                 <button
                   onClick={() => navigate('/ai')}
                   data-testid="mobile-open-nikai-btn"
-                  className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-white border border-purple-200/90 shadow-[0_4px_14px_rgba(138,63,252,0.18)] active:scale-95 transition-transform"
+                  className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-white border border-blue-200/90 shadow-[0_4px_14px_rgba(40,105,213,0.18)] active:scale-95 transition-transform"
                   style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation', cursor: 'pointer' }}
                 >
                   <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain select-none" />
-                  <span className="text-[11px] font-bold tracking-tight bg-gradient-to-r from-[#6D28D9] to-[#EC4899] bg-clip-text text-transparent">NikAI</span>
+                  <span className="text-[11px] font-bold tracking-tight bg-gradient-to-r from-[#2869D5] to-[#C83F58] bg-clip-text text-transparent">NikAI</span>
                 </button>
 
                 <DropdownMenu>
@@ -1230,7 +1230,7 @@ const Index = () => {
                 >
                   {cloudSync.state === 'syncing' ? (
                     <>
-                      <RefreshCw className="w-3.5 h-3.5 text-violet-600 animate-spin" />
+                      <RefreshCw className="w-3.5 h-3.5 text-blue-700 animate-spin" />
                       <span>Syncing…</span>
                     </>
                   ) : cloudSync.state === 'synced' ? (
@@ -1251,7 +1251,7 @@ const Index = () => {
                   <button
                     onClick={() => navigate('/ai')}
                     data-testid="pc-open-nikai-btn"
-                    className="relative group flex items-center gap-2 h-9 pl-3 pr-4 rounded-full bg-white hover:bg-purple-50/90 text-[#19162B] border border-purple-200/90 shadow-[0_6px_22px_rgba(138,63,252,0.22)] hover:shadow-[0_8px_28px_rgba(236,72,153,0.32)] transition-all"
+                    className="relative group flex items-center gap-2 h-9 pl-3 pr-4 rounded-full bg-white hover:bg-blue-50/90 text-[#171313] border border-blue-200/90 shadow-[0_6px_22px_rgba(40,105,213,0.18)] hover:shadow-[0_8px_28px_rgba(200,63,88,0.22)] transition-all"
                   >
                     <img
                       src="/nikai-mark.png"
@@ -1259,7 +1259,7 @@ const Index = () => {
                       aria-hidden="true"
                       className="h-5 w-auto object-contain select-none"
                     />
-                    <span className="font-bold text-[14px] tracking-tight bg-gradient-to-r from-[#241A5E] via-[#6D28D9] to-[#EC4899] bg-clip-text text-transparent">
+                    <span className="font-bold text-[14px] tracking-tight bg-gradient-to-r from-[#2869D5] via-[#347FF0] to-[#C83F58] bg-clip-text text-transparent">
                       NikAI
                     </span>
                   </button>
@@ -1516,7 +1516,7 @@ const Index = () => {
                         <div className="mx-8 mb-6">
                           <div className="preview-card">
                             <div className="preview-card-header">
-                              <span className="flex items-center gap-2 text-[11px] font-bold text-violet-700">✍️ Handwriting Preview</span>
+                              <span className="flex items-center gap-2 text-[11px] font-bold text-blue-800">✍️ Handwriting Preview</span>
                               <div className="flex items-center gap-2">
                                 <Button variant="ghost" size="sm" onClick={handleExportPDF} disabled={isExporting} className="h-6 px-2 text-[10px] rounded-lg gap-1">
                                   <FileDown className="w-3 h-3" /> PDF
@@ -1634,7 +1634,7 @@ const Index = () => {
                   centerLabel="Menu"
                   align="left"
                   items={[
-                    { id: 'nikai', label: 'NikAI', icon: Sparkles, tint: '#7c3aed', onSelect: () => navigate('/ai') },
+                    { id: 'nikai', label: 'NikAI', icon: Sparkles, tint: '#2869d5', onSelect: () => navigate('/ai') },
                     { id: 'money', label: 'Money', icon: Calculator, tint: '#059669', onSelect: () => navigate('/money') },
                     { id: 'routine', label: 'Routine', icon: ListChecks, tint: '#2563eb', onSelect: () => navigate('/routine') },
                     { id: 'handwriting', label: 'Handwriting', icon: PenLine, tint: '#d97706', onSelect: () => setShowStudioPanel(true) },

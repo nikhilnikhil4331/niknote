@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useBadges } from '@/hooks/useBadges';
 import { useStreak } from '@/hooks/useStreak';
 import { Flame, Trophy, ArrowLeft, Lock } from 'lucide-react';
@@ -16,6 +16,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const AchievementsPage: React.FC = () => {
   const navigate = useNavigate();
+  const reduced = useReducedMotion();
   const { allBadges, earnedBadges, isBadgeEarned, earnedCount, totalCount, loading } = useBadges();
   const { streak } = useStreak();
 
@@ -34,7 +35,7 @@ const AchievementsPage: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </motion.button>
           <div>
-            <h1 className="text-base font-bold text-foreground">Achievements</h1>
+            <h1 className="font-display text-base font-bold text-foreground">Achievements</h1>
             <p className="text-[11px] text-muted-foreground">{earnedCount}/{totalCount} badges earned</p>
           </div>
         </div>
@@ -45,7 +46,7 @@ const AchievementsPage: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200/50 dark:border-orange-800/30 p-5"
+          className="rounded-2xl bg-gradient-to-br from-[#eef4ff] to-[#fff0f0] dark:from-[#1d2b41] dark:to-[#34242f] border border-primary/20 p-5"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -95,11 +96,14 @@ const AchievementsPage: React.FC = () => {
                     return (
                       <motion.div
                         key={badge.id}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: idx * 0.05 }}
+                        initial={reduced ? false : { opacity: 0, scale: 0.88, y: 8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        whileHover={earned && !reduced ? { y: -3, scale: 1.025 } : undefined}
+                        whileTap={earned && !reduced ? { scale: 0.98 } : undefined}
+                        transition={reduced ? { duration: 0.01 } : { delay: idx * 0.045, type: 'spring', stiffness: 250, damping: 20 }}
+                        data-earned={earned ? 'true' : 'false'}
                         className={cn(
-                          "relative flex flex-col items-center text-center p-3 rounded-2xl border-2 transition-all",
+                          "nn-achievement-card relative flex flex-col items-center text-center p-3 rounded-2xl border-2 transition-all",
                           earned
                             ? "border-primary/30 bg-primary/5 shadow-sm"
                             : "border-border/30 bg-muted/20 opacity-60"
@@ -115,9 +119,10 @@ const AchievementsPage: React.FC = () => {
                         )}
                         {earned && (
                           <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center"
+                            initial={reduced ? false : { scale: 0, rotate: -24 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={reduced ? { duration: 0.01 } : { type: 'spring', stiffness: 340, damping: 15, delay: idx * 0.045 + 0.08 }}
+                            className="nn-achievement-earned absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center"
                           >
                             <Trophy className="w-3 h-3 text-primary-foreground" />
                           </motion.div>

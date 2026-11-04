@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Sparkles, Play, MessageCircle, BookOpen, Brain, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -12,6 +12,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onStartWriting,
   onPreviewNotes,
 }) => {
+  const reducedMotion = useReducedMotion();
   const handleWhatsAppShare = () => {
     const msg = encodeURIComponent(
       '🎓 NikNote — Free AI Study App for Indian Students!\n\n✍️ Convert text to 16+ handwriting styles\n🧠 AI Teacher, Quiz Generator, Flashcards\n📱 Works on phone & laptop\n\nTry free: https://www.niknote.online'
@@ -27,18 +28,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       {/* Floating Orbs */}
       <motion.div
         className="absolute top-20 left-[10%] w-72 h-72 bg-primary/10 rounded-full blur-3xl"
-        animate={{ y: [0, 30, 0], scale: [1, 1.1, 1] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        animate={reducedMotion ? undefined : { y: [0, 30, 0], scale: [1, 1.1, 1] }}
+        transition={{ duration: 8, repeat: reducedMotion ? 0 : Infinity, ease: "easeInOut" }}
       />
       <motion.div
         className="absolute bottom-20 right-[10%] w-96 h-96 bg-accent/10 rounded-full blur-3xl"
-        animate={{ y: [0, -40, 0], scale: [1, 1.15, 1] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        animate={reducedMotion ? undefined : { y: [0, -40, 0], scale: [1, 1.15, 1] }}
+        transition={{ duration: 10, repeat: reducedMotion ? 0 : Infinity, ease: "easeInOut" }}
       />
       <motion.div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl"
-        animate={{ scale: [1, 1.2, 1] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+        animate={reducedMotion ? undefined : { scale: [1, 1.2, 1] }}
+        transition={{ duration: 12, repeat: reducedMotion ? 0 : Infinity, ease: "easeInOut" }}
       />
 
       {/* Content */}
@@ -52,7 +53,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             transition={{ duration: 0.5 }}
             className="flex flex-wrap items-center justify-center gap-2 mb-6"
           >
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-200 text-xs font-bold text-orange-600">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100/80 border border-amber-300 text-xs font-bold text-amber-900">
               🇮🇳 Made for Indian Students
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
@@ -69,7 +70,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6"
+            className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6"
           >
             <span className="text-foreground">AI Notes + Handwriting</span>
             <br />
@@ -104,7 +105,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           >
             {[
               { label: 'CBSE', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-              { label: 'ICSE', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+              { label: 'ICSE', color: 'bg-[#FFF0F0] text-[#C83F58] border-[#FFC0C5]' },
               { label: 'JEE', color: 'bg-red-100 text-red-700 border-red-200' },
               { label: 'NEET', color: 'bg-green-100 text-green-700 border-green-200' },
               { label: 'UPSC', color: 'bg-amber-100 text-amber-700 border-amber-200' },
@@ -129,9 +130,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <Button
               size="lg"
               onClick={onStartWriting}
-              className="group h-14 px-8 text-base font-bold rounded-full bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 hover:from-orange-400 hover:via-pink-400 hover:to-purple-500 text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105"
+              className="group h-14 px-8 text-base font-bold rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:scale-[1.02]"
             >
-              <Zap className="w-5 h-5 mr-2" />
+              <Zap className="w-5 h-5 mr-2 text-[#FFE45C]" />
               Start Writing FREE ✨
               <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
             </Button>
@@ -170,7 +171,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </div>
             <div className="hidden sm:block w-px h-5 bg-border" />
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Brain className="w-4 h-4 text-purple-500" />
+              <Brain className="w-4 h-4 text-[#347FF0]" />
               <span>Some editing may work offline when cached</span>
             </div>
           </motion.div>
@@ -185,8 +186,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         className="absolute bottom-8 left-1/2 -translate-x-1/2"
       >
         <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
+          animate={reducedMotion ? undefined : { y: [0, 8, 0] }}
+          transition={{ duration: 2, repeat: reducedMotion ? 0 : Infinity }}
           className="w-6 h-10 rounded-full border-2 border-muted-foreground/30 flex items-start justify-center p-2"
         >
           <motion.div className="w-1.5 h-1.5 rounded-full bg-primary" />

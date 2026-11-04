@@ -120,7 +120,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({
                       onClick={() => toggleSort(colIdx)}
                       className={cn(
                         "p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity",
-                        sortColumn === colIdx ? "opacity-100 text-indigo-500" : "text-gray-400 hover:text-gray-600"
+                        sortColumn === colIdx ? "opacity-100 text-blue-500" : "text-gray-400 hover:text-gray-600"
                       )}
                     >
                       <ArrowUpDown className="w-3 h-3" />
@@ -172,7 +172,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({
                       className={cn(
                         "w-full bg-transparent border-0 outline-none text-xs px-2 py-1.5 rounded",
                         selectedCell?.row === rowIdx && selectedCell?.col === colIdx
-                          ? "bg-indigo-50 ring-1 ring-indigo-200"
+                          ? "bg-blue-50 ring-1 ring-blue-200"
                           : "hover:bg-gray-50"
                       )}
                       placeholder="—"
@@ -206,7 +206,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({
 
       {/* AI Auto-fill */}
       <div className="px-2 py-1.5 border-t border-gray-50 flex items-center gap-2">
-        <button className="flex items-center gap-1.5 text-[10px] text-indigo-500 hover:text-indigo-700 transition-colors font-medium">
+        <button className="flex items-center gap-1.5 text-[10px] text-blue-500 hover:text-blue-700 transition-colors font-medium">
           <Sparkles className="w-3 h-3" />
           AI Auto-fill
         </button>

@@ -144,7 +144,7 @@ export const InlineAIMenu: React.FC<InlineAIMenuProps> = ({
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-[#F4F1FC] border border-purple-100 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-[#EAF2FF] border border-pink-100 flex items-center justify-center">
                   <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-6 w-auto object-contain select-none" />
                 </div>
                 <div>
@@ -174,8 +174,8 @@ export const InlineAIMenu: React.FC<InlineAIMenuProps> = ({
                       onClick={() => trigger(a)}
                       className="w-full min-h-[52px] flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors text-left"
                     >
-                      <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                        <a.Icon className="w-4 h-4 text-indigo-600" />
+                      <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <a.Icon className="w-4 h-4 text-blue-600" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[14px] font-medium text-gray-900">{a.label}</div>
@@ -201,7 +201,7 @@ export const InlineAIMenu: React.FC<InlineAIMenuProps> = ({
                         placeholder="e.g. Turn this into bullet points"
                         rows={3}
                         style={{ fontSize: "16px" }}
-                        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 resize-none"
+                        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-none"
                       />
                     </div>
                   )}
@@ -218,7 +218,7 @@ export const InlineAIMenu: React.FC<InlineAIMenuProps> = ({
                             className={cn(
                               "min-h-11 px-3 py-2 rounded-xl text-[13px] font-medium border transition-colors",
                               language === l
-                                ? "bg-indigo-50 border-indigo-300 text-indigo-700"
+                                ? "bg-blue-50 border-blue-300 text-blue-700"
                                 : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
                             )}
                           >
@@ -231,7 +231,7 @@ export const InlineAIMenu: React.FC<InlineAIMenuProps> = ({
                   <button
                     onClick={submitInputAction}
                     disabled={chosen.needsInstruction && !instruction.trim()}
-                    className="w-full min-h-12 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold text-[14px] flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full min-h-12 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-semibold text-[14px] flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <Sparkles className="w-4 h-4" /> Generate
                   </button>
@@ -269,8 +269,8 @@ export const InlineAIMenu: React.FC<InlineAIMenuProps> = ({
                           </button>
                         </div>
                       )}
-                      <div className="rounded-2xl bg-gradient-to-br from-indigo-50/60 to-purple-50/60 border border-indigo-100 p-4 min-h-[120px]">
-                        <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold text-indigo-600 uppercase tracking-wider">
+                      <div className="rounded-2xl bg-gradient-to-br from-blue-50/60 to-pink-50/60 border border-blue-100 p-4 min-h-[120px]">
+                        <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold text-blue-600 uppercase tracking-wider">
                           {status === "streaming" ? (
                             <><Loader2 className="w-3 h-3 animate-spin" /> Writing…</>
                           ) : (
@@ -310,7 +310,7 @@ export const InlineAIMenu: React.FC<InlineAIMenuProps> = ({
                 <button
                   onClick={() => { if (canAccept) { onAccept(output.trim()); onClose(); } }}
                   disabled={!canAccept}
-                  className="min-h-12 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[13px] font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  className="min-h-12 rounded-xl bg-gradient-to-r from-primary to-accent text-white text-[13px] font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   <Check className="w-4 h-4" /> Accept
                 </button>

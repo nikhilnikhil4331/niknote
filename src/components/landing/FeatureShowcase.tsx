@@ -24,7 +24,7 @@ const features = [
     title: '🧠 AI Teacher (Hindi + English)',
     description: 'Ask study questions in Hindi or English. Cloud AI needs an internet connection.',
     badge: 'NEW',
-    badgeColor: 'bg-purple-500',
+    badgeColor: 'bg-[#2869d5]',
   },
   {
     icon: Target,

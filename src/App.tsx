@@ -28,6 +28,7 @@ import { SeoHead } from "@/components/seo/SeoHead";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileExperience } from '@/components/mobile/MobileExperience';
 import '@/components/mobile/mobile.css';
+import '@/components/mobile/mobile-brand.css';
 import { NiknoteLoader } from '@/components/motion/NiknoteLoader';
 import { initNativeShell } from '@/lib/nativeNav';
 import { initTracking, trackRouteView } from '@/lib/tracking';

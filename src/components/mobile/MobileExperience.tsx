@@ -339,9 +339,9 @@ export function MobileExperience() {
             <MobileTrackerCards />
             <div className="nn-quick-actions">
               {[
-                { label: 'NikAI', icon: Sparkles, customImg: '/nikai-mark.png', tone: 'purple', action: () => navigate('/ai') },
+                { label: 'NikAI', icon: Sparkles, customImg: '/nikai-mark.png', tone: 'blue', action: () => navigate('/ai') },
                 { label: 'Write Note', icon: PenLine, customImg: '', tone: 'green', action: () => navigate('/?editor=1&new=1') },
-                { label: 'Templates', icon: LayoutGrid, customImg: '', tone: 'purple', action: () => navigate('/templates') },
+                { label: 'Templates', icon: LayoutGrid, customImg: '', tone: 'blue', action: () => navigate('/templates') },
                 { label: 'Draw Board', icon: ScanLine, customImg: '', tone: 'pink', action: () => navigate('/board') },
                 { label: 'PDF Edit', icon: FileText, customImg: '', tone: 'gold', action: () => navigate('/pdf-editor') },
               ].map(({ label, icon: Icon, customImg, tone, action }) => (

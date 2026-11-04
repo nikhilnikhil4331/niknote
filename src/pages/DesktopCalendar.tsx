@@ -28,12 +28,12 @@ const DesktopCalendar: React.FC = () => {
   const items: CalItem[] = useMemo(
     () => [
       ...active.map((n): CalItem => ({ id: n.id, title: n.title, date: n.updatedAt, color: n.cover, kind: 'note' })),
-      ...tasks.filter((t) => t.due).map((t): CalItem => ({ id: t.id, title: t.title, date: t.due!, color: t.status === 'done' ? '#1FA97A' : '#F26D8D', kind: 'task' })),
+      ...tasks.filter((t) => t.due).map((t): CalItem => ({ id: t.id, title: t.title, date: t.due!, color: t.status === 'done' ? '#4f7b50' : '#c26f46', kind: 'task' })),
       ...sessions.map((fs): CalItem => ({
         id: fs.id,
         title: `${formatMinutesAsHours(fs.durationSec / 60)} ${fs.category}`,
         date: fs.startedAt,
-        color: FOCUS_CATEGORIES.find((c) => c.name === fs.category)?.color ?? '#7028D9',
+        color: FOCUS_CATEGORIES.find((c) => c.name === fs.category)?.color ?? '#416a4b',
         kind: 'focus',
       })),
     ],
@@ -59,26 +59,28 @@ const DesktopCalendar: React.FC = () => {
   return (
     <DesktopShell counts={{ notes: active.length, trash: trashed.length }} folders={folders}>
       <div className="mx-auto w-full max-w-[1160px] px-8 py-7">
-        <div className="flex items-center gap-3 nd-anim">
-          <div>
-            <h1 className="text-[24px] font-extrabold tracking-[-0.02em]" style={{ color: 'var(--nd-text)' }}>Calendar</h1>
-            <p className="text-[12.5px]" style={{ color: 'var(--nd-text-3)' }}>
-              Notes you edited and tasks that are due, all in one place.
+        <section className="nd-page-hero nd-page-hero--calendar nd-anim" aria-labelledby="desktop-calendar-title">
+          <div className="nd-page-hero-copy">
+            <span className="nd-page-hero-kicker">Make room for a new idea</span>
+            <h1 id="desktop-calendar-title" className="font-display text-[25px] font-extrabold tracking-[-0.02em]" style={{ color: 'var(--nd-ink)' }}>Calendar</h1>
+            <p className="text-[12.5px] mt-0.5" style={{ color: 'var(--nd-ink-2)' }}>
+              Notes, due dates and focus time — all in one place.
             </p>
           </div>
-          <button className="nd-btn-primary ml-auto" onClick={() => openNew()}>
+          <img className="nd-page-hero-art" src="/images/brand/niknote-calendar-wordmark-source.png" alt="" />
+          <button className="nd-btn-cta ml-auto" onClick={() => openNew()}>
             <Plus size={15} /> New note
           </button>
-        </div>
+        </section>
 
         <div className="grid grid-cols-12 gap-4 mt-6 items-start nd-anim nd-anim-1 pb-10">
           <div className="col-span-8">
             <MonthCalendar items={items} selected={day} onSelectDay={setDay} onItemClick={handleItem} />
             <div className="flex items-center gap-4 mt-3 text-[11.5px] font-medium" style={{ color: 'var(--nd-text-2)' }}>
-              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#7C6CF0' }} /> Note edited</span>
-              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#F26D8D' }} /> Task due</span>
-              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#1FA97A' }} /> Task done</span>
-              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#7028D9' }} /> Focus session</span>
+              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#d1a913' }} /> Note edited</span>
+              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#c26f46' }} /> Task due</span>
+              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#4f7b50' }} /> Task done</span>
+              <span className="inline-flex items-center gap-1.5"><span style={{ width: 9, height: 9, borderRadius: 3, background: '#39291c' }} /> Focus session</span>
             </div>
           </div>
 
@@ -95,11 +97,11 @@ const DesktopCalendar: React.FC = () => {
                   {dayTasks.map((t) => (
                     <button
                       key={t.id}
-                      className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-[#F8F7FF] transition-colors"
+                      className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-[#fff9e5] transition-colors"
                       style={{ border: '1px solid var(--nd-border-soft)' }}
                       onClick={() => navigate('/tasks')}
                     >
-                      <CheckSquare size={14} color={t.status === 'done' ? '#1FA97A' : '#F26D8D'} className="flex-none" />
+                      <CheckSquare size={14} color={t.status === 'done' ? '#4f7b50' : '#c26f46'} className="flex-none" />
                       <span
                         className="text-[13px] font-semibold truncate"
                         style={{ color: 'var(--nd-text)', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}
@@ -120,11 +122,11 @@ const DesktopCalendar: React.FC = () => {
                   {daySessions.map((fs) => (
                     <button
                       key={fs.id}
-                      className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-[#F8F7FF] transition-colors"
+                      className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-[#fff9e5] transition-colors"
                       style={{ border: '1px solid var(--nd-border-soft)' }}
                       onClick={() => navigate('/focus')}
                     >
-                      <Timer size={14} style={{ color: FOCUS_CATEGORIES.find((c) => c.name === fs.category)?.color ?? '#7028D9' }} className="flex-none" />
+                      <Timer size={14} style={{ color: FOCUS_CATEGORIES.find((c) => c.name === fs.category)?.color ?? '#416a4b' }} className="flex-none" />
                       <span className="text-[13px] font-semibold truncate" style={{ color: 'var(--nd-text)' }}>
                         {fs.taskTitle || fs.category} · {formatMinutesAsHours(fs.durationSec / 60)}
                       </span>
@@ -142,7 +144,7 @@ const DesktopCalendar: React.FC = () => {
                   {dayNotes.map((n) => (
                     <button
                       key={n.id}
-                      className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-[#F8F7FF] transition-colors"
+                      className="flex items-center gap-2.5 text-left rounded-xl px-3 py-2.5 hover:bg-[#fff9e5] transition-colors"
                       style={{ border: '1px solid var(--nd-border-soft)' }}
                       onClick={() => void openNote(n)}
                     >

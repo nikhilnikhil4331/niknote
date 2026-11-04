@@ -216,10 +216,10 @@ export const CircularDial: React.FC<CircularDialProps> = ({
       <svg ref={svgRef} viewBox="0 0 200 200" width={size} height={size} aria-hidden="true">
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#ffad45" />
-            <stop offset="38%" stopColor="#f26d9b" />
-            <stop offset="68%" stopColor="#d92c9b" />
-            <stop offset="100%" stopColor="#7028d9" />
+            <stop offset="0%" stopColor="#ffe768" />
+            <stop offset="38%" stopColor="#f0cf36" />
+            <stop offset="68%" stopColor="#d3ae20" />
+            <stop offset="100%" stopColor="#99770c" />
           </linearGradient>
           <filter id={glowId} x="-40%" y="-40%" width="180%" height="180%">
             <feGaussianBlur stdDeviation="3.2" result="b" />
@@ -258,7 +258,7 @@ export const CircularDial: React.FC<CircularDialProps> = ({
         </g>
 
         {/* zero marker */}
-        <circle cx={C} cy={C - R} r={2.2} fill="#b7a6d8" />
+        <circle cx={C} cy={C - R} r={2.2} fill="#b8aa7b" />
 
         {/* handle (idle) / position dot (running) */}
         {adjustable ? (
@@ -268,7 +268,7 @@ export const CircularDial: React.FC<CircularDialProps> = ({
           />
         ) : (
           arcAngle > 0 && (
-            <circle cx={handlePos.x} cy={handlePos.y} r={5.5} fill="#fff" stroke="#d92c9b" strokeWidth={2.4} />
+            <circle cx={handlePos.x} cy={handlePos.y} r={5.5} fill="#fff" stroke="#b18e10" strokeWidth={2.4} />
           )
         )}
       </svg>

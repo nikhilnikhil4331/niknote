@@ -1,0 +1,145 @@
+/* NikNote mobile identity: a purpose-built phone palette, not a scaled desktop skin. */
+.nn-mobile {
+  --nn-accent: #2869d5;
+  --nn-accent-bright: #347ff0;
+  --nn-coral: #ff858f;
+  --nn-yellow: #ffe45c;
+  --primary: 217 68% 50%;
+  --accent: 350 58% 52%;
+  --nn-text: #171313;
+  --nn-muted: #68636c;
+  --nn-surface: rgba(255, 255, 255, .84);
+  --nn-border: rgba(53, 89, 145, .16);
+  --nn-soft: #eef4ff;
+  --background: 48 100% 98%;
+  --foreground: 0 10% 8%;
+  --muted-foreground: 220 8% 40%;
+  --input: 218 22% 89%;
+  --border: 218 22% 89%;
+  color: var(--nn-text);
+  background:
+    radial-gradient(ellipse at 96% 46%, rgba(255, 133, 143, .13) 0, transparent 58%),
+    radial-gradient(ellipse at 5% 82%, rgba(52, 127, 240, .11) 0, transparent 56%),
+    linear-gradient(150deg, #fffdf5, #fff8f3 58%, #eef4ff);
+}
+
+.nn-mobile[data-color=blue] { --nn-accent: #2869d5; --primary: 217 68% 50%; --nn-soft: #eaf2ff; }
+.nn-mobile[data-color=purple] { --nn-accent: #7456d8; --primary: 254 60% 59%; --nn-soft: #f0ebff; }
+.nn-mobile[data-color=pink] { --nn-accent: #c83f58; --primary: 350 55% 52%; --nn-soft: #fff0f0; }
+.nn-mobile[data-color=orange] { --nn-accent: #996a00; --primary: 42 100% 36%; --nn-soft: #fff8dc; }
+.nn-mobile[data-color=green] { --nn-accent: #087c62; --primary: 164 80% 30%; --nn-soft: #e1f6ee; }
+.nn-mobile[data-color=cyan] { --nn-accent: #087f99; --primary: 189 84% 34%; --nn-soft: #ddf7ff; }
+.nn-mobile[data-theme=focus] {
+  background: radial-gradient(ellipse at 92% 10%, #fff0f0 0, transparent 44%), linear-gradient(160deg, #eef4ff, #f7f9ff 64%, #fffdf5);
+}
+.nn-mobile[data-theme=dark] {
+  --nn-text: #f7f4ee;
+  --nn-muted: #b3afbb;
+  --nn-surface: rgba(29, 36, 55, .88);
+  --nn-border: rgba(150, 178, 222, .18);
+  --nn-soft: #263a5b;
+  --primary: 216 88% 68%;
+  --accent: 350 78% 68%;
+  --background: 230 22% 10%;
+  --foreground: 48 35% 96%;
+  --muted-foreground: 220 12% 68%;
+  --input: 230 16% 24%;
+  --border: 230 16% 24%;
+  background:
+    radial-gradient(ellipse at 92% 34%, rgba(255, 133, 143, .12), transparent 58%),
+    radial-gradient(ellipse at 3% 80%, rgba(52, 127, 240, .16), transparent 55%),
+    linear-gradient(145deg, #151b29, #191f32 60%, #111827);
+}
+.nn-mobile[data-theme=dark] .nn-editor-root {
+  background: linear-gradient(145deg, #151b29, #191f32) !important;
+}
+
+/* Soft notebook cover and quick actions are sized and spaced for touch. */
+.nn-mobile .nn-logo img { width: 156px; height: 70px; object-fit: contain; }
+.nn-mobile .nn-welcome {
+  border-color: rgba(52, 127, 240, .2);
+  background:
+    radial-gradient(circle at 86% 22%, rgba(255, 228, 92, .62) 0 14px, transparent 15px),
+    linear-gradient(118deg, #fff9f1 0%, #fff0f0 53%, #eef4ff 100%);
+  box-shadow: 0 10px 25px rgba(38, 76, 133, .08);
+}
+.nn-mobile .nn-welcome h2,
+.nn-mobile .nn-ai-greeting h2,
+.nn-mobile .nn-section-heading h2 { font-family: 'Fredoka', 'Plus Jakarta Sans', Inter, system-ui, sans-serif; }
+.nn-mobile .nn-welcome h2 { letter-spacing: 0; }
+.nn-mobile .nn-welcome-logo { width: 126px; height: 54px; object-fit: contain; object-position: left center; margin: -12px -7px; }
+.nn-mobile .nn-ink-blue { color: #2869d5 !important; }
+.nn-mobile .nn-ink-pink { color: #b92d48 !important; }
+.nn-mobile .nn-book-visual { filter: drop-shadow(0 9px 9px rgba(52, 90, 150, .2)); }
+.nn-mobile .nn-book-visual > svg:first-child { stroke: #6b92d5; fill: #f7faff; }
+.nn-mobile .nn-book-visual > svg:nth-child(2) { stroke: #c83f58; }
+.nn-mobile .nn-book-visual span { color: #d7a900; }
+.nn-mobile .nn-theme.nn-selected {
+  background: linear-gradient(135deg, #2869d5, #245dcc);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 5px 13px rgba(40, 105, 213, .2);
+}
+.nn-mobile .nn-theme.nn-selected svg { color: #ffffff; }
+.nn-mobile .nn-quick,
+.nn-mobile .nn-note,
+.nn-mobile .nn-ai-action {
+  border-color: var(--nn-border);
+  box-shadow: 0 5px 16px rgba(31, 54, 91, .055);
+}
+.nn-mobile .nn-note-icon { background-color: #eaf2ff; color: #2869d5; }
+.nn-mobile .nn-tone-pink { background: #fff0f0; color: #b92d48; }
+.nn-mobile .nn-tone-gold,
+.nn-mobile .nn-tone-orange { background: #fff8dc; color: #836108; }
+.nn-mobile .nn-navigation-swift .nn-create,
+.nn-mobile .nn-create,
+.nn-mobile .nn-fab {
+  background: linear-gradient(145deg, #2869d5, #245dcc) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 19px rgba(40, 105, 213, .28);
+}
+.nn-mobile .nn-nav-item.nn-active { color: var(--nn-accent) !important; }
+.nn-mobile .nn-pill.nn-selected { background: var(--nn-accent); color: #ffffff !important; }
+
+/* NikAI keeps its own friendly character while borrowing the logo's palette. */
+.nn-mobile .nn-robot-head { background: linear-gradient(145deg, #ffffff, #fff0f0); border-color: #ffffff; }
+.nn-mobile .nn-robot-head::before {
+  background: linear-gradient(145deg, #245dcc, #173a71);
+  box-shadow: 0 2px 4px rgba(40, 105, 213, .28);
+}
+.nn-mobile .nn-robot-head span { background: #ffb1b7; box-shadow: 0 0 5px rgba(255, 133, 143, .6); }
+.nn-mobile .nn-robot-head::after { background: #347ff0; }
+.nn-mobile .nn-robot-body { background: linear-gradient(145deg, #ffffff, #eaf2ff); }
+
+/* Ruled paper remains a calm, readable writing surface on phones. */
+.nn-mobile.nn-editor-root {
+  background:
+    radial-gradient(ellipse at 90% 35%, rgba(255, 133, 143, .1) 0, transparent 62%),
+    linear-gradient(155deg, #fffdf5, #eef4ff) !important;
+}
+.nn-mobile .nn-editor-canvas { background-color: rgba(255, 253, 245, .78); }
+.nn-mobile .nn-editor-canvas [data-nn-highlight=true] { background: rgba(255, 228, 92, .45); }
+.nn-mobile .nn-editor-toolbar { border-color: var(--nn-border); }
+.nn-mobile .nn-drawer-active { background: var(--nn-soft) !important; }
+.nn-mobile .nn-drawer-link:hover,
+.nn-mobile .nn-note-open:hover { background: var(--nn-soft) !important; color: var(--nn-text) !important; }
+.nn-mobile .nn-quick:hover,
+.nn-mobile .nn-ai-action:hover { box-shadow: 0 8px 22px rgba(40, 105, 213, .12); }
+.nn-mobile .nn-theme:nth-child(2) svg { color: #347ff0; }
+.nn-mobile .nn-tags > span { background: #eaf2ff; color: #245dcc; }
+.nn-mobile .nn-tags > span:nth-child(2) { background: #fff0f0; color: #b92d48; }
+.nn-mobile .nn-avatar { background: linear-gradient(135deg, #eaf2ff, #fff0f0); color: #245dcc; border-color: rgba(255, 255, 255, .82); }
+.nn-mobile .nn-premium { border-color: rgba(52, 127, 240, .18); background: linear-gradient(120deg, #eaf2ff, #fff0f0); color: #245dcc !important; }
+.nn-mobile .nn-template-preview { background: #fffdf5; border-color: #e2e7f0; color: #245dcc; }
+.nn-mobile .nn-template-preview i { background: #d9e2f1; }
+.nn-mobile .nn-chat-input { box-shadow: 0 6px 20px rgba(40, 67, 112, .08); }
+.nn-mobile[data-theme=dark] .nn-welcome,
+.nn-mobile[data-theme=dark] .nn-premium {
+  border-color: rgba(145, 177, 231, .22);
+  background: linear-gradient(125deg, #253852, #3b293a 66%, #2a3450);
+}
+.nn-mobile[data-theme=dark] .nn-template-preview { background: #202d42; border-color: #394b67; }
+
+@media (max-width: 359px) {
+  .nn-mobile .nn-logo img { width: 132px; height: 62px; }
+}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 export interface MobileAppearance { theme: string; color: string; layout: string; glass: boolean; animations: boolean; realPen: boolean }
-const defaults: MobileAppearance = { theme: 'calm', color: 'purple', layout: 'default', glass: true, animations: true, realPen: true };
+const defaults: MobileAppearance = { theme: 'calm', color: 'blue', layout: 'default', glass: true, animations: true, realPen: true };
 export function useMobileAppearance() {
   const [appearance, setAppearance] = useState<MobileAppearance>(() => {
     try { return { ...defaults, ...JSON.parse(localStorage.getItem('niknote-mobile-appearance') || '{}') }; } catch { return defaults; }

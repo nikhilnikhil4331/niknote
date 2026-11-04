@@ -53,7 +53,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
               className="h-9 w-auto object-contain"
               loading="eager"
             />
-            <span className="hidden lg:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-orange-500/10 text-[10px] font-bold text-orange-600 border border-orange-200">
+            <span className="hidden lg:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100/80 text-[10px] font-bold text-amber-900 border border-amber-300">
               🇮🇳 Made in India
             </span>
           </motion.a>

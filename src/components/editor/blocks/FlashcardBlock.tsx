@@ -30,16 +30,16 @@ export const FlashcardBlock: React.FC<Props> = ({ block, onUpdate }) => {
             animate={{ rotateY: 0, opacity: 1 }}
             exit={{ rotateY: 90, opacity: 0 }}
             transition={{ duration: 0.28 }}
-            className="rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-5 shadow-sm"
+            className="rounded-2xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-pink-50 p-5 shadow-sm"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-500">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-500">
                 🎴 {label}
               </span>
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); setFlipped(f => !f); setEditing(null); }}
-                className="flex items-center gap-1 text-[10px] text-indigo-600 hover:text-indigo-800 px-2 py-1 rounded-md hover:bg-indigo-100 transition-colors"
+                className="flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 px-2 py-1 rounded-md hover:bg-blue-100 transition-colors"
               >
                 <RotateCw className="w-3 h-3" /> Flip
               </button>
@@ -52,7 +52,7 @@ export const FlashcardBlock: React.FC<Props> = ({ block, onUpdate }) => {
                 onChange={(e) => onUpdate(side === 'front' ? { front: e.target.value, content: e.target.value } : { back: e.target.value })}
                 onBlur={() => setEditing(null)}
                 onKeyDown={(e) => { if (e.key === 'Escape') setEditing(null); }}
-                className="w-full min-h-[80px] bg-white/70 rounded-lg p-3 text-sm text-gray-800 border border-indigo-200 focus:border-indigo-400 outline-none resize-none"
+                className="w-full min-h-[80px] bg-white/70 rounded-lg p-3 text-sm text-gray-800 border border-blue-200 focus:border-blue-400 outline-none resize-none"
                 placeholder={side === 'front' ? 'Type the question...' : 'Type the answer...'}
               />
             ) : (

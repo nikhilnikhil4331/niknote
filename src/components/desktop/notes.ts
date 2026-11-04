@@ -36,7 +36,7 @@ export interface DNote {
   localBlocks?: Block[];
 }
 
-const COVER_PALETTE = ['#7C6CF0', '#3B82F6', '#F59E0B', '#EC4899', '#10B981', '#06B6D4', '#F26D8D', '#8B5CF6'];
+const COVER_PALETTE = ['#d4b128', '#67804e', '#b98237', '#bc6e54', '#8b7950', '#79908a', '#a87555', '#a58b43'];
 
 function colorFor(seed: string): string {
   let h = 0;
@@ -370,10 +370,10 @@ export function useDesktopNotes() {
 
 // Starter samples shown when the workspace is empty (click opens the real editor).
 export const SAMPLE_NOTES = [
-  { id: 'sample-bio', title: 'Biology Class Notes', cover: '#10B981', tag: 'Biology', text: '# Photosynthesis\nProcess by which green plants make their own food using sunlight.\n## Equation\n6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂\n## Key Points\n• Requires sunlight\n• Occurs in chloroplasts\n• Produces glucose (food)\n• Releases oxygen' },
-  { id: 'sample-ml', title: 'Machine Learning', cover: '#EC4899', tag: 'AI/ML', text: '# Machine Learning\nML helps computers learn patterns from data.\n• Supervised learning\n• Unsupervised learning\n• Reinforcement learning' },
-  { id: 'sample-project', title: 'Project Plan', cover: '#3B82F6', tag: 'Work', text: '# Project Plan\n## The goal\nShip the first version by the end of the month.\n## Milestones\n[] Design final\n[] Build MVP\n[] Launch' },
-  { id: 'sample-math', title: 'Math Formulas', cover: '#F59E0B', tag: 'Maths', text: '# Math Formulas\n## Algebra\n(a+b)² = a² + 2ab + b²\n(a−b)² = a² − 2ab + b²\n## Trigonometry\nsin²θ + cos²θ = 1' },
-  { id: 'sample-travel', title: 'Travel Plan', cover: '#06B6D4', tag: 'Personal', text: '# Travel Plan\n## Places to visit\n• Mussoorie\n• Rishikesh\n• Haridwar\n## Packing\n[] Camera\n[] Notebook\n[] Snacks' },
-  { id: 'sample-dream', title: 'Dream Ideas', cover: '#8B5CF6', tag: 'Ideas', text: '# Dream Ideas\nSmall ideas can become meaningful projects.\n• Capture one idea every day\n• Review on Sundays\n• Build the best one' },
+  { id: 'sample-bio', title: 'Biology Class Notes', cover: '#668347', tag: 'Biology', text: '# Photosynthesis\nProcess by which green plants make their own food using sunlight.\n## Equation\n6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂\n## Key Points\n• Requires sunlight\n• Occurs in chloroplasts\n• Produces glucose (food)\n• Releases oxygen' },
+  { id: 'sample-ml', title: 'Machine Learning', cover: '#bd7059', tag: 'AI/ML', text: '# Machine Learning\nML helps computers learn patterns from data.\n• Supervised learning\n• Unsupervised learning\n• Reinforcement learning' },
+  { id: 'sample-project', title: 'Project Plan', cover: '#5f7c68', tag: 'Work', text: '# Project Plan\n## The goal\nShip the first version by the end of the month.\n## Milestones\n[] Design final\n[] Build MVP\n[] Launch' },
+  { id: 'sample-math', title: 'Math Formulas', cover: '#c29324', tag: 'Maths', text: '# Math Formulas\n## Algebra\n(a+b)² = a² + 2ab + b²\n(a−b)² = a² − 2ab + b²\n## Trigonometry\nsin²θ + cos²θ = 1' },
+  { id: 'sample-travel', title: 'Travel Plan', cover: '#8b8d6a', tag: 'Personal', text: '# Travel Plan\n## Places to visit\n• Mussoorie\n• Rishikesh\n• Haridwar\n## Packing\n[] Camera\n[] Notebook\n[] Snacks' },
+  { id: 'sample-dream', title: 'Dream Ideas', cover: '#ae8509', tag: 'Ideas', text: '# Dream Ideas\nSmall ideas can become meaningful projects.\n• Capture one idea every day\n• Review on Sundays\n• Build the best one' },
 ];

@@ -48,7 +48,7 @@ const HERO_QUOTES = [
   'Consistency today creates a better you tomorrow.',
 ];
 
-const FOLDER_COLORS = ['#7028D9', '#2563EB', '#EAA23B', '#D92C9B', '#159B68', '#06B6D4', '#F26D9B', '#8B5CF6'];
+const FOLDER_COLORS = ['#2869d5', '#c83f58', '#836108', '#247957', '#347ff0', '#b92d48', '#8db2ef', '#5e5961'];
 
 const DesktopHome: React.FC = () => {
   const navigate = useNavigate();
@@ -162,12 +162,12 @@ const DesktopHome: React.FC = () => {
     onClick: () => void; cta?: boolean;
   }[] = [
     { label: 'New Note', sub: 'Start writing', icon: PenLine, bg: '', fg: '', onClick: () => openNew(), cta: true },
-    { label: 'Quick Note', sub: 'Instant capture', icon: Zap, bg: '#FFF3CF', fg: '#C77F0A', onClick: quickNote },
-    { label: 'New Task', sub: 'Add to today', icon: CheckSquare, bg: '#E3F7EC', fg: '#159B68', onClick: () => setTaskModalOpen(true) },
-    { label: 'Template', sub: 'From library', icon: LayoutTemplate, bg: '#EAF0FF', fg: '#2563EB', onClick: () => navigate('/templates') },
-    { label: 'Upload PDF', sub: 'Convert to notes', icon: FileUp, bg: '#F5F0FF', fg: '#7028D9', onClick: () => navigate('/pdf-editor') },
-    { label: 'AI Generate', sub: 'Create with AI', icon: Sparkles, bg: '#FDEBF5', fg: '#D92C9B', onClick: () => navigate('/ai') },
-    { label: 'Scan Notes', sub: 'Digitise pages', icon: ScanLine, bg: '#FFF1E3', fg: '#E8740C', onClick: () => navigate('/scan-notes') },
+    { label: 'Quick Note', sub: 'Instant capture', icon: Zap, bg: '#fff0f0', fg: '#b92d48', onClick: quickNote },
+    { label: 'New Task', sub: 'Add to today', icon: CheckSquare, bg: '#eef4ff', fg: '#245dcc', onClick: () => setTaskModalOpen(true) },
+    { label: 'Template', sub: 'From library', icon: LayoutTemplate, bg: '#eaf2ff', fg: '#245dcc', onClick: () => navigate('/templates') },
+    { label: 'Upload PDF', sub: 'Convert to notes', icon: FileUp, bg: '#fff8dc', fg: '#765700', onClick: () => navigate('/pdf-editor') },
+    { label: 'AI Generate', sub: 'Create with AI', icon: Sparkles, bg: '#fff0f0', fg: '#b92d48', onClick: () => navigate('/ai') },
+    { label: 'Scan Notes', sub: 'Digitise pages', icon: ScanLine, bg: '#fff8dc', fg: '#765700', onClick: () => navigate('/scan-notes') },
   ];
 
   // ---------- notifications (derived from real data) ----------
@@ -260,8 +260,8 @@ const DesktopHome: React.FC = () => {
                 )}
               </div>
               <button
-                className="flex-none grid place-items-center rounded-full text-white text-[13px] font-bold w-9 h-9 border-2 border-white"
-                style={{ background: 'linear-gradient(135deg,#ffad45,#d92c9b 55%,#7028d9)', boxShadow: 'var(--nd-shadow)' }}
+                className="flex-none grid place-items-center rounded-full text-[13px] font-extrabold w-9 h-9 border border-[var(--nd-ink)]"
+                style={{ background: 'var(--nd-grad-brand)', color: '#fff', boxShadow: 'var(--nd-shadow)' }}
                 title="Account"
                 onClick={() => navigate('/account-details')}
               >
@@ -271,52 +271,35 @@ const DesktopHome: React.FC = () => {
 
             {/* ---------- hero ---------- */}
             <div className="nd-hero mt-4 nd-anim nd-anim-1">
-              <img src="/images/home-banner.jpg" alt="" className="nd-kenburns" />
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    'linear-gradient(100deg, rgba(255,250,255,0.92) 0%, rgba(255,250,255,0.72) 34%, rgba(255,250,255,0.06) 62%, rgba(77,22,143,0.18) 100%)',
-                }}
-              />
-              <div className="relative z-10 h-full flex flex-col justify-between p-6 md:p-7 min-h-[210px]">
-                <div className="max-w-[520px]">
-                  <h1 className="text-[26px] md:text-[30px] leading-[1.12] font-extrabold tracking-[-0.02em]" style={{ color: 'var(--nd-ink)' }}>
+              <div className="relative z-10 flex min-h-[210px] items-center p-6 md:p-7">
+                <div className="nd-hero-copy">
+                  <h1 className="font-display text-[26px] md:text-[30px] leading-[1.12] font-extrabold tracking-[-0.02em]">
                     {greet.text},<br />
-                    <span style={{ color: 'var(--nd-brand-deep)' }}>{displayName}</span>{' '}
+                    <span>{displayName}</span>{' '}
                     <span aria-hidden>{greet.emoji}</span>
                   </h1>
-                  <p className="mt-2 text-[13.5px] font-semibold italic transition-opacity duration-500" style={{ color: 'var(--nd-ink-2)' }} key={quoteIdx}>
+                  <p className="nd-hero-quote mt-2 text-[13.5px] font-semibold italic transition-opacity duration-500" key={quoteIdx}>
                     “{HERO_QUOTES[quoteIdx]}”
                   </p>
                   <p className="mt-1.5 text-[11.5px] font-semibold md:hidden" style={{ color: 'var(--nd-text-3)' }}>{dateLine}</p>
                   <div className="mt-3.5 flex items-center gap-2 flex-wrap">
-                    <span className="nd-chip !bg-[#FFF3CF]" style={{ color: '#B87908' }} title="Consecutive active days">
+                    <span className="nd-chip" style={{ background: '#fff8dc', color: '#765700' }} title="Consecutive active days">
                       <Flame size={12} /> {streakDays} day streak
                     </span>
-                    <span className="nd-chip !bg-[#F5F0FF]" style={{ color: 'var(--nd-brand)' }}>
+                    <span className="nd-chip" style={{ background: 'var(--nd-primary-soft)', color: 'var(--nd-brand-deep)' }}>
                       <NotebookPen size={12} /> {active.length} note{active.length === 1 ? '' : 's'}
                     </span>
-                    <span className="nd-chip !bg-[#E3F7EC]" style={{ color: 'var(--nd-success)' }}>
+                    <span className="nd-chip" style={{ background: '#e8f0df', color: 'var(--nd-success)' }}>
                       <Check size={12} /> {doneToday} task{doneToday === 1 ? '' : 's'} done today
                     </span>
                   </div>
                 </div>
-                <div className="hidden sm:block absolute right-7 top-7 text-right select-none" aria-hidden>
-                  <div className="nd-hero-script text-[30px] md:text-[36px] leading-[1.05]">
-                    Stay Focused ✦<br />Keep Growing
-                  </div>
-                </div>
-                <div
-                  className="hidden sm:block absolute right-6 bottom-5 px-3.5 py-2 rounded-xl text-[12px] font-bold italic"
-                  style={{
-                    background: 'rgba(255,255,255,0.68)', backdropFilter: 'blur(6px)',
-                    color: 'var(--nd-brand-deep)', border: '1px solid rgba(255,255,255,0.8)',
-                  }}
-                >
-                  “Better Notes. Better You.”
-                </div>
               </div>
+              <img
+                src="/images/brand/niknote-write-it-down.png"
+                alt="NikNote illustration: Write it down"
+                className="nd-hero-art"
+              />
             </div>
 
             {/* ---------- quick actions ---------- */}
@@ -452,7 +435,7 @@ const DesktopHome: React.FC = () => {
                 </>
               ) : filteredNotes.length === 0 ? (
                 <div className="nd-card p-6 text-center">
-                  <div className="text-[30px]" aria-hidden>🗂️</div>
+                  <img className="nd-empty-art" src="/images/brand/niknote-spark-note.png" alt="" />
                   <p className="text-[13.5px] font-bold mt-1" style={{ color: 'var(--nd-ink)' }}>
                     {noteQuery ? `No notes match “${noteQuery}”` : `Nothing in ${NOTES_TABS.find((t) => t.id === tab)?.label} yet`}
                   </p>
@@ -578,7 +561,8 @@ const CreateTile: React.FC<{ onClick: () => void; compact?: boolean }> = ({ onCl
     onClick={onClick}
     aria-label="Create a new note"
   >
-    <span className="nd-create-plus"><Plus size={20} /></span>
+    {!compact && <img className="nd-create-illustration" src="/images/brand/niknote-spark-note.png" alt="" />}
+    <span className="nd-create-plus"><Plus size={18} /></span>
     <span className="text-[13px] font-bold">Create New Note</span>
   </button>
 );
@@ -618,7 +602,7 @@ const HomeNoteCard: React.FC<{
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
           <div className="nd-menu" style={{ position: 'absolute', right: 6, top: 38, zIndex: 50, minWidth: 168 }}>
             <button onClick={() => { onTogglePin(); setMenuOpen(false); }}><Pin size={14} /> {pinned ? 'Unpin' : 'Pin to top'}</button>
-            <button onClick={() => { onToggleFav(); setMenuOpen(false); }}><Star size={14} color="#EAA23B" /> {fav ? 'Remove favorite' : 'Favorite'}</button>
+            <button onClick={() => { onToggleFav(); setMenuOpen(false); }}><Star size={14} color="var(--nd-brand-deep)" /> {fav ? 'Remove favorite' : 'Favorite'}</button>
             <button className="nd-danger" onClick={() => { onTrash(); setMenuOpen(false); }}><X size={14} /> Move to Trash</button>
           </div>
         </>

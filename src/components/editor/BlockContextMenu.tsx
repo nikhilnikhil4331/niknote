@@ -128,7 +128,7 @@ export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
     },
     { divider: true },
     {
-      icon: <Sparkles className="w-4 h-4 text-purple-500" />,
+      icon: <Sparkles className="w-4 h-4 text-pink-500" />,
       label: 'AI Actions',
       action: () => { setShowAI(true); setShowConvert(false); setShowColors(false); },
       hasSubmenu: true,
@@ -209,12 +209,12 @@ export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
                     onClick={() => { onConvert(block.id, ct.type); onClose(); }}
                     onMouseDown={(e) => e.preventDefault()}
                     className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors ${
-                      block.type === ct.type ? 'bg-indigo-50' : ''
+                      block.type === ct.type ? 'bg-blue-50' : ''
                     }`}
                   >
                     <div className="w-6 h-6 rounded bg-gray-100 flex items-center justify-center text-xs">{ct.icon}</div>
                     <span className="text-[13px]">{ct.label}</span>
-                    {block.type === ct.type && <Check className="w-3.5 h-3.5 text-indigo-500 ml-auto" />}
+                    {block.type === ct.type && <Check className="w-3.5 h-3.5 text-blue-500 ml-auto" />}
                   </button>
                 ))}
               </div>
@@ -242,7 +242,7 @@ export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
                     onClick={() => { onColorChange(block.id, ink.value); onClose(); }}
                     onMouseDown={(e) => e.preventDefault()}
                     className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 active:scale-95 ${
-                      block.color === ink.value ? 'border-indigo-500 ring-2 ring-indigo-200 scale-110' : 'border-transparent'
+                      block.color === ink.value ? 'border-blue-500 ring-2 ring-blue-200 scale-110' : 'border-transparent'
                     }`}
                     style={{ backgroundColor: ink.hex, touchAction: 'manipulation', cursor: 'pointer' }}
                     title={ink.label}
@@ -264,7 +264,7 @@ export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
             >
               <div className="px-3 py-2 border-b border-gray-100 flex items-center gap-2">
                 <button onClick={() => setShowAI(false)} className="text-[10px] text-gray-500 hover:text-gray-700">← Back</button>
-                <span className="text-[10px] font-bold text-purple-500 uppercase">✨ AI Actions</span>
+                <span className="text-[10px] font-bold text-pink-500 uppercase">✨ AI Actions</span>
               </div>
               <div className="py-1">
                 {AI_ACTIONS.map(ai => (
@@ -272,9 +272,9 @@ export const BlockContextMenu: React.FC<BlockContextMenuProps> = ({
                     key={ai.id}
                     onClick={() => { onAIAction(block.id, ai.id); onClose(); }}
                     onMouseDown={(e) => e.preventDefault()}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-purple-50 active:bg-purple-100 transition-colors"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-pink-50 active:bg-pink-100 transition-colors"
                   >
-                    <div className="w-7 h-7 rounded-lg bg-purple-50 border border-purple-100 flex items-center justify-center text-sm">{ai.icon}</div>
+                    <div className="w-7 h-7 rounded-lg bg-pink-50 border border-pink-100 flex items-center justify-center text-sm">{ai.icon}</div>
                     <div>
                       <div className="text-[13px] font-medium">{ai.label}</div>
                       <div className="text-[10px] text-gray-400">{ai.desc}</div>

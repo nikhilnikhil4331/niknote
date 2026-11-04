@@ -34,7 +34,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="nn-landing min-h-screen bg-background">
       {/* Urgency Banner at top */}
       <TrustBar variant="banner" />
 

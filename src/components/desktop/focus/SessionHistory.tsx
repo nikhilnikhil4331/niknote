@@ -52,7 +52,7 @@ export const SessionHistory: React.FC<{ limit?: number }> = ({ limit = 12 }) => 
                 <span className="nd-tag" style={{ background: `${catColor(s.category)}1f`, color: catColor(s.category) }}>
                   {s.category}
                 </span>
-                <span className="nd-tag" style={{ background: '#f2edfb', color: 'var(--nd-ink-2)' }}>
+                <span className="nd-tag" style={{ background: '#fff6d5', color: 'var(--nd-ink-2)' }}>
                   {KIND_LABEL[s.kind]}
                 </span>
               </div>

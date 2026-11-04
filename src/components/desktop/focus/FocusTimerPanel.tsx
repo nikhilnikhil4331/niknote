@@ -522,7 +522,7 @@ export const FocusTimerPanel: React.FC<FocusTimerPanelProps> = ({ tasks, compact
               className="rounded-full transition-all duration-300"
               style={{
                 width: 8, height: 8,
-                background: i < roundsDone % Math.max(1, settings.pomodoroRounds) || (roundsDone > 0 && roundsDone % Math.max(1, settings.pomodoroRounds) === 0) ? 'var(--nd-brand-magenta)' : '#eadff6',
+                background: i < roundsDone % Math.max(1, settings.pomodoroRounds) || (roundsDone > 0 && roundsDone % Math.max(1, settings.pomodoroRounds) === 0) ? 'var(--nd-brand-magenta)' : '#eee5cc',
               }}
             />
           ))}
@@ -578,7 +578,7 @@ export const FocusTimerPanel: React.FC<FocusTimerPanelProps> = ({ tasks, compact
           <>
             <button
               className="nd-icon-btn !w-11 !h-11"
-              style={{ background: '#f4effc' }}
+              style={{ background: '#fff7d6' }}
               onClick={resetCountdown}
               title="Reset"
               aria-label="Reset timer"
@@ -597,7 +597,7 @@ export const FocusTimerPanel: React.FC<FocusTimerPanelProps> = ({ tasks, compact
             </button>
             <button
               className="nd-icon-btn !w-11 !h-11"
-              style={{ background: '#f4effc' }}
+              style={{ background: '#fff7d6' }}
               onClick={skipPhase}
               title={phase === 'shortBreak' || phase === 'longBreak' ? 'Skip break' : 'Discard this phase'}
               aria-label="Skip phase"
@@ -610,7 +610,7 @@ export const FocusTimerPanel: React.FC<FocusTimerPanelProps> = ({ tasks, compact
           <>
             <button
               className="nd-icon-btn !w-11 !h-11"
-              style={{ background: '#f4effc' }}
+              style={{ background: '#fff7d6' }}
               onClick={laps.length || swElapsed ? swResetAll : undefined}
               title="Reset stopwatch"
               aria-label="Reset stopwatch"
@@ -628,7 +628,7 @@ export const FocusTimerPanel: React.FC<FocusTimerPanelProps> = ({ tasks, compact
             </button>
             <button
               className="nd-icon-btn !w-11 !h-11"
-              style={{ background: '#f4effc' }}
+              style={{ background: '#fff7d6' }}
               onClick={swLap}
               title="Record lap"
               aria-label="Record lap"

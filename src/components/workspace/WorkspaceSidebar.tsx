@@ -82,7 +82,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   // Main navigation items (Notion-style left rail)
   const mainNav: NavItem[] = [
     { id: 'home', icon: <FileText className="w-4 h-4" />, label: 'Home', action: () => navigate('/') },
-    { id: 'ai', icon: <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain" />, label: 'NikAI', action: () => navigate('/ai'), color: 'text-purple-600', badge: 'ASTRA' },
+    { id: 'ai', icon: <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain" />, label: 'NikAI', action: () => navigate('/ai'), color: 'text-blue-700', badge: 'ASTRA' },
     { id: 'dna', icon: <Scan className="w-4 h-4 text-emerald-500" />, label: 'DNA Scanner', action: () => {}, color: 'text-emerald-600' },
     { id: 'documents', icon: <BookOpen className="w-4 h-4" />, label: 'Documents', action: () => navigate('/documents') },
     { id: 'notebooks', icon: <Layers className="w-4 h-4" />, label: 'Notebooks', action: () => navigate('/notebooks') },
@@ -99,8 +99,8 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       {/* ===== WORKSPACE HEADER ===== */}
       <div className="p-3 flex items-center justify-between border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 shadow-sm">
-            <img src="/niknote-logo.png" alt="NikNote" className="w-full h-full object-contain" />
+          <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center bg-[#EAF2FF] border border-[#C7D9F5] shadow-sm">
+            <img src="/images/brand/niknote-primary-mark.png" alt="" aria-hidden="true" className="w-5 h-5 object-contain" />
           </div>
           <div>
             <div className="text-sm font-bold text-gray-900 leading-tight">NikNote</div>
@@ -134,7 +134,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={onNewNote}
-            className="flex-1 flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 shadow-sm hover:shadow-md transition-shadow"
+            className="flex-1 flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-white bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md transition-shadow"
           >
             <Plus className="w-3.5 h-3.5" />
             New Note
@@ -159,7 +159,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             onClick={item.action}
             className={cn(
               "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-all group",
-              item.active ? "bg-indigo-50 text-indigo-700" : "text-gray-600 hover:bg-gray-100"
+              item.active ? "bg-blue-50 text-blue-800" : "text-gray-600 hover:bg-gray-100"
             )}
           >
             <span className={cn("flex-shrink-0", item.color || "text-gray-400")}>
@@ -167,7 +167,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             </span>
             <span className="text-[13px] font-medium flex-1 truncate">{item.label}</span>
             {item.badge && (
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600">
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#FFE45C] text-[#171313]">
                 {item.badge}
               </span>
             )}
@@ -242,7 +242,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                   <div className="text-center py-6 px-4">
                     <FileText className="w-8 h-8 text-gray-200 mx-auto mb-2" />
                     <p className="text-[11px] text-gray-400">No notes yet</p>
-                    <Button variant="ghost" size="sm" onClick={onNewNote} className="mt-2 text-xs h-7 text-indigo-500">
+                    <Button variant="ghost" size="sm" onClick={onNewNote} className="mt-2 text-xs h-7 text-blue-700">
                       <Plus className="w-3 h-3 mr-1" /> Create first note
                     </Button>
                   </div>
@@ -335,7 +335,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
         {user ? (
           <div className="px-3 py-2 border-t border-gray-100">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-sm">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#2869D5] to-[#1F56B4] flex items-center justify-center shadow-sm">
                 <span className="text-[10px] text-white font-bold">
                   {user.email?.[0]?.toUpperCase() || 'U'}
                 </span>
@@ -455,7 +455,7 @@ const FolderItem: React.FC<{
           <ChevronRight className="w-3 h-3 text-gray-400" />
         )}
         {isUnfiled ? (
-          <FolderClosed className="w-3.5 h-3.5 text-indigo-400" />
+          <FolderClosed className="w-3.5 h-3.5 text-blue-600" />
         ) : (
           <FolderOpen className="w-3.5 h-3.5 text-amber-500" />
         )}
