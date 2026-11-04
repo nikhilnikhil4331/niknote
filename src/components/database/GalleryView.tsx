@@ -185,7 +185,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={onAddItem}
-            className="h-48 rounded-xl border-2 border-dashed border-gray-200 hover:border-indigo-300 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-indigo-500 transition-colors"
+            className="h-48 rounded-xl border-2 border-dashed border-gray-200 hover:border-[#9dbcf0] flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-[#245dcc] transition-colors"
           >
             <Plus className="w-6 h-6" />
             <span className="text-[11px] font-medium">Add new</span>
@@ -236,7 +236,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
 
       {/* AI Suggest */}
       <div className="mt-4 flex justify-center">
-        <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors">
+        <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-[#245dcc] bg-[#eaf2ff] hover:bg-[#dceaff] transition-colors">
           <Sparkles className="w-3.5 h-3.5" />
           AI auto-organize & suggest covers
         </button>

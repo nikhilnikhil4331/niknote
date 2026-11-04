@@ -10,6 +10,7 @@ NikNote's primary identity is the supplied pink/coral-and-blue notebook mark: th
 - `public/images/brand/niknote-primary-lockup-dark.png` — complete mark and white wordmark for dark-surface magnification.
 - `public/niknote-logo.png` — complete mark + black wordmark for light surfaces, metadata, and splash screens.
 - `public/niknote-logo-square.png` and `public/icons/*` — mark-first square app icons; the small-size favicon intentionally omits the wordmark.
+- `public/nikai-mark.png` — the distinct NikAI letterform-and-spark motif, retinted with NikNote blue, coral and yellow; use on NikAI surfaces without replacing the primary NikNote identity.
 - `public/images/brand/niknote-write-it-down.png` — supplied writing/pencil illustration for the workspace home.
 - `public/images/brand/niknote-task-list.png` — supplied checklist illustration for Tasks.
 - `public/images/brand/niknote-calendar-wordmark-source.png` — supplied calendar illustration for Calendar.

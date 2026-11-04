@@ -26,7 +26,7 @@ const feedbackTypes: { id: FeedbackType; label: string; icon: any; color: string
   { id: 'suggestion', label: 'Suggestion', icon: Lightbulb, color: 'from-yellow-500 to-amber-600' },
   { id: 'bug', label: 'Bug Report', icon: Bug, color: 'from-red-500 to-rose-600' },
   { id: 'praise', label: 'Love It!', icon: Heart, color: 'from-pink-500 to-red-500' },
-  { id: 'feature', label: 'Feature Request', icon: Sparkles, color: 'from-purple-500 to-indigo-600' },
+  { id: 'feature', label: 'Feature Request', icon: Sparkles, color: 'from-[#347ff0] to-[#245dcc]' },
 ];
 
 const categories: { id: FeedbackCategory; label: string }[] = [

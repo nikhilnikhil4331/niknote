@@ -6,7 +6,7 @@ import {
   Menu, Search, X, Sparkles, ScanLine, LayoutGrid, Upload, BookOpen, Brain, Dna, Code,
   Lightbulb, Star, MoreHorizontal, ArrowRight, SlidersHorizontal, Crown, Settings,
   HelpCircle, FileText, Trash2, Share2, Wallet, CalendarCheck, ChevronRight, Bell,
-  Shield, Send, Paperclip, History, PenLine, RefreshCw, Smartphone, PanelTop, Check, Loader2,
+  Shield, Send, Paperclip, History, PenLine, RefreshCw, Smartphone, PanelTop, Check, Loader2, Shapes,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -342,6 +342,7 @@ export function MobileExperience() {
                 { label: 'NikAI', icon: Sparkles, customImg: '/nikai-mark.png', tone: 'blue', action: () => navigate('/ai') },
                 { label: 'Write Note', icon: PenLine, customImg: '', tone: 'green', action: () => navigate('/?editor=1&new=1') },
                 { label: 'Templates', icon: LayoutGrid, customImg: '', tone: 'blue', action: () => navigate('/templates') },
+                { label: 'Playground', icon: Shapes, customImg: '', tone: 'blue', action: () => navigate('/playground') },
                 { label: 'Draw Board', icon: ScanLine, customImg: '', tone: 'pink', action: () => navigate('/board') },
                 { label: 'PDF Edit', icon: FileText, customImg: '', tone: 'gold', action: () => navigate('/pdf-editor') },
               ].map(({ label, icon: Icon, customImg, tone, action }) => (
@@ -613,6 +614,7 @@ export function MobileExperience() {
               { name: 'Documents', icon: FileText, to: '/documents' },
               { name: 'Notebooks', icon: BookOpen, to: '/notebooks' },
               { name: 'Draw Board', icon: LayoutGrid, to: '/board' },
+              { name: 'Playground', icon: Shapes, to: '/playground' },
             ].map(({ name, icon: Icon, to }) => (
               <Button
                 variant="ghost"

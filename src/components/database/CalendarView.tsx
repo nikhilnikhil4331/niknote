@@ -149,7 +149,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               )}
             >Week</button>
           </div>
-          <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors">
+          <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium text-[#245dcc] bg-[#eaf2ff] hover:bg-[#dceaff] transition-colors">
             <Sparkles className="w-3 h-3" />
             AI Plan
           </button>
@@ -176,14 +176,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               className={cn(
                 "min-h-[90px] p-1.5 border border-gray-100 transition-colors cursor-pointer group",
                 !day.isCurrentMonth && "bg-gray-50/50",
-                day.isCurrentMonth && "bg-white hover:bg-indigo-50/30",
-                day.isToday && "bg-indigo-50/50"
+                day.isCurrentMonth && "bg-white hover:bg-[#f6f9ff]",
+                day.isToday && "bg-[#eaf2ff]/70"
               )}
             >
               <div className="flex items-center justify-between mb-1">
                 <span className={cn(
                   "text-[11px] font-medium w-5 h-5 flex items-center justify-center rounded-full",
-                  day.isToday && "bg-indigo-500 text-white",
+                  day.isToday && "bg-[#2869d5] text-white",
                   day.isCurrentMonth && !day.isToday && "text-gray-700",
                   !day.isCurrentMonth && "text-gray-300"
                 )}>

@@ -10,7 +10,7 @@ import {
   Home, NotebookPen, Sparkles, CalendarDays, CheckSquare, HeartPulse,
   Wallet, LayoutTemplate, Users, Trash2, Search, Plus, Folder, Timer, FileText,
   ChevronsLeft, ChevronsRight, ChevronUp, User, Trophy, Crown, LogOut, LogIn, Check,
-  MoreHorizontal, Pencil,
+  MoreHorizontal, Pencil, Shapes,
 } from 'lucide-react';
 import { CommandPalette, type CommandItem } from '@/components/command-palette/CommandPalette';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,6 +31,7 @@ interface ShellProps {
 const NAV = [
   { label: 'Home', icon: Home, to: '/', match: (p: string, s: string) => p === '/' && !s.includes('editor') },
   { label: 'My Notes', icon: NotebookPen, to: '/notebooks', match: (p: string) => p === '/notebooks' || p === '/notes', countKey: 'notes' as const },
+  { label: 'Playground', icon: Shapes, to: '/playground', match: (p: string) => p === '/playground' },
   { label: 'AI Assistant', icon: Sparkles, to: '/ai', match: (p: string) => p === '/ai' },
   { label: 'Calendar', icon: CalendarDays, to: '/calendar', match: (p: string) => p === '/calendar' },
   { label: 'Tasks', icon: CheckSquare, to: '/tasks', match: (p: string) => p === '/tasks' },

@@ -267,7 +267,7 @@ export default function AccountPage() {
                     <Button 
                       size="sm" 
                       onClick={() => navigate('/payment')}
-                      className="mt-3 gap-2 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 hover:from-orange-400 hover:via-pink-400 hover:to-purple-500 text-white font-bold shadow-lg shadow-purple-500/20"
+                      className="mt-3 gap-2 bg-gradient-to-r from-[#347ff0] via-[#2869d5] to-[#1f56b4] hover:from-[#2869d5] hover:via-[#245dcc] hover:to-[#173a71] text-white font-bold shadow-lg shadow-blue-500/20"
                     >
                       <Crown className="w-4 h-4" />
                       Upgrade to Premium — ₹49/week
@@ -341,10 +341,10 @@ export default function AccountPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
           >
-            <Card className="border-2 border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-purple-500/10 hover:shadow-lg hover:shadow-purple-500/10 transition-shadow">
+            <Card className="border-2 border-rose-500/20 bg-gradient-to-br from-rose-500/5 to-rose-500/10 hover:shadow-lg hover:shadow-rose-500/10 transition-shadow">
               <CardContent className="p-4 sm:p-5 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-3">
-                  <FileText className="w-6 h-6 text-purple-500" />
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center mx-auto mb-3">
+                  <FileText className="w-6 h-6 text-rose-600" />
                 </div>
                 <p className="text-3xl font-bold">{stats.totalNotebooks}</p>
                 <p className="text-xs text-muted-foreground mt-1">Notebooks</p>
@@ -456,7 +456,7 @@ export default function AccountPage() {
           <Card className="border-2 overflow-hidden">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <Sparkles className="w-5 h-5 text-purple-500" />
+                <Sparkles className="w-5 h-5 text-[#347ff0]" />
                 AI Settings
               </CardTitle>
             </CardHeader>
@@ -473,12 +473,12 @@ export default function AccountPage() {
                     value={openaiKey}
                     onChange={(e) => setOpenaiKey(e.target.value)}
                     placeholder="sk-..."
-                    className="flex-1 h-10 px-3 rounded-xl bg-muted/30 border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30"
+                    className="flex-1 h-10 px-3 rounded-xl bg-muted/30 border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-[#347ff0]/30"
                   />
                   <Button
                     size="sm"
                     onClick={handleSaveApiKey}
-                    className="rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4"
+                    className="rounded-xl bg-gradient-to-r from-[#347ff0] to-[#245dcc] text-white px-4"
                   >
                     Save
                   </Button>
@@ -488,22 +488,22 @@ export default function AccountPage() {
                 </p>
               </div>
 
-              <div className="p-3 rounded-xl bg-purple-50 border border-purple-100">
-                <h4 className="text-xs font-semibold text-purple-900 mb-1">🧠 Current AI Status</h4>
+              <div className="p-3 rounded-xl bg-[#eaf2ff] border border-[#c7d9f5]">
+                <h4 className="text-xs font-semibold text-[#173a71] mb-1">🧠 Current AI Status</h4>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${openaiKey ? 'bg-green-500' : 'bg-amber-500'}`} />
-                    <span className="text-[11px] text-purple-800">
+                    <span className="text-[11px] text-[#245dcc]">
                       {openaiKey ? 'Full AI Mode — Unlimited responses' : 'Local Mode — 20+ built-in topics + smart templates'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-[11px] text-purple-800">9 AI Agents active (Teacher, Notes, Quiz, etc.)</span>
+                    <span className="text-[11px] text-[#245dcc]">9 AI Agents active (Teacher, Notes, Quiz, etc.)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-[11px] text-purple-800">Hinglish support enabled</span>
+                    <span className="text-[11px] text-[#245dcc]">Hinglish support enabled</span>
                   </div>
                 </div>
               </div>

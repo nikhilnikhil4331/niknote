@@ -149,6 +149,7 @@ describe('NikNote SEO, Sitemap, Consent & Tracking Verification', () => {
     blogRender.unmount();
 
     expect(resolveRouteSeo('/adminpanelnikhil').robots).toBe('noindex, nofollow');
+    expect(resolveRouteSeo('/playground').robots).toBe('noindex, nofollow');
     expect(resolveRouteSeo('/payment').robots).toBe('noindex, nofollow');
     expect(resolveRouteSeo('/non-existent-route-xyz').robots).toBe('noindex, nofollow');
   });

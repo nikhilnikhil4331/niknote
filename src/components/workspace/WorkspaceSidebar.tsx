@@ -13,7 +13,7 @@ import {
   BookOpen, Clock, Palette, Brain, Scan, MoreHorizontal,
   Pin, Share2, Copy, Edit3, Heart, Hash, Globe,
   LayoutGrid, Layers, ChevronUp, LogOut, Crown, Flame,
-  MessageCircle, BarChart3, Zap, X
+  MessageCircle, BarChart3, Zap, X, Shapes
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNotebooks, Notebook } from '@/hooks/useNotebooks';
@@ -86,6 +86,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
     { id: 'dna', icon: <Scan className="w-4 h-4 text-emerald-500" />, label: 'DNA Scanner', action: () => {}, color: 'text-emerald-600' },
     { id: 'documents', icon: <BookOpen className="w-4 h-4" />, label: 'Documents', action: () => navigate('/documents') },
     { id: 'notebooks', icon: <Layers className="w-4 h-4" />, label: 'Notebooks', action: () => navigate('/notebooks') },
+    { id: 'playground', icon: <Shapes className="w-4 h-4" />, label: 'Playground', action: () => navigate('/playground') },
   ];
 
   return (

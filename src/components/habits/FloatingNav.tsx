@@ -21,8 +21,8 @@ const NAV_ITEMS: { id: TabId; label: string; icon: typeof Home }[] = [
 ];
 
 const QUICK_ACTIONS: { id: QuickId; label: string; icon: typeof Home; tint: string }[] = [
-  { id: 'habit', label: 'Add Habit', icon: ListPlus, tint: '#7c3aed' },
-  { id: 'task', label: 'Add Task', icon: Target, tint: '#ec4899' },
+  { id: 'habit', label: 'Add Habit', icon: ListPlus, tint: '#2869d5' },
+  { id: 'task', label: 'Add Task', icon: Target, tint: '#c83f58' },
   { id: 'activity', label: 'Log Activity', icon: Dumbbell, tint: '#34d399' },
   { id: 'focus', label: 'Focus Timer', icon: Timer, tint: '#f59e0b' },
   { id: 'water', label: 'Log Water', icon: Droplet, tint: '#0ea5e9' },

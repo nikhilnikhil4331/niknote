@@ -80,7 +80,7 @@ Format as markdown.`,
   ai: {
     label: "AI Audit",
     icon: ClipboardCheck,
-    color: "from-indigo-500 to-purple-600",
+    color: "from-[#347ff0] to-[#245dcc]",
     instruction: `You are NikNote's AI Reviewer. Produce an AI-quality audit:
 1. Hallucination risks in current agents.
 2. Prompt improvements for the Guru/Teacher agent.

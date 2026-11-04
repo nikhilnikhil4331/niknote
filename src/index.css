@@ -40,15 +40,15 @@
 .nn-mobile .nn-ai-greeting h2 { overflow-wrap: anywhere; letter-spacing: 0; }
 .nn-mobile .nn-profile h2, .nn-mobile .nn-drawer-profile strong { max-width: 100%; overflow-wrap: anywhere; }
 
-.nik-auth-page { --auth-pink: var(--ink-pink); --auth-violet: var(--accent); --auth-blue: var(--primary); min-height: 100dvh; position: relative; isolation: isolate; display: grid; place-items: center; padding: 68px 20px 32px; background: hsl(var(--background)); overflow: clip; }
-.nik-auth-backdrop { position: absolute; inset: -20%; z-index: -1; background: linear-gradient(125deg, hsl(var(--auth-pink) / .12), hsl(var(--auth-violet) / .09) 42%, hsl(var(--auth-blue) / .12), hsl(var(--background))); background-size: 200% 200%; animation: nik-auth-drift 14s ease-in-out infinite alternate; }
+.nik-auth-page { --auth-pink: var(--ink-pink); --auth-coral: var(--accent); --auth-blue: var(--primary); min-height: 100dvh; position: relative; isolation: isolate; display: grid; place-items: center; padding: 68px 20px 32px; background: hsl(var(--background)); overflow: clip; }
+.nik-auth-backdrop { position: absolute; inset: -20%; z-index: -1; background: linear-gradient(125deg, hsl(var(--auth-pink) / .12), hsl(var(--auth-coral) / .09) 42%, hsl(var(--auth-blue) / .12), hsl(var(--background))); background-size: 200% 200%; animation: nik-auth-drift 14s ease-in-out infinite alternate; }
 .nik-auth-back { position: absolute; top: max(22px, env(safe-area-inset-top)); left: 22px; display: flex; align-items: center; gap: 7px; font-size: 13px; }
 .nik-auth-content { width: 100%; max-width: 420px; }
 .nik-auth-content > header { background: transparent !important; }
 .nik-auth-logo { width: 190px; height: 90px; object-fit: contain; margin: 0 auto 14px; }
 .nik-auth-form-surface { padding: 26px; border: 1px solid hsl(var(--card) / .9); border-radius: 22px; background: hsl(var(--card) / .75); backdrop-filter: blur(22px); box-shadow: 0 18px 60px hsl(var(--accent) / .08); }
 .nik-auth-field-icon { position: absolute; left: 14px; top: 15px; color: hsl(var(--muted-foreground)); pointer-events: none; }
-.nik-auth-submit { background: linear-gradient(105deg, hsl(var(--auth-violet)), hsl(var(--auth-blue))); color: hsl(var(--primary-foreground)); box-shadow: 0 6px 18px hsl(var(--primary) / .18); }
+.nik-auth-submit { background: linear-gradient(105deg, hsl(var(--auth-coral)), hsl(var(--auth-blue))); color: hsl(var(--primary-foreground)); box-shadow: 0 6px 18px hsl(var(--primary) / .18); }
 .nik-auth-success { min-height: 290px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 16px; }
 .nik-auth-success-mark { position: relative; display: grid; place-items: center; width: 88px; height: 88px; margin-bottom: 8px; border-radius: 28px; background: hsl(var(--accent) / .1); color: hsl(var(--accent)); }
 .nik-auth-spark { position: absolute; width: 6px; height: 6px; border-radius: 2px; background: hsl(var(--auth-pink)); animation: nik-auth-spark .9s ease-out both; }

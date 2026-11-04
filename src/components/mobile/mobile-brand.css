@@ -136,7 +136,7 @@
 .nn-mobile[data-theme=dark] .nn-welcome,
 .nn-mobile[data-theme=dark] .nn-premium {
   border-color: rgba(145, 177, 231, .22);
-  background: linear-gradient(125deg, #253852, #3b293a 66%, #2a3450);
+  background: linear-gradient(125deg, #253852, #25435f 66%, #2a3450);
 }
 .nn-mobile[data-theme=dark] .nn-template-preview { background: #202d42; border-color: #394b67; }
 
