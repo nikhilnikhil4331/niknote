@@ -2,7 +2,7 @@
 
 **Branch:** `arena/fa802f8f-niknote`
 **Baseline commit:** `0bdcea0` (`Rebrand NikNote with creative-notes identity`)
-**Status:** Playground and visual-audit changes implemented; the latest code verification passed. Responsive page inspection remains available in the live preview because browser screenshot tooling is unavailable. Production deployment was held pending explicit authorization; the user has now authorized it.
+**Status:** Playground and visual-audit changes are implemented, verified, and deployed to Vercel production after the user's explicit authorization. The production deployment is READY/PROMOTED. Full page screenshot review remains unavailable; the live preview is available for a human responsive pass.
 
 ## Active request and acceptance criteria
 
@@ -34,10 +34,16 @@
 - Full-test output includes existing chart-size/React warnings, blocked Supabase guest-auth requests, a mocked Razorpay activation error, and a PDF fixture warning; the suite passed. Build still reports stale Browserslist data, mixed static/dynamic imports, and large chunks.
 - A live Vite preview is running on port 8081; `/playground`, `/hub`, and `/nikai-mark.png` return HTTP 200. The retinted mark was visually inspected. Browser screenshot automation is unavailable in this environment (prior Puppeteer attempt lacked `libnspr4.so`), so the full pages still need a human responsive visual pass in the preview.
 
+## Production deployment
+
+- Deployed to Vercel project `niknote`, target **production**; state **READY / PROMOTED**, with aliases assigned to `https://www.niknote.online` and `https://niknote.online`.
+- Deployment: `dpl_PmYxjj2MEAXWFcvNiQBnhW1peDNa` (`https://niknote-jj0o4ph9t-nikhil-s-projects-2fbdabcf.vercel.app`). Built from `arena/fa802f8f-niknote` at commit `e34ffa427e8b0b43e7772c65278892b5b3bce849`.
+- Vercel build completed and prerendered 35 public routes. Existing warnings: stale Browserslist data, mixed static/dynamic imports, and large bundles. No database, secret, or environment-setting changes were made.
+
 ## Brand and scope decisions
 
 - Blue leads: logo blue `#347FF0`, accessible UI/action blue `#2869D5`; coral `#FF858F` / accessible rose `#C83F58`; yellow `#FFE45C` is a small accent; warm paper `#FFFDF5`; ink `#171313`.
 - Preserve the supplied coral/blue mark, compass star, notebook, and expressive wordmark. Matching artwork is `public/images/brand/niknote-creative-notes.png`.
 - Preserve intentional purple ink and user appearance choices, along with meaningful event, notification, workflow, mood, agent, and analytics category colors; retune generic UI accents rather than globally replacing purple.
 - The app is React/Vite/TypeScript; desktop and mobile use distinct shells. `/playground` owns its responsive shell because `ResponsivePage` substitutes `MobileExperience` on phones.
-- Supabase/Vercel were inspected for capability context; no database, secrets, or settings were changed. The earlier production deployment contained only the prior rebrand; the user has now explicitly authorized deploying this iteration.
+- Supabase/Vercel were inspected for capability context; no database, secrets, or settings were changed. The earlier production deployment contained only the prior rebrand; this iteration was deployed only after explicit user authorization.
