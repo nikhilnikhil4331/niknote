@@ -25,3 +25,6 @@ project_id = "ievggapvfidhygkhtkug"
 
 [functions.sales-overview]
 verify_jwt = true
+
+[functions.customer-email]
+verify_jwt = false

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { 
   Settings, Power, Crown, QrCode, 
   Trash2, RefreshCw, Code, Play,
-  CheckCircle, XCircle, Loader2
+  CheckCircle, XCircle, Loader2, Mail
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,7 @@ interface AdminControlsProps {
   onUpdateSetting: (key: string, value: unknown) => void;
   onClearLogs: () => void;
   onRunSystemCheck: () => Promise<SystemCheckResult[]>;
+  onOpenEmailManager?: () => void;
 }
 
 export const AdminControls: React.FC<AdminControlsProps> = ({
@@ -49,6 +50,7 @@ export const AdminControls: React.FC<AdminControlsProps> = ({
   onUpdateSetting,
   onClearLogs,
   onRunSystemCheck,
+  onOpenEmailManager,
 }) => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [systemCheckRunning, setSystemCheckRunning] = useState(false);
@@ -176,6 +178,27 @@ export const AdminControls: React.FC<AdminControlsProps> = ({
             </div>
           </CardContent>
         </Card>
+
+        {/* Custom Email Mailbox & Mailflare Settings */}
+        {onOpenEmailManager && (
+          <Card className="rounded-xl lg:col-span-2 border-primary/30 bg-primary/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
+                Custom Email Mailboxes &amp; Email Manager (@niknote.online)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Create custom <code>@niknote.online</code> mailboxes, configure Mailflare / Resend SMTP &amp; DNS settings, read incoming emails, and send custom branded emails to customers.
+              </p>
+              <Button onClick={onOpenEmailManager} className="shrink-0 gap-2">
+                <Mail className="w-4 h-4" />
+                Open Email Manager &amp; Settings
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* System Actions */}
         <Card className="rounded-xl lg:col-span-2">
