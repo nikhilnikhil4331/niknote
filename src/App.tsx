@@ -28,6 +28,7 @@ import { SeoHead } from "@/components/seo/SeoHead";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileExperience } from '@/components/mobile/MobileExperience';
 import '@/components/mobile/mobile.css';
+import '@/components/mobile/mobile-brand.css';
 import { NiknoteLoader } from '@/components/motion/NiknoteLoader';
 import { initNativeShell } from '@/lib/nativeNav';
 import { initTracking, trackRouteView } from '@/lib/tracking';
@@ -83,6 +84,7 @@ const MoneyTrackerPage = lazy(() => import("@/pages/MoneyTracker"));
 const BoardPageRoute = lazy(() => import("@/pages/Board"));
 const RoutineTrackerPage = lazy(() => import("@/pages/RoutineTracker"));
 const NikHabitPage = lazy(() => import("@/pages/RoutineApp"));
+const PlaygroundPage = lazy(() => import("@/pages/Playground"));
 // Desktop workspace (Notion-style enhanced UI) — desktop routes only;
 // mobile keeps rendering MobileExperience exactly as before.
 const DesktopHome = lazy(() => import("@/pages/DesktopHome"));
@@ -133,7 +135,7 @@ const NIKAI_FULLSCREEN_ROUTES = ['/ai', '/nikai', '/ai-workspace', '/agents'];
 function DesktopFloatingShare() {
   const mobile = useIsMobile();
   const { pathname } = useLocation();
-  if (mobile || NIKAI_FULLSCREEN_ROUTES.includes(pathname) || pathname.startsWith('/habit')) {
+  if (mobile || NIKAI_FULLSCREEN_ROUTES.includes(pathname) || pathname.startsWith('/habit') || pathname === '/playground') {
     return null;
   }
   return <ShareButtons variant="floating" />;
@@ -251,6 +253,7 @@ const App = () => {
                         <Route path="/audit" element={<AuditReportsPage />} />
                         <Route path="/flashcards" element={<FlashcardsPage />} />
                         <Route path="/hub" element={<ResponsivePage><HubPage /></ResponsivePage>} />
+                        <Route path="/playground" element={<PlaygroundPage />} />
                         <Route path="/board" element={<Suspense fallback={<PageLoader />}><BoardPageRoute /></Suspense>} />
                         <Route path="/money" element={<MoneyTrackerPage />} />
                         <Route path="/routine" element={<RoutineTrackerPage />} />

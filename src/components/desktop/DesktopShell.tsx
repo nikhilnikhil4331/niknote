@@ -10,7 +10,7 @@ import {
   Home, NotebookPen, Sparkles, CalendarDays, CheckSquare, HeartPulse,
   Wallet, LayoutTemplate, Users, Trash2, Search, Plus, Folder, Timer, FileText,
   ChevronsLeft, ChevronsRight, ChevronUp, User, Trophy, Crown, LogOut, LogIn, Check,
-  MoreHorizontal, Pencil,
+  MoreHorizontal, Pencil, Shapes,
 } from 'lucide-react';
 import { CommandPalette, type CommandItem } from '@/components/command-palette/CommandPalette';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,6 +20,7 @@ import { useSpaces, useTasks } from './store';
 import { isGuestUser, useDesktopNotes } from './notes';
 import { cn } from '@/lib/utils';
 import './desktop.css';
+import './desktop-brand.css';
 
 interface ShellProps {
   children: React.ReactNode;
@@ -30,6 +31,7 @@ interface ShellProps {
 const NAV = [
   { label: 'Home', icon: Home, to: '/', match: (p: string, s: string) => p === '/' && !s.includes('editor') },
   { label: 'My Notes', icon: NotebookPen, to: '/notebooks', match: (p: string) => p === '/notebooks' || p === '/notes', countKey: 'notes' as const },
+  { label: 'Playground', icon: Shapes, to: '/playground', match: (p: string) => p === '/playground' },
   { label: 'AI Assistant', icon: Sparkles, to: '/ai', match: (p: string) => p === '/ai' },
   { label: 'Calendar', icon: CalendarDays, to: '/calendar', match: (p: string) => p === '/calendar' },
   { label: 'Tasks', icon: CheckSquare, to: '/tasks', match: (p: string) => p === '/tasks' },
@@ -169,21 +171,21 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
         }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-2 px-3 pt-3.5 pb-1">
+        <div className={cn('flex items-center gap-2 px-3 pt-3.5 pb-1', collapsed && '!px-2 !gap-1')}>
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 min-w-0 rounded-lg px-1 py-1 hover:bg-[#f1f0fa] transition-colors"
+            className={cn('nd-logo-button flex items-center gap-2 min-w-0 rounded-lg px-1 py-1 transition-colors', collapsed && '!px-0')}
             title="NikNote Home"
+            aria-label="NikNote Home"
           >
-            <img
-              src="/niknote-logo.png"
-              alt="NikNote"
-              className="flex-none object-contain"
-              style={{ width: collapsed ? 34 : 'auto', height: 30, maxWidth: collapsed ? 34 : 150, objectPosition: 'left center' }}
-            />
+            <span className="nd-logo-lockup" aria-hidden="true">
+              <img src="/images/brand/niknote-primary-mark.png" alt="" className="nd-logo-mark" style={{ width: collapsed ? 22 : 28, height: collapsed ? 25 : 30 }} />
+              {!collapsed && <img src="/images/brand/niknote-primary-wordmark.png" alt="" className="nd-logo-wordmark" />}
+            </span>
           </button>
           <button
             className="nd-icon-btn ml-auto flex-none"
+            style={{ width: collapsed ? 24 : 30, height: collapsed ? 24 : 30 }}
             onClick={() => setCollapsed((v) => !v)}
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
@@ -249,7 +251,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
                         aria-label={`Rename space ${sp.name}`}
                       />
                       <button
-                        className="nd-icon-btn flex-none !bg-[#7028D9] !text-white hover:!bg-[#4D168F]"
+                        className="nd-icon-btn nd-create-space flex-none"
                         onClick={() => submitRenameSpace(sp.name)}
                         title="Save name"
                       >
@@ -323,7 +325,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
                       if (e.key === 'Escape') setNewSpaceOpen(false);
                     }}
                   />
-                  <button className="nd-icon-btn flex-none !bg-[#6C5CE7] !text-white hover:!bg-[#5A4BD1]" onClick={submitSpace} title="Create space">
+                  <button className="nd-icon-btn nd-create-space flex-none" onClick={submitSpace} title="Create space">
                     <Check size={15} />
                   </button>
                 </div>
@@ -345,7 +347,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
             title="Upgrade to NikNote Premium"
           >
             <span className="flex items-center gap-2">
-              <span className="grid place-items-center rounded-lg w-8 h-8" style={{ background: 'linear-gradient(135deg,#ffad45,#d92c9b)', color: '#fff' }}>
+              <span className="grid place-items-center rounded-lg w-8 h-8" style={{ background: 'var(--nd-grad-brand)', color: '#fff', border: '1px solid var(--nd-ink)' }}>
                 <Crown size={15} />
               </span>
               <span className="min-w-0">
@@ -359,7 +361,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
         {!isPremium && collapsed && (
           <button
             className="nd-icon-btn mx-auto mb-1.5 flex-none"
-            style={{ background: 'linear-gradient(135deg,#ffad45,#d92c9b)', color: '#fff' }}
+style={{ background: 'var(--nd-grad-brand)', color: '#fff', border: '1px solid var(--nd-ink)' }}
             onClick={() => navigate('/upgrade')}
             title="Upgrade to NikNote Premium"
           >
@@ -370,13 +372,13 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
         {/* Profile footer */}
         <div className="relative flex-none" style={{ borderTop: '1px solid var(--nd-border-soft)' }}>
           <button
-            className={cn('flex items-center gap-2.5 w-full text-left px-3.5 py-3 hover:bg-[#f4f3fc] transition-colors', collapsed && 'justify-center px-0')}
+            className={cn('nd-profile-button flex items-center gap-2.5 w-full text-left px-3.5 py-3 transition-colors', collapsed && 'justify-center px-0')}
             onClick={() => setMenuOpen((v) => !v)}
             title={collapsed ? displayName : undefined}
           >
             <span
-              className="flex-none flex items-center justify-center text-white text-[13px] font-bold"
-              style={{ width: 30, height: 30, borderRadius: 99, background: 'linear-gradient(135deg,#F59E0B,#EC4899 55%,#6C5CE7)' }}
+              className="nd-sidebar-avatar flex-none flex items-center justify-center text-[13px] font-extrabold"
+              style={{ width: 30, height: 30, borderRadius: 99, background: 'var(--nd-grad-brand)', border: '1px solid var(--nd-ink)' }}
             >
               {initial}
             </span>
@@ -407,7 +409,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
                 <button onClick={() => { setMenuOpen(false); navigate('/achievements'); }}><Trophy size={15} /> Achievements</button>
                 {!isPremium && (
                   <button onClick={() => { setMenuOpen(false); navigate('/upgrade'); }}>
-                    <Crown size={15} color="#F59E0B" /> Upgrade to Premium
+                    <Crown size={15} color="var(--nd-brand-deep)" /> Upgrade to Premium
                   </button>
                 )}
                 {guest ? (

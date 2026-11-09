@@ -17,13 +17,13 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
       icon: <Pen className="w-12 h-12 text-primary" />,
       title: 'Welcome to NikNote! ✍️',
       description: 'Turn your typed text into beautiful handwritten notes. Perfect for assignments, notes, and more!',
-      bg: 'from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30',
+      bg: 'from-blue-50 to-pink-50 dark:from-blue-950/30 dark:to-pink-950/30',
     },
     {
       icon: <BookOpen className="w-12 h-12 text-primary" />,
       title: 'Choose Your Style',
       description: 'Pick a handwriting style that feels like yours. You can always change it later!',
-      bg: 'from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30',
+      bg: 'from-pink-50 to-blue-50 dark:from-pink-950/30 dark:to-blue-950/30',
       isFontPicker: true,
     },
     {

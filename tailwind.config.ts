@@ -82,7 +82,7 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['Fredoka', 'Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
         handwriting: {
           1: ['Caveat', 'cursive'],
           2: ['Kalam', 'cursive'],

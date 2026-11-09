@@ -75,9 +75,12 @@ export const QuickStylesBar: React.FC<QuickStylesBarProps> = ({
             <button
               key={color}
               onClick={() => onColorChange(color)}
+              aria-label={`${ink.label} ink color`}
+              aria-pressed={currentColor === color}
+              title={`${ink.label} ink`}
               className={cn(
                 "w-7 h-7 rounded-full border-2 flex-shrink-0 transition-transform active:scale-90",
-                currentColor === color ? "border-indigo-500 scale-110 ring-2 ring-indigo-100" : "border-transparent"
+                currentColor === color ? "border-[#347ff0] scale-110 ring-2 ring-[#eaf2ff]" : "border-transparent"
               )}
               style={{ 
                 backgroundColor: ink.hex, 
@@ -100,10 +103,12 @@ export const QuickStylesBar: React.FC<QuickStylesBarProps> = ({
             <button
               key={font}
               onClick={() => onFontChange(font)}
+              aria-label={`${fontOpt.label} handwriting`}
+              aria-pressed={currentFont === font}
               className={cn(
                 "px-2 py-1.5 rounded-lg text-[11px] font-medium truncate max-w-[60px] transition-all active:scale-95",
                 currentFont === font
-                  ? "bg-indigo-50 text-indigo-600"
+                  ? "bg-[#eaf2ff] text-[#245dcc]"
                   : "text-gray-400"
               )}
               style={{ 
@@ -119,14 +124,14 @@ export const QuickStylesBar: React.FC<QuickStylesBarProps> = ({
 
         <button
           onClick={onOpenStyleSheet}
-          className="ml-auto w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
+          className="ml-auto w-8 h-8 rounded-lg bg-[#eaf2ff] flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
           style={{ 
             WebkitTapHighlightColor: 'transparent',
             touchAction: 'manipulation',
             cursor: 'pointer',
           }}
         >
-          <Palette className="w-4 h-4 text-indigo-500" />
+          <Palette className="w-4 h-4 text-[#347ff0]" />
         </button>
       </div>
     </div>

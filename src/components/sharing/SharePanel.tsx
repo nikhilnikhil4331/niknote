@@ -78,7 +78,7 @@ export const SharePanel: React.FC<SharePanelProps> = ({
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Share2 className="w-4 h-4 text-indigo-500" />
+              <Share2 className="w-4 h-4 text-[#347ff0]" />
               <h3 className="text-sm font-bold text-gray-900">Share</h3>
             </div>
             <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
@@ -167,7 +167,7 @@ export const SharePanel: React.FC<SharePanelProps> = ({
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
               placeholder="Email address..."
-              className="flex-1 text-[11px] bg-gray-50 rounded-lg px-3 py-2 border border-gray-200 focus:border-indigo-300 focus:ring-1 focus:ring-indigo-200 outline-none"
+              className="flex-1 text-[11px] bg-gray-50 rounded-lg px-3 py-2 border border-gray-200 focus:border-[#9dbcf0] focus:ring-1 focus:ring-[#347ff0]/20 outline-none"
             />
             <select
               value={invitePermission}
@@ -182,7 +182,7 @@ export const SharePanel: React.FC<SharePanelProps> = ({
           <button
             onClick={handleInvite}
             disabled={!inviteEmail.trim()}
-            className="w-full mt-2 px-3 py-1.5 rounded-lg text-[11px] font-medium text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full mt-2 px-3 py-1.5 rounded-lg text-[11px] font-medium text-white bg-[#2869d5] hover:bg-[#1f56b4] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Send Invite
           </button>
@@ -196,7 +196,7 @@ export const SharePanel: React.FC<SharePanelProps> = ({
           <div className="space-y-2">
             {shareUsers.map(user => (
               <div key={user.id} className="flex items-center gap-2.5 group">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#347ff0] to-[#c83f58] flex items-center justify-center flex-shrink-0">
                   <span className="text-[9px] text-white font-bold">{user.name[0]?.toUpperCase()}</span>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -225,7 +225,7 @@ export const SharePanel: React.FC<SharePanelProps> = ({
 
         {/* AI suggest */}
         <div className="p-3 border-t border-gray-100">
-          <button className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors">
+          <button className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium text-[#245dcc] bg-[#eaf2ff] hover:bg-[#dceaff] transition-colors">
             <Sparkles className="w-3.5 h-3.5" />
             AI suggest collaborators
           </button>

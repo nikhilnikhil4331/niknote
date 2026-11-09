@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
-import { motion, useInView, useScroll, useTransform } from 'framer-motion';
+import { motion, useInView, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import niknoteLogoImg from '@/assets/niknote-logo.png';
 import { trackClickCTA, trackStartNoteCreation } from '@/lib/tracking';
 
 /* ───────────────── helpers ───────────────── */
@@ -29,6 +28,7 @@ const GlowOrb: React.FC<{ className: string }> = ({ className }) => (
 /* ───────────────── PAGE ───────────────── */
 const PremiumLanding: React.FC = () => {
   const navigate = useNavigate();
+  const reduced = useReducedMotion();
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
   const heroY = useTransform(scrollYProgress, [0, 1], [0, 200]);
@@ -50,13 +50,13 @@ const PremiumLanding: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden selection:bg-purple-500/30">
+    <div className="nn-premium-landing min-h-screen bg-[#111827] text-white overflow-x-hidden selection:bg-[#347FF0]/30">
       {/* ──── NAV ──── */}
-      <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur-xl bg-black/60 border-b border-white/[0.06]">
+      <nav className="fixed top-0 inset-x-0 z-50 backdrop-blur-xl bg-[#111827]/80 border-b border-white/[0.06]">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <img src={niknoteLogoImg} alt="NikNote" className="h-10" />
-            <span className="text-xl font-extrabold bg-gradient-to-r from-orange-400 via-pink-400 to-purple-500 bg-clip-text text-transparent">NikNote</span>
+          <div className="flex items-center gap-2.5">
+            <img src="/images/brand/niknote-primary-mark.png" alt="" className="h-10 w-9 object-contain" />
+            <img src="/images/brand/niknote-primary-wordmark-white.png" alt="NikNote" className="h-7 w-auto object-contain" />
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-white/50 font-medium">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
@@ -67,8 +67,8 @@ const PremiumLanding: React.FC = () => {
             onClick={goApp}
             className="relative group px-5 py-2 rounded-full text-sm font-semibold text-white"
           >
-            <span className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 opacity-80 group-hover:opacity-100 transition-opacity" />
-            <span className="absolute inset-[1.5px] rounded-full bg-black" />
+            <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[#2869D5] via-[#1F56B4] to-[#C83F58] opacity-80 group-hover:opacity-100 transition-opacity" />
+            <span className="absolute inset-[1.5px] rounded-full bg-[#111827]" />
             <span className="relative">Try Free</span>
           </button>
         </div>
@@ -77,11 +77,11 @@ const PremiumLanding: React.FC = () => {
       {/* ──── HERO ──── */}
       <header ref={heroRef} className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
         {/* Halo orbs */}
-        <GlowOrb className="w-[700px] h-[700px] bg-orange-500/20 -top-40 left-1/2 -translate-x-1/2" />
-        <GlowOrb className="w-[500px] h-[500px] bg-pink-500/15 top-1/3 -left-40" />
-        <GlowOrb className="w-[500px] h-[500px] bg-purple-600/15 top-1/4 -right-40" />
+        <GlowOrb className="w-[700px] h-[700px] bg-[#FFE45C]/16 -top-40 left-1/2 -translate-x-1/2" />
+        <GlowOrb className="w-[500px] h-[500px] bg-[#FF858F]/15 top-1/3 -left-40" />
+        <GlowOrb className="w-[500px] h-[500px] bg-[#347FF0]/15 top-1/4 -right-40" />
 
-        <motion.div style={{ y: heroY, opacity: heroOpacity }} className="relative z-10 text-center max-w-4xl mx-auto px-6">
+        <motion.div style={{ y: reduced ? 0 : heroY, opacity: reduced ? 1 : heroOpacity }} className="relative z-10 text-center max-w-4xl mx-auto px-6">
           {/* Logo Big */}
           <motion.div
             initial={{ opacity: 0, scale: 0.5 }}
@@ -89,7 +89,7 @@ const PremiumLanding: React.FC = () => {
             transition={{ delay: 0.1, type: "spring", stiffness: 100 }}
             className="flex items-center justify-center gap-4 mb-8"
           >
-            <img src={niknoteLogoImg} alt="NikNote" className="h-20 sm:h-24 drop-shadow-2xl" style={{ filter: 'drop-shadow(0 0 30px rgba(168,85,247,0.4))' }} />
+            <img src="/images/brand/niknote-primary-mark.png" alt="" className="h-20 w-20 sm:h-24 sm:w-24 object-contain drop-shadow-2xl" style={{ filter: 'drop-shadow(0 0 30px rgba(52,127,240,0.35))' }} />
           </motion.div>
 
           {/* Badge */}
@@ -110,7 +110,7 @@ const PremiumLanding: React.FC = () => {
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.05]"
           >
             <span className="block">NikNote:</span>
-            <span className="block mt-2 bg-gradient-to-r from-orange-400 via-pink-400 to-purple-500 bg-clip-text text-transparent">
+            <span className="block mt-2 bg-gradient-to-r from-[#8CB7FF] via-[#5F92E8] to-[#FF9FA7] bg-clip-text text-transparent">
               Your Notes, Supercharged&nbsp;by&nbsp;AI.
             </span>
           </motion.h1>
@@ -130,8 +130,8 @@ const PremiumLanding: React.FC = () => {
               onClick={goApp}
               className="relative group inline-flex items-center gap-3 px-10 py-4 rounded-full text-lg font-bold text-white"
             >
-              <span className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 animate-pulse" />
-              <span className="absolute inset-[2px] rounded-full bg-gradient-to-r from-orange-500/90 via-pink-500/90 to-purple-600/90 group-hover:from-orange-400 group-hover:via-pink-400 group-hover:to-purple-500 transition-all" />
+              <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[#2869D5] via-[#1F56B4] to-[#C83F58] animate-pulse" />
+              <span className="absolute inset-[2px] rounded-full bg-gradient-to-r from-[#2869D5]/90 via-[#1F56B4]/90 to-[#C83F58]/90 group-hover:from-[#1F56B4] group-hover:via-[#2869D5] group-hover:to-[#B8334A] transition-all" />
               <span className="relative flex items-center gap-2">
                 ✨ Try NikNote Free
                 <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
@@ -151,17 +151,17 @@ const PremiumLanding: React.FC = () => {
         </motion.div>
 
         {/* Bottom fade */}
-        <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-black to-transparent" />
+        <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-[#111827] to-transparent" />
       </header>
 
       {/* ──── VIDEO SHOWCASE ──── */}
       <SectionWrapper className="py-20 md:py-28">
         <div className="relative z-10 max-w-5xl mx-auto">
           <div className="text-center mb-10">
-            <span className="text-sm font-semibold tracking-widest uppercase text-orange-400/80">Watch the magic</span>
+            <span className="text-sm font-semibold tracking-widest uppercase text-[#FFE45C]/85">Watch the magic</span>
             <h2 className="mt-3 text-3xl md:text-5xl font-extrabold text-white">
               See NikNote in{' '}
-              <span className="bg-gradient-to-r from-orange-400 via-pink-400 to-purple-500 bg-clip-text text-transparent">Action</span>
+              <span className="bg-gradient-to-r from-[#8CB7FF] via-[#5F92E8] to-[#FF9FA7] bg-clip-text text-transparent">Action</span>
             </h2>
           </div>
           <motion.div
@@ -169,10 +169,10 @@ const PremiumLanding: React.FC = () => {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
-            className="relative rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-purple-500/10"
+            className="relative rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl shadow-[#347FF0]/10"
           >
             {/* Glow behind video */}
-            <div className="absolute -inset-4 bg-gradient-to-r from-orange-500/10 via-pink-500/10 to-purple-600/10 blur-2xl rounded-3xl" />
+            <div className="absolute -inset-4 bg-gradient-to-r from-[#FFE45C]/10 via-[#FF858F]/10 to-[#347FF0]/10 blur-2xl rounded-3xl" />
             <video
               autoPlay
               loop
@@ -189,14 +189,14 @@ const PremiumLanding: React.FC = () => {
 
       {/* ──── FEATURE 1 — HANDWRITING ──── */}
       <SectionWrapper id="features" className="py-32 md:py-40">
-        <GlowOrb className="w-[600px] h-[600px] bg-pink-500/10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        <GlowOrb className="w-[600px] h-[600px] bg-[#FF858F]/10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
 
         <div className="relative z-10 max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <span className="text-sm font-semibold tracking-widest uppercase text-pink-400/80">Feature 01</span>
+            <span className="text-sm font-semibold tracking-widest uppercase text-[#FF9FA7]/85">Feature 01</span>
             <h2 className="mt-4 text-4xl md:text-6xl font-extrabold">
               It Writes Exactly{' '}
-              <span className="bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">Like You.</span>
+              <span className="bg-gradient-to-r from-[#8CB7FF] to-[#FF9FA7] bg-clip-text text-transparent">Like You.</span>
             </h2>
             <p className="mt-4 text-white/40 text-lg max-w-xl mx-auto">
               Match your own handwriting with AI, so digital notes feel personal. Upload a sample and NikNote maps its slant, size and spacing.
@@ -233,7 +233,7 @@ const PremiumLanding: React.FC = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.7, delay: 0.2 }}
-              className="rounded-2xl border border-white/[0.08] bg-gradient-to-br from-amber-50/[0.97] to-orange-50/[0.95] p-8 relative overflow-hidden"
+              className="rounded-2xl border border-white/[0.08] bg-gradient-to-br from-[#fff8dc]/[0.97] to-[#fff0f0]/[0.95] p-8 relative overflow-hidden"
             >
               {/* Ruled lines */}
               <div className="absolute inset-x-8 top-20 space-y-[28px]">
@@ -257,7 +257,7 @@ const PremiumLanding: React.FC = () => {
                 The quick brown fox jumps over the lazy dog. This is my typed assignment text that I need to convert.
               </div>
               <div className="mt-6 flex items-center gap-2 text-xs text-black/20 relative">
-                <span className="px-2 py-1 rounded bg-black/5">✨ AI Handwritten Output</span>
+                <span className="px-2 py-1 rounded bg-[#111827]/5">✨ AI Handwritten Output</span>
               </div>
             </motion.div>
           </div>
@@ -268,7 +268,7 @@ const PremiumLanding: React.FC = () => {
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.5 }}
-            className="hidden md:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-16 h-16 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 items-center justify-center shadow-2xl shadow-pink-500/30"
+            className="hidden md:flex absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-16 h-16 rounded-full bg-gradient-to-r from-[#2869D5] to-[#C83F58] items-center justify-center shadow-2xl shadow-[#FF858F]/30"
           >
             <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
           </motion.div>
@@ -277,15 +277,15 @@ const PremiumLanding: React.FC = () => {
 
       {/* ──── FEATURE 2 — AI SOLVER ──── */}
       <SectionWrapper id="solver" className="py-32 md:py-40">
-        <GlowOrb className="w-[500px] h-[500px] bg-purple-600/10 top-0 right-0" />
-        <GlowOrb className="w-[400px] h-[400px] bg-orange-500/10 bottom-0 left-20" />
+        <GlowOrb className="w-[500px] h-[500px] bg-[#347FF0]/10 top-0 right-0" />
+        <GlowOrb className="w-[400px] h-[400px] bg-[#FFE45C]/10 bottom-0 left-20" />
 
         <div className="relative z-10 max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <span className="text-sm font-semibold tracking-widest uppercase text-purple-400/80">Feature 02</span>
+            <span className="text-sm font-semibold tracking-widest uppercase text-[#8CB7FF]/85">Feature 02</span>
             <h2 className="mt-4 text-4xl md:text-6xl font-extrabold">
               Stuck? Just Ask{' '}
-              <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">NikNote.</span>
+              <span className="bg-gradient-to-r from-[#8CB7FF] to-[#FF9FA7] bg-clip-text text-transparent">NikNote.</span>
             </h2>
             <p className="mt-4 text-white/40 text-lg max-w-xl mx-auto">
               From calculus to history, our AI Solver breaks down complex problems in seconds.
@@ -325,11 +325,11 @@ const PremiumLanding: React.FC = () => {
                 transition={{ delay: 0.5, duration: 0.6 }}
                 className="space-y-4"
               >
-                <div className="flex items-center gap-2 text-sm text-purple-400">
+                <div className="flex items-center gap-2 text-sm text-[#8CB7FF]">
                   <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
-                    className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full"
+                    animate={reduced ? { rotate: 0 } : { rotate: 360 }}
+                    transition={reduced ? { duration: 0 } : { repeat: Infinity, duration: 2, ease: 'linear' }}
+                    className="w-4 h-4 border-2 border-[#8CB7FF] border-t-transparent rounded-full"
                   />
                   AI Solving...
                 </div>
@@ -345,7 +345,7 @@ const PremiumLanding: React.FC = () => {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: s.delay }}
-                    className={`rounded-lg p-4 ${i === 2 ? 'bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20' : 'bg-white/[0.03] border border-white/[0.06]'}`}
+                    className={`rounded-lg p-4 ${i === 2 ? 'bg-gradient-to-r from-[#347FF0]/10 to-[#FF858F]/10 border border-[#347FF0]/20' : 'bg-white/[0.03] border border-white/[0.06]'}`}
                   >
                     <span className={`text-xs font-semibold uppercase tracking-wider ${i === 2 ? 'text-green-400' : 'text-white/30'}`}>{s.step}</span>
                     <p className={`mt-1 font-mono ${i === 2 ? 'text-lg text-white font-bold' : 'text-white/60'}`}>{s.text}</p>
@@ -359,13 +359,13 @@ const PremiumLanding: React.FC = () => {
 
       {/* ──── FEATURE 3 — AI POWER ──── */}
       <SectionWrapper id="power" className="py-32 md:py-40">
-        <GlowOrb className="w-[800px] h-[800px] bg-orange-500/[0.07] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        <GlowOrb className="w-[800px] h-[800px] bg-[#FFE45C]/[0.07] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
 
         <div className="relative z-10 max-w-6xl mx-auto text-center">
-          <span className="text-sm font-semibold tracking-widest uppercase text-orange-400/80">Feature 03</span>
+          <span className="text-sm font-semibold tracking-widest uppercase text-[#FFE45C]/85">Feature 03</span>
           <h2 className="mt-4 text-4xl md:text-6xl font-extrabold">
             Study tools that{' '}
-            <span className="bg-gradient-to-r from-orange-400 via-pink-400 to-purple-500 bg-clip-text text-transparent">do the boring part.</span>
+            <span className="bg-gradient-to-r from-[#8CB7FF] via-[#5F92E8] to-[#FF9FA7] bg-clip-text text-transparent">do the boring part.</span>
           </h2>
           <p className="mt-4 text-white/40 text-lg max-w-xl mx-auto">
             Summarize lectures, organize messy notes, and generate quizzes automatically.
@@ -390,7 +390,7 @@ const PremiumLanding: React.FC = () => {
                 <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
                 <p className="text-white/40 leading-relaxed">{item.desc}</p>
                 {/* Bottom glow on hover */}
-                <div className="mt-6 h-px bg-gradient-to-r from-transparent via-orange-500/0 to-transparent group-hover:via-orange-500/40 transition-all duration-700" />
+                <div className="mt-6 h-px bg-gradient-to-r from-transparent via-[#FFE45C]/0 to-transparent group-hover:via-[#FFE45C]/40 transition-all duration-700" />
               </motion.div>
             ))}
           </div>
@@ -398,11 +398,11 @@ const PremiumLanding: React.FC = () => {
           {/* Floating connected orbs — abstract neural network visual */}
           <div className="relative mt-20 h-48 md:h-64">
             {[
-              { x: '15%', y: '30%', size: 80, color: 'from-orange-500/30 to-pink-500/30', delay: 0 },
-              { x: '45%', y: '20%', size: 100, color: 'from-pink-500/30 to-purple-500/30', delay: 0.3 },
-              { x: '75%', y: '40%', size: 70, color: 'from-purple-500/30 to-orange-500/30', delay: 0.6 },
-              { x: '30%', y: '70%', size: 60, color: 'from-orange-400/20 to-pink-400/20', delay: 0.9 },
-              { x: '60%', y: '65%', size: 90, color: 'from-pink-400/20 to-purple-400/20', delay: 1.2 },
+              { x: '15%', y: '30%', size: 80, color: 'from-[#FFE45C]/30 to-[#FF858F]/30', delay: 0 },
+              { x: '45%', y: '20%', size: 100, color: 'from-[#FF858F]/30 to-[#347FF0]/30', delay: 0.3 },
+              { x: '75%', y: '40%', size: 70, color: 'from-[#347FF0]/30 to-[#FFE45C]/30', delay: 0.6 },
+              { x: '30%', y: '70%', size: 60, color: 'from-[#FFE45C]/20 to-[#FF9FA7]/20', delay: 0.9 },
+              { x: '60%', y: '65%', size: 90, color: 'from-[#FF9FA7]/20 to-[#8CB7FF]/20', delay: 1.2 },
             ].map((orb, i) => (
               <motion.div
                 key={i}
@@ -410,7 +410,7 @@ const PremiumLanding: React.FC = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: orb.delay, type: 'spring', stiffness: 100 }}
-                animate={{ y: [0, -10, 0, 10, 0] }}
+                animate={reduced ? { y: 0 } : { y: [0, -10, 0, 10, 0] }}
                 className={`absolute rounded-full bg-gradient-to-br ${orb.color} blur-sm`}
                 style={{ left: orb.x, top: orb.y, width: orb.size, height: orb.size }}
               />
@@ -429,12 +429,12 @@ const PremiumLanding: React.FC = () => {
 
       {/* ──── CTA ──── */}
       <SectionWrapper className="py-32 md:py-40">
-        <GlowOrb className="w-[900px] h-[600px] bg-gradient-to-r from-orange-500/15 via-pink-500/15 to-purple-600/15 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+        <GlowOrb className="w-[900px] h-[600px] bg-gradient-to-r from-[#FFE45C]/10 via-[#FF858F]/12 to-[#347FF0]/12 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
 
         <div className="relative z-10 text-center max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-6xl font-extrabold leading-tight">
             Ready to Write{' '}
-            <span className="bg-gradient-to-r from-orange-400 via-pink-400 to-purple-500 bg-clip-text text-transparent">Beautifully?</span>
+            <span className="bg-gradient-to-r from-[#8CB7FF] via-[#5F92E8] to-[#FF9FA7] bg-clip-text text-transparent">Beautifully?</span>
           </h2>
           <p className="mt-6 text-white/40 text-lg">
             NikNote is early and built by one developer in India. Try it free, and tell him what breaks.
@@ -443,8 +443,8 @@ const PremiumLanding: React.FC = () => {
             onClick={goApp}
             className="relative group mt-10 inline-flex items-center gap-3 px-12 py-5 rounded-full text-xl font-bold text-white"
           >
-            <span className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600" />
-            <span className="absolute inset-0 rounded-full bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 blur-xl opacity-50 group-hover:opacity-80 transition-opacity" />
+            <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[#2869D5] via-[#1F56B4] to-[#C83F58]" />
+            <span className="absolute inset-0 rounded-full bg-gradient-to-r from-[#2869D5] via-[#1F56B4] to-[#C83F58] blur-xl opacity-50 group-hover:opacity-80 transition-opacity" />
             <span className="relative flex items-center gap-2">
               Get Started — It's Free
               <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
@@ -457,8 +457,8 @@ const PremiumLanding: React.FC = () => {
       <footer className="relative border-t border-white/[0.06] py-16 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-3">
-            <img src={niknoteLogoImg} alt="NikNote" className="h-9" />
-            <span className="text-sm font-bold text-white/60">NikNote</span>
+            <img src="/images/brand/niknote-primary-mark.png" alt="" className="h-9 w-9 object-contain" />
+            <img src="/images/brand/niknote-primary-wordmark-white.png" alt="NikNote" className="h-6 w-auto object-contain opacity-70" />
           </div>
           <div className="flex items-center gap-6 text-sm text-white/30">
             <a href="#features" className="hover:text-white/60 transition-colors">Features</a>
@@ -479,9 +479,14 @@ const PremiumLanding: React.FC = () => {
 const TypewriterText: React.FC<{ text: string }> = ({ text }) => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
+  const reduced = useReducedMotion();
   const [displayed, setDisplayed] = React.useState('');
 
   React.useEffect(() => {
+    if (reduced) {
+      setDisplayed(text);
+      return;
+    }
     if (!inView) return;
     let i = 0;
     const id = setInterval(() => {
@@ -490,12 +495,12 @@ const TypewriterText: React.FC<{ text: string }> = ({ text }) => {
       if (i >= text.length) clearInterval(id);
     }, 30);
     return () => clearInterval(id);
-  }, [inView, text]);
+  }, [inView, text, reduced]);
 
   return (
     <span ref={ref}>
       {displayed}
-      <motion.span animate={{ opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.8 }} className="text-orange-400">|</motion.span>
+      {!reduced && <motion.span animate={{ opacity: [1, 0] }} transition={{ repeat: Infinity, duration: 0.8 }} className="text-[#FFE45C]">|</motion.span>}
     </span>
   );
 };

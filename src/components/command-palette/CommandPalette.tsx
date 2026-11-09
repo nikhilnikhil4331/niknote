@@ -11,7 +11,7 @@ import {
   Download, Share2, Moon, Sun, Trash2, RotateCcw,
   BookOpen, Brain, Image, Table, Hash, Code,
   ArrowRight, Command, Clock, Star, ChevronRight,
-  LayoutGrid, Scan, Edit3, Mic, PenTool, Zap
+  LayoutGrid, Scan, Edit3, Mic, PenTool, Zap, Shapes
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -54,6 +54,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     { id: 'home', label: 'Go to Home', icon: <FileText className="w-4 h-4" />, category: 'page', action: () => navigate('/') },
     { id: 'ai', label: 'NikAI (Astra Core)', icon: <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain" />, category: 'page', action: () => navigate('/ai') },
     { id: 'notebooks', label: 'My Notebooks', icon: <BookOpen className="w-4 h-4" />, category: 'page', action: () => navigate('/notebooks') },
+    { id: 'playground', label: 'Creative Playground', description: 'Arrange notes, checklists and ideas on a canvas', icon: <Shapes className="w-4 h-4 text-[#347ff0]" />, category: 'page', action: () => navigate('/playground') },
     { id: 'documents', label: 'Documents', icon: <FileText className="w-4 h-4" />, category: 'page', action: () => navigate('/documents') },
     { id: 'history', label: 'History', icon: <Clock className="w-4 h-4" />, category: 'page', action: () => navigate('/history') },
     { id: 'achievements', label: 'Achievements', icon: <Star className="w-4 h-4 text-amber-500" />, category: 'page', action: () => navigate('/achievements') },
@@ -70,12 +71,12 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     { id: 'delete', label: 'Delete Note', icon: <Trash2 className="w-4 h-4 text-red-500" />, category: 'action', action: () => {} },
 
     // NikAI Powers
-    { id: 'ai-write', label: 'NikAI Smart Notes', description: 'Generate multi-ink notes & flashcards', icon: <Sparkles className="w-4 h-4 text-purple-500" />, category: 'ai', action: () => navigate('/ai') },
-    { id: 'ai-solve', label: 'NikAI Solver & Pro Reasoning', description: 'Solve math, science & coding step by step', icon: <Brain className="w-4 h-4 text-purple-500" />, category: 'ai', action: () => navigate('/ai') },
+    { id: 'ai-write', label: 'NikAI Smart Notes', description: 'Generate multi-ink notes & flashcards', icon: <Sparkles className="w-4 h-4 text-[#347ff0]" />, category: 'ai', action: () => navigate('/ai') },
+    { id: 'ai-solve', label: 'NikAI Solver & Pro Reasoning', description: 'Solve math, science & coding step by step', icon: <Brain className="w-4 h-4 text-[#347ff0]" />, category: 'ai', action: () => navigate('/ai') },
     { id: 'ai-dna', label: 'Handwriting DNA Scanner', description: 'Scan handwriting DNA', icon: <Scan className="w-4 h-4 text-emerald-500" />, category: 'ai', action: () => {} },
     { id: 'ai-quiz', label: 'NikAI Live Quiz', description: 'Play interactive 5-MCQ test', icon: <Zap className="w-4 h-4 text-yellow-500" />, category: 'ai', action: () => navigate('/ai') },
     { id: 'ai-flashcards', label: 'NikAI Flashcards', description: 'Extract flashcards automatically', icon: <BookOpen className="w-4 h-4 text-blue-500" />, category: 'ai', action: () => navigate('/ai') },
-    { id: 'ai-explain', label: 'AI Explain', description: 'Explain selected text', icon: <Brain className="w-4 h-4 text-indigo-500" />, category: 'ai', action: () => {} },
+    { id: 'ai-explain', label: 'AI Explain', description: 'Explain selected text', icon: <Brain className="w-4 h-4 text-[#347ff0]" />, category: 'ai', action: () => {} },
     { id: 'ai-translate', label: 'AI Translate', description: 'Translate to Hindi/English', icon: <Hash className="w-4 h-4 text-green-500" />, category: 'ai', action: () => {} },
     { id: 'ai-dictate', label: 'Voice Dictation', description: 'Type with your voice', icon: <Mic className="w-4 h-4 text-red-500" />, category: 'ai', action: () => {} },
 
@@ -228,13 +229,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                           className={cn(
                             "w-full flex items-center gap-3 px-4 py-2 text-left transition-colors",
                             flatIndex === selectedIndex
-                              ? "bg-indigo-50 text-indigo-900"
+                              ? "bg-[#eaf2ff] text-[#173a71]"
                               : "text-gray-700 hover:bg-gray-50"
                           )}
                         >
                           <div className={cn(
                             "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
-                            flatIndex === selectedIndex ? "bg-indigo-100" : "bg-gray-100"
+                            flatIndex === selectedIndex ? "bg-[#dceaff]" : "bg-gray-100"
                           )}>
                             {item.icon}
                           </div>
@@ -250,7 +251,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                             </kbd>
                           )}
                           {flatIndex === selectedIndex && (
-                            <ArrowRight className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+                            <ArrowRight className="w-3.5 h-3.5 text-[#347ff0] flex-shrink-0" />
                           )}
                         </button>
                       );
@@ -267,7 +268,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 <span className="flex items-center gap-1">↵ Select</span>
                 <span className="flex items-center gap-1">ESC Close</span>
               </div>
-              <span className="text-indigo-400 font-medium">NikNote</span>
+              <span className="text-[#347ff0] font-medium">NikNote</span>
             </div>
           </motion.div>
         </>

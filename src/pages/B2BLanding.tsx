@@ -23,7 +23,7 @@ const institutionPlans = [
     period: "",
     seats: "For individual teachers and students",
     icon: School,
-    color: "from-blue-500 to-indigo-600",
+    color: "from-[#347ff0] to-[#1f56b4]",
     action: "editor",
     features: [
       "Create handwritten worksheets and notes",
@@ -38,7 +38,7 @@ const institutionPlans = [
     seats: "For one account; ₹99 for 30 days is also available",
     icon: GraduationCap,
     highlighted: true,
-    color: "from-purple-500 to-pink-600",
+    color: "from-[#ff858f] to-[#c83f58]",
     action: "premium",
     features: [
       "AI writing assistant and voice dictation",
@@ -169,7 +169,7 @@ const B2BPage = () => {
 
       {/* Hero */}
       <section className="relative overflow-hidden py-16 sm:py-24 px-4">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-pink-500/5" />
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -186,7 +186,7 @@ const B2BPage = () => {
             className="text-3xl sm:text-5xl font-extrabold leading-tight mb-4"
           >
             Handwritten worksheets,
-            <span className="block bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-primary to-[#c83f58] bg-clip-text text-transparent">
               without the hand-copying
             </span>
           </motion.h1>
@@ -291,7 +291,7 @@ const B2BPage = () => {
                 }`}
               >
                 {plan.highlighted && (
-                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-purple-600" />
+                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-[#c83f58]" />
                 )}
                 <div className="p-6">
                   <div className="flex items-center gap-3 mb-4">
@@ -410,7 +410,7 @@ const B2BPage = () => {
       </section>
 
       {/* Contact Form */}
-      <section id="contact" className="py-16 px-4 bg-gradient-to-br from-primary/5 to-purple-500/5">
+      <section id="contact" className="py-16 px-4 bg-gradient-to-br from-primary/5 to-pink-500/5">
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-3">Get Started Today</h2>
           <p className="text-center text-muted-foreground mb-8">Tell us what your teachers or students need. The free editor is available now.</p>

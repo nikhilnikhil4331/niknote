@@ -220,7 +220,7 @@ export default function RoutineTracker() {
           <WaterGlass glasses={w.water} goal={waterGoal} onChange={n => { haptic(n > w.water ? 'light' : 'selection'); if (n >= waterGoal && w.water < waterGoal) { haptic('success'); confetti({ particleCount: 60, spread: 60, colors: ['#38bdf8', '#0ea5e9', '#ffffff'] }); } saveWellness({ water: n }); }} />
         </div>
         <div className="rounded-3xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2 text-sm font-medium"><Moon className="w-4 h-4 text-indigo-500" />Sleep</div>
+          <div className="flex items-center gap-2 text-sm font-medium"><Moon className="w-4 h-4 text-[#347ff0]" />Sleep</div>
           <input type="range" min={0} max={12} step={0.5} value={w.sleep_hours} onChange={e => setWeek(p => ({ ...p, [today]: { ...w, sleep_hours: Number(e.target.value) } }))}
             onPointerUp={() => saveWellness({})} className="w-full mt-4 accent-primary" aria-label="Sleep hours" />
           <p className="text-xs text-muted-foreground mt-1">{w.sleep_hours} hours</p>

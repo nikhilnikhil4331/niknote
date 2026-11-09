@@ -6,7 +6,7 @@
 // ============================================================
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 export interface NikAIBrandProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'hero';
@@ -50,6 +50,8 @@ export const NikAIStarConstellation: React.FC<{
   className?: string;
 }> = ({ size = 28, animate = 'idle', className = '' }) => {
   const uid = React.useId().replace(/:/g, '');
+  const reducedMotion = useReducedMotion();
+  const shouldAnimate = Boolean(animate && !reducedMotion);
   const isFast = animate === 'fast' || animate === true;
 
   return (
@@ -63,14 +65,14 @@ export const NikAIStarConstellation: React.FC<{
     >
       <defs>
         <linearGradient id={`nikai-star-a-${uid}`} x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#8B3DFF" />
-          <stop offset="52%" stopColor="#EC4899" />
-          <stop offset="100%" stopColor="#FF934F" />
+          <stop offset="0%" stopColor="#2869D5" />
+          <stop offset="52%" stopColor="#FF858F" />
+          <stop offset="100%" stopColor="#FFE45C" />
         </linearGradient>
         <linearGradient id={`nikai-star-b-${uid}`} x1="12" y1="4" x2="44" y2="36" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#A855F7" />
-          <stop offset="60%" stopColor="#F472B6" />
-          <stop offset="100%" stopColor="#FDBA74" />
+          <stop offset="0%" stopColor="#347FF0" />
+          <stop offset="60%" stopColor="#FF858F" />
+          <stop offset="100%" stopColor="#FFE45C" />
         </linearGradient>
       </defs>
 
@@ -78,7 +80,7 @@ export const NikAIStarConstellation: React.FC<{
         d="M20 7C20.5 15.2 22.8 17.5 31 18C22.8 18.5 20.5 20.8 20 29C19.5 20.8 17.2 18.5 9 18C17.2 17.5 19.5 15.2 20 7Z"
         fill={`url(#nikai-star-a-${uid})`}
         animate={
-          animate
+          shouldAnimate
             ? {
                 scale: isFast ? [0.92, 1.12, 0.92] : [0.97, 1.05, 0.97],
                 opacity: [0.9, 1, 0.9],
@@ -97,7 +99,7 @@ export const NikAIStarConstellation: React.FC<{
         d="M36 5C36.3 9.8 37.7 11.2 42.5 11.5C37.7 11.8 36.3 13.2 36 18C35.7 13.2 34.3 11.8 29.5 11.5C34.3 11.2 35.7 9.8 36 5Z"
         fill={`url(#nikai-star-b-${uid})`}
         animate={
-          animate
+          shouldAnimate
             ? {
                 scale: isFast ? [0.85, 1.18, 0.85] : [0.94, 1.08, 0.94],
                 opacity: [0.8, 1, 0.8],
@@ -117,7 +119,7 @@ export const NikAIStarConstellation: React.FC<{
         d="M33 27C33.25 30.8 34.2 31.8 38 32C34.2 32.2 33.25 33.2 33 37C32.75 33.2 31.8 32.2 28 32C31.8 31.8 32.75 30.8 33 27Z"
         fill={`url(#nikai-star-b-${uid})`}
         animate={
-          animate
+          shouldAnimate
             ? {
                 scale: isFast ? [0.85, 1.16, 0.85] : [0.94, 1.08, 0.94],
                 opacity: [0.75, 1, 0.75],
@@ -174,12 +176,12 @@ export const NikAIBrand: React.FC<NikAIBrandProps> = ({
         />
         <span className="sr-only">NikAI</span>
         {badge && (
-          <span className="mt-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[#F4F1FC] text-[#5C4E8E] border border-[#E7E2F7]">
+          <span className="mt-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[#EEF4FF] text-[#5C4E8E] border border-[#C7D9F5]">
             {badge}
           </span>
         )}
         {subtitle && (
-          <p className="text-xs font-medium text-[#6C6688] mt-1 tracking-tight text-center">
+          <p className="text-xs font-medium text-[#5E5961] mt-1 tracking-tight text-center">
             {subtitle}
           </p>
         )}
@@ -205,13 +207,13 @@ export const NikAIBrand: React.FC<NikAIBrandProps> = ({
         />
         <span className="sr-only">NikAI</span>
         {badge && (
-          <span className="ml-0.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[#F4F1FC] text-[#5C4E8E] border border-[#E7E2F7]">
+          <span className="ml-0.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[#EEF4FF] text-[#5C4E8E] border border-[#C7D9F5]">
             {badge}
           </span>
         )}
       </div>
       {subtitle && (
-        <span className="text-[11px] font-medium text-[#6C6688] -mt-0.5 tracking-tight">
+        <span className="text-[11px] font-medium text-[#5E5961] -mt-0.5 tracking-tight">
           {subtitle}
         </span>
       )}
@@ -225,6 +227,7 @@ export const NikAIBrand: React.FC<NikAIBrandProps> = ({
 export const NikAILoader: React.FC<{ label?: string }> = ({
   label = 'Awakening NikAI Neural Engine…',
 }) => {
+  const reducedMotion = useReducedMotion();
   return (
     <div
       role="status"
@@ -233,12 +236,12 @@ export const NikAILoader: React.FC<{ label?: string }> = ({
     >
       <div className="relative flex items-center justify-center">
         <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 7, repeat: Infinity, ease: 'linear' }}
+          animate={reducedMotion ? undefined : { rotate: 360 }}
+          transition={{ duration: 7, repeat: reducedMotion ? 0 : Infinity, ease: 'linear' }}
           className="w-24 h-24 rounded-full p-[2px]"
           style={{
             background:
-              'conic-gradient(from 0deg, #8B3DFF, #EC4899, #FF934F, #C084FC, #8B3DFF)',
+              'conic-gradient(from 0deg, #2869D5, #FF858F, #FFE45C, #FFE45C, #2869D5)',
           }}
         >
           <div className="w-full h-full rounded-full bg-white" />
@@ -255,19 +258,19 @@ export const NikAILoader: React.FC<{ label?: string }> = ({
 
       <NikAIBrand size="md" badge="ASTRA" />
 
-      <div className="w-40 h-1.5 rounded-full overflow-hidden bg-purple-100">
+      <div className="w-40 h-1.5 rounded-full overflow-hidden bg-blue-100">
         <motion.div
-          initial={{ x: '-100%' }}
-          animate={{ x: '100%' }}
-          transition={{ duration: 1.15, repeat: Infinity, ease: 'easeInOut' }}
+          initial={reducedMotion ? false : { x: '-100%' }}
+          animate={reducedMotion ? undefined : { x: '100%' }}
+          transition={{ duration: 1.15, repeat: reducedMotion ? 0 : Infinity, ease: 'easeInOut' }}
           className="w-full h-full rounded-full"
           style={{
-            background: 'linear-gradient(90deg, #8B3DFF, #EC4899, #FF934F)',
+            background: 'linear-gradient(90deg, #2869D5, #FF858F, #FFE45C)',
           }}
         />
       </div>
 
-      <p className="text-xs font-semibold text-[#5E577C]">{label}</p>
+      <p className="text-xs font-semibold text-[#5E5961]">{label}</p>
     </div>
   );
 };

@@ -383,7 +383,7 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
                         style={{ left: `${orb.x}%`, top: `${orb.y}%` }}
                         className={`absolute -translate-x-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full text-lg shadow-sm active:scale-125 cursor-pointer ${
                           orb.kind === 'astra'
-                            ? 'bg-violet-100 text-violet-700 ring-2 ring-violet-300'
+                            ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-300'
                             : orb.kind === 'bomb'
                               ? 'bg-rose-100 text-rose-700 ring-2 ring-rose-300'
                               : 'bg-amber-100 text-amber-600 ring-2 ring-amber-300'
@@ -403,7 +403,7 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
                       transition={{ duration: 0.6 }}
                       style={{ left: `${b.x}%`, top: `${b.y}%` }}
                       className={`pointer-events-none absolute -translate-x-1/2 text-xs font-bold ${
-                        b.tone === 'super' ? 'text-violet-600' : b.tone === 'bad' ? 'text-rose-500' : 'text-amber-600'
+                        b.tone === 'super' ? 'text-blue-600' : b.tone === 'bad' ? 'text-rose-500' : 'text-amber-600'
                       }`}
                     >
                       {b.label}

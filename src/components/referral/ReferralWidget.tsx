@@ -94,9 +94,9 @@ export const ReferralWidget: React.FC<ReferralWidgetProps> = ({ compact = false,
           <div className="text-[10px] text-amber-600/70">Free Days Earned</div>
         </div>
         <div className="text-center p-2 rounded-xl bg-white/50 dark:bg-white/5">
-          <Sparkles className="h-4 w-4 text-purple-600 mx-auto mb-1" />
-          <div className="text-lg font-bold text-purple-600">{stats.pendingRewards}</div>
-          <div className="text-[10px] text-purple-600/70">Pending</div>
+          <Sparkles className="h-4 w-4 text-[#2869d5] mx-auto mb-1" />
+          <div className="text-lg font-bold text-[#2869d5]">{stats.pendingRewards}</div>
+          <div className="text-[10px] text-[#2869d5]/70">Pending</div>
         </div>
       </div>
 

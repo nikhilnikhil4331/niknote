@@ -1150,7 +1150,7 @@ const AdminChatWidget: React.FC = () => {
       <motion.button
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow"
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-gradient-to-r from-[#347ff0] to-[#245dcc] text-white shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow"
       >
         {isOpen ? <X className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
       </motion.button>
@@ -1165,7 +1165,7 @@ const AdminChatWidget: React.FC = () => {
             className="fixed bottom-20 right-6 z-50 w-80 max-h-[420px] bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/30 shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
+            <div className="px-4 py-3 bg-gradient-to-r from-[#347ff0] to-[#245dcc] text-white">
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-4 h-4" />
                 <span className="text-sm font-bold">Admin Chat</span>
@@ -1202,7 +1202,7 @@ const AdminChatWidget: React.FC = () => {
               <button
                 onClick={handleSend}
                 disabled={!input.trim()}
-                className="px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-xs font-medium disabled:opacity-50"
+                className="px-3 py-2 rounded-lg bg-gradient-to-r from-[#347ff0] to-[#245dcc] text-white text-xs font-medium disabled:opacity-50"
               >
                 Send
               </button>

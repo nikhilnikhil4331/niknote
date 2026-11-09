@@ -632,7 +632,7 @@ export default function MoneyTracker() {
             { id: 'expense', label: 'Add expense', icon: TrendingDown, tint: '#e11d48', onSelect: () => { setForm(f => ({ ...f, kind: 'expense' })); focusPanel('panel-tx', amountRef); } },
             { id: 'income', label: 'Add income', icon: TrendingUp, tint: '#059669', onSelect: () => { setForm(f => ({ ...f, kind: 'income' })); focusPanel('panel-tx', amountRef); } },
             { id: 'receipt', label: 'Scan receipt', icon: Camera, tint: '#0ea5e9', onSelect: () => scanRef.current?.click() },
-            { id: 'budget', label: 'Budget', icon: PiggyBank, tint: '#7c3aed', onSelect: () => focusPanel('panel-budget') },
+            { id: 'budget', label: 'Budget', icon: PiggyBank, tint: '#2869d5', onSelect: () => focusPanel('panel-budget') },
             { id: 'goals', label: 'Goals', icon: Target, tint: '#f59e0b', onSelect: () => focusPanel('panel-goals') },
             { id: 'bills', label: 'Bills', icon: ReceiptText, tint: '#64748b', onSelect: () => focusPanel('panel-bills') },
             { id: 'report', label: 'PDF report', icon: FileDown, tint: '#334155', onSelect: exportPdf },

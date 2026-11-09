@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Sparkles, School, GraduationCap, Briefcase, Camera, Wand2, ArrowRight, Check, X, BookOpen, Trophy, Zap, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ type Step = (typeof steps)[number];
 export default function OnboardingPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const reducedMotion = useReducedMotion();
   const [step, setStep] = useState<Step>("welcome");
   const [useCase, setUseCase] = useState<string | null>(null);
   const [examBoard, setExamBoard] = useState<string | null>(null);
@@ -110,11 +111,9 @@ export default function OnboardingPage() {
     navigate("/");
   };
 
-  const slideVariants = {
-    enter: { x: 80, opacity: 0 },
-    center: { x: 0, opacity: 1 },
-    exit: { x: -80, opacity: 0 },
-  };
+  const slideVariants = reducedMotion
+    ? { enter: { opacity: 0 }, center: { opacity: 1 }, exit: { opacity: 0 } }
+    : { enter: { x: 80, opacity: 0 }, center: { x: 0, opacity: 1 }, exit: { x: -80, opacity: 0 } };
 
   if (!user) return null;
 
@@ -146,16 +145,16 @@ export default function OnboardingPage() {
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: 0.35, ease: "easeInOut" }}
+            transition={reducedMotion ? { duration: 0 } : { duration: 0.35, ease: "easeInOut" }}
             className="w-full max-w-md"
           >
             {/* STEP 1: Welcome */}
             {step === "welcome" && (
               <div className="text-center space-y-6">
                 <motion.div
-                  initial={{ scale: 0 }}
+                  initial={reducedMotion ? false : { scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ type: "spring", delay: 0.2 }}
+                  transition={reducedMotion ? { duration: 0 } : { type: "spring", delay: 0.2 }}
                   className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-xl shadow-primary/20"
                 >
                   <Sparkles className="w-10 h-10 text-primary-foreground" />
@@ -221,7 +220,7 @@ export default function OnboardingPage() {
                 <div className="space-y-3">
                   {[
                     { id: "cbse", icon: BookOpen, label: "📚 CBSE Board", desc: "Class 9-12, NCERT pattern", color: "bg-blue-500/10 text-blue-600" },
-                    { id: "icse", icon: BookOpen, label: "📖 ICSE/ISC Board", desc: "CISCE curriculum", color: "bg-purple-500/10 text-purple-600" },
+                    { id: "icse", icon: BookOpen, label: "📖 ICSE/ISC Board", desc: "CISCE curriculum", color: "bg-[#fff0f0] text-[#b92d48]" },
                     { id: "jee", icon: Trophy, label: "🎯 JEE (Main + Advanced)", desc: "IIT engineering entrance", color: "bg-red-500/10 text-red-600" },
                     { id: "neet", icon: Star, label: "🏥 NEET", desc: "Medical entrance exam", color: "bg-green-500/10 text-green-600" },
                     { id: "upsc", icon: Briefcase, label: "🏛️ UPSC Civil Services", desc: "IAS, IPS, IFS preparation", color: "bg-amber-500/10 text-amber-600" },
@@ -254,7 +253,7 @@ export default function OnboardingPage() {
             {/* STEP 4: Handwriting */}
             {step === "handwriting" && (
               <div className="space-y-6 text-center">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#ff858f] to-[#c83f58] flex items-center justify-center shadow-lg">
                   <Camera className="w-8 h-8 text-white" />
                 </div>
                 <div>
@@ -275,10 +274,10 @@ export default function OnboardingPage() {
                     onChange={handleHandwritingUpload}
                     disabled={uploading}
                   />
-                  <div className="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 text-white font-semibold flex items-center justify-center gap-2 cursor-pointer hover:opacity-90 transition-opacity shadow-lg">
+                  <div className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#c83f58] to-[#a92f47] text-white font-semibold flex items-center justify-center gap-2 cursor-pointer hover:opacity-90 transition-opacity shadow-lg">
                     {uploading ? (
                       <>
-                        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}>
+                        <motion.div animate={reducedMotion ? { rotate: 0 } : { rotate: 360 }} transition={reducedMotion ? { duration: 0 } : { repeat: Infinity, duration: 1 }}>
                           <Sparkles className="w-5 h-5" />
                         </motion.div>
                         Analyzing your handwriting...
@@ -300,7 +299,7 @@ export default function OnboardingPage() {
             {/* STEP 5: AI Demo */}
             {step === "ai-demo" && (
               <div className="space-y-6 text-center">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-[#347ff0] to-[#245dcc] flex items-center justify-center shadow-lg">
                   <Wand2 className="w-8 h-8 text-white" />
                 </div>
                 <div>
@@ -318,11 +317,11 @@ export default function OnboardingPage() {
                 <Button
                   onClick={handleAIDemo}
                   disabled={loading || !aiTopic.trim()}
-                  className="w-full h-14 rounded-2xl text-base font-semibold bg-gradient-to-r from-violet-500 to-indigo-600 text-white shadow-lg"
+                  className="w-full h-14 rounded-2xl text-base font-semibold bg-gradient-to-r from-[#347ff0] to-[#245dcc] text-white shadow-lg"
                 >
                   {loading ? (
                     <>
-                      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}>
+                      <motion.div animate={reducedMotion ? { rotate: 0 } : { rotate: 360 }} transition={reducedMotion ? { duration: 0 } : { repeat: Infinity, duration: 1 }}>
                         <Sparkles className="w-5 h-5 mr-2" />
                       </motion.div>
                       Generating Notes...
@@ -341,9 +340,9 @@ export default function OnboardingPage() {
             {step === "tour" && (
               <div className="space-y-6 text-center">
                 <motion.div
-                  initial={{ scale: 0 }}
+                  initial={reducedMotion ? false : { scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ type: "spring", delay: 0.1 }}
+                  transition={reducedMotion ? { duration: 0 } : { type: "spring", delay: 0.1 }}
                   className="text-6xl"
                 >
                   🎉
@@ -357,12 +356,13 @@ export default function OnboardingPage() {
                     { emoji: "✏️", title: "Block Editor", desc: "Type '/' to see magic commands!" },
                     { emoji: "🧠", title: "AI Solver", desc: "Stuck on a problem? Your AI assistant helps!" },
                     { emoji: "📱", title: "Mobile Navigation", desc: "Switch between writing, styling, preview from the bottom bar." },
+                    { emoji: "🌟", title: "Creative Playground", desc: "Move notes, checklists and little ideas around." },
                   ].map((tip, i) => (
                     <motion.div
                       key={i}
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={reducedMotion ? false : { opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 + i * 0.15 }}
+                      transition={reducedMotion ? { duration: 0 } : { delay: 0.2 + i * 0.15 }}
                       className="flex items-start gap-3 p-3 rounded-xl bg-muted/40"
                     >
                       <span className="text-xl">{tip.emoji}</span>

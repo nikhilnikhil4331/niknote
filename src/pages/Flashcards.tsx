@@ -1,7 +1,7 @@
 // Flashcards study mode: pulls flashcard blocks from all pages of all notebooks
 // and runs a spaced-repetition session (Again / Hard / Good / Easy).
 import React, { useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ArrowLeft, RotateCw, Sparkles, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -43,6 +43,7 @@ const Flashcards: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const srs = useFlashcards();
+  const reducedMotion = useReducedMotion();
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
   const [idx, setIdx] = useState(0);
@@ -85,19 +86,19 @@ const Flashcards: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50 text-gray-500">Loading flashcards...</div>;
+    return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fffdf5] to-[#eef4ff] text-[#68636c]">Loading flashcards...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <header className="sticky top-0 z-20 backdrop-blur-xl bg-white/70 border-b border-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-[#fffdf5] via-white to-[#fff0f0]">
+      <header className="sticky top-0 z-20 backdrop-blur-xl bg-white/80 border-b border-[#dce6f5]">
         <div className="max-w-3xl mx-auto flex items-center gap-3 px-4 py-3">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-indigo-100 text-indigo-600" aria-label="Back">
+          <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-[#eaf2ff] text-[#245dcc]" aria-label="Back">
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="flex-1">
-            <h1 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-500" /> Flashcards
+            <h1 className="text-base font-bold text-[#171313] flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#347ff0]" /> Flashcards
             </h1>
             <p className="text-[11px] text-gray-500">
               {cards.length} total · {cards.filter(c => srs.isDue(c.id)).length} due
@@ -105,7 +106,8 @@ const Flashcards: React.FC = () => {
           </div>
           <button
             onClick={() => { setSessionOnlyDue(v => !v); setIdx(0); setFlipped(false); }}
-            className="text-[11px] font-medium px-3 py-1.5 rounded-full bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors"
+            className="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-[#eaf2ff] text-[#245dcc] hover:bg-[#dceaff] transition-colors"
+            aria-pressed={sessionOnlyDue}
           >
             {sessionOnlyDue ? 'Due only' : 'All cards'}
           </button>
@@ -115,24 +117,24 @@ const Flashcards: React.FC = () => {
       <main className="max-w-2xl mx-auto px-4 py-8">
         {cards.length === 0 ? (
           <div className="text-center py-20">
-            <BookOpen className="w-12 h-12 text-indigo-300 mx-auto mb-3" />
-            <h2 className="text-lg font-bold text-gray-800">No flashcards yet</h2>
+            <BookOpen className="w-12 h-12 text-[#8db2ef] mx-auto mb-3" />
+            <h2 className="text-lg font-bold text-[#171313]">No flashcards yet</h2>
             <p className="text-sm text-gray-500 mt-1 mb-4">Type <kbd className="px-1.5 py-0.5 text-xs bg-gray-100 rounded font-mono">/flashcard</kbd> inside any note to create one.</p>
-            <button onClick={() => navigate('/')} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
+            <button onClick={() => navigate('/')} className="px-4 py-2 rounded-lg bg-[#2869d5] text-white text-sm font-semibold hover:bg-[#1f56b4]">
               Open editor
             </button>
           </div>
         ) : idx >= queue.length ? (
           <div className="text-center py-20">
             <div className="text-5xl mb-3">🎉</div>
-            <h2 className="text-lg font-bold text-gray-800">Session complete!</h2>
+            <h2 className="text-lg font-bold text-[#171313]">Session complete!</h2>
             <p className="text-sm text-gray-500 mt-1">
               Again {sessionStats.again} · Hard {sessionStats.hard} · Good {sessionStats.good} · Easy {sessionStats.easy}
             </p>
             <div className="flex gap-2 justify-center mt-6">
               <button
                 onClick={() => { setIdx(0); setSessionStats({ again: 0, hard: 0, good: 0, easy: 0 }); setFlipped(false); }}
-                className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
+                className="px-4 py-2 rounded-lg bg-[#2869d5] text-white text-sm font-semibold hover:bg-[#1f56b4]"
               >
                 Review again
               </button>
@@ -151,14 +153,14 @@ const Flashcards: React.FC = () => {
               <AnimatePresence mode="wait">
                 <motion.button
                   key={`${current.id}-${flipped ? 'b' : 'f'}`}
-                  initial={{ rotateY: -90, opacity: 0 }}
+                  initial={reducedMotion ? false : { rotateY: -90, opacity: 0 }}
                   animate={{ rotateY: 0, opacity: 1 }}
-                  exit={{ rotateY: 90, opacity: 0 }}
-                  transition={{ duration: 0.28 }}
+                  exit={reducedMotion ? { opacity: 0 } : { rotateY: 90, opacity: 0 }}
+                  transition={reducedMotion ? { duration: 0 } : { duration: 0.28 }}
                   onClick={() => setFlipped(f => !f)}
-                  className="w-full min-h-[280px] rounded-3xl border-2 border-indigo-200 bg-white shadow-lg p-8 flex flex-col items-center justify-center text-center"
+                  className="w-full min-h-[280px] rounded-3xl border-2 border-[#9dbcf0] bg-[#fffdf5] shadow-lg p-8 flex flex-col items-center justify-center text-center"
                 >
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-500 mb-4">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#245dcc] mb-4">
                     {flipped ? 'Answer' : 'Question'}
                   </span>
                   <p className="text-xl text-gray-900 whitespace-pre-wrap max-w-lg">
@@ -177,8 +179,8 @@ const Flashcards: React.FC = () => {
                   const colors: Record<ReviewRating, string> = {
                     again: 'bg-red-500 hover:bg-red-600',
                     hard: 'bg-amber-500 hover:bg-amber-600',
-                    good: 'bg-emerald-500 hover:bg-emerald-600',
-                    easy: 'bg-indigo-500 hover:bg-indigo-600',
+                    good: 'bg-emerald-600 hover:bg-emerald-700',
+                    easy: 'bg-[#2869d5] hover:bg-[#1f56b4]',
                   };
                   return (
                     <button

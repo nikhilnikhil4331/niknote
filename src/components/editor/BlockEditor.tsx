@@ -415,7 +415,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
           setAiOpen(true);
         }}
         aria-label="Ask NikAI"
-        className="fixed z-40 bottom-24 right-4 sm:bottom-6 sm:right-6 h-14 w-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-xl shadow-indigo-500/30 flex items-center justify-center active:scale-95 transition-transform"
+        className="fixed z-40 bottom-24 right-4 sm:bottom-6 sm:right-6 h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/90 text-white shadow-xl shadow-blue-500/30 flex items-center justify-center active:scale-95 transition-transform"
       >
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white">
           <img
@@ -621,7 +621,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             </div>
           )}
           {block.type === 'equation' && block.content && (
-            <div className="mt-1 p-2 rounded-lg bg-indigo-50/50 border border-indigo-100 font-mono text-sm text-indigo-800">
+            <div className="mt-1 p-2 rounded-lg bg-blue-50/50 border border-blue-100 font-mono text-sm text-blue-800">
               ∑ {block.content}
             </div>
           )}
@@ -684,12 +684,12 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             </div>
           )}
           {block.type === 'ai-generated' && (
-            <div className="mt-1 p-3 rounded-lg bg-gradient-to-r from-purple-50/50 to-indigo-50/50 border border-purple-100">
-              <div className="flex items-center gap-1.5 text-xs text-purple-600">
+            <div className="mt-1 p-3 rounded-lg bg-gradient-to-r from-pink-50/50 to-blue-50/50 border border-pink-100">
+              <div className="flex items-center gap-1.5 text-xs text-pink-600">
                 <span>✨</span>
                 <span className="font-medium">AI Generated</span>
               </div>
-              {block.content && <p className="text-xs text-purple-800 mt-1">{block.content}</p>}
+              {block.content && <p className="text-xs text-pink-800 mt-1">{block.content}</p>}
             </div>
           )}
           {block.type === 'pdf' && (
@@ -859,7 +859,7 @@ const getBlockTextClass = (type: BlockType): string => {
     case 'quote': return 'text-base italic text-muted-foreground';
     case 'callout': return 'text-sm bg-accent/30 rounded-lg px-2 py-1';
     case 'code': return 'text-sm font-mono bg-muted/50 rounded px-2 py-1';
-    case 'equation': return 'text-sm font-mono bg-indigo-50 rounded px-2 py-1';
+    case 'equation': return 'text-sm font-mono bg-blue-50 rounded px-2 py-1';
     case 'toggle': return 'text-sm font-medium';
     case 'todo': return 'text-sm';
     default: return 'text-sm';

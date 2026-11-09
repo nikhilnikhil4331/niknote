@@ -156,7 +156,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
               {/* Add card */}
               {addingToColumn === column.id ? (
-                <div className="p-2 bg-white rounded-lg border border-indigo-200 shadow-sm">
+                <div className="p-2 bg-white rounded-lg border border-[#c7d9f5] shadow-sm">
                   <input
                     autoFocus
                     value={newCardTitle}
@@ -168,7 +168,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                   <div className="flex items-center gap-2 mt-2">
                     <button
                       onClick={() => addCard(column.id)}
-                      className="text-[10px] font-medium px-2 py-1 rounded bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+                      className="text-[10px] font-medium px-2 py-1 rounded bg-[#2869d5] text-white hover:bg-[#1f56b4] transition-colors"
                     >
                       Add
                     </button>
@@ -195,7 +195,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
         {/* AI suggestion column */}
         <div className="w-[280px] flex-shrink-0 flex flex-col items-center justify-center">
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] text-indigo-500 hover:bg-indigo-50 transition-colors">
+          <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] text-[#245dcc] hover:bg-[#eaf2ff] transition-colors">
             <Sparkles className="w-3.5 h-3.5" />
             AI suggest columns
           </button>

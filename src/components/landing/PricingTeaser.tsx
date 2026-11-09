@@ -100,7 +100,7 @@ export const PricingTeaser: React.FC = () => {
               }`}
             >
               {plan.highlighted && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-primary to-blue-600 text-white text-xs font-bold flex items-center gap-1">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-primary to-[#1F56B4] text-white text-xs font-bold flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
                   Best value
                 </div>
@@ -143,7 +143,7 @@ export const PricingTeaser: React.FC = () => {
                 }}
                 className={`w-full rounded-full h-12 font-semibold ${
                   plan.highlighted
-                    ? 'bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-500 text-white shadow-lg shadow-primary/20'
+                    ? 'bg-gradient-to-r from-primary to-[#1F56B4] hover:from-[#1F56B4] hover:to-[#2869D5] text-white shadow-lg shadow-primary/20'
                     : ''
                 }`}
                 variant={plan.highlighted ? 'default' : 'outline'}

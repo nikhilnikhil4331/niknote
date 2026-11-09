@@ -27,7 +27,7 @@ export function SectionHeader({
         (actionLabel && (
           <button
             onClick={onAction}
-            className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#6C5CE7] hover:text-[#5A4BD1] transition-colors"
+            className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--nd-brand-deep)] hover:underline transition-colors"
           >
             {actionLabel} <ArrowRight size={13} />
           </button>
@@ -37,9 +37,9 @@ export function SectionHeader({
 }
 
 export const STATUS_STYLE: Record<TaskStatus, { label: string; bg: string; fg: string }> = {
-  todo: { label: 'To Do', bg: '#F1F0F8', fg: '#6F6C8A' },
-  doing: { label: 'In Progress', bg: '#E3EDFF', fg: '#2F6FED' },
-  done: { label: 'Done', bg: '#DCF5E7', fg: '#149A66' },
+  todo: { label: 'To Do', bg: '#eaf2ff', fg: '#1f56b4' },
+  doing: { label: 'In Progress', bg: '#fff0f0', fg: '#a52f48' },
+  done: { label: 'Done', bg: '#e8f4eb', fg: '#247957' },
 };
 
 export function StatusChip({ status }: { status: TaskStatus }) {
@@ -145,7 +145,7 @@ export function NoteCard({
             }}
             aria-label="Pinned"
           >
-            <Pin size={11} color="#D92C9B" fill="#D92C9B" />
+            <Pin size={11} color="var(--nd-brand-deep)" fill="var(--nd-brand-deep)" />
           </span>
         )}
       </div>
@@ -157,7 +157,7 @@ export function NoteCard({
           >
             {note.title}
           </span>
-          {fav && <Star size={12} className="flex-none" fill="#F5A623" color="#F5A623" />}
+          {fav && <Star size={12} className="flex-none" fill="#d2a90b" color="#8a6900" />}
         </div>
         <div className="text-[11.5px] mt-0.5 truncate" style={{ color: 'var(--nd-text-3)' }}>
           {footerMeta ?? timeAgo(note.updatedAt)}

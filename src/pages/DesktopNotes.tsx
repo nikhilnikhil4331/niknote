@@ -28,7 +28,7 @@ const VIEWS: { id: View; label: string; icon: React.ElementType }[] = [
   { id: 'calendar', label: 'Calendar', icon: CalendarDays },
 ];
 
-const COVERS = ['#7C6CF0', '#3B82F6', '#F59E0B', '#EC4899', '#10B981', '#06B6D4', '#F26D8D', '#8B5CF6'];
+const COVERS = ['#347FF0', '#FF858F', '#FFE45C', '#2869D5', '#FFD9DC', '#70BB9B', '#A6C5F4', '#FFF0F0'];
 
 const DesktopNotes: React.FC = () => {
   const navigate = useNavigate();
@@ -228,7 +228,7 @@ const DesktopNotes: React.FC = () => {
               </td>
               <td>
                 {n.folder ? (
-                  <span className="nd-chip" style={{ background: '#F1EFFF', color: '#6C5CE7' }}>{n.folder}</span>
+                  <span className="nd-chip" style={{ background: '#EAF2FF', color: '#245DCC' }}>{n.folder}</span>
                 ) : (
                   <span style={{ color: 'var(--nd-text-3)' }}>—</span>
                 )}
@@ -306,7 +306,7 @@ const DesktopNotes: React.FC = () => {
                   {menuBtn(n, true)}
                 </div>
                 <div className="flex items-center gap-1.5 mt-1.5">
-                  {n.folder && <span className="nd-chip" style={{ background: '#F1EFFF', color: '#6C5CE7' }}>{n.folder}</span>}
+                  {n.folder && <span className="nd-chip" style={{ background: '#EAF2FF', color: '#245DCC' }}>{n.folder}</span>}
                   {n.tags[0] && <span className="nd-chip" style={{ background: '#FFF3CF', color: '#B87908' }}>{n.tags[0]}</span>}
                   <span className="text-[11px] ml-auto" style={{ color: 'var(--nd-text-3)' }}>{niceDate(n.updatedAt)}</span>
                 </div>
@@ -414,7 +414,7 @@ const DesktopNotes: React.FC = () => {
         {/* Header */}
         <div className="flex items-center gap-3 nd-anim">
           <div className="min-w-0">
-            <h1 className="text-[24px] font-extrabold tracking-[-0.02em]" style={{ color: 'var(--nd-text)' }}>
+            <h1 className="font-display text-[24px] font-extrabold tracking-[-0.02em]" style={{ color: 'var(--nd-text)' }}>
               {spaceParam || 'My Notes'}
             </h1>
             <p className="text-[12.5px]" style={{ color: 'var(--nd-text-3)' }}>

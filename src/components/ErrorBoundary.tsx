@@ -165,7 +165,7 @@ export class ErrorBoundary extends Component<Props, State> {
       const componentStack = this.state.errorInfo?.componentStack || '';
 
       return (
-        <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+        <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-[#fffdf5] via-[#eef4ff] to-[#fff0f0]">
           <div className="bg-white border border-gray-200 rounded-2xl shadow-xl p-8 max-w-lg w-full text-center">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-100 to-orange-100 flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8 text-red-500" />
@@ -217,7 +217,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </button>
               <button
                 onClick={this.handleReload}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#2869d5] to-[#1f56b4] text-white text-sm font-medium hover:from-[#245dcc] hover:to-[#173a71] transition-all shadow-md"
               >
                 <RefreshCw className="w-4 h-4" />
                 Reload

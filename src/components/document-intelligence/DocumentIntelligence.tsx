@@ -336,7 +336,7 @@ ${extractedText.substring(0, 4000)}`,
             <Button
               onClick={handleGenerateNotes}
               disabled={isGeneratingNotes}
-              className="flex-1 gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white"
+              className="flex-1 gap-2 bg-gradient-to-r from-[#347ff0] to-[#245dcc] text-white"
             >
               {isGeneratingNotes ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

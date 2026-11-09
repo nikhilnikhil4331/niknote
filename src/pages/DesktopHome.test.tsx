@@ -49,7 +49,7 @@ describe('DesktopHome — redesigned dashboard (guest)', () => {
   it('renders greeting, hero banner and real badges', () => {
     renderHome();
     expect(screen.getAllByText(/good (morning|afternoon|evening)/i).length).toBeGreaterThan(0);
-    expect(screen.getByAltText('')).toBeInTheDocument(); // hero banner image
+    expect(screen.getByAltText('NikNote illustration: Write it down')).toBeInTheDocument(); // supplied brand illustration
     expect(screen.getAllByText(/day streak/i)[0]).toBeInTheDocument();
     expect(screen.getAllByText(/0 notes/i)[0]).toBeInTheDocument();
     expect(screen.getAllByText(/tasks? done today/i)[0]).toBeInTheDocument();

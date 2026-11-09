@@ -23,7 +23,7 @@ export interface DialItem {
   id: string;
   label: string;
   icon: LucideIcon;
-  /** Optional restrained accent for the icon (defaults to brand violet). */
+  /** Optional restrained accent for the icon (defaults to NikNote blue). */
   tint?: string;
   onSelect: () => void;
 }
@@ -179,7 +179,7 @@ export const SemiCircularDial: React.FC<SemiCircularDialProps> = ({
             const p = points[i] ?? { x: 0, y: -radius, angle: 0 };
             const Icon = item.icon;
             const active = activeId === item.id;
-            const tint = item.tint || '#7c3aed';
+            const tint = item.tint || '#2869d5';
             return (
               <motion.button
                 key={item.id}
@@ -188,7 +188,7 @@ export const SemiCircularDial: React.FC<SemiCircularDialProps> = ({
                 role="menuitem"
                 aria-label={item.label}
                 onClick={() => pick(item)}
-                className="absolute grid h-12 w-12 place-items-center rounded-full border bg-white/95 shadow-md backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+                className="absolute grid h-12 w-12 place-items-center rounded-full border bg-white/95 shadow-md backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#347ff0]"
                 style={{
                   left: 0,
                   top: 0,
@@ -228,8 +228,8 @@ export const SemiCircularDial: React.FC<SemiCircularDialProps> = ({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={toggle}
-        className="relative z-[97] grid h-14 w-14 place-items-center rounded-full border-[3px] border-white text-white shadow-[0_14px_30px_-10px_rgba(109,40,217,0.55)] transition-shadow hover:shadow-[0_16px_34px_-10px_rgba(109,40,217,0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2"
-        style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #ec4899 100%)' }}
+        className="relative z-[97] grid h-14 w-14 place-items-center rounded-full border-[3px] border-white text-white shadow-[0_14px_30px_-10px_rgba(40,105,213,0.38)] transition-shadow hover:shadow-[0_16px_34px_-10px_rgba(40,105,213,0.52)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#347ff0] focus-visible:ring-offset-2"
+        style={{ background: 'linear-gradient(135deg, #2869d5 0%, #347ff0 55%, #c83f58 100%)' }}
         whileTap={reduced ? undefined : { scale: 0.9 }}
         whileHover={reduced ? undefined : { scale: 1.05 }}
         transition={DIAL_SPRING}

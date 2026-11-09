@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Zap, MessageCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -8,6 +8,7 @@ interface CTASectionProps {
 }
 
 export const CTASection: React.FC<CTASectionProps> = ({ onStartWriting }) => {
+  const reducedMotion = useReducedMotion();
   const handleWhatsAppShare = () => {
     const msg = encodeURIComponent(
       '🎓 NikNote — Free AI Study App for Indian Students!\n\n✍️ 16+ handwriting styles\n🧠 AI Teacher (Hindi + English)\n📝 Quiz & Flashcard Generator\n📱 Works offline too!\n\nTry free: https://www.niknote.online'
@@ -23,13 +24,13 @@ export const CTASection: React.FC<CTASectionProps> = ({ onStartWriting }) => {
       {/* Animated Background Orbs */}
       <motion.div
         className="absolute top-0 left-1/4 w-64 h-64 bg-primary/20 rounded-full blur-3xl"
-        animate={{ y: [0, 20, 0], opacity: [0.3, 0.5, 0.3] }}
-        transition={{ duration: 6, repeat: Infinity }}
+        animate={reducedMotion ? undefined : { y: [0, 20, 0], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 6, repeat: reducedMotion ? 0 : Infinity }}
       />
       <motion.div
         className="absolute bottom-0 right-1/4 w-80 h-80 bg-accent/20 rounded-full blur-3xl"
-        animate={{ y: [0, -30, 0], opacity: [0.4, 0.6, 0.4] }}
-        transition={{ duration: 8, repeat: Infinity }}
+        animate={reducedMotion ? undefined : { y: [0, -30, 0], opacity: [0.4, 0.6, 0.4] }}
+        transition={{ duration: 8, repeat: reducedMotion ? 0 : Infinity }}
       />
 
       <div className="container mx-auto px-4 lg:px-6 relative z-10">
@@ -73,7 +74,7 @@ export const CTASection: React.FC<CTASectionProps> = ({ onStartWriting }) => {
             <Button
               size="lg"
               onClick={onStartWriting}
-              className="group h-14 px-8 text-base font-semibold rounded-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-500 text-white shadow-lg shadow-primary/25 hover:shadow-xl transition-all duration-300 hover:scale-105"
+              className="group h-14 px-8 text-base font-semibold rounded-full bg-gradient-to-r from-primary to-[#1F56B4] hover:from-[#1F56B4] hover:to-[#2869D5] text-white shadow-lg shadow-primary/25 hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
               <Zap className="w-5 h-5 mr-2" />
               Start Free — Abhi Try Karo!

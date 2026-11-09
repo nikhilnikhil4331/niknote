@@ -77,7 +77,7 @@ export default function Checkup() {
         : `${warned} cheez par dhyan do`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-violet-500/10 via-background to-background pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-[#eaf2ff] via-background to-background pb-24">
       <header className="sticky top-0 z-20 border-b border-border/50 bg-background/80 px-4 pt-[max(env(safe-area-inset-top),12px)] pb-3 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
           <Link
@@ -124,8 +124,8 @@ export default function Checkup() {
             return (
               <div key={id} className="rounded-2xl border border-border/60 bg-card/80 p-3">
                 <div className="flex items-start gap-3">
-                  <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-500/10">
-                    <Icon className="h-4 w-4 text-violet-600 dark:text-violet-300" />
+                  <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#eaf2ff]">
+                    <Icon className="h-4 w-4 text-[#245dcc]" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -162,7 +162,7 @@ export default function Checkup() {
             href={`${endpoint.url}?probe=1`}
             target="_blank"
             rel="noreferrer"
-            className="mt-3 flex items-center justify-between rounded-2xl border border-dashed border-border/70 bg-background/60 px-3 py-2 text-xs transition hover:border-violet-400/60"
+            className="mt-3 flex items-center justify-between rounded-2xl border border-dashed border-border/70 bg-background/60 px-3 py-2 text-xs transition hover:border-[#9dbcf0]"
           >
             <span className="font-semibold">AI ka seedha proof (JSON)</span>
             <span className="text-muted-foreground">
@@ -170,11 +170,11 @@ export default function Checkup() {
             </span>
           </a>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
-            <Link to="/ai" className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 text-sm transition hover:border-violet-400/60">
+            <Link to="/ai" className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 text-sm transition hover:border-[#9dbcf0]">
               <span className="font-semibold">NikAI kholo</span>
               <span className="block text-[11px] text-muted-foreground">Asli sawaal pooch ke test karo</span>
             </Link>
-            <Link to="/pdf-tools" className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 text-sm transition hover:border-violet-400/60">
+            <Link to="/pdf-tools" className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 text-sm transition hover:border-[#9dbcf0]">
               <span className="font-semibold">PDF Tools</span>
               <span className="block text-[11px] text-muted-foreground">Word, Excel, OCR, protect</span>
             </Link>

@@ -1,0 +1,323 @@
+/*
+ * NikNote's signature identity on desktop: ink + warm paper, led by blue and
+ * coral, with small compass-yellow details. Scoped so user-selected ink/paper
+ * modes and the dedicated mobile shell keep their own behavior.
+ */
+.nik-desktop {
+  color-scheme: light;
+  --nd-bg: #fffdf5;
+  --nd-panel: #ffffff;
+  --nd-side: #fffdf5;
+  --nd-border: #e2e7f0;
+  --nd-border-soft: #edf0f6;
+  --nd-border-strong: #171313;
+  --nd-text: #171313;
+  --nd-text-2: #5e5961;
+  --nd-text-3: #89838c;
+  --nd-ink: #171313;
+  --nd-ink-2: #5e5961;
+  --nd-line: #e2e7f0;
+  --nd-brand: #2869d5;
+  --nd-brand-deep: #1f56b4;
+  --nd-brand-bright: #347ff0;
+  --nd-brand-magenta: #c83f58;
+  --nd-brand-pink: #ffa6ad;
+  --nd-brand-orange: #ffe45c;
+  --nd-lavender: #eef4ff;
+  --nd-pink-bg: #fff0f0;
+  --nd-canvas: #fffdf5;
+  --nd-primary: #2869d5;
+  --nd-primary-dark: #1f56b4;
+  --nd-primary-soft: #eaf2ff;
+  --nd-primary-softer: #f6f9ff;
+  --nd-primary-foreground: #ffffff;
+  --nd-success: #247957;
+  --nd-warning: #836108;
+  --nd-error: #b73f55;
+  --nd-grad-brand: linear-gradient(135deg, #2869d5 0%, #245dcc 100%);
+  --nd-grad-warm: linear-gradient(125deg, #fffdf5 0%, #fff2ef 54%, #eef4ff 100%);
+  --nd-shadow: 0 2px 7px rgba(27, 36, 54, .055);
+  --nd-shadow-hover: 0 9px 24px rgba(33, 67, 123, .12);
+  background: var(--nd-bg);
+  color: var(--nd-ink);
+}
+
+.nik-desktop :is(button, [role='button'], input, select, textarea):focus-visible {
+  outline: 3px solid #347ff0;
+  outline-offset: 2px;
+}
+
+/* Sidebar and shared surfaces */
+.nik-desktop .nd-side-item { color: var(--nd-ink-2); }
+.nik-desktop .nd-side-item:hover { background: var(--nd-primary-softer); color: var(--nd-ink); }
+.nik-desktop .nd-side-item.nd-active {
+  background: var(--nd-primary-soft);
+  color: var(--nd-ink);
+  box-shadow: inset 3px 0 0 var(--nd-brand);
+}
+.nik-desktop .nd-side-item.nd-active svg { color: var(--nd-brand-deep); }
+.nik-desktop .nd-side-item .nd-count { background: #ffffff; color: var(--nd-ink-2); }
+.nik-desktop .nd-side-item.nd-active .nd-count { background: #ffe45c; color: #171313; }
+.nik-desktop .nd-side-label { color: var(--nd-text-3); }
+.nik-desktop .nd-search,
+.nik-desktop .nd-vtabs { background: #f4f7fc; }
+.nik-desktop .nd-search { color: var(--nd-text-2); }
+.nik-desktop .nd-search:hover { background: #eaf2ff; }
+.nik-desktop .nd-search kbd { color: var(--nd-text-3); background: #ffffff; }
+.nik-desktop .nd-card,
+.nik-desktop .nd-note-card,
+.nik-desktop .nd-quick,
+.nik-desktop .nd-folder,
+.nik-desktop .nd-kpi {
+  border-color: var(--nd-border);
+  box-shadow: var(--nd-shadow);
+}
+.nik-desktop .nd-note-card:hover,
+.nik-desktop .nd-quick:hover,
+.nik-desktop .nd-folder:hover { border-color: #9dbcf0; box-shadow: var(--nd-shadow-hover); }
+.nik-desktop .nd-icon-btn:hover { background: #eaf2ff; color: var(--nd-brand-deep); }
+.nik-desktop .nd-btn-ghost { background: #ffffff; color: var(--nd-ink); border-color: var(--nd-border); }
+.nik-desktop .nd-btn-ghost:hover { background: #fff0f0; border-color: #ffc0c5; }
+
+/* Clear, tactile actions: blue leads; coral and compass yellow stay accents. */
+.nik-desktop .nd-btn-primary,
+.nik-desktop .nd-btn-cta {
+  color: var(--nd-primary-foreground);
+  border: 1.5px solid var(--nd-border-strong);
+  background: var(--nd-grad-brand);
+  box-shadow: 0 3px 0 var(--nd-border-strong);
+  font-weight: 800;
+}
+.nik-desktop .nd-btn-primary:hover,
+.nik-desktop .nd-btn-cta:hover {
+  color: #ffffff;
+  background: linear-gradient(135deg, #2869d5, #2058bd);
+  box-shadow: 0 4px 0 var(--nd-border-strong);
+  filter: none;
+  transform: translateY(-1px);
+}
+.nik-desktop .nd-btn-primary:active,
+.nik-desktop .nd-btn-cta:active {
+  transform: translateY(2px) scale(.99);
+  box-shadow: 0 1px 0 var(--nd-border-strong);
+}
+.nik-desktop .nd-btn-primary:disabled,
+.nik-desktop .nd-btn-cta:disabled { opacity: .52; cursor: not-allowed; transform: none; box-shadow: none; }
+.nik-desktop .nd-chip-btn.nd-on { background: var(--nd-brand); color: #ffffff; border-color: var(--nd-brand-deep); box-shadow: none; }
+.nik-desktop .nd-utabs button:hover { background: #fff0f0; }
+.nik-desktop .nd-utabs button.nd-on { color: var(--nd-brand-deep); background: #eaf2ff; }
+.nik-desktop .nd-utabs button.nd-on::after { background: var(--nd-brand); height: 2px; }
+
+/* Notebook paper and task controls */
+.nik-desktop .nd-paper {
+  background-color: #fffdf5;
+  background-image:
+    linear-gradient(90deg, transparent 26px, rgba(255, 133, 143, .32) 26px, rgba(255, 133, 143, .32) 27px, transparent 27px),
+    repeating-linear-gradient(to bottom, transparent 0 21px, rgba(83, 105, 140, .13) 21px 22px);
+}
+.nik-desktop .nd-paper .nd-paper-title { color: #171313; }
+.nik-desktop .nd-paper .nd-paper-lines { color: #5e5961; }
+.nik-desktop .nd-check { border-color: #85818a; background: #ffffff; transition: background .18s, border-color .18s, transform .18s; }
+.nik-desktop .nd-check:hover { border-color: var(--nd-brand); transform: scale(1.05); }
+.nik-desktop .nd-check.nd-done { background: var(--nd-brand); border-color: var(--nd-brand-deep); color: #ffffff; animation: nd-task-pop .24s ease-out; }
+.nik-desktop .nd-input { color: var(--nd-ink); background: #ffffff; border-color: var(--nd-border); }
+.nik-desktop .nd-input:focus { border-color: var(--nd-brand); box-shadow: 0 0 0 3px rgba(52, 127, 240, .18); }
+.nik-desktop .nd-kanban-card { border-color: var(--nd-border); box-shadow: 0 2px 6px rgba(32, 46, 71, .06); }
+.nik-desktop .nd-kanban-card:hover { box-shadow: 0 6px 15px rgba(32, 46, 71, .11); }
+.nik-desktop .nd-kanban-new:hover { background: rgba(255, 255, 255, .9); color: var(--nd-ink); }
+.nik-desktop .nd-chip-btn:hover,
+.nik-desktop .nd-preset:hover { background: #fff0f0; border-color: #ffb7bd; }
+.nik-desktop .nd-seg { background: #f2f5fa; }
+.nik-desktop .nd-seg button.nd-on { color: var(--nd-brand-deep); }
+.nik-desktop .nd-preset.nd-on { background: var(--nd-grad-brand); color: #ffffff; border-color: var(--nd-ink); box-shadow: 0 2px 0 var(--nd-ink); }
+.nik-desktop .nd-dial-ring-track { stroke: #e5eaf2; }
+.nik-desktop .nd-dial-tick { stroke: #cdd5e1; }
+.nik-desktop .nd-dial-tick.nd-tick-major { stroke: #7789a4; }
+.nik-desktop .nd-dial-handle { stroke: #347ff0; }
+.nik-desktop .nd-dial:has([role='slider']:focus-visible) .nd-dial-handle { stroke: var(--nd-ink); }
+.nik-desktop .nd-ring-track { stroke: #e5eaf2; }
+
+/* Main dashboard hero uses the supplied writing/pencil artwork. */
+.nik-desktop .nd-hero {
+  min-height: 222px;
+  border: 1.5px solid var(--nd-border-strong);
+  border-radius: 21px;
+  background:
+    radial-gradient(circle at 84% 22%, rgba(255, 228, 92, .72) 0 30px, transparent 31px),
+    radial-gradient(circle at 74% 82%, rgba(255, 133, 143, .15), transparent 25%),
+    linear-gradient(118deg, #fffaf2 0%, #fff0f0 52%, #edf4ff 100%);
+  box-shadow: 3px 4px 0 rgba(23, 19, 19, .82), 0 12px 28px rgba(42, 62, 96, .08);
+}
+.nik-desktop .nd-hero .nd-hero-art {
+  position: absolute;
+  z-index: 1;
+  inset: auto 12px auto auto;
+  right: 12px;
+  top: 50%;
+  width: auto;
+  height: calc(100% + 8px);
+  max-height: 238px;
+  max-width: 34%;
+  object-fit: contain;
+  object-position: center;
+  transform: translateY(-50%) rotate(1deg);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  user-select: none;
+}
+.nik-desktop .nd-hero-copy { position: relative; z-index: 2; max-width: 560px; padding-right: 152px; }
+.nik-desktop .nd-hero h1 { color: var(--nd-ink); font-family: 'Fredoka', 'Plus Jakarta Sans', sans-serif; }
+.nik-desktop .nd-hero .nd-hero-script { color: var(--nd-brand-deep); text-shadow: none; }
+.nik-desktop .nd-hero .nd-chip { border: 1px solid rgba(23, 19, 19, .12); }
+.nik-desktop .nd-hero .nd-hero-quote { color: #5e5961; }
+
+/* Illustration headers for Tasks and Calendar. */
+.nik-desktop .nd-page-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-height: 156px;
+  overflow: hidden;
+  padding: 20px 24px;
+  border: 1.5px solid var(--nd-border-strong);
+  border-radius: 20px;
+  background: linear-gradient(115deg, #fffaf2 0%, #fff0f0 54%, #eef4ff 100%);
+  box-shadow: 3px 4px 0 rgba(23, 19, 19, .82), 0 12px 25px rgba(42, 62, 96, .065);
+}
+.nik-desktop .nd-page-hero::before {
+  content: '';
+  position: absolute;
+  right: 12%;
+  top: -72px;
+  width: 220px;
+  height: 220px;
+  border: 1.5px solid rgba(52, 127, 240, .15);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.nik-desktop .nd-page-hero-copy { position: relative; z-index: 1; min-width: 0; }
+.nik-desktop .nd-page-hero-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: #245dcc;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.nik-desktop .nd-page-hero-art {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: clamp(150px, 22vw, 240px);
+  height: 132px;
+  margin-left: auto;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  transition: transform .28s ease;
+}
+.nik-desktop .nd-page-hero:hover .nd-page-hero-art { transform: translateY(-2px) rotate(-1deg); }
+.nik-desktop .nd-page-hero--calendar { background: linear-gradient(120deg, #fffdf5 0%, #fff8dc 72%, #eef4ff 100%); }
+.nik-desktop .nd-page-hero--calendar::before { border-color: rgba(255, 228, 92, .65); }
+.nik-desktop .nd-page-hero--calendar .nd-page-hero-art { width: 146px; height: 138px; }
+.nik-desktop .nd-page-hero--calendar .nd-btn-cta { position: relative; z-index: 2; flex: none; }
+
+/* Sparkle-note art anchors the create tile; yellow only appears in its star. */
+.nik-desktop .nd-create-tile {
+  position: relative;
+  overflow: hidden;
+  border: 1.5px dashed #8db2ef;
+  background: linear-gradient(160deg, #fffdf5, #eef4ff 68%, #fff1f1);
+  color: var(--nd-ink);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.nik-desktop .nd-create-tile:hover { border-color: var(--nd-brand); background: #f7faff; transform: translateY(-2px); box-shadow: var(--nd-shadow-hover); }
+.nik-desktop .nd-create-tile .nd-create-plus {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--nd-ink);
+  background: var(--nd-brand);
+  color: #ffffff;
+}
+.nik-desktop .nd-create-illustration {
+  width: 94px;
+  height: 78px;
+  object-fit: contain;
+  margin-bottom: -15px;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  transition: transform .28s ease;
+}
+.nik-desktop .nd-create-tile:hover .nd-create-illustration { transform: translateY(-3px) rotate(-3deg); }
+.nik-desktop .nd-empty-art {
+  display: block;
+  width: 124px;
+  height: 100px;
+  margin: 0 auto 4px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+/* Calendar, premium card, dropdowns and supporting surfaces. */
+.nik-desktop .nd-cal-day:hover { background: #eef4ff; }
+.nik-desktop .nd-cal-day.nd-selected { background: #fff0f0; box-shadow: inset 0 0 0 2px #ff858f; }
+.nik-desktop .nd-cal-day.nd-out { background: #faf9f6; }
+.nik-desktop .nd-cal-num { color: #5e5961; }
+.nik-desktop .nd-cal-num.nd-today { background: var(--nd-grad-brand); color: #ffffff; box-shadow: 0 2px 0 var(--nd-ink); }
+.nik-desktop .nd-mini-cal-day:hover { background: #fff0f0; }
+.nik-desktop .nd-mini-cal-day.nd-mc-today { background: var(--nd-grad-brand); color: #ffffff; box-shadow: 0 2px 0 var(--nd-ink); }
+.nik-desktop .nd-premium-card { background: linear-gradient(130deg, #eef4ff, #fff0f0); border-color: #c7d9f5; }
+.nik-desktop .nd-premium-card:hover { box-shadow: 0 5px 0 rgba(23, 19, 19, .7); }
+.nik-desktop .nd-menu { background: #ffffff; border-color: var(--nd-border); box-shadow: 0 10px 26px rgba(23, 19, 19, .14); }
+.nik-desktop .nd-menu button { color: var(--nd-ink); }
+.nik-desktop .nd-menu button:hover { background: #eef4ff; }
+.nik-desktop .nd-tpl-paper { background-color: #fffdf5; }
+.nik-desktop .nd-tpl-paper .nd-skel { background: #e7eaf0; }
+.nik-desktop .nd-tpl-paper .nd-skel.nd-acc { background: #347ff0; }
+.nik-desktop .nd-table th { background: #f6f8fc; }
+.nik-desktop .nd-table tbody tr:hover { background: #f6f9ff; }
+.nik-desktop .nd-lap-row:nth-child(odd) { background: #f7f8fa; }
+.nik-desktop .nd-chart-tip { background: #ffffff; border-color: var(--nd-border); }
+
+.nik-desktop .nd-logo-lockup { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+.nik-desktop .nd-logo-mark { width: 28px; height: 30px; object-fit: contain; flex: none; }
+.nik-desktop .nd-logo-wordmark { width: 112px; height: 27px; object-fit: contain; flex: none; }
+.nik-desktop .nd-logo-button:hover { background: #eef4ff; }
+.nik-desktop .nd-sidebar-avatar { color: #ffffff !important; background: linear-gradient(135deg, #2869d5, #1f56b4) !important; }
+.nik-desktop .nd-create-space { color: #ffffff !important; background: var(--nd-brand) !important; border: 1px solid var(--nd-ink); }
+.nik-desktop .nd-create-space:hover { background: #245dcc !important; }
+
+@keyframes nd-task-pop {
+  0% { transform: scale(.76); }
+  72% { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+
+@media (max-width: 1100px) {
+  .nik-desktop .nd-hero-copy { padding-right: 124px; }
+  .nik-desktop .nd-hero .nd-hero-art { max-width: 30%; right: 7px; }
+}
+@media (max-width: 760px) {
+  .nik-desktop .nd-page-hero { min-height: 132px; padding: 17px; gap: 10px; }
+  .nik-desktop .nd-page-hero-art { width: 140px; height: 112px; }
+  .nik-desktop .nd-page-hero--calendar .nd-page-hero-art { width: 104px; height: 110px; }
+  .nik-desktop .nd-hero-copy { padding-right: 112px; }
+  .nik-desktop .nd-hero .nd-hero-art { max-width: 29%; height: 190px; }
+}
+@media (max-width: 540px) {
+  .nik-desktop .nd-hero .nd-hero-art { opacity: .22; right: -12px; }
+  .nik-desktop .nd-hero-copy { padding-right: 44px; }
+  .nik-desktop .nd-page-hero-art { display: none; }
+  .nik-desktop .nd-page-hero--calendar { flex-wrap: wrap; }
+  .nik-desktop .nd-page-hero--calendar .nd-btn-cta { margin-left: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nik-desktop .nd-hero .nd-kenburns { animation: none; }
+  .nik-desktop .nd-check.nd-done { animation: none; }
+  .nik-desktop .nd-page-hero-art,
+  .nik-desktop .nd-create-illustration,
+  .nik-desktop .nd-create-tile { transition: none; }
+}
+.nik-desktop .nd-profile-button:hover { background: #eef4ff; }

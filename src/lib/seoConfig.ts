@@ -430,6 +430,13 @@ const NON_INDEXABLE_ROUTES: Record<string, Omit<RouteSeoEntry, 'path' | 'inSitem
     robots: 'noindex, nofollow',
     pageType: 'workspace',
   },
+  '/playground': {
+    title: 'Creative Playground — NikNote',
+    description: 'Arrange sticky notes, checklists and ideas on a private, locally saved creative canvas.',
+    canonicalPath: '/playground',
+    robots: 'noindex, nofollow',
+    pageType: 'workspace',
+  },
   '/board': {
     title: 'Study Board — NikNote',
     description: 'Kanban-style study boards for planning tasks, deadlines and revision.',
