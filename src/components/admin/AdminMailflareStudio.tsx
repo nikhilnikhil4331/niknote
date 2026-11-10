@@ -2159,7 +2159,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                         </label>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-0.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 pt-0.5">
                       <button
                         type="button"
                         onClick={() => {
@@ -2201,6 +2201,23 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                         <p className="text-[11px] text-muted-foreground mt-0.5">
                           NikNote logo + crisp minimal card + modern sans font
                         </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        aria-pressed={useBrandedWrapper && emailStyle === 'retro'}
+                        onClick={() => {
+                          setUseBrandedWrapper(true);
+                          setEmailStyle('retro');
+                        }}
+                        className={`text-left p-2.5 rounded-lg border transition-all ${
+                          useBrandedWrapper && emailStyle === 'retro'
+                            ? 'border-[#090707] bg-[#FFE17A] text-[#090707] ring-1 ring-[#090707]'
+                            : 'bg-background hover:bg-muted/60'
+                        }`}
+                      >
+                        <div className="text-xs font-semibold" style={{ fontFamily: 'Georgia, serif' }}>Retro Cartoon</div>
+                        <p className="text-[11px] mt-0.5">Illustrated envelope, bold outlines &amp; vintage poster colors</p>
                       </button>
 
                       <button

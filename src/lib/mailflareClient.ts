@@ -171,9 +171,10 @@ export interface ComposePrefill {
   references?: string;
 }
 
-export type EmailVisualStyle = 'handwritten' | 'clean';
+export type EmailVisualStyle = 'handwritten' | 'clean' | 'retro';
 
 export const NIKNOTE_EMAIL_LOGO_URL = 'https://www.niknote.online/niknote-email-logo.png';
+export const RETRO_EMAIL_ART_URL = 'https://www.niknote.online/images/retro-email-envelope.png';
 
 export const HANDWRITING_HEADING_FONT =
   "'Caveat', 'Kalam', 'Segoe Print', 'Bradley Hand', 'Noteworthy', 'Chalkboard SE', 'Snell Roundhand', cursive, Georgia, serif";
@@ -364,6 +365,27 @@ Team of NikNote`,
     ctaUrl: 'https://www.niknote.online',
   },
   {
+    id: 'retro_hello',
+    label: 'Retro Cartoon Hello',
+    description: 'A playful illustrated note with bold outlines and a vintage poster feel.',
+    badge: 'Retro',
+    defaultFromLocalPart: 'hello',
+    defaultStyle: 'retro',
+    noteTag: 'A LITTLE NOTE FROM NIKNOTE',
+    subject: 'A little note from NikNote for {{name}}',
+    heading: 'Hello, {{name}}!',
+    body: `Hi {{name}},
+
+Here is a little note from Team of NikNote. We hope your ideas, notes and plans are coming along nicely.
+
+Drop by whenever you are ready to make something new.
+
+See you soon,
+Team of NikNote`,
+    ctaLabel: 'Open NikNote',
+    ctaUrl: 'https://www.niknote.online',
+  },
+  {
     id: 'custom',
     label: 'Custom Handwritten Note (Blank)',
     description: 'Write a completely custom note from any @niknote.online mailbox.',
@@ -460,6 +482,7 @@ export function bodyTextToHtmlBlocks(
   if (!normalized) return '';
 
   const isHandwritten = style === 'handwritten';
+  const textColor = style === 'retro' ? '#090707' : '#334155';
   const lines = normalized.split('\n');
   const htmlParts: string[] = [];
   let listItems: string[] = [];
@@ -473,7 +496,7 @@ export function bodyTextToHtmlBlocks(
         );
       } else {
         htmlParts.push(
-          `<ul style="margin:0 0 16px;padding-left:20px;color:#334155;font-size:15px;line-height:1.65;">${listItems.join('')}</ul>`,
+          `<ul style="margin:0 0 16px;padding-left:20px;color:${textColor};font-size:15px;line-height:1.65;">${listItems.join('')}</ul>`,
         );
       }
       listItems = [];
@@ -488,7 +511,7 @@ export function bodyTextToHtmlBlocks(
         );
       } else {
         htmlParts.push(
-          `<p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.65;">${paragraphLines.join('<br />')}</p>`,
+          `<p style="margin:0 0 16px;color:${textColor};font-size:15px;line-height:1.65;">${paragraphLines.join('<br />')}</p>`,
         );
       }
       paragraphLines = [];
@@ -553,6 +576,39 @@ export function buildNikNoteEmailHtml(options: {
   const footerNote = escapeEmailHtml(
     options.footerNote || 'Sent with love by Team of NikNote · https://www.niknote.online',
   );
+
+  if (style === 'retro') {
+    const noteTag = escapeEmailHtml(options.noteTag?.trim() || 'A LITTLE NOTE FROM NIKNOTE');
+    const heading = options.heading?.trim()
+      ? `<h1 style="margin:0 0 18px;font-family:'Cooper Black',Georgia,serif;font-size:36px;line-height:1.1;font-weight:900;color:#090707;">${escapeEmailHtml(options.heading.trim())}</h1>`
+      : '';
+    const button = safeCtaUrl && safeCtaLabel
+      ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;"><tr><td bgcolor="#090707" style="padding:0 4px 4px 0;"><a href="${safeCtaUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#FFE17A;border:3px solid #090707;padding:12px 22px;color:#090707;font-family:Georgia,serif;font-weight:bold;font-size:16px;text-decoration:none;">${safeCtaLabel}</a></td></tr></table>`
+      : '';
+    return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head>
+<body style="margin:0;padding:24px 12px;background:#FFFDF5;color:#090707;font-family:Arial,sans-serif;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:620px;margin:0 auto;background:#090707;"><tr><td style="padding:0 5px 5px 0;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#FFFFFF;border:3px solid #090707;">
+      <tr><td style="padding:18px 24px;background:#FFE17A;border-bottom:3px solid #090707;">
+        <a href="https://www.niknote.online" style="color:#090707;text-decoration:none;font-family:'Cooper Black',Georgia,serif;font-weight:900;font-size:24px;">NikNote</a>
+        <span style="float:right;font-family:Arial,sans-serif;font-weight:bold;font-size:11px;letter-spacing:1px;color:#090707;">${noteTag}</span>
+      </td></tr>
+      <tr><td style="background:#FFFDF5;border-bottom:3px solid #090707;text-align:center;">
+        <img src="${RETRO_EMAIL_ART_URL}" alt="A cheerful envelope delivering a letter" width="614" style="display:block;width:100%;max-width:614px;height:auto;border:0;" />
+      </td></tr>
+      <tr><td style="padding:28px 28px 30px;background:#FFFFFF;color:#090707;">
+        ${heading}
+        ${bodyTextToHtmlBlocks(options.bodyText, 'retro')}
+        ${button}
+      </td></tr>
+      <tr><td style="padding:16px 24px;background:#3285F4;border-top:3px solid #090707;color:#090707;font-family:Arial,sans-serif;font-size:12px;line-height:1.5;">
+        <strong>${senderBadge}</strong><br />${footerNote}
+      </td></tr>
+    </table>
+  </td></tr></table>
+</body></html>`;
+  }
 
   if (style === 'handwritten') {
     const noteTag = escapeEmailHtml(

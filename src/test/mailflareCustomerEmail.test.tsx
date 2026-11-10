@@ -13,6 +13,7 @@ vi.mock('@/integrations/supabase/client', () => ({
 import {
   CUSTOMER_EMAIL_TEMPLATES,
   NIKNOTE_EMAIL_LOGO_URL,
+  RETRO_EMAIL_ART_URL,
   SENDER_PRESETS,
   buildNikNoteEmailHtml,
   buildNikNotePlainText,
@@ -260,6 +261,23 @@ describe('mailflareClient pure helpers', () => {
     expect(text).toContain('Team of NikNote');
   });
 
+  it('renders a safe retro illustrated email with campaign placeholders and valid CTA', () => {
+    const html = buildNikNoteEmailHtml({
+      style: 'retro', heading: 'Hello {{name}} <friend>',
+      bodyText: 'Hi {{name}}!\n\n- Your <ideas> matter',
+      ctaLabel: 'Open NikNote', ctaUrl: 'https://www.niknote.online',
+      fromName: 'Team of NikNote', fromEmail: 'hello@niknote.online',
+    });
+    expect(html).toContain(RETRO_EMAIL_ART_URL);
+    expect(html).toContain('Hello {{name}} &lt;friend&gt;');
+    expect(html).toContain('Your &lt;ideas&gt; matter');
+    expect(html).toContain('#FFE17A');
+    expect(html).toContain('#3285F4');
+    expect(html).toContain('href="https://www.niknote.online"');
+    expect(html).not.toContain('linear-gradient');
+    expect(buildNikNoteEmailHtml({ style: 'retro', bodyText: 'Hello', ctaLabel: 'Open', ctaUrl: 'javascript:alert(1)' })).not.toContain('javascript:');
+  });
+
   it('never mentions founder or personal names in templates, presets, or sanitized sender names', () => {
     expect(CUSTOMER_EMAIL_TEMPLATES[0].id).toBe('invite');
     for (const tpl of CUSTOMER_EMAIL_TEMPLATES) {
@@ -500,6 +518,23 @@ describe('AdminMailflareStudio component', () => {
   });
 
   afterEach(cleanup);
+
+  it('selects the retro template, previews it, and sends the same design', async () => {
+    invoke.mockImplementation(async (_fn: string, opts: any) => {
+      if (opts?.body?.action === 'get_config') return { data: { config: { provider: 'resend', fromName: 'NikNote', fromEmail: 'hello@niknote.online', configured: true, source: 'database' } }, error: null };
+      if (opts?.body?.action === 'send_email') return { data: { success: true, provider: 'resend' }, error: null };
+      return { data: {}, error: null };
+    });
+    render(<AdminMailflareStudio />);
+    fireEvent.click(screen.getByRole('button', { name: /Compose Email/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Retro Cartoon Hello/i }));
+    expect(screen.getByRole('button', { name: /Retro Cartoon Illustrated envelope/i })).toHaveAttribute('aria-pressed', 'true');
+    const preview = screen.getByTitle('Customer Email Preview') as HTMLIFrameElement;
+    expect(preview.srcdoc).toContain(RETRO_EMAIL_ART_URL);
+    fireEvent.change(screen.getByLabelText('Recipient email address'), { target: { value: 'reader@example.com' } });
+    fireEvent.click(screen.getByRole('button', { name: /Send Custom Email/i }));
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith('customer-email', expect.objectContaining({ body: expect.objectContaining({ action: 'send_email', payload: expect.objectContaining({ html: expect.stringContaining(RETRO_EMAIL_ART_URL), templateId: 'retro_hello' }) }) })));
+  });
 
   it('loads Mailflare status, applies prefill, and dispatches custom customer email', async () => {
     invoke.mockImplementation(async (_fn: string, opts: any) => {
