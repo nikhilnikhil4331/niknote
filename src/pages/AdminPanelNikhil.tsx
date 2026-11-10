@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, ShieldCheck, LogOut, RefreshCw, Lock, Menu, X,
   LayoutDashboard, Users, Activity, Bug, Settings,
-  BarChart3, Download, Radio, MessageCircle
+  BarChart3, Download, Radio, MessageCircle, Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +24,7 @@ import { AdminFeatureHeatmap } from '@/components/admin/AdminFeatureHeatmap';
 import { AdminUserDrawer } from '@/components/admin/AdminUserDrawer';
 import { AdminCommandCenter } from '@/components/admin/AdminCommandCenter';
 import { AdminSalesOverview } from '@/components/admin/AdminSalesOverview';
+import { AdminEmailStudio } from '@/components/admin/AdminEmailStudio';
 
 interface UserData {
   id: string;
@@ -833,6 +834,7 @@ const AdminPanelNikhil: React.FC = () => {
 
   const tabs = [
     { id: 'sales', label: 'Sales & Leads', icon: BarChart3 },
+    { id: 'emails', label: 'Email Studio', icon: Mail },
     { id: 'command', label: 'Command Center', icon: ShieldCheck },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
@@ -966,6 +968,7 @@ const AdminPanelNikhil: React.FC = () => {
           </div>
 
           <TabsContent value="sales" className="mt-4"><AdminSalesOverview /></TabsContent>
+          <TabsContent value="emails" className="mt-4"><AdminEmailStudio /></TabsContent>
 
           {/* Command Center Tab — full per-user control */}
           <TabsContent value="command" className="mt-4">
