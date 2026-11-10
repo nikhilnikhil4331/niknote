@@ -3,6 +3,8 @@
 // Notion-style formulas with rollups and aggregations
 // ============================================================
 
+import { evaluateSafeExpression } from '@/lib/safeExpression';
+
 export type FormulaType = 'number' | 'text' | 'boolean' | 'date';
 
 export interface FormulaProperty {
@@ -54,56 +56,17 @@ export const FORMULA_FUNCTIONS: Record<string, {
   rollup: { description: 'Aggregate related data', syntax: 'rollup(relation, prop, aggregation)', returns: 'number', example: 'rollup(Tasks, Status, "count")' },
 };
 
-// Evaluate a simple formula expression
+// Evaluate formulas with a small, side-effect-free parser. Never turn user
+// formulas or property values into JavaScript source code.
 export function evaluateFormula(
   expression: string,
   properties: Record<string, string | number | boolean>
 ): string | number | boolean {
   try {
-    // Replace property references with their values
-    let expr = expression;
-    for (const [key, value] of Object.entries(properties)) {
-      const regex = new RegExp(`\\b${key}\\b`, 'g');
-      if (typeof value === 'string') {
-        expr = expr.replace(regex, `"${value}"`);
-      } else {
-        expr = expr.replace(regex, String(value));
-      }
-    }
-
-    // Handle basic functions
-    // sum, avg, min, max, count are handled separately for rollups
-    
-    // Simple arithmetic evaluation (safe subset)
-    if (/^[\d\s+\-*/().%]+$/.test(expr)) {
-      const result = new Function(`return ${expr}`)();
-      if (typeof result === 'number') return Math.round(result * 100) / 100;
-      return result;
-    }
-
-    // String concatenation
-    if (expr.includes('concat(')) {
-      return expr.replace(/concat\((.*?)\)/g, (_, args) => {
-        return args.split(',').map(a => a.trim().replace(/"/g, '')).join('');
-      });
-    }
-
-    // Conditional
-    if (expr.includes('if(')) {
-      // Simple if: if(condition, trueVal, falseVal)
-      const match = expr.match(/if\((.+?),\s*(.+?),\s*(.+?)\)/);
-      if (match) {
-        const [, condition, trueVal, falseVal] = match;
-        try {
-          const condResult = new Function(`return ${condition}`)();
-          return condResult ? trueVal.replace(/"/g, '') : falseVal.replace(/"/g, '');
-        } catch {
-          return 'Error';
-        }
-      }
-    }
-
-    return expr;
+    const result = evaluateSafeExpression(expression, properties);
+    if (typeof result === 'number') return Math.round(result * 100) / 100;
+    if (typeof result === 'string' || typeof result === 'boolean') return result;
+    return 'Error';
   } catch {
     return 'Error';
   }

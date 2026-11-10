@@ -1,3 +1,5 @@
+# WARNING: this legacy project ref is not the audited production project.
+# Do not deploy from this config until it is explicitly re-linked and reviewed.
 project_id = "ievggapvfidhygkhtkug"
 
 [functions]
@@ -12,7 +14,9 @@ project_id = "ievggapvfidhygkhtkug"
   [functions.extract-handwriting-text]
     verify_jwt = false
   [functions.openai-brain]
-    verify_jwt = false
+    verify_jwt = true
+  [functions.editor-ai]
+    verify_jwt = true
   [functions.process-document]
     verify_jwt = false
   [functions.record-payment]
@@ -22,6 +26,8 @@ project_id = "ievggapvfidhygkhtkug"
 
   [functions.handwriting-vision]
     verify_jwt = true
+  [functions.razorpay-webhook]
+    verify_jwt = false
 
 [functions.sales-overview]
 verify_jwt = true

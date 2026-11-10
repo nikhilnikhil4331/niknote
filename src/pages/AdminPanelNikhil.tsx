@@ -26,6 +26,7 @@ import { AdminCommandCenter } from '@/components/admin/AdminCommandCenter';
 import { AdminSalesOverview } from '@/components/admin/AdminSalesOverview';
 import { AdminMailflareStudio } from '@/components/admin/AdminMailflareStudio';
 import type { ComposePrefill } from '@/lib/mailflareClient';
+import { AdminEmailStudio } from '@/components/admin/AdminEmailStudio';
 
 interface UserData {
   id: string;
@@ -848,6 +849,7 @@ const AdminPanelNikhil: React.FC = () => {
   const tabs = [
     { id: 'email', label: 'Email Manager', icon: Mail },
     { id: 'sales', label: 'Sales & Leads', icon: BarChart3 },
+    { id: 'emails', label: 'Email Studio', icon: Mail },
     { id: 'command', label: 'Command Center', icon: ShieldCheck },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
@@ -1006,6 +1008,7 @@ const AdminPanelNikhil: React.FC = () => {
                 }))}
             />
           </TabsContent>
+          <TabsContent value="emails" className="mt-4"><AdminEmailStudio /></TabsContent>
 
           {/* Command Center Tab — full per-user control */}
           <TabsContent value="command" className="mt-4">

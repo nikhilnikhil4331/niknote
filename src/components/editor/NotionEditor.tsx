@@ -127,6 +127,16 @@ const CATEGORY_LABELS: Record<string, { label: string; emoji: string }> = {
   ai: { label: 'AI Powered', emoji: '✨' },
 };
 
+const blockEditorFontFamily = (font?: string, customFont?: string): string | undefined => {
+  const selectedFont = font === 'custom' ? customFont : font;
+  if (!selectedFont) return undefined;
+  if (selectedFont === 'roman-regular') return 'Inter, sans-serif';
+  if (selectedFont === 'roman-serif') return 'Georgia, serif';
+  if (selectedFont === 'roman-mono') return '"JetBrains Mono", monospace';
+  const family = selectedFont.split('-').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  return `"${family}", cursive`;
+};
+
 // ============================================================
 // COMPONENT
 // ============================================================
@@ -715,7 +725,7 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                     placeholder={isMobile && block.type === 'text' ? 'Write here…' : config.placeholder}
                     rows={1}
                     className={cn("flex-1 bg-transparent border-0 outline-none resize-none py-1 px-1 leading-relaxed w-full overflow-hidden", isMobile ? "min-h-[48px] text-[16px] py-3 px-2 leading-7 text-gray-900" : "text-sm text-gray-900", block.checked && "line-through text-gray-400", config.textClass)}
-                    style={{ color: inkData?.hex || '#111827', caretColor: '#2869d5', WebkitUserSelect: 'text', userSelect: 'text', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                    style={{ fontFamily: blockEditorFontFamily(settings?.font, settings?.customStyle?.baseFont), color: inkData?.hex || '#111827', caretColor: '#2869d5', WebkitUserSelect: 'text', userSelect: 'text', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                     autoComplete="off" autoCorrect="on" autoCapitalize="sentences" spellCheck={true}
                   />
 

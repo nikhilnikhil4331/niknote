@@ -1,5 +1,6 @@
 // Paid handwriting tools use the same server-side vision gateway as NikAI.
 // A valid user and active entitlement are checked here before any image is sent.
+import { readLimitedJson } from '../_shared/aiSecurity.ts';
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -33,8 +34,14 @@ Deno.serve(async (req: Request) => {
     const subscriptions = await entitlement.json();
     if (!Array.isArray(subscriptions) || !subscriptions.length) return reply({ error: 'An active Premium pass is required.' }, 403);
 
-    const body = await req.json().catch(() => ({}));
-    const kind = body?.kind;
+    const parsedBody = await readLimitedJson(req, 4 * 1024 * 1024);
+    if (!parsedBody.ok) return reply({ error: parsedBody.reason === 'too_large' ? 'Request body too large.' : 'Invalid request body.' }, parsedBody.reason === 'too_large' ? 413 : 400);
+    const bodyValue = parsedBody.value;
+    if (!bodyValue || typeof bodyValue !== 'object' || Array.isArray(bodyValue)) {
+      return reply({ error: 'Invalid handwriting request.' }, 400);
+    }
+    const body = bodyValue as Record<string, unknown>;
+    const kind = body.kind;
     const image = body?.imageBase64;
     if (kind !== 'style' && kind !== 'ocr') return reply({ error: 'Invalid handwriting request.' }, 400);
     if (typeof image !== 'string' || image.length > 3_500_000 || !/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(image)) {
@@ -54,7 +61,7 @@ Deno.serve(async (req: Request) => {
       ? 'Read the handwriting in this image. Preserve line breaks and do not invent unclear words. Use [?] for uncertain words. Return only JSON: {"extractedText":"...", "lines":["..."], "confidence":0.0, "warnings":[], "success":true}. If nothing is readable, return success false and an empty string.'
       : `Estimate the closest handwriting style from this photo. This is a visual approximation, not a forensic measurement. Choose suggestedFont from: ${fonts.join(', ')}. Return only JSON with suggestedFont, fontSize (14-40), lineSpacing (24-60), wordSpacing (2-12), inkColor, slant (-15 to 15), strokeThickness (0.5-3), penPressureFeel (0.1-1 visual estimate), baselineJitterAmount (0-5), letterSpacingVariation (0-3), analysisNotes, confidence (0-1), and qualityWarning (string or null).`;
     const gateway = await fetch('https://www.niknote.online/api/ai', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(45_000),
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: authorization }, signal: AbortSignal.timeout(45_000),
       body: JSON.stringify({
         model: 'astra-vision', mode: 'vision', stream: false,
         messages: [
@@ -67,9 +74,10 @@ Deno.serve(async (req: Request) => {
     const result = await gateway.json();
     if (typeof result?.content !== 'string') return reply({ error: 'AI vision returned an unreadable result. Please try again.' }, 502);
     const text = result.content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
-    let parsed: any;
-    try { parsed = JSON.parse(text); } catch { return reply({ error: 'AI vision returned an unreadable result. Please try again.' }, 502); }
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return reply({ error: 'AI vision returned an unreadable result. Please try again.' }, 502);
+    let parsedValue: unknown;
+    try { parsedValue = JSON.parse(text); } catch { return reply({ error: 'AI vision returned an unreadable result. Please try again.' }, 502); }
+    if (!parsedValue || typeof parsedValue !== 'object' || Array.isArray(parsedValue)) return reply({ error: 'AI vision returned an unreadable result. Please try again.' }, 502);
+    const parsed = parsedValue as Record<string, unknown>;
 
     if (kind === 'ocr') {
       const extractedText = typeof parsed.extractedText === 'string' ? parsed.extractedText.slice(0, 50_000) : '';
@@ -81,11 +89,11 @@ Deno.serve(async (req: Request) => {
         ...(success ? {} : { error: 'No readable handwriting was found. Try a clearer image.', shouldRetry: true }) });
     }
 
-    if (!fonts.includes(parsed.suggestedFont) || typeof parsed.analysisNotes !== 'string') {
+    if (typeof parsed.suggestedFont !== 'string' || !fonts.includes(parsed.suggestedFont) || typeof parsed.analysisNotes !== 'string') {
       return reply({ error: 'AI vision could not find a usable style. Try a clearer image.' }, 502);
     }
     const font = parsed.suggestedFont;
-    const ink = inks.includes(parsed.inkColor) ? parsed.inkColor : 'blue';
+    const ink = typeof parsed.inkColor === 'string' && inks.includes(parsed.inkColor) ? parsed.inkColor : 'blue';
     const drift = bounded(parsed.baselineJitterAmount, 0, 5, 1);
     return reply({
       suggestedFont: font, fontSize: bounded(parsed.fontSize, 14, 40, 24),

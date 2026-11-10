@@ -274,6 +274,15 @@
 .nik-desktop .nd-menu button { color: var(--nd-ink); }
 .nik-desktop .nd-menu button:hover { background: #eef4ff; }
 .nik-desktop .nd-tpl-paper { background-color: #fffdf5; }
+.nik-desktop .nd-tpl-paper[data-template-style="niknote-paper"] {
+  background-color: #fff9eb;
+  background-image:
+    radial-gradient(circle at calc(100% - 15px) 14px, rgba(255, 228, 92, .8) 0 5px, transparent 6px),
+    linear-gradient(90deg, transparent 0 16px, rgba(200, 63, 88, .32) 16px 17px, transparent 17px),
+    repeating-linear-gradient(to bottom, transparent 0 15px, rgba(52, 127, 240, .2) 15px 16px);
+  border: 1.5px solid #292725;
+  box-shadow: 2px 2px 0 rgba(41, 39, 37, .72);
+}
 .nik-desktop .nd-tpl-paper .nd-skel { background: #e7eaf0; }
 .nik-desktop .nd-tpl-paper .nd-skel.nd-acc { background: #347ff0; }
 .nik-desktop .nd-table th { background: #f6f8fc; }

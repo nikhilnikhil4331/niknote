@@ -34,6 +34,15 @@ import {
 } from '@/lib/nikaiNotesBridge';
 import apiHandler from '../../api/ai';
 
+// AuthProvider auto-guest is enabled in the app. Keep these UI tests isolated
+// from the configured Supabase project instead of making real anonymous-auth calls.
+beforeEach(() => {
+  vi.spyOn(supabase.auth, 'signInAnonymously').mockResolvedValue({
+    data: { user: null, session: null },
+    error: new Error('Anonymous auth is disabled in this test'),
+  } as unknown as Awaited<ReturnType<typeof supabase.auth.signInAnonymously>>);
+});
+
 describe('Mobile touch & pointer-event invariants', () => {
   it('never disables pointer-events on fixed overlays or locks touch-action on canvases in src/index.css', () => {
     const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
@@ -325,6 +334,21 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     const focusBtn = screen.getByRole('button', { name: /Focus/i });
     fireEvent.click(focusBtn);
     expect(focusBtn.getAttribute('aria-pressed')).toBe('true');
+
+    const compassBtn = screen.getByRole('button', { name: /Compass/i });
+    fireEvent.click(compassBtn);
+    expect(compassBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(document.querySelector('.nn-mobile')?.getAttribute('data-theme')).toBe('niknote-paper');
+  });
+
+  it('hands off the Compass Journal template with its branded paper, Caveat font, and blue ink', () => {
+    sessionStorage.removeItem('niknote-mobile-open');
+    wrap(<MobileExperience />, '/templates');
+    fireEvent.click(screen.getByRole('button', { name: 'Use NikNote Compass Journal template' }));
+
+    const pendingNote = JSON.parse(sessionStorage.getItem('niknote-mobile-open') || '{}');
+    expect(pendingNote).toMatchObject({ style: 'niknote-paper', font: 'caveat', inkColor: 'blue' });
+    expect(pendingNote.blocks.length).toBeGreaterThan(0);
   });
 
   it('renders functional device stats without Sign in to start lockout when unauthenticated', () => {
@@ -456,6 +480,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
         builder.in = vi.fn().mockImplementation(() => makeBuilder());
         builder.order = vi.fn().mockImplementation(() => makeBuilder());
         builder.limit = vi.fn().mockImplementation(() => makeBuilder());
+        builder.range = vi.fn().mockImplementation(() => makeBuilder());
         builder.single = vi.fn().mockResolvedValue(singleRes);
         builder.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
         return builder;
@@ -506,7 +531,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     );
 
     const res = await syncAllLocalDataToCloud(cloudUserId);
-    expect(res.ok).toBe(true);
+    expect(res.ok, JSON.stringify(res)).toBe(true);
     expect(res.synced).toBeGreaterThanOrEqual(4);
     expect(getSyncSnapshot().state).toBe('synced');
     expect(tablesWritten).toContain('notebooks');

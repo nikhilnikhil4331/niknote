@@ -15,7 +15,8 @@ export type UITheme =
   | 'brutalism'       // Raw, bold borders, monospace
   | 'liquid-glass'    // Frosted glass with liquid effects
   | 'bento-grid'      // Grid-based, card layout
-  | 'spatial-ui';     // 3D depth, parallax
+  | 'spatial-ui'      // 3D depth, parallax
+  | 'niknote-paper';  // Signature warm paper, compass blue and hand-drawn accents
 
 export const UI_THEMES: { value: UITheme; label: string; emoji: string; desc: string }[] = [
   { value: 'glassmorphism', label: 'Glassmorphism', emoji: '🪟', desc: 'Frosted glass, blur, transparency' },
@@ -28,11 +29,38 @@ export const UI_THEMES: { value: UITheme; label: string; emoji: string; desc: st
   { value: 'liquid-glass', label: 'Liquid Glass', emoji: '💧', desc: 'Apple-like frosted liquid' },
   { value: 'bento-grid', label: 'Bento Grid', emoji: '📦', desc: 'Card-based grid layout' },
   { value: 'spatial-ui', label: 'Spatial UI', emoji: '🌐', desc: '3D depth, parallax' },
+  { value: 'niknote-paper', label: 'Compass & Paper', emoji: '🧭', desc: 'Warm paper, compass blue, coral and playful type' },
 ];
 
 // Generate CSS variables per theme
 export function getThemeCSS(theme: UITheme): React.CSSProperties {
   switch (theme) {
+    case 'niknote-paper':
+      return {
+        '--theme-bg': 'radial-gradient(circle at 94% 14%, rgba(255,228,92,.28) 0 8px, transparent 9px), linear-gradient(145deg, #f4ecd9 0%, #fff8e9 56%, #eaf2ff 100%)',
+        '--theme-surface': '#fffaf0',
+        '--theme-surface-border': 'rgba(41,39,37,.65)',
+        '--theme-surface-shadow': '4px 4px 0 rgba(41,39,37,.82)',
+        '--theme-blur': '0px',
+        '--theme-text': '#171313',
+        '--theme-accent': '#2869d5',
+        '--theme-radius': '18px',
+        '--theme-outline': '#292725',
+        '--theme-coral': '#c83f58',
+        '--theme-yellow': '#ffe45c',
+        '--theme-display-font': "'Fredoka', 'Plus Jakarta Sans', sans-serif",
+        '--theme-handwriting-font': "'Caveat', cursive",
+        '--background': '44 100% 97%',
+        '--foreground': '230 10% 9%',
+        '--primary': '217 68% 50%',
+        '--primary-foreground': '0 0% 100%',
+        '--accent': '350 55% 52%',
+        '--accent-foreground': '0 0% 100%',
+        '--border': '220 34% 88%',
+        '--input': '220 34% 88%',
+        '--ring': '217 68% 50%',
+      } as React.CSSProperties;
+
     case 'glassmorphism':
       return {
         '--theme-bg': 'linear-gradient(135deg, #fffdf5 0%, #eef4ff 62%, #fff0f0 100%)',
@@ -174,6 +202,17 @@ export function getThemeClasses(theme: UITheme): {
   };
 
   switch (theme) {
+    case 'niknote-paper':
+      return {
+        ...base,
+        wrapper: 'bg-[#fff8e9]',
+        header: 'bg-[#fffaf0] border-[#292725] shadow-[4px_4px_0_rgba(41,39,37,0.82)]',
+        surface: 'bg-[#fffaf0] border-[#292725] shadow-[4px_4px_0_rgba(41,39,37,0.82)]',
+        button: 'bg-[#fff3d1] border-[#292725] shadow-[2px_2px_0_rgba(41,39,37,0.82)]',
+        activeTab: 'bg-[#2869d5] text-white shadow-[2px_2px_0_rgba(41,39,37,0.82)]',
+        card: 'bg-[#fffaf0] border-[#292725]',
+      };
+
     case 'skeuomorphism':
       return {
         ...base,

@@ -13,7 +13,7 @@ async function checkRateLimit(
   supabase: any,
   userId: string,
   endpoint: string
-): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
+): Promise<{ allowed: boolean; remaining: number; resetAt: Date; unavailable?: boolean }> {
   const now = new Date();
   const windowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW * 1000);
   
@@ -26,7 +26,7 @@ async function checkRateLimit(
 
   if (error) {
     console.error('Rate limit check error:', error);
-    return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW, resetAt: new Date(now.getTime() + RATE_LIMIT_WINDOW * 1000) };
+    return { allowed: false, remaining: 0, resetAt: new Date(now.getTime() + RATE_LIMIT_WINDOW * 1000), unavailable: true };
   }
 
   const currentCount = count || 0;
@@ -37,11 +37,15 @@ async function checkRateLimit(
     return { allowed: false, remaining: 0, resetAt };
   }
 
-  await supabase.from('rate_limits').insert({
+  const { error: insertError } = await supabase.from('rate_limits').insert({
     user_id: userId,
     endpoint,
     window_start: now.toISOString(),
   });
+  if (insertError) {
+    console.error('Rate limit reservation error:', insertError);
+    return { allowed: false, remaining: 0, resetAt, unavailable: true };
+  }
 
   return { allowed: true, remaining, resetAt };
 }
@@ -83,7 +87,13 @@ serve(async (req) => {
     console.log(`Analyze handwriting request from user: ${userId}`);
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    const { allowed, remaining, resetAt } = await checkRateLimit(adminClient, userId, 'analyze-handwriting');
+    const { allowed, remaining, resetAt, unavailable } = await checkRateLimit(adminClient, userId, 'analyze-handwriting');
+    if (unavailable) {
+      return new Response(JSON.stringify({ error: 'Handwriting analysis rate limit is temporarily unavailable' }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     if (!allowed) {
       return new Response(

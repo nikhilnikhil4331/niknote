@@ -160,23 +160,8 @@ const App = () => {
     // Android hardware Back (no-op on web)
     void initNativeShell();
     initTracking();
-    document.documentElement.classList.remove("dark");
-    localStorage.setItem("theme", "light");
 
     if (import.meta.env.PROD) {
-      try {
-        if ('caches' in window) {
-          caches.keys().then(names => {
-            names.forEach(name => {
-              if (!name.includes('v8.0.0')) {
-                console.log('[App] Purging stale cache:', name);
-                caches.delete(name);
-              }
-            });
-          });
-        }
-      } catch {}
-
       registerServiceWorker();
     }
 

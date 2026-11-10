@@ -43,6 +43,26 @@ async function readAllSSEEvents(res: Response): Promise<Array<Record<string, any
   return events;
 }
 
+const TEST_SUPABASE_URL = 'https://unit-test.supabase.co';
+const TEST_ACCESS_TOKEN = 'test-user-access-token';
+
+function apiRequest(url: string, init: RequestInit = {}) {
+  const headers = new Headers(init.headers);
+  headers.set('Authorization', `Bearer ${TEST_ACCESS_TOKEN}`);
+  return new Request(url, { ...init, headers });
+}
+
+function withSupabaseAuth(providerFetch: typeof fetch, quotaAllowed = true): typeof fetch {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    if (url === `${TEST_SUPABASE_URL}/auth/v1/user`) return Response.json({ id: 'test-user' });
+    if (url === `${TEST_SUPABASE_URL}/rest/v1/rpc/consume_ai_quota`) {
+      return Response.json([{ allowed: quotaAllowed, used: quotaAllowed ? 1 : 30, remaining: quotaAllowed ? 29 : 0, reset_at: '2099-01-01T00:00:00Z' }]);
+    }
+    return providerFetch(input, init);
+  }) as unknown as typeof fetch;
+}
+
 describe('LarpRouter URL & API key normalization', () => {
   it('normalizes both OpenAI (/v1) and Anthropic root URLs to https://larprouter.com/v1', () => {
     expect(normalizeLarpRouterBaseUrl(undefined)).toBe('https://larprouter.com/v1');
@@ -110,19 +130,27 @@ describe('Reasoning <think> tag splitter', () => {
 
 describe('NikAI /api/ai LarpRouter gateway routing & resilience', () => {
   const originalFetch = globalThis.fetch;
+  const originalSupabaseUrl = process.env.SUPABASE_URL;
+  const originalSupabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
   beforeEach(() => {
     localStorage.clear();
+    process.env.SUPABASE_URL = TEST_SUPABASE_URL;
+    process.env.SUPABASE_ANON_KEY = 'test-anon-key';
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
+    if (originalSupabaseUrl === undefined) delete process.env.SUPABASE_URL;
+    else process.env.SUPABASE_URL = originalSupabaseUrl;
+    if (originalSupabaseAnonKey === undefined) delete process.env.SUPABASE_ANON_KEY;
+    else process.env.SUPABASE_ANON_KEY = originalSupabaseAnonKey;
     vi.restoreAllMocks();
   });
 
   it('reports larprouter provider ready on GET /api/ai when X-LarpRouter-Key is supplied', async () => {
     const res = await apiHandler(
-      new Request('http://localhost/api/ai', {
+      apiRequest('http://localhost/api/ai', {
         method: 'GET',
         headers: { 'x-larprouter-key': 'lrsk-test-health-01' },
       })
@@ -133,9 +161,27 @@ describe('NikAI /api/ai LarpRouter gateway routing & resilience', () => {
     expect(json.providers.larprouter).toBe(true);
   });
 
+  it('rejects anonymous gateway requests and enforces quota before provider calls', async () => {
+    const provider = vi.fn(async () => new Response('{}', { status: 200 }));
+    globalThis.fetch = provider as unknown as typeof fetch;
+    const body = JSON.stringify({ messages: [{ role: 'user', content: 'Hello' }], stream: false });
+    const anonymous = await apiHandler(new Request('http://localhost/api/ai', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
+    }));
+    expect(anonymous.status).toBe(401);
+    expect(provider).not.toHaveBeenCalled();
+
+    globalThis.fetch = withSupabaseAuth(provider as unknown as typeof fetch, false);
+    const limited = await apiHandler(apiRequest('http://localhost/api/ai', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body,
+    }));
+    expect(limited.status).toBe(429);
+    expect(provider).not.toHaveBeenCalled();
+  });
+
   it('streams DeepSeek V4.1 from https://larprouter.com/v1/chat/completions and separates <think> reasoning', async () => {
     const upstreamCalls: Array<{ url: string; auth: string; body: any }> = [];
-    globalThis.fetch = vi.fn(async (input: any, init?: RequestInit) => {
+    globalThis.fetch = withSupabaseAuth(vi.fn(async (input: any, init?: RequestInit) => {
       const url = String(input);
       const headers = new Headers(init?.headers);
       const body = init?.body ? JSON.parse(String(init.body)) : null;
@@ -148,10 +194,10 @@ describe('NikAI /api/ai LarpRouter gateway routing & resilience', () => {
         ]),
         { status: 200, headers: { 'Content-Type': 'text/event-stream' } }
       );
-    }) as unknown as typeof fetch;
+    }) as unknown as typeof fetch);
 
     const res = await apiHandler(
-      new Request('http://localhost/api/ai', {
+      apiRequest('http://localhost/api/ai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -185,17 +231,17 @@ describe('NikAI /api/ai LarpRouter gateway routing & resilience', () => {
 
   it('routes code mode to glm-5.3 and deep/pro mode to kimi-k3.1-pro when credit is available', async () => {
     const modelsRequested: string[] = [];
-    globalThis.fetch = vi.fn(async (_input: any, init?: RequestInit) => {
+    globalThis.fetch = withSupabaseAuth(vi.fn(async (_input: any, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body || '{}'));
       modelsRequested.push(body.model);
       return new Response(
         JSON.stringify({ choices: [{ message: { content: 'Clean solution' } }] }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
-    }) as unknown as typeof fetch;
+    }) as unknown as typeof fetch);
 
     await apiHandler(
-      new Request('http://localhost/api/ai', {
+      apiRequest('http://localhost/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-LarpRouter-Key': 'lrsk-funded-pro-02' },
         body: JSON.stringify({
@@ -208,7 +254,7 @@ describe('NikAI /api/ai LarpRouter gateway routing & resilience', () => {
     );
 
     await apiHandler(
-      new Request('http://localhost/api/ai', {
+      apiRequest('http://localhost/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-LarpRouter-Key': 'lrsk-funded-pro-03' },
         body: JSON.stringify({
@@ -226,7 +272,7 @@ describe('NikAI /api/ai LarpRouter gateway routing & resilience', () => {
   it('gracefully falls back from paid 402 to Free-tier deepseek-v4.1-flash, and then to Groq if all LarpRouter routes 402', async () => {
     const tried: string[] = [];
     // Case 1: Paid kimi-k3.1-pro returns 402, Free-tier deepseek-v4.1-flash succeeds!
-    globalThis.fetch = vi.fn(async (input: any, init?: RequestInit) => {
+    globalThis.fetch = withSupabaseAuth(vi.fn(async (input: any, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body || '{}'));
       tried.push(`${String(input).includes('larprouter') ? 'larp' : 'groq'}:${body.model}`);
       if (body.model === 'kimi-k3.1-pro' || body.model === 'glm-5.3') {
@@ -236,10 +282,10 @@ describe('NikAI /api/ai LarpRouter gateway routing & resilience', () => {
         JSON.stringify({ choices: [{ message: { content: 'Solved on Free Tier!' } }] }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
-    }) as unknown as typeof fetch;
+    }) as unknown as typeof fetch);
 
     const freeTierRes = await apiHandler(
-      new Request('http://localhost/api/ai', {
+      apiRequest('http://localhost/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-LarpRouter-Key': 'lrsk-zero-bal-free-ok' },
         body: JSON.stringify({
@@ -257,7 +303,7 @@ describe('NikAI /api/ai LarpRouter gateway routing & resilience', () => {
 
     // Case 2: All LarpRouter routes return 402 -> immediately fails over to Groq without hanging!
     tried.length = 0;
-    globalThis.fetch = vi.fn(async (input: any, init?: RequestInit) => {
+    globalThis.fetch = withSupabaseAuth(vi.fn(async (input: any, init?: RequestInit) => {
       const isLarp = String(input).includes('larprouter.com');
       const body = JSON.parse(String(init?.body || '{}'));
       tried.push(`${isLarp ? 'larp' : 'groq'}:${body.model}`);
@@ -268,10 +314,10 @@ describe('NikAI /api/ai LarpRouter gateway routing & resilience', () => {
         JSON.stringify({ choices: [{ message: { content: 'Answered via Groq failover' } }] }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
-    }) as unknown as typeof fetch;
+    }) as unknown as typeof fetch);
 
     const failoverRes = await apiHandler(
-      new Request('http://localhost/api/ai', {
+      apiRequest('http://localhost/api/ai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -294,7 +340,7 @@ describe('NikAI /api/ai LarpRouter gateway routing & resilience', () => {
   });
 
   it('heals custom LarpRouter model pools via GET /v1/models on 404', async () => {
-    globalThis.fetch = vi.fn(async (input: any, init?: RequestInit) => {
+    globalThis.fetch = withSupabaseAuth(vi.fn(async (input: any, init?: RequestInit) => {
       const url = String(input);
       if (url === 'https://larprouter.com/v1/models') {
         return new Response(
@@ -310,10 +356,10 @@ describe('NikAI /api/ai LarpRouter gateway routing & resilience', () => {
         JSON.stringify({ choices: [{ message: { content: 'Answered by Claude pool!' } }] }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
-    }) as unknown as typeof fetch;
+    }) as unknown as typeof fetch);
 
     const res = await apiHandler(
-      new Request('http://localhost/api/ai', {
+      apiRequest('http://localhost/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-LarpRouter-Key': 'lrsk-claude-pool-key' },
         body: JSON.stringify({
@@ -332,16 +378,16 @@ describe('NikAI /api/ai LarpRouter gateway routing & resilience', () => {
 
   it('sends stream: true to LarpRouter during GET /api/ai?probe=1 and collects SSE answer cleanly', async () => {
     let probeUpstreamBody: any = null;
-    globalThis.fetch = vi.fn(async (_input: any, init?: RequestInit) => {
+    globalThis.fetch = withSupabaseAuth(vi.fn(async (_input: any, init?: RequestInit) => {
       probeUpstreamBody = JSON.parse(String(init?.body || '{}'));
       return new Response(
         buildOpenAISSEBody([{ content: '<think>checking...</think>' }, { content: 'OK' }]),
         { status: 200, headers: { 'Content-Type': 'text/event-stream' } }
       );
-    }) as unknown as typeof fetch;
+    }) as unknown as typeof fetch);
 
     const res = await apiHandler(
-      new Request('http://localhost/api/ai?probe=1', {
+      apiRequest('http://localhost/api/ai?probe=1', {
         method: 'GET',
         headers: { 'X-LarpRouter-Key': 'lrsk-probe-sse-test' },
       })

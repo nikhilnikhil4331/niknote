@@ -5,6 +5,9 @@
 // Architecture inspired by Dify's Beehive runtime
 // ============================================================
 
+import { supabase } from '@/integrations/supabase/client';
+import { evaluateSafeExpression } from '@/lib/safeExpression';
+
 export type WorkflowNodeType =
   | 'start'           // Input node
   | 'end'             // Output node
@@ -260,6 +263,8 @@ export class WorkflowEngine {
 
       // Execute from start node
       await this.executeNode(startNode.id, workflow, execution);
+      const failedNode = execution.nodeExecutions.find((node) => node.status === 'failed');
+      if (failedNode) throw new Error(failedNode.error || `Workflow node ${failedNode.nodeId} failed`);
 
       execution.status = 'completed';
       execution.completedAt = Date.now();
@@ -393,27 +398,20 @@ export class WorkflowEngine {
       // fall through to Supabase openai-brain fallback
     }
 
-    // 2. Fallback to Supabase edge function
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openai-brain`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-      },
-      body: JSON.stringify({
+    // 2. Authenticated Supabase edge fallback. The Supabase client attaches the
+    // active user's access token; a public anon key alone is not user auth.
+    const { data, error } = await supabase.functions.invoke('openai-brain', {
+      body: {
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt },
         ],
-        model: config.model || 'deepseek-v4.1-flash',
-        temperature: config.temperature ?? 0.7,
-        max_tokens: config.maxTokens ?? 2048,
-      }),
+        agentType: 'teacher',
+      },
     });
 
-    if (!response.ok) throw new Error(`LLM node error: ${response.status}`);
-    const data = await response.json();
-    return data.content || data.choices?.[0]?.message?.content || '';
+    if (error) throw new Error(`LLM node error: ${error.message || 'AI request failed'}`);
+    return data?.content || data?.response || data?.choices?.[0]?.message?.content || '';
   }
 
   private async executeOCRNode(node: WorkflowNode, inputs: any): Promise<any> {
@@ -453,21 +451,19 @@ export class WorkflowEngine {
   private async executeConditionNode(node: WorkflowNode, inputs: any): Promise<any> {
     const config = node.data.config;
     try {
-      const result = new Function('inputs', `return ${config.expression}`)(inputs);
-      return { condition: result, branch: result ? 'true' : 'false' };
+      const result = evaluateSafeExpression(String(config.expression || ''), { inputs });
+      const condition = Boolean(result);
+      return { condition, branch: condition ? 'true' : 'false' };
     } catch {
       return { condition: false, branch: 'false' };
     }
   }
 
-  private async executeCodeNode(node: WorkflowNode, inputs: any): Promise<any> {
-    const config = node.data.config;
-    try {
-      const fn = new Function('inputs', 'console', config.code);
-      return fn(inputs, console);
-    } catch (error: any) {
-      throw new Error(`Code execution error: ${error.message}`);
-    }
+  private async executeCodeNode(_node: WorkflowNode, _inputs: any): Promise<any> {
+    // Arbitrary JavaScript would execute in the app's origin and conflicts with
+    // the production CSP. Keep the node type for old saved workflows, but fail
+    // explicitly until a real isolated sandbox exists.
+    throw new Error('Custom JavaScript workflow nodes are disabled for security.');
   }
 
   private async executeLoopNode(

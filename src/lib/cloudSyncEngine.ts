@@ -18,6 +18,24 @@ const LAST_SYNC_KEY = 'niknote.sync.last_at.v1';
 export const PC_ACTIVE_PAGES_KEY = 'niknote.pc.active_pages.v1';
 export const PC_ACTIVE_META_KEY = 'niknote.pc.active_meta.v1';
 
+type CloudNotebook = {
+  id: string;
+  title?: string | null;
+  cover_color?: string | null;
+  page_style?: string | null;
+  page_size?: string | null;
+  tags?: unknown;
+  updated_at?: string | null;
+};
+
+type CloudPage = {
+  notebook_id: string;
+  title?: string | null;
+  content?: unknown;
+  page_number?: number;
+  updated_at?: string | null;
+};
+
 export function isCloudUserId(uid?: string | null): uid is string {
   return Boolean(uid && UUID_RE.test(uid));
 }
@@ -133,12 +151,13 @@ export async function syncLocalNotesWithCloud(
 ): Promise<number> {
   if (!isCloudUserId(userId)) return 0;
   let moved = 0;
+  const failures: string[] = [];
 
   const idMap = readJson<Record<string, string>>(NOTEBOOK_MAP_KEY, {});
   const mobileList = readJson<any[]>('niknote.mobile.notebooks.v1', []);
   const plainNotes = readJson<any[]>('niknote.notes.v1', []);
 
-  // Merge any niknote.notes.v1 entries not yet in mobileList
+  // Merge any niknote.notes.v1 entries not yet in mobileList.
   const seenIds = new Set(mobileList.map((n) => String(n.id)));
   for (const note of plainNotes) {
     if (!note || note.trashedAt || seenIds.has(String(note.id))) continue;
@@ -160,25 +179,75 @@ export async function syncLocalNotesWithCloud(
   }
 
   let localMutated = false;
+  const errorText = (error: unknown, fallback: string) => {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' && error.message) {
+      return error.message;
+    }
+    return fallback;
+  };
+  const toMillis = (value: unknown) => {
+    const millis = typeof value === 'string' ? Date.parse(value) : NaN;
+    return Number.isFinite(millis) ? millis : 0;
+  };
 
   for (let i = 0; i < mobileList.length; i++) {
     const item = mobileList[i];
-    if (!item) continue;
+    if (!item || item.trashedAt) continue;
     const rawId = String(item.id || '');
-    const mappedCloudId = UUID_RE.test(rawId) ? rawId : idMap[rawId] || '';
+    // A UUID can be generated locally. Treat it as a cloud ID only when the
+    // sync marker/map proves that it has been uploaded, or the owner-scoped
+    // existence lookup below confirms it.
+    let cloudId = idMap[rawId] || (item._syncedAt && UUID_RE.test(rawId) ? rawId : '');
+    let cloudNotebook: CloudNotebook | null = null;
 
-    // Already synced and unchanged since last sync stamp
-    if (mappedCloudId && item._syncedAt && item._syncedAt === item.updated_at) {
-      if (item.id !== mappedCloudId) {
-        mobileList[i] = { ...item, id: mappedCloudId };
+    // Already synced and unchanged; the pull phase still checks whether a
+    // different device has made a newer cloud edit.
+    if (cloudId && item._syncedAt && item._syncedAt === item.updated_at) {
+      if (item.id !== cloudId) {
+        mobileList[i] = { ...item, id: cloudId };
         localMutated = true;
       }
       continue;
     }
 
-    let cloudId = mappedCloudId;
+    if (!cloudId && UUID_RE.test(rawId)) {
+      const { data, error } = await supabase
+        .from('notebooks')
+        .select('id, updated_at')
+        .eq('id', rawId)
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (error) {
+        failures.push(`Notebook lookup failed: ${errorText(error, 'cloud request failed')}`);
+        continue;
+      }
+      if (data?.id) {
+        cloudId = data.id;
+        cloudNotebook = data;
+      }
+    }
+
+    const hasCloudIdentity = Boolean(idMap[rawId] || item._syncedAt);
+    if (cloudId && !cloudNotebook) {
+      const { data, error } = await supabase
+        .from('notebooks')
+        .select('id, title, cover_color, page_style, page_size, tags, updated_at')
+        .eq('id', cloudId)
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (error) {
+        failures.push(`Notebook lookup failed: ${errorText(error, 'cloud request failed')}`);
+        continue;
+      }
+      if (!data?.id) {
+        failures.push('A previously synced notebook is not available to this account; local data was kept.');
+        continue;
+      }
+      cloudNotebook = data;
+    }
+
     if (!cloudId) {
-      const { data: created, error: createErr } = await supabase
+      const { data: created, error } = await supabase
         .from('notebooks')
         .insert({
           user_id: userId,
@@ -188,50 +257,118 @@ export async function syncLocalNotesWithCloud(
           page_size: item.page_size || 'a4',
           tags: Array.isArray(item.tags) && item.tags.length ? item.tags : ['Notes'],
         })
-        .select('id, updated_at')
+        .select('id, title, cover_color, page_style, page_size, tags, updated_at')
         .single();
 
-      if (createErr || !created?.id) continue;
+      if (error || !created?.id) {
+        failures.push(`Notebook upload failed: ${errorText(error, 'cloud returned no notebook ID')}`);
+        continue;
+      }
       cloudId = created.id;
-      if (rawId) idMap[rawId] = cloudId;
-    } else {
-      await supabase
+      cloudNotebook = created;
+      if (rawId) {
+        idMap[rawId] = cloudId;
+        writeJson(NOTEBOOK_MAP_KEY, idMap);
+        localMutated = true;
+      }
+    } else if (!hasCloudIdentity && !cloudNotebook) {
+      // Defensive fallback; a mapped or verified cloud notebook always has a row.
+      failures.push('Could not resolve the target notebook; local data was kept.');
+      continue;
+    }
+
+    const { data: pageRows, error: pageReadError } = await supabase
+      .from('pages')
+      .select('id, title, content, page_number, updated_at')
+      .eq('notebook_id', cloudId)
+      .eq('user_id', userId)
+      .order('page_number', { ascending: true })
+      .limit(1);
+    if (pageReadError) {
+      failures.push(`Page lookup failed: ${errorText(pageReadError, 'cloud request failed')}`);
+      continue;
+    }
+    const existingPage = Array.isArray(pageRows) ? pageRows[0] : null;
+
+    // Do not silently overwrite a newer edit from another device. If this
+    // device is clean, the pull below adopts the cloud version; if both sides
+    // changed, keep this local copy and report a conflict for user resolution.
+    const syncedAt = toMillis(item._syncedAt);
+    const cloudUpdatedAt = Math.max(
+      toMillis(cloudNotebook?.updated_at),
+      toMillis(existingPage?.updated_at)
+    );
+    const cloudChanged = syncedAt > 0 && cloudUpdatedAt > syncedAt;
+    const localChanged = Boolean(item._syncedAt && item._syncedAt !== item.updated_at);
+    if (cloudChanged && !localChanged && existingPage) {
+      const stamp = new Date(cloudUpdatedAt).toISOString();
+      mobileList[i] = {
+        ...item,
+        title: cloudNotebook.title || existingPage.title || item.title || 'Untitled Note',
+        blocks: Array.isArray(existingPage.content)
+          ? existingPage.content
+          : [createBlock('text', '')],
+        cover_color: cloudNotebook.cover_color || item.cover_color || '#8b5cf6',
+        page_style: cloudNotebook.page_style || item.page_style || 'ruled',
+        page_size: cloudNotebook.page_size || item.page_size || 'a4',
+        tags: Array.isArray(cloudNotebook.tags) ? cloudNotebook.tags : item.tags || ['Notes'],
+        updated_at: stamp,
+        _syncedAt: stamp,
+      };
+      localMutated = true;
+      continue;
+    }
+    if (cloudChanged && localChanged) {
+      failures.push('A note changed on this device and another device; local edits were kept instead of overwriting cloud data.');
+      continue;
+    }
+
+    if (cloudNotebook?.id) {
+      const { error } = await supabase
         .from('notebooks')
         .update({
           title: item.title || 'Untitled Note',
+          cover_color: item.cover_color || '#8b5cf6',
           page_style: item.page_style || 'ruled',
+          page_size: item.page_size || 'a4',
           tags: Array.isArray(item.tags) && item.tags.length ? item.tags : ['Notes'],
         })
-        .eq('id', cloudId);
+        .eq('id', cloudId)
+        .eq('user_id', userId);
+      if (error) {
+        failures.push(`Notebook update failed: ${errorText(error, 'cloud request failed')}`);
+        continue;
+      }
     }
 
     const blocks = Array.isArray(item.blocks) ? item.blocks : [];
-    const { data: existingPage } = await supabase
-      .from('pages')
-      .select('id')
-      .eq('notebook_id', cloudId)
-      .order('page_number', { ascending: true })
-      .limit(1);
-
-    const stamp = new Date().toISOString();
-    if (existingPage && existingPage[0]?.id) {
-      await supabase
+    let pageWriteError: unknown = null;
+    if (existingPage?.id) {
+      const { error } = await supabase
         .from('pages')
         .update({
           title: item.title || 'Untitled Note',
           content: blocks as any,
         })
-        .eq('id', existingPage[0].id);
+        .eq('id', existingPage.id)
+        .eq('user_id', userId);
+      pageWriteError = error;
     } else {
-      await supabase.from('pages').insert({
+      const { error } = await supabase.from('pages').insert({
         notebook_id: cloudId,
         user_id: userId,
         page_number: 1,
         title: item.title || 'Untitled Note',
         content: blocks as any,
       });
+      pageWriteError = error;
+    }
+    if (pageWriteError) {
+      failures.push(`Page upload failed: ${errorText(pageWriteError, 'cloud request failed')}`);
+      continue;
     }
 
+    const stamp = new Date().toISOString();
     mobileList[i] = {
       ...item,
       id: cloudId,
@@ -242,44 +379,99 @@ export async function syncLocalNotesWithCloud(
     moved++;
   }
 
-  // Pull cloud notebooks down into local mirror so cross-tab / cross-device stays 100% consistent
+  // Pull all notebook rows in bounded pages. Page content remains one page per
+  // local notebook until the editor's multi-page local model is implemented.
   if (opts.pullCloud !== false) {
-    const { data: cloudNotebooks } = await supabase
-      .from('notebooks')
-      .select('id, title, cover_color, page_style, page_size, tags, updated_at')
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false })
-      .limit(60);
+    const cloudNotebooks: CloudNotebook[] = [];
+    const batchSize = 200;
+    const maximumRows = 5000;
+    for (let offset = 0; offset < maximumRows; offset += batchSize) {
+      const { data, error } = await supabase
+        .from('notebooks')
+        .select('id, title, cover_color, page_style, page_size, tags, updated_at')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .range(offset, offset + batchSize - 1);
+      if (error) {
+        failures.push(`Notebook pull failed: ${errorText(error, 'cloud request failed')}`);
+        break;
+      }
+      const rows = Array.isArray(data) ? data : [];
+      cloudNotebooks.push(...rows);
+      if (rows.length < batchSize) break;
+      if (offset + batchSize >= maximumRows) {
+        failures.push('Notebook pull reached the safe 5,000-row limit; remaining cloud notebooks were not loaded.');
+      }
+    }
 
-    if (Array.isArray(cloudNotebooks) && cloudNotebooks.length) {
-      const ids = cloudNotebooks.map((n: any) => n.id);
-      const { data: cloudPages } = await supabase
-        .from('pages')
-        .select('notebook_id, content, page_number')
-        .in('notebook_id', ids)
-        .order('page_number', { ascending: true });
-
-      const pagesByNotebook = new Map<string, any[]>();
-      for (const p of cloudPages || []) {
-        if (!pagesByNotebook.has(p.notebook_id) && Array.isArray(p.content)) {
-          pagesByNotebook.set(p.notebook_id, p.content);
+    if (cloudNotebooks.length) {
+      const pagesByNotebook = new Map<string, CloudPage>();
+      const ids = cloudNotebooks.map((notebook) => notebook.id);
+      for (let offset = 0; offset < ids.length; offset += 100) {
+        const pageIds = ids.slice(offset, offset + 100);
+        const { data: cloudPages, error } = await supabase
+          .from('pages')
+          .select('notebook_id, title, content, page_number, updated_at')
+          .in('notebook_id', pageIds)
+          .eq('user_id', userId)
+          .order('page_number', { ascending: true });
+        if (error) {
+          failures.push(`Page pull failed: ${errorText(error, 'cloud request failed')}`);
+          continue;
+        }
+        for (const page of cloudPages || []) {
+          if (!pagesByNotebook.has(page.notebook_id)) pagesByNotebook.set(page.notebook_id, page);
         }
       }
 
-      const localById = new Map(mobileList.map((n) => [String(n.id), n]));
-      for (const cn of cloudNotebooks) {
-        if (!localById.has(cn.id)) {
-          mobileList.push({
-            id: cn.id,
-            title: cn.title || 'Untitled Note',
-            blocks: pagesByNotebook.get(cn.id) || [createBlock('text', '')],
-            cover_color: cn.cover_color || '#8b5cf6',
-            page_style: cn.page_style || 'ruled',
-            page_size: cn.page_size || 'a4',
-            tags: cn.tags || ['Notes'],
-            updated_at: cn.updated_at,
-            _syncedAt: cn.updated_at,
-          });
+      const localByCloudId = new Map<string, { item: Record<string, unknown>; index: number }>();
+      for (let index = 0; index < mobileList.length; index++) {
+        const item = mobileList[index];
+        if (!item) continue;
+        const rawId = String(item.id || '');
+        const cloudId = idMap[rawId] || (item._syncedAt && UUID_RE.test(rawId) ? rawId : '');
+        if (cloudId) localByCloudId.set(cloudId, { item, index });
+      }
+
+      for (const notebook of cloudNotebooks) {
+        const page = pagesByNotebook.get(notebook.id);
+        const remoteMillis = Math.max(toMillis(notebook.updated_at), toMillis(page?.updated_at));
+        const remoteStamp = remoteMillis ? new Date(remoteMillis).toISOString() : notebook.updated_at;
+        const localEntry = localByCloudId.get(notebook.id);
+        if (!localEntry) {
+          const pulled = {
+            id: notebook.id,
+            title: notebook.title || page?.title || 'Untitled Note',
+            blocks: Array.isArray(page?.content) ? page.content : [createBlock('text', '')],
+            cover_color: notebook.cover_color || '#8b5cf6',
+            page_style: notebook.page_style || 'ruled',
+            page_size: notebook.page_size || 'a4',
+            tags: notebook.tags || ['Notes'],
+            updated_at: remoteStamp,
+            _syncedAt: remoteStamp,
+          };
+          mobileList.push(pulled);
+          localByCloudId.set(notebook.id, { item: pulled, index: mobileList.length - 1 });
+          localMutated = true;
+          continue;
+        }
+
+        const local = mobileList[localEntry.index];
+        const localStamp = toMillis(local._syncedAt);
+        const localClean = Boolean(local._syncedAt && local._syncedAt === local.updated_at);
+        if (localClean && remoteMillis > localStamp && page) {
+          mobileList[localEntry.index] = {
+            ...local,
+            id: notebook.id,
+            title: notebook.title || page.title || local.title || 'Untitled Note',
+            blocks: Array.isArray(page.content) ? page.content : [createBlock('text', '')],
+            cover_color: notebook.cover_color || local.cover_color || '#8b5cf6',
+            page_style: notebook.page_style || local.page_style || 'ruled',
+            page_size: notebook.page_size || local.page_size || 'a4',
+            tags: Array.isArray(notebook.tags) ? notebook.tags : local.tags || ['Notes'],
+            updated_at: remoteStamp,
+            _syncedAt: remoteStamp,
+          };
           localMutated = true;
         }
       }
@@ -289,22 +481,52 @@ export async function syncLocalNotesWithCloud(
   if (localMutated) {
     writeJson(NOTEBOOK_MAP_KEY, idMap);
     writeJson('niknote.mobile.notebooks.v1', mobileList);
-    // Keep niknote.notes.v1 aligned with canonical IDs
-    const updatedPlain = mobileList.map((n) => ({
-      id: n.id,
-      title: n.title || 'Untitled Note',
-      icon: '📝',
-      content: Array.isArray(n.blocks) ? n.blocks.map((b: any) => b?.content || '').join('\n') : '',
-      starred: false,
-      tags: Array.isArray(n.tags) ? n.tags : ['Notes'],
-      parentId: null,
-      trashedAt: null,
-      createdAt: n.updated_at || new Date().toISOString(),
-      updatedAt: n.updated_at || new Date().toISOString(),
-    }));
+    // Keep canonical IDs/content aligned without erasing local note metadata or
+    // silently deleting items that are only represented in the trash store.
+    const plainByLocalId = new Map<string, Record<string, unknown>>();
+    const plainByCloudId = new Map<string, Record<string, unknown>>();
+    for (const note of plainNotes) {
+      if (!note) continue;
+      const localId = String(note.id || '');
+      if (!localId) continue;
+      plainByLocalId.set(localId, note);
+      plainByCloudId.set(idMap[localId] || localId, note);
+    }
+    const now = new Date().toISOString();
+    const updatedPlain = mobileList.filter((note) => note && !note.trashedAt).map((note) => {
+      const id = String(note.id || '');
+      const original = plainByCloudId.get(id) || plainByLocalId.get(id);
+      const parentId = original?.parentId ?? note.parentId ?? null;
+      return {
+        ...original,
+        id: id || original?.id,
+        title: note.title || original?.title || 'Untitled Note',
+        icon: original?.icon || note.icon || '📝',
+        content: Array.isArray(note.blocks) ? note.blocks.map((block: any) => block?.content || '').join('\n') : '',
+        starred: original?.starred ?? note.starred ?? false,
+        tags: Array.isArray(note.tags) ? note.tags : original?.tags || ['Notes'],
+        parentId: typeof parentId === 'string' ? idMap[parentId] || parentId : parentId,
+        trashedAt: null,
+        createdAt: original?.createdAt || note.createdAt || note.updated_at || now,
+        updatedAt: note.updated_at || original?.updatedAt || now,
+      };
+    });
+    const preservedTrash = new Set<string>();
+    for (const note of plainNotes) {
+      if (!note?.trashedAt) continue;
+      const localId = String(note.id || '');
+      const id = idMap[localId] || localId;
+      if (!id || preservedTrash.has(id) || updatedPlain.some((active) => String(active.id) === id)) continue;
+      const parentId = typeof note.parentId === 'string' ? idMap[note.parentId] || note.parentId : note.parentId;
+      updatedPlain.push({ ...note, id, parentId });
+      preservedTrash.add(id);
+    }
     writeJson('niknote.notes.v1', updatedPlain);
   }
 
+  if (failures.length) {
+    throw new Error(`Notes sync incomplete (${failures.length} issue${failures.length === 1 ? '' : 's'}): ${failures[0]}`);
+  }
   return moved;
 }
 
@@ -320,14 +542,20 @@ export async function syncLocalMoneyToCloud(userId: string): Promise<number> {
   }>('niknote.money.v1.local', {});
 
   let moved = 0;
+  const failures: string[] = [];
   const pendingTxs = (local.txs || []).filter((t) => String(t?.id || '').startsWith('local_'));
   const pendingGoals = (local.goals || []).filter((g) => String(g?.id || '').startsWith('local_'));
   const pendingBills = (local.bills || []).filter((b) => String(b?.id || '').startsWith('local_'));
+  const hasSettings = local.currency !== undefined || local.budget !== undefined;
 
-  if (!pendingTxs.length && !pendingGoals.length && !pendingBills.length && !local.budget) {
-    return 0;
-  }
+  if (!pendingTxs.length && !pendingGoals.length && !pendingBills.length && !hasSettings) return 0;
 
+  const errorText = (error: unknown, fallback: string) => {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' && error.message) {
+      return error.message;
+    }
+    return fallback;
+  };
   const remainingTxs = [...(local.txs || [])];
   for (const tx of pendingTxs) {
     const { data, error } = await supabase
@@ -345,9 +573,11 @@ export async function syncLocalMoneyToCloud(userId: string): Promise<number> {
       .select()
       .single();
     if (!error && data) {
-      const idx = remainingTxs.findIndex((r) => r.id === tx.id);
+      const idx = remainingTxs.findIndex((row) => row.id === tx.id);
       if (idx >= 0) remainingTxs[idx] = { ...data, amount: Number(data.amount) };
       moved++;
+    } else {
+      failures.push(`Transaction upload failed: ${errorText(error, 'cloud returned no transaction')}`);
     }
   }
 
@@ -364,9 +594,11 @@ export async function syncLocalMoneyToCloud(userId: string): Promise<number> {
       .select()
       .single();
     if (!error && data) {
-      const idx = remainingGoals.findIndex((r) => r.id === goal.id);
+      const idx = remainingGoals.findIndex((row) => row.id === goal.id);
       if (idx >= 0) remainingGoals[idx] = { ...data, target: Number(data.target), saved: Number(data.saved) };
       moved++;
+    } else {
+      failures.push(`Goal upload failed: ${errorText(error, 'cloud returned no goal')}`);
     }
   }
 
@@ -384,14 +616,17 @@ export async function syncLocalMoneyToCloud(userId: string): Promise<number> {
       .select()
       .single();
     if (!error && data) {
-      const idx = remainingBills.findIndex((r) => r.id === bill.id);
+      const idx = remainingBills.findIndex((row) => row.id === bill.id);
       if (idx >= 0) remainingBills[idx] = { ...data, amount: Number(data.amount) };
       moved++;
+    } else {
+      failures.push(`Bill upload failed: ${errorText(error, 'cloud returned no bill')}`);
     }
   }
 
-  if (local.currency || local.budget) {
-    await supabase.from('tracker_settings').upsert(
+  let settingsSynced = !hasSettings;
+  if (hasSettings) {
+    const { error } = await supabase.from('tracker_settings').upsert(
       {
         user_id: userId,
         currency: local.currency || 'INR',
@@ -399,16 +634,23 @@ export async function syncLocalMoneyToCloud(userId: string): Promise<number> {
       } as any,
       { onConflict: 'user_id' } as any
     );
+    settingsSynced = !error;
+    if (error) failures.push(`Money settings upload failed: ${errorText(error, 'cloud request failed')}`);
   }
 
+  // Successful records are removed from the local queue; failed records and
+  // failed settings remain intact for a later retry.
   writeJson('niknote.money.v1.local', {
-    txs: remainingTxs.filter((t) => String(t?.id || '').startsWith('local_')),
-    goals: remainingGoals.filter((g) => String(g?.id || '').startsWith('local_')),
-    bills: remainingBills.filter((b) => String(b?.id || '').startsWith('local_')),
-    currency: local.currency || 'INR',
-    budget: 0,
+    txs: remainingTxs.filter((row) => String(row?.id || '').startsWith('local_')),
+    goals: remainingGoals.filter((row) => String(row?.id || '').startsWith('local_')),
+    bills: remainingBills.filter((row) => String(row?.id || '').startsWith('local_')),
+    currency: hasSettings ? local.currency || 'INR' : local.currency,
+    budget: hasSettings && settingsSynced ? 0 : local.budget,
   });
 
+  if (failures.length) {
+    throw new Error(`Money sync incomplete (${failures.length} issue${failures.length === 1 ? '' : 's'}): ${failures[0]}`);
+  }
   return moved;
 }
 
@@ -428,12 +670,21 @@ export async function syncLocalRoutineToCloud(userId: string): Promise<number> {
   const checks = local.checks || [];
   const todos = local.todos || [];
   const weekEntries = Object.entries(local.week || {});
-
-  if (!habits.length && !checks.length && !todos.length && !weekEntries.length) {
-    return 0;
-  }
+  if (!habits.length && !checks.length && !todos.length && !weekEntries.length) return 0;
 
   let moved = 0;
+  const failures: string[] = [];
+  let remainingHabits = [...habits];
+  let remainingChecks = [...checks];
+  let remainingTodos = [...todos];
+  let remainingWeek: Record<string, unknown> = { ...(local.week || {}) };
+  const errorText = (error: unknown, fallback: string) => {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' && error.message) {
+      return error.message;
+    }
+    return fallback;
+  };
+
   if (habits.length) {
     const { error } = await supabase.from('habits').upsert(
       habits.map((h) => ({
@@ -447,59 +698,80 @@ export async function syncLocalRoutineToCloud(userId: string): Promise<number> {
       })),
       { onConflict: 'id' }
     );
-    if (!error) moved += habits.length;
+    if (!error) {
+      moved += habits.length;
+      remainingHabits = [];
+    } else {
+      failures.push(`Habit upload failed: ${errorText(error, 'cloud request failed')}`);
+    }
   }
 
   if (checks.length) {
     const { error } = await supabase.from('habit_checks').upsert(
-      checks.map((c) => ({ habit_id: c.habit_id, user_id: userId, day: c.day })) as any,
+      checks.map((check) => ({ habit_id: check.habit_id, user_id: userId, day: check.day })) as any,
       { onConflict: 'habit_id,day' } as any
     );
-    if (!error) moved += checks.length;
+    if (!error) {
+      moved += checks.length;
+      remainingChecks = [];
+    } else {
+      failures.push(`Habit check upload failed: ${errorText(error, 'cloud request failed')}`);
+    }
   }
 
   if (todos.length) {
     const { error } = await supabase.from('todos').upsert(
-      todos.map((t, idx) => ({
-        id: t.id,
+      todos.map((todo, index) => ({
+        id: todo.id,
         user_id: userId,
-        title: t.title,
-        done: Boolean(t.done),
-        priority: t.priority || 'medium',
-        position: typeof t.position === 'number' ? t.position : idx,
+        title: todo.title,
+        done: Boolean(todo.done),
+        priority: todo.priority || 'medium',
+        position: typeof todo.position === 'number' ? todo.position : index,
       })),
       { onConflict: 'id' }
     );
-    if (!error) moved += todos.length;
+    if (!error) {
+      moved += todos.length;
+      remainingTodos = [];
+    } else {
+      failures.push(`Todo upload failed: ${errorText(error, 'cloud request failed')}`);
+    }
   }
 
   if (weekEntries.length) {
-    const rows = weekEntries.map(([day, w]: [string, any]) => ({
+    const rows = weekEntries.map(([day, week]: [string, any]) => ({
       user_id: userId,
       day,
-      water: Number(w?.water) || 0,
-      sleep_hours: Number(w?.sleep_hours) || 0,
-      exercise_minutes: Number(w?.exercise_minutes) || 0,
-      mood: String(w?.mood || ''),
-      pomodoros: Number(w?.pomodoros) || 0,
+      water: Number(week?.water) || 0,
+      sleep_hours: Number(week?.sleep_hours) || 0,
+      exercise_minutes: Number(week?.exercise_minutes) || 0,
+      mood: String(week?.mood || ''),
+      pomodoros: Number(week?.pomodoros) || 0,
     }));
     const { error } = await supabase
       .from('daily_wellness')
       .upsert(rows as any, { onConflict: 'user_id,day' } as any);
-    if (!error) moved += rows.length;
+    if (!error) {
+      moved += rows.length;
+      remainingWeek = {};
+    } else {
+      failures.push(`Wellness upload failed: ${errorText(error, 'cloud request failed')}`);
+    }
   }
 
-  if (moved > 0) {
-    writeJson('niknote.routine.v1.local', {
-      habits: [],
-      checks: [],
-      todos: [],
-      week: {},
-      waterGoal: local.waterGoal || 8,
-      _synced: true,
-    });
-  }
+  writeJson('niknote.routine.v1.local', {
+    habits: remainingHabits,
+    checks: remainingChecks,
+    todos: remainingTodos,
+    week: remainingWeek,
+    waterGoal: local.waterGoal || 8,
+    _synced: failures.length === 0,
+  });
 
+  if (failures.length) {
+    throw new Error(`Routine sync incomplete (${failures.length} issue${failures.length === 1 ? '' : 's'}): ${failures[0]}`);
+  }
   return moved;
 }
 
@@ -511,18 +783,32 @@ export async function syncLocalBoardsToCloud(userId: string): Promise<number> {
 
   const boardMap = readJson<Record<string, string>>(BOARD_MAP_KEY, {});
   let moved = 0;
+  const failures: string[] = [];
   const remaining: any[] = [];
+  const errorText = (error: unknown, fallback: string) => {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string' && error.message) {
+      return error.message;
+    }
+    return fallback;
+  };
 
-  for (const b of localBoards) {
-    if (!b) continue;
-    const mapped = boardMap[b.id];
+  for (const board of localBoards) {
+    if (!board) continue;
+    const mapped = boardMap[board.id];
     if (mapped) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('boards')
-        .update({ title: b.title || 'Untitled board', data: b.data })
-        .eq('id', mapped);
-      if (!error) moved++;
-      else remaining.push(b);
+        .update({ title: board.title || 'Untitled board', data: board.data })
+        .eq('id', mapped)
+        .eq('user_id', userId)
+        .select('id')
+        .maybeSingle();
+      if (!error && data?.id) {
+        moved++;
+      } else {
+        remaining.push(board);
+        failures.push(`Board update failed: ${errorText(error, 'cloud returned no board')}`);
+      }
       continue;
     }
 
@@ -530,22 +816,26 @@ export async function syncLocalBoardsToCloud(userId: string): Promise<number> {
       .from('boards')
       .insert({
         user_id: userId,
-        title: b.title || 'Untitled board',
-        data: b.data,
+        title: board.title || 'Untitled board',
+        data: board.data,
       })
       .select('id')
       .single();
 
     if (!error && inserted?.id) {
-      boardMap[b.id] = inserted.id;
+      boardMap[board.id] = inserted.id;
       moved++;
     } else {
-      remaining.push(b);
+      remaining.push(board);
+      failures.push(`Board upload failed: ${errorText(error, 'cloud returned no board ID')}`);
     }
   }
 
   writeJson(BOARD_MAP_KEY, boardMap);
   writeJson('niknote.boards.v1.local', remaining);
+  if (failures.length) {
+    throw new Error(`Board sync incomplete (${failures.length} issue${failures.length === 1 ? '' : 's'}): ${failures[0]}`);
+  }
   return moved;
 }
 
@@ -569,21 +859,38 @@ export function syncAllLocalDataToCloud(
   const task = (async () => {
     updateSyncSnapshot({ state: 'syncing', errorMessage: null });
     try {
-      const [notesCount, moneyCount, routineCount, boardsCount] = await Promise.all([
+      const results = await Promise.allSettled([
         syncLocalNotesWithCloud(userId, opts),
         syncLocalMoneyToCloud(userId),
         syncLocalRoutineToCloud(userId),
         syncLocalBoardsToCloud(userId),
       ]);
-      const total = notesCount + moneyCount + routineCount + boardsCount;
+      const synced = results.reduce(
+        (total, result) => total + (result.status === 'fulfilled' ? result.value : 0),
+        0
+      );
+      const errors = results
+        .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+        .map((result) => result.reason instanceof Error ? result.reason.message : 'Cloud sync failed');
+
+      if (errors.length) {
+        const message = `${errors.length} sync area${errors.length === 1 ? '' : 's'} need attention: ${errors[0]}`;
+        updateSyncSnapshot({
+          state: typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'error',
+          syncedCount: synced,
+          errorMessage: message,
+        });
+        return { synced, ok: false, error: message };
+      }
+
       const nowIso = new Date().toISOString();
       updateSyncSnapshot({
         state: 'synced',
         lastSyncedAt: nowIso,
-        syncedCount: total,
+        syncedCount: synced,
         errorMessage: null,
       });
-      return { synced: total, ok: true };
+      return { synced, ok: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Cloud sync error';
       updateSyncSnapshot({

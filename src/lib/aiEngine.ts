@@ -7,6 +7,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { buildNikAIMemoryPrompt } from '@/lib/nikaiMemory';
+import { evaluateSafeExpression } from '@/lib/safeExpression';
 
 export type AstaMode =
   | 'auto'
@@ -264,9 +265,16 @@ export function generateFollowUpSuggestions(query: string, mode: AstaMode): stri
 }
 
 // ── Shared NikAI gateway request builder ──
-function buildGatewayRequest(opts: AstaStreamOptions, memoryContext: string): RequestInit {
+async function buildGatewayRequest(opts: AstaStreamOptions, memoryContext: string): Promise<RequestInit> {
   const custom = readCustomAIKeys();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.access_token) headers.Authorization = `Bearer ${data.session.access_token}`;
+  } catch {
+    // Offline/local-only sessions have no cloud JWT; the server gateway rejects
+    // them while the direct BYOK/offline fallbacks remain available.
+  }
   let larpKey = custom.larprouterKey || '';
   let groqKey = custom.groqKey || '';
   let openaiKey = custom.openaiKey || '';
@@ -359,7 +367,7 @@ async function tryServerlessStream(
   opts: AstaStreamOptions,
   memoryContext: string
 ): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
-  const res = await fetch('/api/ai', buildGatewayRequest(opts, memoryContext));
+  const res = await fetch('/api/ai', await buildGatewayRequest(opts, memoryContext));
   if (!res.ok || !res.body) return null;
   const ct = res.headers.get('content-type') || '';
   if (!ct.includes('text/event-stream')) return null;
@@ -397,7 +405,7 @@ async function tryRemoteGatewayStream(
   const gateway = getRemoteAstraGatewayUrl();
   if (!gateway) return null;
 
-  const res = await fetch(gateway, buildGatewayRequest(opts, memoryContext));
+  const res = await fetch(gateway, await buildGatewayRequest(opts, memoryContext));
   if (!res.ok || !res.body) return null;
   const ct = res.headers.get('content-type') || '';
   if (!ct.includes('text/event-stream')) return null;
@@ -776,7 +784,7 @@ function solveMathExpression(input: string): string | null {
 
   if (/^[0-9+\-*/().%\s*]+$/.test(cleaned) && /[+\-*/%]/.test(cleaned) && /\d/.test(cleaned)) {
     try {
-      const value = Function(`"use strict"; return (${cleaned});`)();
+      const value = evaluateSafeExpression(cleaned);
       if (typeof value === 'number' && Number.isFinite(value)) {
         const formatted = Number.isInteger(value) ? String(value) : Number(value.toFixed(8)).toString();
         return `## Instant Calculation Result\n\n- **Expression:** \`${cleaned}\`\n- **Result:** **${formatted}**`;

@@ -10,6 +10,7 @@ import {
   Mail, MessageSquare, X, Check, Sparkles, QrCode, ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { createShareInviteMailto } from '@/lib/emailInvites';
 
 type Permission = 'view' | 'comment' | 'edit';
 
@@ -152,8 +153,22 @@ export const SharePanel: React.FC<SharePanelProps> = ({
             <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-50 text-green-600 text-[10px] font-medium hover:bg-green-100 transition-colors">
               <MessageSquare className="w-3 h-3" /> WhatsApp
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-[10px] font-medium hover:bg-blue-100 transition-colors">
-              <Mail className="w-3 h-3" /> Email
+            <button
+              type="button"
+              disabled={!isPublic || !publicUrl}
+              onClick={() => {
+                if (!isPublic || !publicUrl) return;
+                window.location.href = createShareInviteMailto({
+                  inviterName: 'A NikNote creator',
+                  noteTitle: pageTitle,
+                  permission: 'view',
+                  shareUrl: publicUrl,
+                });
+              }}
+              title={!isPublic || !publicUrl ? 'Make a share link public before emailing it' : 'Open an email draft with this public note link'}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-[10px] font-medium hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <Mail className="w-3 h-3" /> Email invite
             </button>
           </div>
         </div>

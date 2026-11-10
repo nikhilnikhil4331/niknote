@@ -1,3 +1,5 @@
+import { readLimitedJson, requireAIUser } from '../_shared/aiSecurity.ts';
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -7,7 +9,15 @@ const corsHeaders = {
 
 const NL = String.fromCharCode(10);
 
-function buildPrompts(body: any): { system: string; user: string } {
+type EditorAIRequest = {
+  action?: string;
+  context?: string;
+  text: string;
+  instruction?: string;
+  targetLanguage?: string;
+};
+
+function buildPrompts(body: EditorAIRequest): { system: string; user: string } {
   const context = typeof body.context === "string" && body.context ? `${NL}${NL}Context:${NL}${body.context}` : "";
   const text = String(body.text || "");
   if (body.action === "explain" || body.action === "custom") {
@@ -37,13 +47,37 @@ Deno.serve(async (req) => {
     return Response.json({ error: "Method not allowed" }, { status: 405, headers: corsHeaders });
   }
 
-  let body: any;
-  try { body = await req.json(); } catch {
+  const parsed = await readLimitedJson(req, 64 * 1024);
+  if (!parsed.ok) {
+    return Response.json(
+      { error: parsed.reason === 'too_large' ? 'Request body too large' : 'Invalid JSON body' },
+      { status: parsed.reason === 'too_large' ? 413 : 400, headers: corsHeaders }
+    );
+  }
+  const bodyValue = parsed.value;
+  if (!bodyValue || typeof bodyValue !== 'object' || Array.isArray(bodyValue)) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400, headers: corsHeaders });
   }
-  if (!body || typeof body.text !== "string" || !body.text.trim()) {
-    return Response.json({ error: "Text is required" }, { status: 400, headers: corsHeaders });
+  const body = bodyValue as Record<string, unknown>;
+  if (typeof body.text !== "string" || !body.text.trim() || body.text.length > 24000) {
+    return Response.json({ error: "Text is required or too large" }, { status: 400, headers: corsHeaders });
   }
+  if (typeof body.context === 'string' && body.context.length > 24000) {
+    return Response.json({ error: "Context is too large" }, { status: 400, headers: corsHeaders });
+  }
+  if (typeof body.instruction === 'string' && body.instruction.length > 4000) {
+    return Response.json({ error: "Instruction is too large" }, { status: 400, headers: corsHeaders });
+  }
+  const promptBody: EditorAIRequest = {
+    text: body.text,
+    action: typeof body.action === 'string' ? body.action : undefined,
+    context: typeof body.context === 'string' ? body.context : undefined,
+    instruction: typeof body.instruction === 'string' ? body.instruction : undefined,
+    targetLanguage: typeof body.targetLanguage === 'string' ? body.targetLanguage : undefined,
+  };
+
+  const authorization = await requireAIUser(req, corsHeaders);
+  if ('response' in authorization) return authorization.response;
 
   const larprouterKey = (req.headers.get("x-larprouter-key") || Deno.env.get("LARPROUTER_API_KEY") || Deno.env.get("VITE_LARPROUTER_KEY") || "").trim();
   const larprouterBaseUrl = (Deno.env.get("LARPROUTER_BASE_URL") || "https://larprouter.com/v1").replace(/\/+$/, "");
@@ -52,7 +86,7 @@ Deno.serve(async (req) => {
   const openaiKey = req.headers.get("x-openai-key") || Deno.env.get("OPENAI_API_KEY") || "";
   const lovableKey = Deno.env.get("LOVABLE_API_KEY") || "";
 
-  const { system, user } = buildPrompts(body);
+  const { system, user } = buildPrompts(promptBody);
 
   let upstream: Response | null = null;
   let isGemini = false;
