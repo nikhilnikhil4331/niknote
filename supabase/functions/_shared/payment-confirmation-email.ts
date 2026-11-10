@@ -10,8 +10,12 @@ export interface PaymentConfirmationDetails {
 }
 
 export interface PaymentReceiptEmailOptions {
-  apiKey: string;
+  /** Optional legacy Lovable sender; prefer the existing server-side Resend configuration. */
+  apiKey?: string;
   sendUrl?: string;
+  /** Used to load the Resend key from the protected `mailflare_config` row. */
+  supabaseUrl?: string;
+  serviceRoleKey?: string;
   fetcher?: typeof fetch;
 }
 
@@ -272,27 +276,66 @@ export function buildPaymentConfirmationEmail(details: PaymentConfirmationDetail
   return { subject, html, text, transactionReference, formattedDate, formattedAmount };
 }
 
+interface ResendSenderConfig {
+  apiKey: string;
+  fromName: string;
+  fromEmail: string;
+  replyTo: string;
+}
+
+function isEmailAddress(value: string): boolean {
+  return value.length <= 254 && /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(value);
+}
+
+async function loadResendSenderConfig(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  fetcher: typeof fetch,
+): Promise<ResendSenderConfig> {
+  const baseUrl = supabaseUrl.replace(/\/+$/, '');
+  const response = await fetcher(
+    `${baseUrl}/rest/v1/mailflare_config?id=eq.1&select=provider,resend_api_key,from_name,from_email,reply_to`,
+    { headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` } },
+  );
+  if (!response.ok) throw new Error('Transactional email configuration is unavailable');
+
+  const rows: unknown = await response.json();
+  const config = Array.isArray(rows) ? asRecord(rows[0]) : {};
+  const apiKey = typeof config.resend_api_key === 'string' ? config.resend_api_key.trim() : '';
+  const fromEmailValue = typeof config.from_email === 'string' ? config.from_email.trim() : '';
+  const fromEmail = fromEmailValue.toLowerCase();
+  const fromNameValue = typeof config.from_name === 'string' ? config.from_name : '';
+  const fromName = fromNameValue.replace(/[^A-Za-z0-9 ._-]/g, '').trim().slice(0, 80) || 'NikNote';
+  const replyToValue = typeof config.reply_to === 'string' ? config.reply_to.trim().toLowerCase() : '';
+  const replyTo = isEmailAddress(replyToValue) ? replyToValue : '';
+
+  if (config.provider !== 'resend' || !apiKey || !isEmailAddress(fromEmail)) {
+    throw new Error('Transactional email is not configured');
+  }
+
+  return { apiKey, fromName, fromEmail, replyTo };
+}
+
 export async function sendPaymentConfirmationEmail(
   recipient: string,
   details: PaymentConfirmationDetails,
   options: PaymentReceiptEmailOptions,
 ): Promise<{ transactionReference: string; messageId?: string }> {
   const address = recipient.trim().toLowerCase();
-  if (address.length > 254 || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(address)) {
-    throw new Error('Invalid receipt recipient');
-  }
-  if (!options.apiKey) throw new Error('Transactional email is not configured');
+  if (!isEmailAddress(address)) throw new Error('Invalid receipt recipient');
 
   const rendered = buildPaymentConfirmationEmail(details);
   const idempotencyKey = `niknote-payment-${details.paymentId}`;
-  const response = await (options.fetcher || fetch)(options.sendUrl || EMAIL_SEND_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${options.apiKey}`,
-      'Content-Type': 'application/json',
-      'Idempotency-Key': idempotencyKey,
-    },
-    body: JSON.stringify({
+  const fetcher = options.fetcher || fetch;
+  let sendUrl: string;
+  let authorizationKey: string;
+  let payload: Record<string, unknown>;
+
+  if (options.apiKey) {
+    // Keep compatibility with deployments still using the legacy Lovable sender.
+    sendUrl = options.sendUrl || EMAIL_SEND_URL;
+    authorizationKey = options.apiKey;
+    payload = {
       to: address,
       from: 'NikNote <noreply@notify.niknote.online>',
       sender_domain: 'notify.niknote.online',
@@ -303,14 +346,48 @@ export async function sendPaymentConfirmationEmail(
       purpose: 'transactional',
       label: 'payment-confirmation',
       idempotency_key: idempotencyKey,
-    }),
+    };
+  } else {
+    if (!options.supabaseUrl || !options.serviceRoleKey) {
+      throw new Error('Transactional email is not configured');
+    }
+    const sender = await loadResendSenderConfig(options.supabaseUrl, options.serviceRoleKey, fetcher);
+    sendUrl = 'https://api.resend.com/emails';
+    authorizationKey = sender.apiKey;
+    payload = {
+      from: `${sender.fromName} <${sender.fromEmail}>`,
+      to: [address],
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+      ...(sender.replyTo ? { reply_to: sender.replyTo } : {}),
+      tags: [
+        { name: 'purpose', value: 'transactional' },
+        { name: 'label', value: 'payment-confirmation' },
+      ],
+    };
+  }
+
+  const response = await fetcher(sendUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${authorizationKey}`,
+      'Content-Type': 'application/json',
+      'Idempotency-Key': idempotencyKey,
+    },
+    body: JSON.stringify(payload),
   });
   if (!response.ok) throw new Error(`Transactional email send failed (${response.status})`);
   const result = await response.json().catch(() => ({}));
   if (result?.success === false) throw new Error('Transactional email provider rejected the message');
 
+  const messageId = typeof result?.id === 'string'
+    ? result.id
+    : typeof result?.message_id === 'string'
+      ? result.message_id
+      : undefined;
   return {
     transactionReference: rendered.transactionReference,
-    ...(typeof result?.message_id === 'string' ? { messageId: result.message_id } : {}),
+    ...(messageId ? { messageId } : {}),
   };
 }

@@ -72,13 +72,21 @@ function mockWorld() {
   let failSave = false;
   let failActivation = false;
   let failEmail = false;
+  let emailConfig: Record<string, unknown> | null = {
+    provider: 'resend', resend_api_key: 'resend-test-key', from_name: 'NikNote',
+    from_email: 'support@niknote.online', reply_to: 'support@niknote.online',
+  };
   let orderNumber = 0;
   const fetcher = vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}) => {
     const url = new URL(String(input));
     const headers = new Headers(init.headers);
     const method = init.method || 'GET';
-    if (url.hostname === 'api.lovable.dev' && url.pathname === '/v1/messaging/email/send' && method === 'POST') {
-      if (headers.get('Authorization') !== 'Bearer lovable-test-key') throw new Error('Transactional mail key required');
+    if (url.hostname === 'project.example' && url.pathname === '/rest/v1/mailflare_config' && method === 'GET') {
+      if (headers.get('Authorization') !== 'Bearer service') throw new Error('Service key required for email config');
+      return json(emailConfig ? [emailConfig] : []);
+    }
+    if (url.hostname === 'api.resend.com' && url.pathname === '/emails' && method === 'POST') {
+      if (headers.get('Authorization') !== 'Bearer resend-test-key') throw new Error('Transactional mail key required');
       const payload = JSON.parse(String(init.body)) as EmailPayload;
       const idempotencyKey = headers.get('Idempotency-Key');
       emailAttempts.push({ idempotencyKey, payload });
@@ -87,7 +95,7 @@ function mockWorld() {
         deliveredEmailKeys.add(idempotencyKey);
         deliveredEmails.push({ idempotencyKey, payload });
       }
-      return json({ success: true, message_id: `msg_${idempotencyKey || emailAttempts.length}` });
+      return json({ id: `msg_${idempotencyKey || emailAttempts.length}` });
     }
     if (url.hostname === 'project.example' && url.pathname === '/auth/v1/user') {
       const token = headers.get('Authorization');
@@ -149,6 +157,7 @@ function mockWorld() {
     setFailSave: (value: boolean) => { failSave = value; },
     setFailActivation: (value: boolean) => { failActivation = value; },
     setFailEmail: (value: boolean) => { failEmail = value; },
+    setEmailConfig: (value: Record<string, unknown> | null) => { emailConfig = value; },
   };
 }
 
@@ -258,12 +267,17 @@ describe('Razorpay edge functions (mock provider, no real payments)', () => {
     expect(world.stored[0].status).toBe('verified');
     expect(world.deliveredEmails).toHaveLength(1);
     expect(world.deliveredEmails[0].payload).toMatchObject({
-      to: 'a@example.test', purpose: 'transactional', label: 'payment-confirmation',
-      idempotency_key: 'niknote-payment-pay_Test1',
+      from: 'NikNote <support@niknote.online>',
+      to: ['a@example.test'],
+      tags: [
+        { name: 'purpose', value: 'transactional' },
+        { name: 'label', value: 'payment-confirmation' },
+      ],
     });
     expect((await verify(post(callback(order.orderId)))).status).toBe(200);
     expect(world.ledger.size).toBe(1);
     expect(world.emailAttempts).toHaveLength(2);
+    expect(world.emailAttempts[0].idempotencyKey).toBe('niknote-payment-pay_Test1');
     expect(world.emailAttempts[0].idempotencyKey).toBe(world.emailAttempts[1].idempotencyKey);
     expect(world.deliveredEmails).toHaveLength(1);
   });
@@ -300,6 +314,33 @@ describe('Razorpay edge functions (mock provider, no real payments)', () => {
     expect(world.ledger.size).toBe(1);
   });
 
+  it('does not close a verified payment until the Resend sender is configured and the receipt sends', async () => {
+    const world = mockWorld();
+    world.setEmailConfig(null);
+    const order = await createOrder(world);
+    capture(world, order.orderId);
+    const verify = await loadHandler('supabase/functions/verify-razorpay-payment/index.ts', world.fetcher);
+
+    const first = await verify(post(callback(order.orderId)));
+    expect(await first.json()).toMatchObject({ success: true, receiptSent: false, paymentId: 'pay_Test1' });
+    expect(world.ledger.size).toBe(1);
+    expect(world.stored[0].status).toBe('created');
+    expect(world.emailAttempts).toHaveLength(0);
+
+    world.setEmailConfig({
+      provider: 'resend', resend_api_key: 'resend-test-key', from_name: 'NikNote',
+      from_email: 'support@niknote.online', reply_to: 'support@niknote.online',
+    });
+    const retry = await verify(post({ recover: true }));
+    expect(await retry.json()).toMatchObject({
+      success: true,
+      recovered: [{ paymentId: 'pay_Test1', planCode: 'weekly', receiptSent: true }],
+      incomplete: false,
+    });
+    expect(world.stored[0].status).toBe('verified');
+    expect(world.deliveredEmails).toHaveLength(1);
+  });
+
   it('keeps a verified payment recoverable when email delivery fails, then retries idempotently', async () => {
     const world = mockWorld();
     const order = await createOrder(world);
@@ -333,6 +374,7 @@ describe('Razorpay edge functions (mock provider, no real payments)', () => {
     expect((await verify(post(callback(order.orderId)))).status).toBe(503);
     expect(world.stored[0].status).toBe('created');
     expect(world.ledger.size).toBe(0);
+    expect(world.emailAttempts).toHaveLength(0);
     world.setFailActivation(false);
     expect((await (await verify(post({ recover: true }))).json()).success).toBe(true);
     expect(world.ledger.size).toBe(1);

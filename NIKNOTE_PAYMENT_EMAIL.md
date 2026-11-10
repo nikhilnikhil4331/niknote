@@ -1,31 +1,31 @@
 # NikNote payment confirmation email
 
-## Implementation
+## Receipt implementation
 
-- `supabase/functions/_shared/payment-confirmation-email.ts` renders the branded, responsive table-based HTML receipt and plain-text alternative, validates plan/amount/payment reference, resolves a deliverable account or Razorpay checkout email, and sends through the Lovable transactional email API already used by `auth-email-hook`. The HTML requests Fredoka for display text and Inter for body text, with email-safe fallbacks when remote fonts are blocked.
-- `supabase/functions/verify-razorpay-payment/index.ts` sends only after server-side Razorpay capture validation and the atomic `activate_verified_purchase` RPC. Frontend checkout callbacks are never treated as proof of payment.
-- `supabase/functions/razorpay-webhook/index.ts` is the new signed `payment.captured` webhook path. It verifies the raw-body HMAC, fetches the canonical payment and order from Razorpay, checks the server-created `checkout_orders` row and fixed plan amount, activates idempotently, then sends the receipt.
-- Receipt delivery uses the stable `niknote-payment-{paymentId}` idempotency key. The order remains recoverable until the provider accepts the receipt; verification and webhook retries can safely retry delivery.
-- The email contains the plan, INR amount, Razorpay payment ID, transaction date, and a case-preserving `NN-{paymentId}` reference. It deliberately omits card, bank, UPI, and contact details. Guest-generated `@guest.niknote.online` addresses are not used as destinations; the Razorpay checkout email is used when present.
-- `src/pages/Payment.tsx` and `src/styles/niknote-payment.css` apply the same warm-ivory, blue, yellow, coral, green, and dark-outline identity to checkout and the verified-payment screen. The illustration is `public/images/email/niknote-payment-confirmation-hero.jpg`.
+- `supabase/functions/_shared/payment-confirmation-email.ts` renders the responsive, table-based HTML receipt and plain-text alternative; validates the plan, amount, and Razorpay payment reference; and resolves only a real account or checkout email address. The receipt shows the INR plan/amount, transaction date, payment ID, and case-preserving `NN-{paymentId}` reference. It omits card, bank, UPI, and other payment credentials.
+- The receipt sender reads the existing `public.mailflare_config` row through the Supabase service-role REST API, then sends through the configured Resend account. The provider API key stays in the database and is never returned to the browser or logged. Sender name/address and reply-to are validated before use.
+- `supabase/functions/verify-razorpay-payment/index.ts` sends only after server-side Razorpay signature/capture/order checks and the atomic `activate_verified_purchase` RPC. It does not trust a frontend callback as payment proof. The stable `niknote-payment-{paymentId}` idempotency key makes verification/recovery retries safe.
+- The order remains recoverable until the receipt send succeeds. If the sender config is missing, the provider fails, or there is no deliverable recipient, the function does not claim a receipt was sent or close the pending order; recovery can try again.
+- `supabase/functions/razorpay-webhook/index.ts` contains a separate signed `payment.captured` recovery path. It verifies the exact raw-body HMAC and canonical Razorpay order/payment, then activates and emails only after the same server-side checks. That endpoint is not live until separately configured with `RAZORPAY_WEBHOOK_SECRET` and registered in Razorpay.
+- The receipt requests Fredoka display text and Inter body text, with email-safe fallbacks. Inline styles, tables, mobile treatment, and image alt text provide graceful rendering when fonts or images are blocked.
 
-## Other email types and invite drafts
+## Provider and production state checked
 
-- `supabase/functions/auth-email-hook/index.ts` maps the six account emails (signup, auth invite, magic link, password recovery, email change, and reauthentication) to a shared NikNote shell. The shell uses Fredoka for headings and Inter for body text when a client permits the Google Fonts stylesheet, with Inter/Aptos/Segoe UI/Arial fallbacks. Each email kind retains its own branded accent; the layout and core styles remain inline for email-client compatibility.
-- `share-invite.tsx` and `referral-invite.tsx` are registered in the protected template preview renderer. They are templates only; there is no authorized private-note invitation backend in this repository to send a collaboration invite or grant access.
-- The referral widget and public-share panel create plain-text `mailto:` drafts in the user's own mail app. Referral drafts use the user's referral link; note-share drafts are available only for a public share URL. This does not send mail from NikNote or change private sharing permissions.
+- The production Supabase project `atuxocibsmflgwlwuvmv` has an active `customer-email` Edge Function (v3). Its `mailflare_config` row is set to `resend`, has a sender address, and has a stored Resend key. The delivery log contains six successful Resend sends. The key itself was not retrieved or exposed.
+- The deployed `verify-razorpay-payment` was updated from v6 to v7 to use the existing server-side Resend configuration for receipts. Its JWT verification remains enabled. No test purchase or live email was sent from this workspace.
+- No Supabase secret, Auth setting, schema, or data was changed. The sender configuration was read only; the only Supabase change was the payment-verification function code deployment.
+- The branded account-email hook is a separate issue: `auth-email-hook` is not deployed, the Supabase Auth Send Email Hook is disabled with no URI, and SMTP is unset. The local hook source currently uses the Lovable signing/API contract, but the production project has no `LOVABLE_API_KEY`. Reusing the Resend sender for account emails requires a compatible hook implementation and an explicitly authorized Auth configuration change; do not enable an unready hook.
+- The signed Razorpay webhook function is not deployed and `RAZORPAY_WEBHOOK_SECRET` is absent. Do not deploy/enable it until the real webhook secret is configured and Razorpay is pointed to the endpoint.
 
-## Required production configuration (not performed here)
+## Share and referral messages
 
-1. Set the Razorpay webhook secret as Supabase function secret `RAZORPAY_WEBHOOK_SECRET`. This is separate from `RAZORPAY_KEY_SECRET`.
-2. In Razorpay's webhook settings, point to `https://<project-ref>.supabase.co/functions/v1/razorpay-webhook` and subscribe to **`payment.captured`**. `supabase/config.toml` disables gateway JWT verification for this endpoint; the handler instead authenticates the exact request body with the webhook HMAC.
-3. Set `LOVABLE_API_KEY` (and optional `LOVABLE_SEND_URL`) as Supabase function secrets and verify that `noreply@notify.niknote.online` / `notify.niknote.online` are approved for transactional sends.
-4. The connected production Supabase project was checked read-only: `auth-email-hook` is not deployed, the Auth send-email hook is disabled, and SMTP is unset. Deploy/configure that hook before expecting branded signup/invite/reset emails to send. The payment/webhook functions also need deploying separately from Vercel.
-5. Vercel preview deployment does not deploy Supabase functions, change Supabase Auth settings, or add secrets. Do not send or paste secret values into chat; add them directly in the Supabase secrets UI.
+- `share-invite.tsx` and `referral-invite.tsx` are preview-only templates. There is no authorized private-note invitation backend here to grant collaboration access or send those messages from NikNote.
+- The referral and public-share actions create user-owned `mailto:` drafts. A draft does not send mail from NikNote and does not change private sharing permissions or grant unsupported rewards.
 
-Without the Razorpay dashboard webhook configuration, browser verification and its recovery flow still send receipts when their server-side checks succeed, but webhook-only recovery is not active. Missing mail credentials or an invalid sender configuration leave a verified purchase active and its order recoverable; the UI offers a receipt retry. No production settings or data were changed in this work.
+## Verification and remaining work
 
-## Verification and limits
-
-- Mocked tests cover HTML/plain text, escaping, fixed price/plan checks, private credentials, recipient selection, idempotency, provider outage retries, webhook signature rejection, captured-payment verification, and duplicate webhook delivery.
-- Live mail delivery and rendering in Gmail, Outlook, and Apple Mail have **not** been run from this workspace. The template uses inline styles and table layout, with a small-screen media query and alt-text fallbacks; validate using test inboxes or an email-rendering service after a separately authorized deployment.
+- Mocked receipt/payment tests cover plan and amount validation, recipient selection, sanitized sender configuration, Resend payload/idempotency, activation-before-email ordering, missing-sender/provider-failure recovery, webhook signatures, and duplicate delivery. They do not make a live charge or send a live test email.
+- Production receipts now use the deployed v7 `verify-razorpay-payment` function. Validate a real delivery only with an authorized test purchase or a safe provider test flow; do not send a production charge merely to test email.
+- To deliver branded signup/invite/reset messages, first authorize the separate Auth hook change and deploy a hook compatible with Supabase's Send Email contract. Keep the Auth hook disabled until that is implemented and verified.
+- To activate webhook-only payment recovery, separately configure the real `RAZORPAY_WEBHOOK_SECRET` in Supabase and register `payment.captured` in Razorpay.
+- A Vercel deployment does not deploy Supabase Edge Functions, change Supabase Auth settings, or configure Razorpay. Live rendering in Gmail, Outlook, and Apple Mail has not been tested from this workspace.

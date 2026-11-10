@@ -129,8 +129,8 @@ Deno.serve(async (req: Request) => {
             paymentId: payment.id,
             transactionTimestamp: typeof payment.created_at === 'number' ? payment.created_at : undefined,
           }, {
-            apiKey: Deno.env.get('LOVABLE_API_KEY') || '',
-            sendUrl: Deno.env.get('LOVABLE_SEND_URL') || undefined,
+            supabaseUrl,
+            serviceRoleKey: serviceKey,
             fetcher: fetch,
           });
           receiptSent = true;
