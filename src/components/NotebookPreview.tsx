@@ -384,6 +384,16 @@ export const NotebookPreview = forwardRef<NotebookPreviewHandle, NotebookPreview
             backgroundImage: `linear-gradient(transparent 31px, ${lineColor} 31px, ${lineColor} 32px)`,
             backgroundSize: '100% 32px',
           };
+        case 'niknote-paper':
+          return {
+            backgroundColor: '#fff9eb',
+            backgroundImage: [
+              'radial-gradient(circle at calc(100% - 30px) 24px, rgba(255,228,92,.72) 0 9px, transparent 10px)',
+              'linear-gradient(90deg, transparent 0 48px, rgba(200,63,88,.32) 48px 50px, transparent 50px)',
+              'linear-gradient(transparent 31px, rgba(40,105,213,.2) 31px, rgba(40,105,213,.2) 32px)',
+            ].join(', '),
+            backgroundSize: '100% 100%, 100% 100%, 100% 32px',
+          };
         case 'plain':
         default:
           return { backgroundColor: pureWhite };

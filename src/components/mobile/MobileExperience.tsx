@@ -18,6 +18,7 @@ import { usePremium } from '@/hooks/usePremium';
 import { useAIStream } from '@/hooks/useAIStream';
 import { supabase } from '@/integrations/supabase/client';
 import { Block, createBlock } from '@/types/block';
+import type { HandwritingFont, InkColor } from '@/types/notes';
 import { noteTemplates as templates, blocksFromNoteText } from '@/lib/noteTemplates';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -35,6 +36,8 @@ interface LocalDeviceNotebook {
   blocks?: Block[];
   content?: string;
   page_style?: string;
+  font?: HandwritingFont;
+  ink_color?: InkColor;
   tags?: string[];
   updated_at?: string;
   updatedAt?: string;
@@ -131,7 +134,15 @@ export function MobileExperience() {
     );
   }
 
-  const prepareNote = (title: string, text: string, id?: string, style?: string, customBlocks?: Block[]) => {
+  const prepareNote = (
+    title: string,
+    text: string,
+    id?: string,
+    style?: string,
+    customBlocks?: Block[],
+    font?: HandwritingFont,
+    inkColor?: InkColor,
+  ) => {
     sessionStorage.setItem(
       'niknote-mobile-open',
       JSON.stringify({
@@ -139,6 +150,8 @@ export function MobileExperience() {
         blocks: customBlocks?.length ? customBlocks : blocksFromNoteText(text),
         notebookId: id,
         style,
+        font,
+        inkColor,
       })
     );
     navigate(`/?editor=1${id ? `&notebook=${id}` : ''}`);
@@ -170,6 +183,8 @@ export function MobileExperience() {
     text: ln.content || (ln.blocks ? ln.blocks.map((b) => b.content).join('\n') : ''),
     localBlocks: ln.blocks,
     localStyle: ln.page_style,
+    localFont: ln.font,
+    localInkColor: ln.ink_color,
     isLocal: true,
     notebook: undefined as Notebook | undefined,
   }));
@@ -183,6 +198,8 @@ export function MobileExperience() {
     pages: null as number | null,
     localBlocks: undefined as Block[] | undefined,
     localStyle: n.page_style,
+    localFont: undefined as HandwritingFont | undefined,
+    localInkColor: undefined as InkColor | undefined,
     isLocal: false,
     notebook: n as Notebook | undefined,
   }));
@@ -193,6 +210,8 @@ export function MobileExperience() {
       ...n,
       localBlocks: undefined as Block[] | undefined,
       localStyle: undefined as string | undefined,
+      localFont: undefined as HandwritingFont | undefined,
+      localInkColor: undefined as InkColor | undefined,
       isLocal: false,
       notebook: undefined as Notebook | undefined,
     }));
@@ -236,7 +255,7 @@ export function MobileExperience() {
         onClick={() =>
           note.notebook
             ? openNotebook(note.notebook)
-            : prepareNote(note.title, note.text, note.isLocal ? note.id : undefined, note.localStyle, note.localBlocks)
+            : prepareNote(note.title, note.text, note.isLocal ? note.id : undefined, note.localStyle, note.localBlocks, note.localFont, note.localInkColor)
         }
       >
         <span className={cn('nn-note-icon', `nn-tone-${note.tone}`)}>
@@ -260,7 +279,7 @@ export function MobileExperience() {
             onClick={() =>
               note.notebook
                 ? openNotebook(note.notebook)
-                : prepareNote(note.title, note.text, note.isLocal ? note.id : undefined, note.localStyle, note.localBlocks)
+                : prepareNote(note.title, note.text, note.isLocal ? note.id : undefined, note.localStyle, note.localBlocks, note.localFont, note.localInkColor)
             }
           >
             Open note
@@ -440,7 +459,7 @@ export function MobileExperience() {
                     className="nn-template"
                     key={t.title}
                     aria-label={`Use ${t.title} template`}
-                    onClick={() => prepareNote(t.title, t.text, undefined, t.style)}
+                    onClick={() => prepareNote(t.title, t.text, undefined, t.style, undefined, t.font, t.inkColor)}
                   >
                     <div className={cn('nn-template-preview', `nn-template-${t.layout}`)} aria-hidden="true">
                       <span className="nn-template-paper-label">{t.category}</span>

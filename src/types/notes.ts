@@ -35,7 +35,8 @@ export type PageStyle =
   | 'kraft'
   | 'blueprint'
   | 'music-sheet'
-  | 'cornell';
+  | 'cornell'
+  | 'niknote-paper';
 
 export type InkColor = 'blue' | 'black' | 'red' | 'green' | 'purple' | 'brown' | 'teal' | 'orange' | 'pink' | 'gold' | 'navy' | 'burgundy';
 
@@ -195,6 +196,7 @@ export const PAGE_STYLE_OPTIONS: { value: PageStyle; label: string; description:
   { value: 'kraft', label: 'Kraft Paper', description: 'Brown craft paper', category: 'Special' },
   { value: 'blueprint', label: 'Blueprint', description: 'Technical blue paper', category: 'Special' },
   { value: 'music-sheet', label: 'Music Sheet', description: 'Staff lines', category: 'Special' },
+  { value: 'niknote-paper', label: 'NikNote Signature', description: 'Warm paper, compass-blue rules and coral margin', category: 'Special' },
 ];
 
 export const INK_COLOR_OPTIONS: { value: InkColor; label: string; colorClass: string; hex: string }[] = [

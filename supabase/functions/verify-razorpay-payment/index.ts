@@ -1,3 +1,10 @@
+import {
+  paymentReceiptCustomerName,
+  paymentTransactionReference,
+  resolvePaymentReceiptRecipient,
+  sendPaymentConfirmationEmail,
+} from '../_shared/payment-confirmation-email.ts';
+
 // A callback alone is not a sale. Both callback verification and recovery
 // require an authenticated user, a provider-confirmed captured payment, the
 // original order's user/plan notes, the fixed INR amount, and the atomic
@@ -7,8 +14,23 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-const prices: Record<string, number> = { weekly: 4900, monthly: 9900 };
+type PaymentPlanCode = 'weekly' | 'monthly';
+type CapturedRazorpayPayment = {
+  id: string;
+  order_id: string;
+  status: 'captured';
+  amount: number;
+  currency: 'INR';
+  amount_refunded?: unknown;
+  refund_status?: unknown;
+  email?: unknown;
+  created_at?: unknown;
+};
+const prices: Record<PaymentPlanCode, number> = { weekly: 4900, monthly: 9900 };
 const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
+const asRecord = (value: unknown): Record<string, unknown> =>
+  typeof value === 'object' && value !== null ? value as Record<string, unknown> : {};
+const isPlanCode = (value: unknown): value is PaymentPlanCode => value === 'weekly' || value === 'monthly';
 
 async function validSignature(secret: string, orderId: string, paymentId: string, signature: string): Promise<boolean> {
   if (!/^[a-f0-9]{64}$/i.test(signature)) return false;
@@ -22,19 +44,32 @@ async function validSignature(secret: string, orderId: string, paymentId: string
   return mismatch === 0;
 }
 
-function orderMatches(order: any, orderId: string, userId: string, planCode: string): boolean {
+function orderMatches(order: unknown, orderId: string, userId: string, planCode: PaymentPlanCode): boolean {
+  const orderData = asRecord(order);
+  const notes = asRecord(orderData.notes);
   const amount = prices[planCode];
-  return Boolean(Object.hasOwn(prices, planCode) && amount && order?.id === orderId &&
-    order.amount === amount && order.currency === 'INR' &&
-    order.notes?.user_id === userId && order.notes?.plan_code === planCode);
+  return orderData.id === orderId && orderData.amount === amount && orderData.currency === 'INR' &&
+    notes.user_id === userId && notes.plan_code === planCode;
 }
 
-function paymentMatches(payment: any, orderId: string, planCode: string): boolean {
-  const amount = prices[planCode];
-  return Boolean(amount && typeof payment?.id === 'string' && /^pay_[A-Za-z0-9]+$/.test(payment.id) &&
-    payment.order_id === orderId && payment.status === 'captured' &&
-    payment.amount === amount && payment.currency === 'INR' &&
-    Number(payment.amount_refunded || 0) === 0 && !['partial', 'full'].includes(payment.refund_status));
+function paymentMatches(
+  payment: unknown,
+  orderId: string,
+  planCode: PaymentPlanCode,
+): payment is CapturedRazorpayPayment {
+  const paymentData = asRecord(payment);
+  const paymentId = paymentData.id;
+  const refundedAmount = paymentData.amount_refunded;
+  const amountRefunded = refundedAmount === undefined || refundedAmount === null
+    ? 0
+    : typeof refundedAmount === 'number' || typeof refundedAmount === 'string'
+      ? Number(refundedAmount)
+      : Number.NaN;
+  return typeof paymentId === 'string' && /^pay_[A-Za-z0-9]+$/.test(paymentId) &&
+    paymentData.order_id === orderId && paymentData.status === 'captured' &&
+    paymentData.amount === prices[planCode] && paymentData.currency === 'INR' &&
+    Number.isFinite(amountRefunded) && amountRefunded === 0 &&
+    paymentData.refund_status !== 'partial' && paymentData.refund_status !== 'full';
 }
 
 Deno.serve(async (req: Request) => {
@@ -54,34 +89,70 @@ Deno.serve(async (req: Request) => {
     if (!/^Bearer\s+\S+$/i.test(authorization)) return reply({ error: 'Unauthorized' }, 401);
     const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: authorization } });
     if (!userRes.ok) return reply({ error: 'Unauthorized' }, 401);
-    const user = await userRes.json();
-    if (typeof user?.id !== 'string' || !user.id) return reply({ error: 'Unauthorized' }, 401);
-    const body = await req.json().catch(() => ({}));
+    const user = asRecord(await userRes.json());
+    const userId = user.id;
+    if (typeof userId !== 'string' || !userId) return reply({ error: 'Unauthorized' }, 401);
+    const body = asRecord(await req.json().catch(() => ({})) as unknown);
     const adminHeaders = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
     const providerHeaders = { Authorization: `Basic ${btoa(`${keyId}:${secret}`)}` };
 
-    async function provider(path: string): Promise<any> {
+    async function provider(path: string): Promise<unknown> {
       const res = await fetch(`https://api.razorpay.com/v1/${path}`, { headers: providerHeaders });
       if (!res.ok) throw new Error('Provider confirmation unavailable');
-      return await res.json();
+      return await res.json() as unknown;
     }
 
-    async function activate(payment: any, orderId: string, planCode: string): Promise<void> {
+    async function activate(
+      payment: CapturedRazorpayPayment,
+      orderId: string,
+      planCode: PaymentPlanCode,
+    ): Promise<boolean> {
       const res = await fetch(`${supabaseUrl}/rest/v1/rpc/activate_verified_purchase`, {
         method: 'POST', headers: { ...adminHeaders, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          _user_id: user.id, _payment_id: payment.id, _order_id: orderId,
+          _user_id: userId, _payment_id: payment.id, _order_id: orderId,
           _plan_code: planCode, _amount_paise: prices[planCode],
         }),
       });
       if (!res.ok || await res.json().catch(() => null) !== true) throw new Error('Activation failed');
-      // The RPC is idempotent even if this bookkeeping update fails.
-      const mark = await fetch(`${supabaseUrl}/rest/v1/checkout_orders?order_id=eq.${encodeURIComponent(orderId)}&user_id=eq.${encodeURIComponent(user.id)}`, {
-        method: 'PATCH',
-        headers: { ...adminHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-        body: JSON.stringify({ status: 'verified', verified_at: new Date().toISOString() }),
-      });
-      if (!mark.ok) console.error('Could not mark checkout order verified');
+
+      // Send only after the database has independently accepted the verified
+      // purchase. The stable provider idempotency key makes retries safe.
+      let receiptSent = false;
+      const recipient = resolvePaymentReceiptRecipient(user, payment);
+      if (recipient) {
+        try {
+          await sendPaymentConfirmationEmail(recipient, {
+            customerName: paymentReceiptCustomerName(user, recipient),
+            planCode,
+            amountPaise: prices[planCode],
+            paymentId: payment.id,
+            transactionTimestamp: typeof payment.created_at === 'number' ? payment.created_at : undefined,
+          }, {
+            apiKey: Deno.env.get('LOVABLE_API_KEY') || '',
+            sendUrl: Deno.env.get('LOVABLE_SEND_URL') || undefined,
+            fetcher: fetch,
+          });
+          receiptSent = true;
+        } catch {
+          // Keep the order recoverable; a later verification/webhook delivery
+          // retries using the same payment idempotency key.
+          console.error('Verified payment receipt could not be sent');
+        }
+      } else {
+        console.error('Verified payment has no deliverable receipt address');
+      }
+
+      // Do not close the recoverable order until receipt delivery succeeds.
+      if (receiptSent) {
+        const mark = await fetch(`${supabaseUrl}/rest/v1/checkout_orders?order_id=eq.${encodeURIComponent(orderId)}&user_id=eq.${encodeURIComponent(userId)}`,  {
+          method: 'PATCH',
+          headers: { ...adminHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: 'verified', verified_at: new Date().toISOString() }),
+        });
+        if (!mark.ok) console.error('Could not mark checkout order verified');
+      }
+      return receiptSent;
     }
 
     if (body?.recover === true) {
@@ -95,28 +166,42 @@ Deno.serve(async (req: Request) => {
       const orderFilter = requestedOrderId
         ? `&order_id=eq.${encodeURIComponent(requestedOrderId)}`
         : '&order=created_at.desc&limit=10';
-      const query = `${supabaseUrl}/rest/v1/checkout_orders?select=order_id,plan_code,amount_paise&user_id=eq.${encodeURIComponent(user.id)}&status=eq.created${orderFilter}`;
+      const query = `${supabaseUrl}/rest/v1/checkout_orders?select=order_id,plan_code,amount_paise&user_id=eq.${encodeURIComponent(userId)}&status=eq.created${orderFilter}`;
       const pendingRes = await fetch(query, { headers: adminHeaders });
       if (!pendingRes.ok) throw new Error('Pending orders unavailable');
-      const pending = await pendingRes.json();
-      if (!Array.isArray(pending)) throw new Error('Pending orders unavailable');
-      const recovered: Array<{ paymentId: string; planCode: string }> = [];
+      const pendingValue: unknown = await pendingRes.json();
+      if (!Array.isArray(pendingValue)) throw new Error('Pending orders unavailable');
+      const recovered: Array<{
+        paymentId: string;
+        planCode: PaymentPlanCode;
+        receiptSent: boolean;
+        transactionTimestamp?: number;
+        transactionReference: string;
+      }> = [];
       let incomplete = false;
-      for (const record of pending) {
-        const orderId = record?.order_id;
-        const planCode = record?.plan_code;
+      for (const candidate of pendingValue as unknown[]) {
+        const record = asRecord(candidate);
+        const orderId = record.order_id;
+        const planCodeValue = record.plan_code;
         if (typeof orderId !== 'string' || !/^order_[A-Za-z0-9]+$/.test(orderId) ||
-            typeof planCode !== 'string' || !Object.hasOwn(prices, planCode) || record.amount_paise !== prices[planCode]) continue;
+            !isPlanCode(planCodeValue) || record.amount_paise !== prices[planCodeValue]) continue;
+        const planCode = planCodeValue;
         try {
           const order = await provider(`orders/${encodeURIComponent(orderId)}`);
-          if (!orderMatches(order, orderId, user.id, planCode)) continue;
-          const paymentList = await provider(`orders/${encodeURIComponent(orderId)}/payments`);
-          const payment = Array.isArray(paymentList?.items)
-            ? paymentList.items.find((item: any) => paymentMatches(item, orderId, planCode))
-            : null;
+          if (!orderMatches(order, orderId, userId, planCode)) continue;
+          const paymentList = asRecord(await provider(`orders/${encodeURIComponent(orderId)}/payments`));
+          const paymentItems = Array.isArray(paymentList.items) ? paymentList.items as unknown[] : [];
+          const payment = paymentItems.find((item) => paymentMatches(item, orderId, planCode));
           if (!payment) continue;
-          await activate(payment, orderId, planCode);
-          recovered.push({ paymentId: payment.id, planCode });
+          const receiptSent = await activate(payment, orderId, planCode);
+          recovered.push({
+            paymentId: payment.id,
+            planCode,
+            receiptSent,
+            transactionTimestamp: typeof payment.created_at === 'number' ? payment.created_at : undefined,
+            transactionReference: paymentTransactionReference(payment.id),
+          });
+          if (!receiptSent) incomplete = true;
         } catch (error) {
           console.error('Could not check one pending order', error);
           incomplete = true;
@@ -127,27 +212,36 @@ Deno.serve(async (req: Request) => {
       return reply({ success: false, code: 'no_captured_payment', message: 'No captured payment found yet. If charged, do not pay again; retry or contact support.' });
     }
 
-    const orderId = body?.razorpay_order_id;
-    const paymentId = body?.razorpay_payment_id;
-    const signature = body?.razorpay_signature;
-    const planCode = body?.planCode;
+    const orderId = body.razorpay_order_id;
+    const paymentId = body.razorpay_payment_id;
+    const signature = body.razorpay_signature;
+    const planCode = body.planCode;
     if (typeof orderId !== 'string' || !/^order_[A-Za-z0-9]+$/.test(orderId) ||
         typeof paymentId !== 'string' || !/^pay_[A-Za-z0-9]+$/.test(paymentId) ||
-        typeof signature !== 'string' || typeof planCode !== 'string' || !Object.hasOwn(prices, planCode)) {
+        typeof signature !== 'string' || !isPlanCode(planCode)) {
       return reply({ error: 'Invalid payment details' }, 400);
     }
     if (!await validSignature(secret, orderId, paymentId, signature)) return reply({ error: 'Payment verification failed' }, 400);
     const [order, payment] = await Promise.all([
       provider(`orders/${encodeURIComponent(orderId)}`), provider(`payments/${encodeURIComponent(paymentId)}`),
     ]);
-    if (!orderMatches(order, orderId, user.id, planCode) || payment?.id !== paymentId) {
+    if (!orderMatches(order, orderId, userId, planCode)) {
       return reply({ error: 'Purchase details do not match' }, 400);
     }
     if (!paymentMatches(payment, orderId, planCode)) {
       return reply({ error: 'Payment has not been confirmed as captured. If charged, do not pay again; retry verification.' }, 409);
     }
-    await activate(payment, orderId, planCode);
-    return reply({ success: true, planCode, periodDays: planCode === 'weekly' ? 7 : 30 });
+    if (payment.id !== paymentId) return reply({ error: 'Purchase details do not match' }, 400);
+    const receiptSent = await activate(payment, orderId, planCode);
+    return reply({
+      success: true,
+      planCode,
+      paymentId: payment.id,
+      receiptSent,
+      transactionTimestamp: payment.created_at,
+      transactionReference: paymentTransactionReference(payment.id),
+      periodDays: planCode === 'weekly' ? 7 : 30,
+    });
   } catch (error) {
     console.error('Payment verification failed', error);
     return reply({ error: 'Payment could not be verified yet. If charged, do not pay again; retry or contact support.' }, 503);

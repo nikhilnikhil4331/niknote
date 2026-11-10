@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { readLimitedJson } from '../_shared/aiSecurity.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +15,7 @@ async function checkRateLimit(
   supabase: any,
   userId: string,
   endpoint: string
-): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
+): Promise<{ allowed: boolean; remaining: number; resetAt: Date; unavailable?: boolean }> {
   const now = new Date();
   const windowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW * 1000);
   
@@ -27,7 +28,7 @@ async function checkRateLimit(
 
   if (error) {
     console.error('Rate limit check error:', error);
-    return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW, resetAt: new Date(now.getTime() + RATE_LIMIT_WINDOW * 1000) };
+    return { allowed: false, remaining: 0, resetAt: new Date(now.getTime() + RATE_LIMIT_WINDOW * 1000), unavailable: true };
   }
 
   const currentCount = count || 0;
@@ -38,11 +39,15 @@ async function checkRateLimit(
     return { allowed: false, remaining: 0, resetAt };
   }
 
-  await supabase.from('rate_limits').insert({
+  const { error: insertError } = await supabase.from('rate_limits').insert({
     user_id: userId,
     endpoint,
     window_start: now.toISOString(),
   });
+  if (insertError) {
+    console.error('Rate limit reservation error:', insertError);
+    return { allowed: false, remaining: 0, resetAt, unavailable: true };
+  }
 
   return { allowed: true, remaining, resetAt };
 }
@@ -52,11 +57,18 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   try {
     // Verify authentication
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
+    const authHeader = req.headers.get("Authorization") || '';
+    const token = /^Bearer\s+(\S+)$/i.exec(authHeader)?.[1] || '';
+    if (!token) {
       console.error("Missing or invalid Authorization header");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
@@ -64,7 +76,6 @@ serve(async (req) => {
       );
     }
 
-    const token = authHeader.replace("Bearer ", "");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -90,7 +101,13 @@ serve(async (req) => {
 
     // Check rate limit using service role client
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    const { allowed, remaining, resetAt } = await checkRateLimit(adminClient, userId, 'ai-writing-assist');
+    const { allowed, remaining, resetAt, unavailable } = await checkRateLimit(adminClient, userId, 'ai-writing-assist');
+    if (unavailable) {
+      return new Response(JSON.stringify({ error: 'AI rate limit is temporarily unavailable' }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     if (!allowed) {
       console.log(`Rate limit exceeded for user: ${userId}`);
@@ -111,13 +128,35 @@ serve(async (req) => {
       );
     }
 
-    const { mode, text, systemPrompt } = await req.json();
+    const parsedBody = await readLimitedJson(req, 128 * 1024);
+    if (!parsedBody.ok) {
+      return new Response(JSON.stringify({ error: parsedBody.reason === 'too_large' ? 'Request body too large' : 'Invalid JSON body' }), {
+        status: parsedBody.reason === 'too_large' ? 413 : 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (!parsedBody.value || typeof parsedBody.value !== 'object' || Array.isArray(parsedBody.value)) {
+      return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const body = parsedBody.value as Record<string, unknown>;
+    const mode = typeof body.mode === 'string' ? body.mode.slice(0, 40) : '';
+    const text = typeof body.text === 'string' ? body.text : '';
+    const systemPrompt = typeof body.systemPrompt === 'string' ? body.systemPrompt : '';
 
-    if (!text) {
+    if (!text.trim()) {
       return new Response(
         JSON.stringify({ error: 'Text is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+    if (text.length > 64_000 || systemPrompt.length > 12_000) {
+      return new Response(JSON.stringify({ error: 'Text or system prompt is too large' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const LARPROUTER_API_KEY = (req.headers.get("x-larprouter-key") || Deno.env.get("LARPROUTER_API_KEY") || "").trim();

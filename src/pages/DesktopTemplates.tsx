@@ -10,7 +10,7 @@ import { Search, ArrowUpRight, LayoutTemplate } from 'lucide-react';
 import { DesktopShell } from '@/components/desktop/DesktopShell';
 import { useDesktopNotes } from '@/components/desktop/notes';
 import { noteTemplates, type NoteTemplate } from '@/lib/noteTemplates';
-import type { PageStyle } from '@/types/notes';
+import type { HandwritingFont, InkColor, PageStyle } from '@/types/notes';
 import { cn } from '@/lib/utils';
 
 type Cat = 'All' | 'Study' | 'Personal' | 'Work' | 'Planning' | 'Lifestyle';
@@ -23,13 +23,22 @@ interface Tpl {
   text: string;
   style: PageStyle;
   accent: string;
+  font?: HandwritingFont;
+  inkColor?: InkColor;
   route?: string; // app templates open a real feature page instead of the editor
 }
 
 const ACCENTS = ['#7C6CF0', '#3B82F6', '#F59E0B', '#EC4899', '#10B981', '#06B6D4', '#F26D8D', '#8B5CF6'];
 
 const fromLib = (t: NoteTemplate, cat: Tpl['cat'], title = t.title): Tpl => ({
-  title, cat, desc: t.desc, text: t.text, style: t.style, accent: ACCENTS[Math.abs(title.length * 3) % ACCENTS.length],
+  title,
+  cat,
+  desc: t.desc,
+  text: t.text,
+  style: t.style,
+  font: t.font,
+  inkColor: t.inkColor,
+  accent: ACCENTS[Math.abs(title.length * 3) % ACCENTS.length],
 });
 
 const lib = Object.fromEntries(noteTemplates.map((t) => [t.title, t]));
@@ -41,6 +50,7 @@ const TEMPLATES: Tpl[] = [
   { title: 'Habit Tracker', cat: 'Lifestyle', desc: 'Build good habits', text: '', style: 'ruled', accent: '#22C55E', route: '/habit' },
   fromLib(lib['Project Plan'], 'Work', 'Project Planner'),
   fromLib(lib['Daily Journal'], 'Personal'),
+  fromLib(lib['NikNote Compass Journal'], 'Personal'),
   { title: 'Study Planner', cat: 'Study', desc: 'Organize study', style: 'ruled', accent: '#3B82F6', text: '# Study Planner\n## This week\n[] Mon — Biology: Photosynthesis\n[] Tue — Maths: Algebra\n[] Wed — Chemistry: Bonds\n## Goals\n• Finish 2 chapters\n• 50 practice questions\n## Notes\n' },
   { title: 'Vision Board', cat: 'Personal', desc: 'Your dreams', style: 'dotted', accent: '#EC4899', text: '# Vision Board\n## This year I will\n• \n• \n• \n## Places I want to see\n• \n## Skills to learn\n• \n## My mantra\n"A small step everyday leads to big results."' },
   { title: 'Travel Planner', cat: 'Lifestyle', desc: 'Plan your trips', style: 'ruled', accent: '#06B6D4', text: '# Travel Planner\n## Destination\n\n## Dates & budget\n\n## Places to visit\n• \n• \n## Packing list\n[] Documents\n[] Clothes\n[] Camera\n## Bookings\n[] Stay\n[] Transport' },
@@ -75,7 +85,7 @@ const DesktopTemplates: React.FC = () => {
 
   const useTpl = (t: Tpl) => {
     if (t.route) navigate(t.route);
-    else openNew({ title: t.title, text: t.text, style: t.style });
+    else openNew({ title: t.title, text: t.text, style: t.style, font: t.font, inkColor: t.inkColor });
   };
 
   return (
@@ -111,7 +121,7 @@ const DesktopTemplates: React.FC = () => {
           {list.map((t) => (
             <button key={t.title} className="nd-note-card !rounded-2xl" onClick={() => useTpl(t)}>
               <div className="p-3 pb-0">
-                <div className="nd-tpl-paper" style={{ height: 118 }}>
+                <div className="nd-tpl-paper" data-template-style={t.style} style={{ height: 118 }}>
                   <div className="nd-skel nd-acc" style={{ width: '55%', background: `${t.accent}55` }} />
                   <div className="nd-skel" style={{ width: '88%' }} />
                   <div className="nd-skel" style={{ width: '72%' }} />

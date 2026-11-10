@@ -326,6 +326,10 @@ const PaperPreviewMini: React.FC<{ style: string }> = ({ style }) => {
       case 'vintage': return { backgroundColor: '#F5E6D3' };
       case 'kraft': return { backgroundColor: '#C4A77D' };
       case 'blueprint': return { backgroundColor: '#1E3A5F' };
+      case 'niknote-paper': return {
+        backgroundColor: '#fff9eb',
+        backgroundImage: 'linear-gradient(90deg, transparent 0 8px, rgba(200,63,88,.45) 8px 9px, transparent 9px), repeating-linear-gradient(transparent 0 3px, rgba(40,105,213,.22) 3px 3.5px)',
+      };
       default: return { backgroundColor: '#fff' };
     }
   };

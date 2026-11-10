@@ -2,6 +2,7 @@ import { describe, expect, test, afterEach, vi } from 'vitest';
 import {
   checkAi, checkDevice, checkPdfEngine, formatProviders, getAiEndpoint, isNativeApp,
 } from '@/lib/appHealth';
+import { supabase } from '@/integrations/supabase/client';
 
 afterEach(() => {
   delete (globalThis as any).Capacitor;
@@ -89,6 +90,23 @@ describe('AI check', () => {
     expect(result.detail).toContain('groq ✓');
     expect(result.detail).toContain('llama-3.1-8b-instant');
     expect(result.detail).toContain('OK');
+  });
+
+  test('sends the active session token and explains an authenticated-gateway 401', async () => {
+    type TestSession = NonNullable<Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session']>;
+    const session = { access_token: 'checkup-user-token' } as unknown as TestSession;
+    vi.spyOn(supabase.auth, 'getSession').mockResolvedValue({ data: { session }, error: null });
+    const calls: Array<{ input: unknown; init?: RequestInit }> = [];
+    globalThis.fetch = vi.fn(async (input: unknown, init?: RequestInit) => {
+      calls.push({ input, init });
+      return new Response(JSON.stringify({ error: 'authentication_required' }), { status: 401 });
+    }) as unknown as typeof fetch;
+
+    const result = await checkAi();
+    expect(calls).toHaveLength(1);
+    expect(new Headers(calls[0].init?.headers).get('Authorization')).toBe('Bearer checkup-user-token');
+    expect(result.status).toBe('warn');
+    expect(result.detail).toMatch(/sign in/i);
   });
 
   test('says out loud when the server has no provider key', async () => {

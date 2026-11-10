@@ -6,8 +6,10 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Copy, Check, Share2, MessageCircle, Gift, Users, Sparkles, Crown } from "lucide-react";
+import { Copy, Check, Share2, MessageCircle, Gift, Users, Sparkles, Crown, Mail } from "lucide-react";
 import { useReferral } from "@/hooks/useReferral";
+import { useAuth } from "@/contexts/AuthContext";
+import { createReferralInviteMailto } from "@/lib/emailInvites";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
@@ -17,7 +19,8 @@ interface ReferralWidgetProps {
 }
 
 export const ReferralWidget: React.FC<ReferralWidgetProps> = ({ compact = false, showRewardPreview = true }) => {
-  const { stats, loading, shareViaWhatsApp, copyLink, REFERRAL_REWARD_DAYS } = useReferral();
+  const { stats, loading, shareViaWhatsApp, copyLink, getShareLink, REFERRAL_REWARD_DAYS } = useReferral();
+  const { user } = useAuth();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -32,6 +35,20 @@ export const ReferralWidget: React.FC<ReferralWidgetProps> = ({ compact = false,
   const handleWhatsApp = () => {
     shareViaWhatsApp();
     toast.success("Share with friends on WhatsApp! 📱");
+  };
+
+  const handleEmailInvite = () => {
+    const metadataName = user?.user_metadata?.full_name;
+    const inviterName = typeof metadataName === 'string' && metadataName.trim()
+      ? metadataName.trim()
+      : user?.email?.split('@')[0] || 'A NikNote friend';
+    const draft = createReferralInviteMailto({
+      inviterName,
+      referralCode: stats.referralCode || 'NIKNOTE',
+      referralUrl: getShareLink(),
+      rewardDays: REFERRAL_REWARD_DAYS,
+    });
+    window.location.href = draft;
   };
 
   if (loading) return null;
@@ -53,9 +70,17 @@ export const ReferralWidget: React.FC<ReferralWidgetProps> = ({ compact = false,
           </button>
           <button
             onClick={handleWhatsApp}
+            aria-label="Share referral on WhatsApp"
             className="h-7 w-7 rounded-lg bg-green-500/10 flex items-center justify-center hover:bg-green-500/20 transition-colors"
           >
             <MessageCircle className="h-3.5 w-3.5 text-green-600" />
+          </button>
+          <button
+            onClick={handleEmailInvite}
+            aria-label="Invite a friend by email"
+            className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center hover:bg-blue-500/20 transition-colors"
+          >
+            <Mail className="h-3.5 w-3.5 text-blue-600" />
           </button>
         </div>
       </div>
@@ -126,14 +151,22 @@ export const ReferralWidget: React.FC<ReferralWidgetProps> = ({ compact = false,
           <MessageCircle className="h-4 w-4 mr-2" />
           Share on WhatsApp
         </Button>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Button
             onClick={handleCopy}
             variant="outline"
             className="rounded-xl h-9 text-xs"
           >
-            <Copy className="h-3.5 w-3.5 mr-1.5" />
-            Copy Link
+            <Copy className="h-3.5 w-3.5 mr-1" />
+            Copy
+          </Button>
+          <Button
+            onClick={handleEmailInvite}
+            variant="outline"
+            className="rounded-xl h-9 text-xs"
+          >
+            <Mail className="h-3.5 w-3.5 mr-1" />
+            Email Invite
           </Button>
           <Button
             onClick={() => {
@@ -148,8 +181,8 @@ export const ReferralWidget: React.FC<ReferralWidgetProps> = ({ compact = false,
             variant="outline"
             className="rounded-xl h-9 text-xs"
           >
-            <Share2 className="h-3.5 w-3.5 mr-1.5" />
-            More Options
+            <Share2 className="h-3.5 w-3.5 mr-1" />
+            More
           </Button>
         </div>
       </div>

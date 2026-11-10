@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { readLimitedJson } from '../_shared/aiSecurity.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,10 +13,112 @@ function randomHex(bytes = 12): string {
   return Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+function requesterIp(req: Request): string | null {
+  // Prefer the platform's single-address headers. Supabase's gateway appends its
+  // observed client address to x-forwarded-for; use the last hop, never the
+  // caller-controlled first hop.
+  const forwarded = (req.headers.get('x-forwarded-for') || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const candidate = (
+    req.headers.get('cf-connecting-ip') ||
+    req.headers.get('x-real-ip') ||
+    forwarded.at(-1) || ''
+  ).trim();
+  if (!candidate || candidate.length > 128 || /[\s,]/.test(candidate)) return null;
+  return candidate;
+}
+
+async function guestQuotaBucket(req: Request, secret: string): Promise<string | null> {
+  const ip = requesterIp(req);
+  if (!ip || !secret) return null;
+
+  // Keying the digest prevents a caller from precomputing another IP's quota
+  // bucket from the public edge-function request contract.
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const digest = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    new TextEncoder().encode(`guest-session-v1:${ip}`)
+  );
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function checkGuestCreationQuota(
+  adminClient: {
+    rpc: (name: string, args: { p_bucket: string; p_limit: number; p_window_seconds: number }) => PromiseLike<{ data: unknown; error: unknown }>;
+  },
+  req: Request,
+  secret: string
+): Promise<Response | null> {
+  const bucket = await guestQuotaBucket(req, secret);
+  if (!bucket) {
+    return new Response(JSON.stringify({ error: 'Could not determine request origin' }), {
+      status: 503,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const { data, error } = await adminClient.rpc('consume_anon_quota', {
+    p_bucket: bucket,
+    p_limit: 5,
+    p_window_seconds: 3600,
+  });
+  if (error) {
+    return new Response(JSON.stringify({ error: 'Guest sign-in is temporarily unavailable' }), {
+      status: 503,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const quota = Array.isArray(data) ? data[0] : data;
+  if (!quota || typeof quota.allowed !== 'boolean') {
+    return new Response(JSON.stringify({ error: 'Guest sign-in is temporarily unavailable' }), {
+      status: 503,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  if (!quota.allowed) {
+    const resetAt = typeof quota.reset_at === 'string' ? Date.parse(quota.reset_at) : NaN;
+    const retryAfter = Number.isFinite(resetAt)
+      ? String(Math.max(1, Math.ceil((resetAt - Date.now()) / 1000)))
+      : '3600';
+    return new Response(JSON.stringify({ error: 'Guest creation rate limit exceeded' }), {
+      status: 429,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': retryAfter },
+    });
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const parsed = await readLimitedJson(req, 8192);
+  if (!parsed.ok) {
+    return new Response(JSON.stringify({ error: parsed.reason === 'too_large' ? 'Request body too large' : 'Invalid JSON body' }), {
+      status: parsed.reason === 'too_large' ? 413 : 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  const body = parsed.value && typeof parsed.value === 'object' && !Array.isArray(parsed.value)
+    ? parsed.value as Record<string, unknown>
+    : {};
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -29,110 +132,62 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
-    const action = String(body?.action || 'create');
-    const displayName = String(body?.displayName || '').trim().slice(0, 40) || 'Guest';
-
-    // Upgrade existing guest account to real permanent email + password keeping the EXACT SAME UUID
-    if (action === 'upgrade') {
-      const authHeader = req.headers.get('Authorization') || '';
-      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-      const newEmail = String(body?.newEmail || '').trim().toLowerCase();
-      const newPassword = String(body?.newPassword || '');
-      const fullName = String(body?.fullName || displayName).trim().slice(0, 60) || 'NikNote User';
-
-      if (!token || !newEmail || newPassword.length < 6) {
-        return new Response(
-          JSON.stringify({ error: 'Valid email and password (min 6 chars) required.' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      const { data: caller, error: callerErr } = await admin.auth.getUser(token);
-      if (callerErr || !caller?.user) {
-        return new Response(
-          JSON.stringify({ error: 'Guest session expired. Please retry.' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      const { error: updErr } = await admin.auth.admin.updateUserById(caller.user.id, {
-        email: newEmail,
-        password: newPassword,
-        email_confirm: true,
-        user_metadata: {
-          ...caller.user.user_metadata,
-          full_name: fullName,
-          is_guest: false,
-          upgraded_at: new Date().toISOString(),
-        },
+    const action = String(body.action || 'create');
+    if (action !== 'create') {
+      return new Response(JSON.stringify({ error: 'Unsupported guest session action' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+    const displayName = String(body.displayName || body.guest_name || body.guestName || body.full_name || '').trim().slice(0, 40) || 'Guest';
 
-      if (updErr) {
-        return new Response(
-          JSON.stringify({ error: updErr.message }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+    // Resume an already-stored guest credential if valid. Resuming an existing
+    // account does not consume a quota slot because no account is created.
+    const resumeEmail = String(body.email || '').trim().toLowerCase();
+    const resumePassword = String(body.password || '');
+    if (resumeEmail || resumePassword) {
+      if (!resumeEmail || !resumePassword) {
+        return new Response(JSON.stringify({ error: 'Both saved guest credentials are required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
-      await admin.from('profiles').upsert(
-        { user_id: caller.user.id, display_name: fullName },
-        { onConflict: 'user_id' }
-      );
-
-      const { data: signed, error: signErr } = await publicClient.auth.signInWithPassword({
-        email: newEmail,
-        password: newPassword,
+      const { data: resumed, error: resumeErr } = await publicClient.auth.signInWithPassword({
+        email: resumeEmail,
+        password: resumePassword,
       });
-
-      if (signErr || !signed.session) {
-        return new Response(
-          JSON.stringify({ upgraded: true, user_id: caller.user.id }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      if (resumeErr || !resumed?.session || !resumed?.user) {
+        return new Response(JSON.stringify({ error: 'Saved guest workspace could not be resumed' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (body.displayName) {
+        await admin.from('profiles').upsert(
+          { user_id: resumed.user.id, display_name: displayName },
+          { onConflict: 'user_id' }
         );
       }
-
       return new Response(
         JSON.stringify({
-          upgraded: true,
-          access_token: signed.session.access_token,
-          refresh_token: signed.session.refresh_token,
-          user: signed.user,
+          access_token: resumed.session.access_token,
+          refresh_token: resumed.session.refresh_token,
+          user: resumed.user,
+          email: resumeEmail,
+          password: resumePassword,
+          resumed: true,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Resume an already-stored guest credential if valid
-    const resumeEmail = String(body?.email || '').trim().toLowerCase();
-    const resumePassword = String(body?.password || '');
-    if (resumeEmail && resumePassword) {
-      const { data: resumed, error: resumeErr } = await publicClient.auth.signInWithPassword({
-        email: resumeEmail,
-        password: resumePassword,
-      });
-      if (!resumeErr && resumed?.session && resumed?.user) {
-        if (body?.displayName) {
-          await admin.from('profiles').upsert(
-            { user_id: resumed.user.id, display_name: displayName },
-            { onConflict: 'user_id' }
-          );
-        }
-        return new Response(
-          JSON.stringify({
-            access_token: resumed.session.access_token,
-            refresh_token: resumed.session.refresh_token,
-            user: resumed.user,
-            email: resumeEmail,
-            password: resumePassword,
-            resumed: true,
-          }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
+    // Quota state is written through the service-role-only RPC. The RPC itself
+    // fixes the per-IP limit and window so neither anon nor authenticated users
+    // can choose a bucket or inflate their quota.
+    const quotaError = await checkGuestCreationQuota(admin, req, serviceRoleKey);
+    if (quotaError) return quotaError;
 
-    // Create a brand-new real cloud guest session immediately
     const guestId = randomHex(8);
     const email = `guest_${guestId}@guest.niknote.online`;
     const password = `NkGuest!${randomHex(16)}`;

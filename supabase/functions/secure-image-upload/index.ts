@@ -1,17 +1,21 @@
  import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
  import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+ import { readLimitedJson } from "../_shared/aiSecurity.ts";
  
  const corsHeaders = {
    "Access-Control-Allow-Origin": "*",
    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+   "Access-Control-Allow-Methods": "POST, OPTIONS",
  };
  
  // Rate limiting configuration
  const RATE_LIMIT_WINDOW = 3600; // 1 hour in seconds
  const MAX_REQUESTS_PER_WINDOW = 10; // 10 image uploads per hour
  
- // Maximum file size: 5MB
+ // Maximum decoded file size: 5 MB. The wire body is bounded separately for base64 overhead.
  const MAX_FILE_SIZE = 5 * 1024 * 1024;
+ const MAX_REQUEST_BYTES = 7 * 1024 * 1024;
+ const ALLOWED_BUCKET = "handwriting-samples";
  
  // Magic bytes for image validation
  const IMAGE_SIGNATURES: Record<string, { bytes: number[]; mimeType: string }> = {
@@ -25,7 +29,7 @@
    supabase: any,
    userId: string,
    endpoint: string
- ): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
+ ): Promise<{ allowed: boolean; remaining: number; resetAt: Date; unavailable?: boolean }> {
    const now = new Date();
    const windowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW * 1000);
    
@@ -38,7 +42,7 @@
  
    if (error) {
      console.error('Rate limit check error:', error);
-     return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW, resetAt: new Date(now.getTime() + RATE_LIMIT_WINDOW * 1000) };
+     return { allowed: false, remaining: 0, resetAt: new Date(now.getTime() + RATE_LIMIT_WINDOW * 1000), unavailable: true };
    }
  
    const currentCount = count || 0;
@@ -49,11 +53,15 @@
      return { allowed: false, remaining: 0, resetAt };
    }
  
-   await supabase.from('rate_limits').insert({
+   const { error: insertError } = await supabase.from('rate_limits').insert({
      user_id: userId,
      endpoint,
      window_start: now.toISOString(),
    });
+   if (insertError) {
+     console.error('Rate limit reservation error:', insertError);
+     return { allowed: false, remaining: 0, resetAt, unavailable: true };
+   }
  
    return { allowed: true, remaining, resetAt };
  }
@@ -178,11 +186,18 @@
    if (req.method === "OPTIONS") {
      return new Response("ok", { headers: corsHeaders });
    }
+   if (req.method !== "POST") {
+     return new Response(JSON.stringify({ error: "Method not allowed" }), {
+       status: 405,
+       headers: { ...corsHeaders, "Content-Type": "application/json" },
+     });
+   }
  
    try {
      // Verify authentication
-     const authHeader = req.headers.get("Authorization");
-     if (!authHeader?.startsWith("Bearer ")) {
+     const authHeader = req.headers.get("Authorization") || "";
+     const token = /^Bearer\s+(\S+)$/i.exec(authHeader)?.[1] || "";
+     if (!token) {
        return new Response(
          JSON.stringify({ error: "Unauthorized" }),
          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -197,7 +212,6 @@
        global: { headers: { Authorization: authHeader } },
      });
  
-     const token = authHeader.replace("Bearer ", "").trim();
      const { data: userData, error: userError } = await supabase.auth.getUser(token);
  
      if (userError || !userData?.user) {
@@ -213,7 +227,13 @@
  
      // Check rate limit using service role client
      const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-     const { allowed, remaining, resetAt } = await checkRateLimit(adminClient, userId, 'secure-image-upload');
+     const { allowed, remaining, resetAt, unavailable } = await checkRateLimit(adminClient, userId, 'secure-image-upload');
+     if (unavailable) {
+       return new Response(JSON.stringify({ error: "Upload rate limit is temporarily unavailable." }), {
+         status: 503,
+         headers: { ...corsHeaders, "Content-Type": "application/json" },
+       });
+     }
      
      if (!allowed) {
        console.log(`Rate limit exceeded for user: ${userId}`);
@@ -235,9 +255,31 @@
        );
      }
  
-     const { imageBase64, filename, bucket = "handwriting-samples" } = await req.json();
-     
-     if (!imageBase64) {
+     const parsedBody = await readLimitedJson(req, MAX_REQUEST_BYTES);
+     if (!parsedBody.ok) {
+       return new Response(JSON.stringify({ error: parsedBody.reason === 'too_large' ? "Request body too large" : "Invalid JSON body" }), {
+         status: parsedBody.reason === 'too_large' ? 413 : 400,
+         headers: { ...corsHeaders, "Content-Type": "application/json" },
+       });
+     }
+     const bodyValue = parsedBody.value;
+     if (!bodyValue || typeof bodyValue !== 'object' || Array.isArray(bodyValue)) {
+       return new Response(JSON.stringify({ error: "Invalid upload request" }), {
+         status: 400,
+         headers: { ...corsHeaders, "Content-Type": "application/json" },
+       });
+     }
+     const body = bodyValue as Record<string, unknown>;
+     const imageBase64 = body.imageBase64;
+     const bucketValue = body.bucket ?? ALLOWED_BUCKET;
+     if (bucketValue !== ALLOWED_BUCKET) {
+       return new Response(JSON.stringify({ error: "Unsupported upload bucket" }), {
+         status: 400,
+         headers: { ...corsHeaders, "Content-Type": "application/json" },
+       });
+     }
+     const bucket = ALLOWED_BUCKET;
+     if (typeof imageBase64 !== 'string' || !imageBase64) {
        return new Response(
          JSON.stringify({ error: "No image provided" }),
          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }

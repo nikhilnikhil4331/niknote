@@ -10,6 +10,7 @@
 
 import { addWatermark, countPdfPages } from '@/lib/pdfTools';
 import { getRemoteAstraGatewayUrl, readCustomAIKeys } from '@/lib/aiEngine';
+import { supabase } from '@/integrations/supabase/client';
 
 export type CheckStatus = 'ok' | 'warn' | 'fail';
 
@@ -83,6 +84,12 @@ export async function checkAi(timeoutMs = 20000): Promise<CheckResult> {
     let probe: ProbePayload | undefined;
     const customKeys = readCustomAIKeys();
     const customHeaders: Record<string, string> = {};
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.access_token) customHeaders.Authorization = `Bearer ${data.session.access_token}`;
+    } catch {
+      // A missing cloud token is shown as a user-facing AI check warning below.
+    }
     if (customKeys.larprouterKey) customHeaders['X-LarpRouter-Key'] = customKeys.larprouterKey;
     if (customKeys.groqKey) customHeaders['X-Groq-Key'] = customKeys.groqKey;
     if (customKeys.geminiKey) customHeaders['X-Gemini-Key'] = customKeys.geminiKey;
@@ -95,6 +102,9 @@ export async function checkAi(timeoutMs = 20000): Promise<CheckResult> {
         ...(hasCustomHeaders ? { headers: customHeaders } : {}),
         signal: controller.signal,
       });
+      if (res.status === 401) {
+        return finish('warn', 'Sign in to NikNote to run the authenticated AI gateway check.');
+      }
       if (res.ok) {
         const payload = (await res.json()) as HealthPayload & { probe?: ProbePayload };
         providers = formatProviders(payload?.providers);

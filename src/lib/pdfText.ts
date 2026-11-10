@@ -6,7 +6,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
 export interface PdfPage { lines: string[]; scanImage?: string }
 
-export async function readPdf(file: File, maxPages = 30): Promise<{ pages: PdfPage[]; firstPageImage: string }> {
+export async function readPdf(file: File, maxPages = 30): Promise<{ pages: PdfPage[]; firstPageImage: string; totalPages: number }> {
   const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
   const pages: PdfPage[] = [];
   let firstPageImage = '';
@@ -38,5 +38,5 @@ export async function readPdf(file: File, maxPages = 30): Promise<{ pages: PdfPa
     }
     pages.push({ lines, scanImage: needsScan ? img : undefined });
   }
-  return { pages, firstPageImage };
+  return { pages, firstPageImage, totalPages: doc.numPages };
 }

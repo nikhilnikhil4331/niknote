@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNotebooks, type Notebook } from '@/hooks/useNotebooks';
 import { createBlock, type Block } from '@/types/block';
 import { blocksFromNoteText } from '@/lib/noteTemplates';
+import type { HandwritingFont, InkColor } from '@/types/notes';
 import { notifyLocalDataChanged } from '@/lib/cloudSyncEngine';
 
 export const TRASH_FOLDER = '__trash__';
@@ -34,6 +35,8 @@ export interface DNote {
   preview: string; // first bit of text for paper previews (local notes)
   raw: Notebook | null;
   localBlocks?: Block[];
+  font?: HandwritingFont;
+  inkColor?: InkColor;
 }
 
 const COVER_PALETTE = ['#d4b128', '#67804e', '#b98237', '#bc6e54', '#8b7950', '#79908a', '#a87555', '#a58b43'];
@@ -50,6 +53,8 @@ interface LocalDeviceNotebook {
   blocks?: Block[];
   content?: string;
   page_style?: string;
+  font?: HandwritingFont;
+  ink_color?: InkColor;
   folder?: string | null;
   cover_color?: string;
   tags?: string[];
@@ -175,6 +180,8 @@ export function useDesktopNotes() {
         preview: ln.content || (blocks ? blocks.map((b) => b.content).filter(Boolean).join('\n') : ''),
         raw: null,
         localBlocks: blocks,
+        font: ln.font,
+        inkColor: ln.ink_color,
       });
     }
 
@@ -218,6 +225,8 @@ export function useDesktopNotes() {
           blocks: note.localBlocks?.length ? note.localBlocks : blocksFromNoteText(note.preview || ''),
           notebookId: note.id,
           style: note.style,
+          font: note.font,
+          inkColor: note.inkColor,
         }),
       );
       navigate(`/?editor=1&notebook=${note.id}`);
@@ -227,7 +236,7 @@ export function useDesktopNotes() {
 
   /** Open a brand-new editor draft (optionally seeded with template/sample text). */
   const openNew = useCallback(
-    (opts?: { title?: string; text?: string; style?: string }) => {
+    (opts?: { title?: string; text?: string; style?: string; font?: HandwritingFont; inkColor?: InkColor }) => {
       if (opts?.text !== undefined || opts?.title) {
         sessionStorage.setItem(
           'niknote-mobile-open',
@@ -235,6 +244,8 @@ export function useDesktopNotes() {
             title: opts?.title || 'Untitled Note',
             blocks: blocksFromNoteText(opts?.text || ''),
             style: opts?.style,
+            font: opts?.font,
+            inkColor: opts?.inkColor,
           }),
         );
         navigate('/?editor=1');

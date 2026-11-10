@@ -105,6 +105,157 @@ function getEnv(name: string): string {
   }
 }
 
+const MAX_AI_REQUEST_BYTES = 8 * 1024 * 1024;
+const MAX_AI_MESSAGES = 30;
+const MAX_AI_IMAGE_BYTES = 4 * 1024 * 1024;
+
+async function readBoundedJson(req: Request): Promise<{ value?: unknown; tooLarge?: boolean; invalid?: boolean }> {
+  const declaredLength = Number(req.headers.get('content-length') || 0);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_AI_REQUEST_BYTES) return { tooLarge: true };
+  if (!req.body) return { invalid: true };
+
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_AI_REQUEST_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        return { tooLarge: true };
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return { invalid: true };
+  } finally {
+    try { reader.releaseLock(); } catch { /* stream may already be cancelled */ }
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return { value: JSON.parse(new TextDecoder().decode(bytes)) };
+  } catch {
+    return { invalid: true };
+  }
+}
+
+function validateAIRequest(body: AIRequestBody): string | null {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return 'Invalid JSON body';
+  if (typeof body.prompt === 'string' && body.prompt.length > 64_000) return 'Prompt is too large';
+  if (typeof body.noteContext === 'string' && body.noteContext.length > 48_000) return 'Note context is too large';
+  if (typeof body.memoryContext === 'string' && body.memoryContext.length > 8_000) return 'Memory context is too large';
+  if (typeof body.instruction === 'string' && body.instruction.length > 8_000) return 'Instruction is too large';
+  if (body.messages !== undefined && !Array.isArray(body.messages)) return 'Messages must be an array';
+  if ((body.messages?.length || 0) > MAX_AI_MESSAGES) return 'Too many messages';
+
+  let imageCount = 0;
+  for (const message of body.messages || []) {
+    if (!message || !['system', 'user', 'assistant'].includes(message.role)) return 'Invalid message role';
+    if (typeof message.content !== 'string' || message.content.length > 48_000) return 'Message content is invalid or too large';
+    if (message.images !== undefined && !Array.isArray(message.images)) return 'Invalid image list';
+    for (const image of message.images || []) {
+      imageCount++;
+      if (imageCount > 4 || typeof image?.dataUrl !== 'string' || image.dataUrl.length > MAX_AI_IMAGE_BYTES * 1.4) {
+        return 'Too many or oversized images';
+      }
+      if (!/^data:image\/(?:jpeg|jpg|png|webp|gif);base64,[a-z0-9+/=]+$/i.test(image.dataUrl)) {
+        return 'Unsupported image data';
+      }
+      const base64 = image.dataUrl.slice(image.dataUrl.indexOf(',') + 1);
+      if (base64.length * 0.75 > MAX_AI_IMAGE_BYTES) return 'Image is too large';
+    }
+  }
+  return null;
+}
+
+async function requireAIGatewayUser(req: Request): Promise<Response | null> {
+  const token = /^Bearer\s+(.+)$/i.exec(req.headers.get('authorization') || '')?.[1]?.trim() || '';
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'authentication_required' }), {
+      status: 401,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
+
+  const supabaseUrl = (getEnv('SUPABASE_URL') || getEnv('VITE_SUPABASE_URL')).replace(/\/+$/, '');
+  const anonKey = getEnv('SUPABASE_ANON_KEY') || getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('VITE_SUPABASE_PUBLISHABLE_KEY');
+  if (!supabaseUrl || !anonKey) {
+    return new Response(JSON.stringify({ error: 'ai_auth_unavailable' }), {
+      status: 503,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
+
+  try {
+    const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
+      signal: req.signal,
+    });
+    if (!userResponse.ok) {
+      return new Response(JSON.stringify({ error: 'invalid_session' }), {
+        status: 401,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+    const user = await userResponse.json().catch(() => null);
+    if (!user?.id) {
+      return new Response(JSON.stringify({ error: 'invalid_session' }), {
+        status: 401,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+
+    const quotaResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/consume_ai_quota`, {
+      method: 'POST',
+      headers: {
+        apikey: anonKey,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ p_limit: 30, p_window_seconds: 3600 }),
+      signal: req.signal,
+    });
+    if (!quotaResponse.ok) {
+      return new Response(JSON.stringify({ error: 'ai_quota_unavailable' }), {
+        status: 503,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+    const rows = await quotaResponse.json().catch(() => null);
+    const quota = Array.isArray(rows) ? rows[0] : rows;
+    if (!quota || typeof quota.allowed !== 'boolean') {
+      return new Response(JSON.stringify({ error: 'ai_quota_unavailable' }), {
+        status: 503,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      });
+    }
+    if (!quota.allowed) {
+      const resetAt = typeof quota.reset_at === 'string' ? Date.parse(quota.reset_at) : NaN;
+      const retryAfter = Number.isFinite(resetAt)
+        ? String(Math.max(1, Math.ceil((resetAt - Date.now()) / 1000)))
+        : '3600';
+      return new Response(JSON.stringify({ error: 'ai_rate_limit_exceeded' }), {
+        status: 429,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Retry-After': retryAfter },
+      });
+    }
+    return null;
+  } catch {
+    return new Response(JSON.stringify({ error: 'ai_auth_unavailable' }), {
+      status: 503,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
+}
+
 /** Normalize pasted API keys (strips quotes, accidental 'Bearer ' or 'x-api-key:' prefixes). */
 export function cleanApiKey(raw?: string | null): string {
   if (!raw || typeof raw !== 'string') return '';
@@ -568,9 +719,9 @@ async function healModel(
 }
 
 // ---------------------------------------------------------------------------
-// Live probe: `GET /api/ai?probe=1` asks each configured provider for a single
-// word, so anyone (and the in-app Check-up page / NikAI Keys modal) can verify
-// that keys and upstream models are answering.
+// Live probe: authenticated `GET /api/ai?probe=1` asks a configured provider
+// for one word. It consumes the same per-user quota as chat requests; the
+// in-app Check-up page and NikAI Keys modal supply the active session JWT.
 // ---------------------------------------------------------------------------
 async function runProbe(
   larprouterKey: string,
@@ -767,6 +918,11 @@ export default async function handler(req: Request): Promise<Response> {
       openai: Boolean(openaiKey),
     };
 
+    if (url.searchParams.has('models') || url.searchParams.has('probe')) {
+      const authError = await requireAIGatewayUser(req);
+      if (authError) return authError;
+    }
+
     if (url.searchParams.get('models')) {
       const [larpIds, groqIds, geminiIds, openaiIds] = await Promise.all([
         listModels('larprouter', larprouterKey, larprouterBaseUrl),
@@ -816,15 +972,30 @@ export default async function handler(req: Request): Promise<Response> {
     });
   }
 
-  let body: AIRequestBody;
-  try {
-    body = (await req.json()) as AIRequestBody;
-  } catch {
+  const parsedBody = await readBoundedJson(req);
+  if (parsedBody.tooLarge) {
+    return new Response(JSON.stringify({ error: 'Request body too large' }), {
+      status: 413,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    });
+  }
+  if (parsedBody.invalid) {
     return new Response(JSON.stringify({ error: 'Invalid JSON request body' }), {
       status: 400,
       headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     });
   }
+  const body = parsedBody.value as AIRequestBody;
+  const validationError = validateAIRequest(body);
+  if (validationError) {
+    return new Response(JSON.stringify({ error: validationError }), {
+      status: 400,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const authError = await requireAIGatewayUser(req);
+  if (authError) return authError;
 
   const MODE_ALIASES: Record<string, string> = {
     tutor: 'teacher',

@@ -11,6 +11,7 @@ import {
   Smartphone, Sparkles, XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import { getAiEndpoint, runAllChecks, type CheckResult } from '@/lib/appHealth';
 
 type Row = { id: CheckResult['id']; label: string; icon: React.FC<{ className?: string }> };
@@ -44,6 +45,8 @@ function StatusIcon({ status }: { status?: CheckResult['status'] }) {
 export default function Checkup() {
   const [results, setResults] = useState<Partial<Record<CheckResult['id'], CheckResult>>>({});
   const [running, setRunning] = useState(false);
+  const [probeLoading, setProbeLoading] = useState(false);
+  const [probeJson, setProbeJson] = useState<string | null>(null);
   const endpoint = getAiEndpoint();
 
   const run = useCallback(async () => {
@@ -57,6 +60,28 @@ export default function Checkup() {
       setRunning(false);
     }
   }, []);
+
+  const showAuthenticatedProbe = useCallback(async () => {
+    setProbeLoading(true);
+    setProbeJson(null);
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+      if (error || !accessToken) {
+        setProbeJson(JSON.stringify({ error: 'Sign in to NikNote to view the authenticated AI probe.' }, null, 2));
+        return;
+      }
+      const response = await fetch(`${endpoint.url}?probe=1`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const payload = await response.json().catch(() => ({ error: `Probe returned HTTP ${response.status}` }));
+      setProbeJson(JSON.stringify(payload, null, 2));
+    } catch (error) {
+      setProbeJson(JSON.stringify({ error: error instanceof Error ? error.message : 'AI probe failed' }, null, 2));
+    } finally {
+      setProbeLoading(false);
+    }
+  }, [endpoint.url]);
 
   useEffect(() => {
     void run();
@@ -114,7 +139,7 @@ export default function Checkup() {
             <span className="font-semibold">
               {endpoint.route === 'gateway' ? 'NikNote cloud gateway' : 'is site ka /api/ai'}
             </span>
-            {' · '}Ye check device par hi chalta hai, koi data kahin nahi jaata.
+            {' · '}AI check ek chhota test prompt provider ko bhejta hai; aapke notes nahi bheje jaate. PDF/device checks local hote hain.
           </p>
         </div>
 
@@ -158,17 +183,22 @@ export default function Checkup() {
             <li>• <strong className="font-semibold">PDF fail:</strong> app ka naya version install karo (niknote.online se APK).</li>
             <li>• <strong className="font-semibold">Storage band:</strong> browser me site data / cookies allow karo, warna notes save nahi honge.</li>
           </ul>
-          <a
-            href={`${endpoint.url}?probe=1`}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-3 flex items-center justify-between rounded-2xl border border-dashed border-border/70 bg-background/60 px-3 py-2 text-xs transition hover:border-[#9dbcf0]"
+          <button
+            type="button"
+            onClick={showAuthenticatedProbe}
+            disabled={probeLoading}
+            className="mt-3 flex w-full items-center justify-between gap-2 rounded-2xl border border-dashed border-border/70 bg-background/60 px-3 py-2 text-left text-xs transition hover:border-[#9dbcf0] disabled:opacity-60"
           >
             <span className="font-semibold">AI ka seedha proof (JSON)</span>
-            <span className="text-muted-foreground">
-              {endpoint.route === 'gateway' ? '/api/ai?probe=1' : 'is site ka /api/ai?probe=1'}
+            <span className="text-right text-muted-foreground">
+              {probeLoading ? 'Probe chal raha hai…' : 'Signed-in session ke saath live test'}
             </span>
-          </a>
+          </button>
+          {probeJson ? (
+            <pre className="mt-2 max-h-64 overflow-auto rounded-xl border border-border/60 bg-background p-3 text-[10px] leading-relaxed text-muted-foreground">
+              {probeJson}
+            </pre>
+          ) : null}
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <Link to="/ai" className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 text-sm transition hover:border-[#9dbcf0]">
               <span className="font-semibold">NikAI kholo</span>

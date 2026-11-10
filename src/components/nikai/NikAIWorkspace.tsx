@@ -2374,7 +2374,18 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     if (groqInput.trim()) headers['X-Groq-Key'] = groqInput.trim();
                     if (geminiInput.trim()) headers['X-Gemini-Key'] = geminiInput.trim();
                     if (openaiInput.trim()) headers['X-OpenAI-Key'] = openaiInput.trim();
+                    const { data: authData } = await supabase.auth.getSession();
+                    if (authData.session?.access_token) {
+                      headers.Authorization = `Bearer ${authData.session.access_token}`;
+                    }
                     const res = await fetch('/api/ai?probe=1', { method: 'GET', headers });
+                    if (res.status === 401) {
+                      setKeyTestStatus({
+                        tone: 'warn',
+                        message: 'Connect to a NikNote cloud session before testing the shared AI gateway.',
+                      });
+                      return;
+                    }
                     const data = await res.json();
                     const probe = data?.probe;
                     if (probe?.ok) {

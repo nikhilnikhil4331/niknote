@@ -9,7 +9,7 @@ import { useNotebooks } from '@/hooks/useNotebooks';
 import { supabase } from '@/integrations/supabase/client';
 import { trackSaveNote } from '@/lib/tracking';
 import type { Block } from '@/types/block';
-import { type PageStyle } from '@/types/notes';
+import { type HandwritingFont, type InkColor, type PageStyle } from '@/types/notes';
 import { NotionEditor } from '@/components/editor/NotionEditor';
 import { useBlockEditor } from '@/hooks/useBlockEditor';
 import { lazy } from 'react';
@@ -115,7 +115,7 @@ const Index = () => {
   const cloudSync = useCloudSyncStatus(user?.id);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
   const dnaContext = useHandwritingDNA();
-  const { theme: uiTheme, setTheme: setUITheme, classes: themeClasses } = useUITheme();
+  const { theme: uiTheme, setTheme: setUITheme, classes: themeClasses, css: uiThemeCss } = useUITheme();
   const isMobile = useIsMobile();
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
@@ -362,6 +362,8 @@ const Index = () => {
           title: noteTitle || 'Untitled Note',
           blocks: blockEditor.blocks,
           page_style: settings.pageStyle,
+          font: settings.font,
+          ink_color: settings.inkColor,
           tags: ['Notes'],
           updated_at: now,
         };
@@ -448,7 +450,14 @@ const Index = () => {
     if (pending) {
       sessionStorage.removeItem('niknote-mobile-open');
       try {
-        const note = JSON.parse(pending) as { title: string; blocks: Block[]; notebookId?: string; style?: PageStyle };
+        const note = JSON.parse(pending) as {
+          title: string;
+          blocks: Block[];
+          notebookId?: string;
+          style?: PageStyle;
+          font?: HandwritingFont;
+          inkColor?: InkColor;
+        };
         setNoteTitle(note.title);
         const safeBlocks = note.blocks.length ? note.blocks : [createBlock()];
         blockEditor.setBlocks(safeBlocks);
@@ -461,7 +470,14 @@ const Index = () => {
           }))
         );
         setCloudNotebookId(note.notebookId || null);
-        if (note.style) updateSettings({ pageStyle: note.style });
+        if (note.inkColor) setCurrentColor(note.inkColor);
+        if (note.style || note.font || note.inkColor) {
+          updateSettings({
+            ...(note.style ? { pageStyle: note.style } : {}),
+            ...(note.font ? { font: note.font } : {}),
+            ...(note.inkColor ? { inkColor: note.inkColor } : {}),
+          });
+        }
       } catch { toast.error('Could not open this note'); }
     } else if (isMobile && new URLSearchParams(search).has('new')) {
       blockEditor.setBlocks([createBlock()]); setCloudNotebookId(null); setNoteTitle('Untitled Note');
@@ -490,6 +506,8 @@ const Index = () => {
           title: noteTitle || 'Untitled Note',
           blocks: blockEditor.blocks,
           page_style: settings.pageStyle,
+          font: settings.font,
+          ink_color: settings.inkColor,
           tags: ['Notes'],
           updated_at: now,
         };
@@ -1091,8 +1109,12 @@ const Index = () => {
 
   // ===================== RENDER =====================
   return (
-    <div className={cn("flex flex-col transition-all duration-500 touch-manipulation", moodStyles.background, glassMode && "glass-mode", themeClasses.wrapper, isMobile ? "min-h-screen nn-mobile nn-editor-root" : "h-[100dvh] overflow-hidden")}
-         style={isMobile ? { touchAction: 'manipulation' } : undefined} {...(isMobile ? mobileAppearance.attributes : {})}>
+    <div
+      className={cn("nn-app-shell flex flex-col transition-all duration-500 touch-manipulation", moodStyles.background, glassMode && "glass-mode", themeClasses.wrapper, isMobile ? "min-h-screen nn-mobile nn-editor-root" : "h-[100dvh] overflow-hidden")}
+      style={{ ...uiThemeCss, ...(isMobile ? { touchAction: 'manipulation' } : {}) }}
+      data-ui-theme={uiTheme}
+      {...(isMobile ? mobileAppearance.attributes : {})}
+    >
 
       {isMobile && <MobileEditorHeader title={noteTitle} onTitle={setNoteTitle} onSave={saveMobileNote} saving={savingNote} onExport={handleExportPDF} exporting={isExporting} onStyle={() => setShowMobileStyleSheet(true)} onScan={() => setShowScanPanel(true)} onShare={() => setShowShareMenu(true)} />}
       {/* ============ HEADER — Floating Glass Bar ============ */}
@@ -1101,7 +1123,7 @@ const Index = () => {
         isMobile 
           ? "bg-white border-b border-gray-100 h-12" 
           : "mx-3 mt-2 rounded-2xl bg-white/20 backdrop-blur-2xl border border-white/25 shadow-[0_8px_32px_rgba(0,0,0,0.08)] h-14"
-      )}>
+      )} data-theme-surface="workspace-header">
         <div className={cn("h-full flex items-center justify-between gap-2", isMobile ? "px-3" : "px-4 lg:px-5")}>
           {/* Left: toggle + logo */}
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -1312,7 +1334,7 @@ const Index = () => {
         {!isMobile && (
           <AnimatePresence>
             {sidebarOpen && (
-              <div className="rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.06)]">
+              <div data-theme-surface="workspace-sidebar" className="rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.06)]">
                 <React.Suspense fallback={<div className="w-[240px] h-full bg-white/30 animate-pulse rounded-2xl" />}><WorkspaceSidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(false)} onOpenCommandPalette={() => setShowCommandPalette(true)} /></React.Suspense>
               </div>
             )}
@@ -1326,7 +1348,7 @@ const Index = () => {
         )}>
 
           {/* Page Bar */}
-          {!isMobile && <div className={cn(
+          {!isMobile && <div data-theme-surface="page-toolbar" className={cn(
             "flex-shrink-0 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/25 shadow-sm px-3 py-1.5",
             isMobile && "rounded-none border-0 border-b border-gray-100 bg-white/95 py-1"
           )}>
@@ -1471,6 +1493,7 @@ const Index = () => {
                         "rounded-2xl bg-white/60 backdrop-blur-xl border border-white/30 shadow-sm min-h-[calc(100vh-12rem)]",
                         moodStyles.paper
                       )}
+                      data-theme-surface="paper-editor"
                     >
                       {/* Page title area */}
                       <div className="px-8 pt-6 pb-2">

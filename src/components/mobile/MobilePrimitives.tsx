@@ -1,5 +1,5 @@
 import { ComponentType, ReactNode } from 'react';
-import { Sun, Sparkles, Moon, Coffee, Home, BookOpen, Plus, User, ChevronLeft } from 'lucide-react';
+import { Sun, Sparkles, Moon, Coffee, Compass, Home, BookOpen, Plus, User, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -15,7 +15,7 @@ export function MobileHeader({ title, children, onBack }: { title: string; child
   return <header className="nn-header"><IconButton icon={ChevronLeft} label="Back" onClick={onBack || (() => navigate('/'))} /><h1>{title}</h1><div className="flex items-center">{children || <span className="w-11" />}</div></header>;
 }
 export function ThemeSelector({ theme, onChange }: { theme: string; onChange: (value: string) => void }) {
-  return <div className="nn-themes">{[{ id: 'calm', name: 'Calm', icon: Sun }, { id: 'focus', name: 'Focus', icon: Sparkles }, { id: 'dark', name: 'Dark', icon: Moon }, { id: 'vintage', name: 'Vintage', icon: Coffee }].map(({ id, name, icon: Icon }) => <Button variant="ghost" key={id} className={cn('nn-theme', theme === id && 'nn-selected')} onClick={() => onChange(id)} aria-pressed={theme === id}><Icon className="h-5 w-5" /><span>{name}</span></Button>)}</div>;
+  return <div className="nn-themes">{[{ id: 'calm', name: 'Calm', icon: Sun }, { id: 'focus', name: 'Focus', icon: Sparkles }, { id: 'dark', name: 'Dark', icon: Moon }, { id: 'vintage', name: 'Vintage', icon: Coffee }, { id: 'niknote-paper', name: 'Compass', icon: Compass }].map(({ id, name, icon: Icon }) => <Button variant="ghost" key={id} className={cn('nn-theme', theme === id && 'nn-selected')} onClick={() => onChange(id)} aria-pressed={theme === id}><Icon className="h-5 w-5" /><span>{name}</span></Button>)}</div>;
 }
 export function MobileNavigation({ active }: { active: string }) {
   const navigate = useNavigate();

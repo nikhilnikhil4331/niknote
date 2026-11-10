@@ -1,0 +1,155 @@
+/* Compass & Paper: the logo's notebook warmth with its blue, coral and yellow accents. */
+.nn-app-shell[data-ui-theme="niknote-paper"] {
+  background: var(--theme-bg) !important;
+  color: var(--theme-text);
+  font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+.nn-app-shell[data-ui-theme="niknote-paper"] > header,
+.nn-app-shell[data-ui-theme="niknote-paper"] [data-theme-surface] {
+  background: var(--theme-surface) !important;
+  border: 1.5px solid var(--theme-outline) !important;
+  border-radius: var(--theme-radius) !important;
+  box-shadow: 4px 4px 0 rgba(41, 39, 37, .82) !important;
+  color: var(--theme-text);
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.nn-app-shell[data-ui-theme="niknote-paper"] [data-theme-surface="workspace-sidebar"] > * {
+  background: transparent !important;
+}
+
+.nn-app-shell[data-ui-theme="niknote-paper"] [data-theme-surface="paper-editor"] {
+  background-color: #fffaf0 !important;
+  background-image:
+    radial-gradient(circle at calc(100% - 30px) 24px, rgba(255, 228, 92, .52) 0 9px, transparent 10px),
+    linear-gradient(90deg, transparent 0 48px, rgba(200, 63, 88, .24) 48px 50px, transparent 50px),
+    repeating-linear-gradient(transparent 0 31px, rgba(40, 105, 213, .12) 31px 32px) !important;
+  background-position: 0 0, 0 0, 0 24px;
+  background-size: 100% 100%, 100% 100%, 100% 32px;
+}
+
+.nn-app-shell[data-ui-theme="niknote-paper"] :is(h1, h2, h3) {
+  font-family: var(--theme-display-font);
+  letter-spacing: 0;
+}
+
+.nn-app-shell[data-ui-theme="niknote-paper"] button:focus-visible,
+.nn-app-shell[data-ui-theme="niknote-paper"] [role="button"]:focus-visible {
+  outline-color: #2869d5;
+  outline-offset: 3px;
+}
+
+/* Matching phone appearance, selectable in the mobile Appearance settings. */
+.nn-mobile[data-theme="niknote-paper"] {
+  --nn-accent: #2869d5;
+  --nn-accent-bright: #347ff0;
+  --nn-coral: #c83f58;
+  --nn-yellow: #ffe45c;
+  --nn-text: #25242a;
+  --nn-muted: #665f59;
+  --nn-surface: rgba(255, 250, 239, .94);
+  --nn-border: rgba(41, 39, 37, .42);
+  --nn-soft: #eaf2ff;
+  --nn-paper: 44 100% 96%;
+  --nn-paper-ink: 230 10% 14%;
+  --nn-paper-muted: 24 9% 42%;
+  --nn-paper-rule: 217 66% 82%;
+  --nn-paper-margin: 350 55% 70%;
+  --background: 44 100% 97%;
+  --foreground: 230 10% 9%;
+  --primary: 217 68% 50%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 350 55% 52%;
+  --accent-foreground: 0 0% 100%;
+  --border: 220 34% 88%;
+  --input: 220 34% 88%;
+  --ring: 217 68% 50%;
+  background:
+    radial-gradient(circle at 93% 8%, rgba(255, 228, 92, .2) 0 9px, transparent 10px),
+    radial-gradient(ellipse at 3% 82%, rgba(52, 127, 240, .11), transparent 52%),
+    linear-gradient(145deg, #f4ecd9, #fff8e9 58%, #eaf2ff);
+}
+
+.nn-mobile[data-theme="niknote-paper"] :is(.nn-header h1, .nn-welcome h2, .nn-ai-greeting h2, .nn-section-heading h2, .nn-template-heading h2) {
+  font-family: 'Fredoka', 'Plus Jakarta Sans', Inter, sans-serif;
+  letter-spacing: 0;
+}
+
+.nn-mobile[data-theme="niknote-paper"] .nn-welcome {
+  border: 1.5px solid #292725;
+  background:
+    radial-gradient(circle at 88% 22%, rgba(255, 228, 92, .78) 0 13px, transparent 14px),
+    linear-gradient(118deg, #fffaf0 0%, #fff0ef 56%, #eaf2ff 100%);
+  box-shadow: 4px 4px 0 rgba(41, 39, 37, .82);
+}
+
+.nn-mobile[data-theme="niknote-paper"] :is(.nn-quick, .nn-note, .nn-ai-action, .nn-theme, .nn-template-preview, .nn-settings-group) {
+  border-color: rgba(41, 39, 37, .42);
+  box-shadow: 2px 2px 0 rgba(41, 39, 37, .42);
+}
+
+.nn-mobile[data-theme="niknote-paper"] .nn-theme.nn-selected,
+.nn-mobile[data-theme="niknote-paper"] .nn-pill.nn-selected {
+  background: #2869d5 !important;
+  border: 1.5px solid #292725 !important;
+  color: #fff !important;
+  box-shadow: 2px 2px 0 rgba(41, 39, 37, .82);
+}
+
+.nn-mobile[data-theme="niknote-paper"] .nn-create,
+.nn-mobile[data-theme="niknote-paper"] .nn-fab {
+  background: linear-gradient(145deg, #347ff0, #245dcc) !important;
+  border: 2px solid #292725;
+  box-shadow: 3px 3px 0 rgba(41, 39, 37, .82);
+}
+
+.nn-mobile.nn-editor-root[data-theme="niknote-paper"] {
+  background:
+    radial-gradient(circle at 94% 8%, rgba(255, 228, 92, .18) 0 8px, transparent 9px),
+    linear-gradient(150deg, #f4ecd9, #fff8e9 55%, #eaf2ff) !important;
+}
+
+.nn-mobile[data-theme="niknote-paper"] .nn-editor-canvas {
+  background-color: #fffaf0;
+  border-color: rgba(41, 39, 37, .55);
+  box-shadow: 3px 3px 0 rgba(41, 39, 37, .62);
+}
+
+/* The branded page stock also applies when the Compass Journal template is used alone. */
+.nn-mobile .nn-editor-canvas[data-paper="niknote-paper"] {
+  color: #245dcc !important;
+  background-color: #fff9eb !important;
+  background-image:
+    radial-gradient(circle at calc(100% - 24px) 28px, rgba(255, 228, 92, .72) 0 8px, transparent 9px),
+    linear-gradient(90deg, transparent 0 38px, rgba(200, 63, 88, .32) 38px 40px, transparent 40px),
+    repeating-linear-gradient(transparent 0 31px, rgba(40, 105, 213, .2) 31px 32px) !important;
+  background-position: 0 0, 0 0, 0 24px;
+  background-size: 100% 100%, 100% 100%, 100% 32px;
+  border: 1.5px solid #292725 !important;
+  border-radius: 12px !important;
+  box-shadow: 3px 3px 0 rgba(41, 39, 37, .72) !important;
+}
+
+.nn-mobile .nn-editor-canvas[data-paper="niknote-paper"] textarea {
+  color: #245dcc !important;
+}
+
+.nn-mobile .nn-template-niknote {
+  background-color: #fff9eb;
+  background-image:
+    radial-gradient(circle at calc(100% - 18px) 18px, rgba(255, 228, 92, .8) 0 6px, transparent 7px),
+    linear-gradient(90deg, transparent 0 21px, rgba(200, 63, 88, .3) 21px 22px, transparent 22px),
+    repeating-linear-gradient(transparent 0 13px, rgba(40, 105, 213, .2) 13px 14px);
+}
+
+.nn-mobile .nn-themes { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+.nn-mobile .nn-theme { font-size: 10px !important; padding-inline: 2px !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nn-mobile[data-theme="niknote-paper"] *,
+  .nn-app-shell[data-ui-theme="niknote-paper"] * {
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,10 +1,10 @@
 // ============================================================
-// NikNote 6.0 — Service Worker (Network-First App Assets)
-// Cache version MUST match App.tsx SW_VERSION ('v6.0.0')
+// NikNote — Service Worker (Network-First App Assets)
+// Bump CACHE_VERSION when cache contents or offline behavior changes.
 // Never serves stale JS/CSS bundles on mobile browsers.
 // ============================================================
 
-const CACHE_VERSION = 'v8.0.0';
+const CACHE_VERSION = 'v8.1.0';
 const SHELL_CACHE = `niknote-shell-${CACHE_VERSION}`;
 
 const SHELL_URLS = [
@@ -25,7 +25,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key !== SHELL_CACHE)
+          .filter((key) => key.startsWith('niknote-shell-') && key !== SHELL_CACHE)
           .map((key) => caches.delete(key))
       )
     )

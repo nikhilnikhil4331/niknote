@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Check, CheckCircle, CreditCard, Loader2, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Check, CreditCard, Loader2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GuestUpgradeCard } from '@/components/auth/GuestUpgradeCard';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -14,6 +14,34 @@ import { toast } from 'sonner';
 
 type PlanCode = 'weekly' | 'monthly';
 type Step = 'select' | 'processing' | 'pending' | 'success';
+type RecoveredPayment = { paymentId?: unknown; planCode?: unknown; receiptSent?: unknown };
+type RazorpayPaymentCallback = {
+  razorpay_order_id?: unknown;
+  razorpay_payment_id?: unknown;
+  razorpay_signature?: unknown;
+};
+type RazorpayFailureResponse = { error?: { metadata?: { payment_id?: unknown } } };
+type RazorpayOptions = {
+  key: string;
+  amount: number;
+  currency: 'INR';
+  name: string;
+  description: string;
+  order_id: string;
+  prefill: { email: string; name: string };
+  theme: { color: string };
+  handler: (response: RazorpayPaymentCallback) => Promise<void>;
+  modal: { ondismiss: () => void };
+};
+type RazorpayInstance = {
+  on: (event: 'payment.failed', handler: (response: RazorpayFailureResponse) => void) => void;
+  open: () => void;
+};
+type RazorpayConstructor = new (options: RazorpayOptions) => RazorpayInstance;
+
+function getRazorpay(): RazorpayConstructor | undefined {
+  return (window as Window & { Razorpay?: RazorpayConstructor }).Razorpay;
+}
 
 const plans = {
   weekly: { label: 'Student Pro', price: 49, duration: '7 days' },
@@ -39,14 +67,14 @@ function forgetOrder(userId: string, orderId?: string) {
 async function functionError(error: unknown, fallback: string): Promise<string> {
   const context = (error as { context?: Response })?.context;
   try {
-    const data = await context?.clone().json();
+    const data = await context?.clone().json() as { error?: unknown } | undefined;
     if (typeof data?.error === 'string') return data.error;
   } catch { /* use a safe message */ }
   return fallback;
 }
 
 function loadRazorpayScript(): Promise<boolean> {
-  if ((window as any).Razorpay) return Promise.resolve(true);
+  if (getRazorpay()) return Promise.resolve(true);
   return new Promise((resolve) => {
     const script = document.createElement('script');
     const timer = setTimeout(() => resolve(false), 15000);
@@ -70,6 +98,7 @@ export default function PaymentPage() {
   const [checking, setChecking] = useState(false);
   const [notice, setNotice] = useState('');
   const [paymentReference, setPaymentReference] = useState('');
+  const [receiptSent, setReceiptSent] = useState(false);
   const plan = plans[selected];
 
   useEffect(() => {
@@ -96,8 +125,9 @@ export default function PaymentPage() {
     try {
       // The server queries only orders it created for this signed-in user and
       // verifies capture directly with Razorpay. This never opens a checkout.
-      let { data, error } = await supabase.functions.invoke('verify-razorpay-payment', { body: { recover: true } });
-      if (error) throw new Error(await functionError(error, 'Could not check payment right now. If charged, do not pay again.'));
+      const firstCheck = await supabase.functions.invoke('verify-razorpay-payment', { body: { recover: true } });
+      let data = firstCheck.data;
+      if (firstCheck.error) throw new Error(await functionError(firstCheck.error, 'Could not check payment right now. If charged, do not pay again.'));
       const savedOrder = rememberedOrder(user.id);
       if (!data?.success && savedOrder) {
         const specific = await supabase.functions.invoke('verify-razorpay-payment', { body: { recover: true, orderId: savedOrder } });
@@ -111,10 +141,16 @@ export default function PaymentPage() {
             recordVerified(item.paymentId, item.planCode);
           }
         }
-        if (!data.incomplete) forgetOrder(user.id);
+        const recoveredPayments = data.recovered as RecoveredPayment[];
+        const allReceiptsSent = recoveredPayments.every((item) => item.receiptSent === true);
+        const receiptItem = recoveredPayments.find((item) => item.receiptSent !== true) || recoveredPayments[0];
+        if (receiptItem?.planCode === 'weekly' || receiptItem?.planCode === 'monthly') setSelected(receiptItem.planCode);
+        if (typeof receiptItem?.paymentId === 'string') setPaymentReference(receiptItem.paymentId);
+        setReceiptSent(allReceiptsSent);
+        if (!data.incomplete && allReceiptsSent) forgetOrder(user.id);
         setStep('success');
         toast.success('Payment verified and premium activated.');
-        if (data.incomplete) toast.warning('Some other orders could not be checked. Please check again later.');
+        if (data.incomplete || !allReceiptsSent) toast.warning('Your receipt email has not gone through yet. You can retry below.');
       } else {
         setNotice('No pending captured payment was found yet. If money was deducted, do not pay again; retry later or contact support with your payment reference.');
       }
@@ -150,30 +186,34 @@ export default function PaymentPage() {
         throw new Error('Payment order was incomplete. No payment was attempted.');
       }
       rememberOrder(user.id, data.orderId);
-      const options = {
+      const options: RazorpayOptions = {
         key: data.keyId, amount: data.amount, currency: 'INR', name: 'NikNote',
         description: `${plan.label} — ${plan.duration} of access`, order_id: data.orderId,
         prefill: { email: isGuest ? '' : (data.userEmail || user.email || ''), name: user.user_metadata?.full_name || '' },
-        theme: { color: '#6366f1' },
-        handler: async (response: any) => {
+        theme: { color: '#3285F4' },
+        handler: async (response) => {
           setCheckoutOpen(false);
-          const paymentId = typeof response?.razorpay_payment_id === 'string' ? response.razorpay_payment_id : '';
+          const paymentId = typeof response.razorpay_payment_id === 'string' ? response.razorpay_payment_id : '';
           setPaymentReference(paymentId);
           try {
             const { data: verified, error: verifyError } = await supabase.functions.invoke('verify-razorpay-payment', {
               body: {
-                razorpay_order_id: response?.razorpay_order_id || data.orderId,
+                razorpay_order_id: typeof response.razorpay_order_id === 'string' ? response.razorpay_order_id : data.orderId,
                 razorpay_payment_id: paymentId,
-                razorpay_signature: response?.razorpay_signature || '',
+                razorpay_signature: typeof response.razorpay_signature === 'string' ? response.razorpay_signature : '',
                 planCode: selected,
               },
             });
             if (verifyError || !verified?.success) throw new Error('Payment confirmation is pending.');
             recordVerified(paymentId, selected, data.orderId);
-            forgetOrder(user.id, data.orderId);
+            const emailDelivered = verified?.receiptSent === true;
+            setReceiptSent(emailDelivered);
+            setPaymentReference(typeof verified?.paymentId === 'string' ? verified.paymentId : paymentId);
+            if (emailDelivered) forgetOrder(user.id, data.orderId);
             await refreshAccess();
             setStep('success');
             toast.success('Payment verified and premium activated.');
+            if (!emailDelivered) toast.warning('Your receipt email has not gone through yet. You can retry below.');
           } catch {
             // A timeout or delayed capture is not a failed payment. Never send
             // the customer back to the pay button without a recovery option.
@@ -189,9 +229,11 @@ export default function PaymentPage() {
           },
         },
       };
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on('payment.failed', (response: any) => {
-        const reference = response?.error?.metadata?.payment_id;
+      const Razorpay = getRazorpay();
+      if (!Razorpay) throw new Error('Could not load Razorpay checkout. Please check your connection.');
+      const rzp = new Razorpay(options);
+      rzp.on('payment.failed', (response) => {
+        const reference = response.error?.metadata?.payment_id;
         if (typeof reference === 'string') setPaymentReference(reference);
         setCheckoutOpen(false);
         trackPaymentFailed(selected, 'provider_failed');
@@ -212,92 +254,122 @@ export default function PaymentPage() {
   if (authLoading || !user) return null;
 
   const recovery = (
-    <div className="space-y-2">
-      <Button variant="outline" className="w-full rounded-xl" disabled={checking || step === 'processing'} onClick={checkPreviousPayment}>
+    <div className="nn-payment-recovery-wrap">
+      <Button variant="outline" className="nn-payment-recovery w-full" disabled={checking || step === 'processing'} onClick={checkPreviousPayment}>
         {checking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {checking ? 'Checking payment…' : 'Already paid? Check payment'}
       </Button>
-      <p className="text-center text-xs text-muted-foreground">This checks your existing order; it will not charge you again.</p>
+      <p className="nn-payment-recovery-note">This checks your existing order; it will not charge you again.</p>
     </div>
   );
 
   if (step === 'success') {
-    return <main className="min-h-screen flex items-center justify-center p-6 bg-background"><div className="max-w-sm text-center space-y-4">
-      <CheckCircle className="h-14 w-14 mx-auto text-green-600" />
-      <h1 className="text-2xl font-bold">Payment verified</h1>
-      <p className="text-sm text-muted-foreground">Premium is active on this account.</p>
-      <Button onClick={() => navigate('/')} className="rounded-xl">Go to editor</Button>
-    </div></main>;
+    return <main className="nn-payment-page nn-payment-state"><section className="nn-payment-state-card">
+      <div className="nn-payment-check"><Check aria-hidden="true" /></div>
+      <p className="nn-payment-kicker">Payment verified</p>
+      <h1>Your next bright idea starts here.</h1>
+      <p className="nn-payment-state-copy">Premium is active on this account. {receiptSent ? 'Your illustrated receipt is on its way to your checkout email.' : 'Your payment is verified; we couldn’t send the receipt yet. Try again below.'}</p>
+      <img className="nn-payment-success-art" src="/images/email/niknote-payment-confirmation-hero.jpg" alt="An open notebook with colorful books, a blue pencil, and a coral pen" />
+      {paymentReference && <div className="nn-payment-receipt-mini">
+        <p><strong>Plan:</strong> {plan.label} · {plan.duration}</p>
+        <p><strong>Amount:</strong> ₹{plan.price}</p>
+        <p><strong>Payment ID:</strong> {paymentReference}</p>
+      </div>}
+      {!receiptSent && <Button variant="outline" className="nn-payment-retry w-full mb-3" disabled={checking} onClick={checkPreviousPayment}>
+        {checking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {checking ? 'Retrying receipt…' : 'Retry receipt delivery'}
+      </Button>}
+      <Button onClick={() => navigate('/')} className="nn-payment-button w-full">OPEN MY NIKNOTE</Button>
+      <p className="nn-payment-support">Need a hand? <a href="mailto:support@niknote.online">support@niknote.online</a></p>
+    </section></main>;
   }
 
   if (step === 'pending') {
-    return <main className="min-h-screen flex items-center justify-center p-6 bg-background"><div className="max-w-sm w-full text-center space-y-4">
-      <ShieldCheck className="h-14 w-14 mx-auto text-amber-600" />
-      <h1 className="text-xl font-bold">Payment confirmation pending</h1>
-      <p role="status" className="text-sm text-muted-foreground">{notice}</p>
-      {paymentReference && <p className="text-xs break-all">Payment reference: {paymentReference}</p>}
+    return <main className="nn-payment-page nn-payment-state"><section className="nn-payment-state-card">
+      <div className="nn-payment-check nn-payment-check-pending"><ShieldCheck aria-hidden="true" /></div>
+      <p className="nn-payment-kicker">Payment check</p>
+      <h1>We’re checking with Razorpay.</h1>
+      <p role="status" className="nn-payment-state-copy">{notice}</p>
+      {paymentReference && <div className="nn-payment-receipt-mini"><p><strong>Payment reference:</strong> {paymentReference}</p></div>}
       {recovery}
-      <p className="text-xs text-muted-foreground">Need help? <a className="underline" href="mailto:support@niknote.online">support@niknote.online</a></p>
+      <p className="nn-payment-support">Need a hand? <a href="mailto:support@niknote.online">support@niknote.online</a></p>
       <Button variant="ghost" onClick={() => navigate('/')}>Back to editor</Button>
-    </div></main>;
+    </section></main>;
   }
 
   if (isPremium) {
-    return <main className="min-h-screen flex items-center justify-center p-6 bg-background"><div className="max-w-sm w-full text-center space-y-4">
-      <CheckCircle className="h-14 w-14 mx-auto text-green-600" />
-      <h1 className="text-xl font-bold">Premium is active</h1>
-      <p className="text-sm text-muted-foreground">Your paid access is linked to this account.</p>
-      {notice && <p role="status" className="text-xs text-muted-foreground">{notice}</p>}
+    return <main className="nn-payment-page nn-payment-state"><section className="nn-payment-state-card">
+      <div className="nn-payment-check"><Check aria-hidden="true" /></div>
+      <p className="nn-payment-kicker">NikNote Premium</p>
+      <h1>Your notebook is ready.</h1>
+      <p className="nn-payment-state-copy">Your paid access is linked to this account.</p>
+      {notice && <p role="status" className="nn-payment-note">{notice}</p>}
       {recovery}
-      <Button onClick={() => navigate('/')} className="rounded-xl">Go to editor</Button>
-    </div></main>;
+      <Button onClick={() => navigate('/')} className="nn-payment-button w-full mt-4">OPEN MY NIKNOTE</Button>
+    </section></main>;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-primary/5 pb-32">
-      <header className="sticky top-0 z-40 bg-background/95 border-b border-border/40">
-        <div className="max-w-lg mx-auto px-4 h-16 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Go back"><ArrowLeft className="h-5 w-5" /></Button>
-          <div><h1 className="font-semibold">Go Premium</h1><p className="text-xs text-muted-foreground">Choose the access period that suits you</p></div>
+    <div className="nn-payment-page pb-40">
+      <header className="nn-payment-header">
+        <div className="nn-payment-wrap nn-payment-header-inner">
+          <Button variant="ghost" size="icon" className="nn-payment-back" onClick={() => navigate(-1)} aria-label="Go back"><ArrowLeft className="h-5 w-5" /></Button>
+          <img className="nn-payment-wordmark" src="/images/brand/niknote-primary-wordmark.png" alt="NikNote" />
+          <span className="sr-only">Choose a Premium plan</span>
         </div>
       </header>
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
-        <section className="rounded-2xl bg-card border border-border/60 p-5 space-y-3">
-          <h2 className="font-semibold">Choose your one-time pass</h2>
-          <div className="grid grid-cols-2 gap-3">
+      <main className="nn-payment-wrap py-6">
+        <section className="nn-payment-hero" aria-labelledby="payment-hero-heading">
+          <div className="nn-payment-hero-copy">
+            <span className="nn-payment-eyebrow">A little more room to create</span>
+            <h1 id="payment-hero-heading">Give every idea a page.</h1>
+            <p>Pick a one-time Premium pass and get back to making notes your way.</p>
+          </div>
+          <img className="nn-payment-hero-art" src="/images/email/niknote-payment-confirmation-hero.jpg" alt="An open notebook surrounded by colorful books and writing tools" />
+        </section>
+
+        <section className="nn-payment-card" aria-labelledby="payment-plan-heading">
+          <p className="nn-payment-kicker">Choose your pass</p>
+          <h2 id="payment-plan-heading">One payment. Your own pace.</h2>
+          <div className="nn-payment-plan-grid">
             {(Object.keys(plans) as PlanCode[]).map((code) => (
               <button key={code} type="button" onClick={() => setSelected(code)} aria-pressed={selected === code}
-                className={`rounded-xl border-2 p-4 text-left ${selected === code ? 'border-primary bg-primary/5' : 'border-border/50'}`}>
-                <span className="block text-xs text-muted-foreground">{plans[code].label}</span>
-                <span className="block text-2xl font-bold">₹{plans[code].price}</span>
-                <span className="text-xs text-muted-foreground">{plans[code].duration} access</span>
+                className="nn-payment-plan p-4 text-left">
+                <span className="nn-payment-plan-name">{plans[code].label}</span>
+                <span className="nn-payment-plan-price">₹{plans[code].price}</span>
+                <span className="nn-payment-plan-duration">{plans[code].duration} access</span>
               </button>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">One payment, no automatic renewal. Access ends after {plan.duration}; pay again only if you want more time.</p>
+          <p className="nn-payment-note">One payment, no automatic renewal. Access ends after {plan.duration}; pay again only if you want more time.</p>
         </section>
-        <section className="rounded-2xl bg-card border border-border/60 p-5 space-y-3">
-          <h2 className="font-semibold">Premium tools</h2>
-          <ul className="grid grid-cols-2 gap-2 text-sm">
-            {['AI writing assistant', 'Voice dictation', 'AI style matcher', 'Handwriting import'].map((item) => <li key={item} className="flex gap-2"><Check className="h-4 w-4 text-green-600 shrink-0" />{item}</li>)}
+
+        <section className="nn-payment-card" aria-labelledby="payment-tools-heading">
+          <p className="nn-payment-kicker">Inside your pass</p>
+          <h2 id="payment-tools-heading">A few more tools for the page.</h2>
+          <ul className="nn-payment-feature-list">
+            {['AI writing assistant', 'Voice dictation', 'AI style matcher', 'Handwriting import'].map((item) => <li key={item}><Check className="h-4 w-4" aria-hidden="true" />{item}</li>)}
           </ul>
-          <p className="text-xs text-muted-foreground">Voice dictation depends on browser support; AI tools require an internet connection. Handwriting styles, AI notes, PDF tools and exports remain free.</p>
+          <p className="nn-payment-note">Voice dictation depends on browser support; AI tools need an internet connection. Handwriting styles, AI notes, PDF tools and exports remain free.</p>
         </section>
-        {isGuest && <section role="note" className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
-          <p className="text-sm font-medium">Protect your paid access</p>
-          <p className="text-xs text-muted-foreground">You are using a guest workspace. If browser data is cleared, it may be difficult to recover it. Save it with an email and password before paying.</p>
+
+        {isGuest && <section role="note" className="nn-payment-card nn-payment-guest">
+          <p className="nn-payment-kicker">Before you pay</p>
+          <h2>Protect your paid access.</h2>
+          <p className="nn-payment-note">You are using a guest workspace. If browser data is cleared, it may be difficult to recover it. Save it with an email and password before paying.</p>
           <GuestUpgradeCard />
         </section>}
-        <p className="text-xs text-muted-foreground flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0" />Razorpay handles payment details. <a className="underline" href="/refunds">Refund policy</a></p>
-        {notice && <p role="status" className="rounded-xl bg-amber-500/10 p-3 text-sm">{notice}</p>}
-        {recovery}
+
+        <p className="nn-payment-security"><ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />Razorpay handles payment details. <a href="/refunds">Read the refund policy.</a></p>
+        {notice && <p role="status" className="nn-payment-notice mt-4 p-3 text-sm">{notice}</p>}
+        <div className="mt-5">{recovery}</div>
       </main>
-      <div className="fixed bottom-0 inset-x-0 z-40 bg-background/95 border-t border-border/40 p-4">
-        <div className="max-w-lg mx-auto space-y-2">
-          <Button onClick={handlePay} disabled={step === 'processing' || checking} className="w-full h-12 rounded-xl font-semibold">
+      <div className="nn-payment-bottom">
+        <div className="nn-payment-bottom-inner">
+          <Button onClick={handlePay} disabled={step === 'processing' || checking} className="nn-payment-button w-full">
             {step === 'processing' ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{checkoutOpen ? 'Checkout open…' : 'Preparing checkout…'}</> : <><CreditCard className="h-4 w-4 mr-2" />Pay ₹{plan.price} for {plan.duration}</>}
           </Button>
-          <p className="text-center text-xs text-muted-foreground">One-time payment · no automatic renewal</p>
+          <p className="nn-payment-caption">One-time payment · no automatic renewal</p>
         </div>
       </div>
     </div>
