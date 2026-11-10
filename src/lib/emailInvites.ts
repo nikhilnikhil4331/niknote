@@ -4,7 +4,6 @@ export interface ReferralInviteDraft {
   inviterName: string;
   referralCode: string;
   referralUrl: string;
-  rewardDays: number;
 }
 
 export interface ShareInviteDraft {
@@ -42,19 +41,17 @@ export function createReferralInviteMailto({
   inviterName,
   referralCode,
   referralUrl,
-  rewardDays,
 }: ReferralInviteDraft): string {
   const name = cleanText(inviterName, 'A NikNote friend');
   const code = referralCode.trim();
   if (!/^[A-Za-z0-9_-]{4,24}$/.test(code)) throw new Error('Invalid referral code');
-  if (!Number.isInteger(rewardDays) || rewardDays < 1 || rewardDays > 365) throw new Error('Invalid referral reward');
   const link = safeNikNoteUrl(referralUrl);
   const subject = `${name} invited you to try NikNote`;
   const body = [
     `Hi! ${name} thought you might like NikNote, a cozy place to write, organize, and grow your notes.`,
     '',
     `Try it here: ${link}`,
-    `Use referral code ${code} when you join. Your friend may earn ${rewardDays} free Premium days after you sign up and subscribe, subject to NikNote's referral terms.`,
+    `Use referral code ${code} when you join.`,
     '',
     'See you in the notebook!',
   ].join('\n');

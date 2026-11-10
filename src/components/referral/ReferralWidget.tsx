@@ -38,15 +38,18 @@ export const ReferralWidget: React.FC<ReferralWidgetProps> = ({ compact = false,
   };
 
   const handleEmailInvite = () => {
+    if (!stats.referralCode) {
+      toast.error("Sign in to create your personal referral invite.");
+      return;
+    }
     const metadataName = user?.user_metadata?.full_name;
     const inviterName = typeof metadataName === 'string' && metadataName.trim()
       ? metadataName.trim()
       : user?.email?.split('@')[0] || 'A NikNote friend';
     const draft = createReferralInviteMailto({
       inviterName,
-      referralCode: stats.referralCode || 'NIKNOTE',
+      referralCode: stats.referralCode,
       referralUrl: getShareLink(),
-      rewardDays: REFERRAL_REWARD_DAYS,
     });
     window.location.href = draft;
   };
@@ -78,7 +81,9 @@ export const ReferralWidget: React.FC<ReferralWidgetProps> = ({ compact = false,
           <button
             onClick={handleEmailInvite}
             aria-label="Invite a friend by email"
-            className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center hover:bg-blue-500/20 transition-colors"
+            disabled={!stats.referralCode}
+            title={!stats.referralCode ? 'Sign in to create a referral invite' : 'Open an email draft'}
+            className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center hover:bg-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Mail className="h-3.5 w-3.5 text-blue-600" />
           </button>
@@ -162,6 +167,7 @@ export const ReferralWidget: React.FC<ReferralWidgetProps> = ({ compact = false,
           </Button>
           <Button
             onClick={handleEmailInvite}
+            disabled={!stats.referralCode}
             variant="outline"
             className="rounded-xl h-9 text-xs"
           >

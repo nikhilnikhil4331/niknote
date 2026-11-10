@@ -9,10 +9,9 @@ interface ReferralInviteEmailProps {
   inviterName: string
   referralCode: string
   referralUrl: string
-  rewardDays: number
 }
 
-export const ReferralInviteEmail = ({ siteName, inviterName, referralCode, referralUrl, rewardDays }: ReferralInviteEmailProps) => (
+export const ReferralInviteEmail = ({ siteName, inviterName, referralCode, referralUrl }: ReferralInviteEmailProps) => (
   <NikNoteEmailShell
     kind="referralInvite"
     preview={`${inviterName} invited you to try ${siteName}.`}
@@ -25,7 +24,7 @@ export const ReferralInviteEmail = ({ siteName, inviterName, referralCode, refer
       <strong>{inviterName}</strong> thinks you’ll like {siteName}—a cozy place to write, organize, and grow your notes.
     </Text>
     <Text style={{ margin: '0 0 12px' }}>
-      Use referral code <strong style={{ fontFamily: "'Courier New', Courier, monospace", letterSpacing: '1px' }}>{referralCode}</strong> when you join. Your friend may earn {rewardDays} free Premium days after you sign up and subscribe, subject to the NikNote referral terms.
+      Enter referral code <strong style={{ fontFamily: "'Courier New', Courier, monospace", letterSpacing: '1px' }}>{referralCode}</strong> when you sign up.
     </Text>
     <Text style={{ margin: 0, fontSize: 12 }}>
       Prefer to type the address? Visit <Link href={referralUrl} style={{ color: '#090707', fontWeight: 700 }}>niknote.online</Link> and enter the code above.

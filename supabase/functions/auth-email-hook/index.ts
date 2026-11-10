@@ -79,14 +79,13 @@ const SAMPLE_DATA: Record<string, object> = {
     inviterName: 'A NikNote creator',
     noteTitle: 'Ideas for our next project',
     permission: 'comment',
-    shareUrl: SAMPLE_PROJECT_URL,
+    shareUrl: `${SITE_URL}/shared/example`,
   },
   referral_invite: {
     siteName: SITE_NAME,
     inviterName: 'A NikNote creator',
     referralCode: 'NIK7ABC',
-    referralUrl: `${SAMPLE_PROJECT_URL}/?ref=NIK7ABC`,
-    rewardDays: 7,
+    referralUrl: `${SITE_URL}/?ref=NIK7ABC`,
   },
 }
 

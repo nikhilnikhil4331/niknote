@@ -4,17 +4,17 @@ import { createReferralInviteMailto, createShareInviteMailto } from '../lib/emai
 const queryFromMailto = (mailto: string) => new URL(mailto.replace('mailto:', 'https://mail.test/'));
 
 describe('NikNote email invite drafts', () => {
-  it('creates a referral email with the correct code, link, and conditional reward wording', () => {
+  it('creates a referral email with the correct code and link without promising a reward', () => {
     const draft = createReferralInviteMailto({
       inviterName: 'Aisha Khan',
       referralCode: 'NIK7ABC',
       referralUrl: 'https://www.niknote.online/?ref=NIK7ABC',
-      rewardDays: 7,
     });
     const url = queryFromMailto(draft);
     expect(url.searchParams.get('subject')).toContain('Aisha Khan');
     expect(url.searchParams.get('body')).toContain('NIK7ABC');
-    expect(url.searchParams.get('body')).toContain('may earn 7 free Premium days');
+    expect(url.searchParams.get('body')).toContain('Use referral code NIK7ABC when you join');
+    expect(url.searchParams.get('body')).not.toContain('Premium days');
     expect(url.searchParams.get('body')).toContain('https://www.niknote.online/?ref=NIK7ABC');
   });
 
@@ -37,7 +37,6 @@ describe('NikNote email invite drafts', () => {
       inviterName: 'A friend',
       referralCode: 'NIK7ABC',
       referralUrl: 'https://not-niknote.example/promo',
-      rewardDays: 7,
     })).toThrow(/NikNote website/);
     expect(() => createShareInviteMailto({
       inviterName: 'A friend',
