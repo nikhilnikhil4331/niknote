@@ -27,25 +27,33 @@ export type NikNoteEmailKind =
 
 const SITE_URL = 'https://niknote.online'
 const WORDMARK_URL = `${SITE_URL}/images/brand/niknote-primary-wordmark.png`
+const FONT_STYLESHEET_URL =
+  'https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap'
 
-const EMAIL_THEMES: Record<NikNoteEmailKind, { accent: string; label: string; font: string }> = {
-  signup: { accent: '#3285F4', label: 'WELCOME TO YOUR NEXT CHAPTER', font: "Georgia, 'Times New Roman', serif" },
-  invite: { accent: '#F47F82', label: 'A NOTE FROM A FRIEND', font: "Trebuchet MS, Arial, sans-serif" },
-  magiclink: { accent: '#3285F4', label: 'SECURE SIGN-IN', font: 'Arial, Helvetica, sans-serif' },
-  recovery: { accent: '#FFE17A', label: 'ACCOUNT SECURITY', font: "Georgia, 'Times New Roman', serif" },
-  emailChange: { accent: '#F47F82', label: 'ACCOUNT UPDATE', font: 'Verdana, Arial, sans-serif' },
-  reauthentication: { accent: '#9ACB70', label: 'IDENTITY CHECK', font: "'Courier New', Courier, monospace" },
-  shareInvite: { accent: '#FFE17A', label: 'A NOTE IS WAITING FOR YOU', font: "Trebuchet MS, Arial, sans-serif" },
-  referralInvite: { accent: '#9ACB70', label: 'A LITTLE SOMETHING FROM A FRIEND', font: "Georgia, 'Times New Roman', serif" },
+// Hosted fonts are a progressive enhancement; these system stacks stay readable
+// when an email client blocks remote stylesheets or does not have the web fonts.
+const BODY_FONT = "'Inter', 'Aptos', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+const DISPLAY_FONT = "'Fredoka', 'Inter', 'Aptos', 'Segoe UI', Arial, sans-serif"
+
+const EMAIL_THEMES: Record<NikNoteEmailKind, { accent: string; label: string }> = {
+  signup: { accent: '#3285F4', label: 'WELCOME TO YOUR NEXT CHAPTER' },
+  invite: { accent: '#F47F82', label: 'A NOTE FROM A FRIEND' },
+  magiclink: { accent: '#3285F4', label: 'SECURE SIGN-IN' },
+  recovery: { accent: '#FFE17A', label: 'ACCOUNT SECURITY' },
+  emailChange: { accent: '#F47F82', label: 'ACCOUNT UPDATE' },
+  reauthentication: { accent: '#9ACB70', label: 'IDENTITY CHECK' },
+  shareInvite: { accent: '#FFE17A', label: 'A NOTE IS WAITING FOR YOU' },
+  referralInvite: { accent: '#9ACB70', label: 'A LITTLE SOMETHING FROM A FRIEND' },
 }
 
 const responsiveCss = `
   @media only screen and (max-width: 620px) {
     .nn-email-shell { width: 100% !important; }
-    .nn-email-gutter { padding: 18px 12px !important; }
-    .nn-email-card { padding: 23px 19px !important; }
-    .nn-email-title { font-size: 31px !important; }
-    .nn-email-cta { display: block !important; }
+    .nn-email-gutter { padding: 20px 12px !important; }
+    .nn-email-card { padding: 24px 19px !important; }
+    .nn-email-title { font-size: 30px !important; line-height: 1.12 !important; }
+    .nn-email-copy { font-size: 15px !important; }
+    .nn-email-cta { display: block !important; width: 100% !important; box-sizing: border-box !important; }
   }
 `
 
@@ -77,45 +85,49 @@ export function NikNoteEmailShell({
       <Head>
         <meta name="color-scheme" content="light only" />
         <meta name="supported-color-schemes" content="light" />
+        <link href={FONT_STYLESHEET_URL} rel="stylesheet" />
         <style>{responsiveCss}</style>
       </Head>
       <Preview>{preview}</Preview>
-      <Body style={{ margin: 0, padding: 0, backgroundColor: '#FFFDF5', color: '#090707', fontFamily: 'Arial, Helvetica, sans-serif', WebkitTextSizeAdjust: '100%' }}>
-        <Container className="nn-email-shell" style={{ width: '100%', maxWidth: 600, margin: '0 auto', padding: '25px 20px 30px' }}>
+      <Body style={{ margin: 0, padding: '28px 12px 34px', backgroundColor: '#F4F6FB', color: '#141B2B', fontFamily: BODY_FONT, WebkitTextSizeAdjust: '100%' }}>
+        <Container className="nn-email-shell nn-email-gutter" style={{ width: '100%', maxWidth: 600, margin: '0 auto', padding: 0 }}>
           <Section style={{ textAlign: 'center', padding: '0 0 18px' }}>
-            <Link href={`${SITE_URL}/`} style={{ color: '#090707', textDecoration: 'none' }}>
+            <Link href={`${SITE_URL}/`} style={{ color: '#141B2B', textDecoration: 'none' }}>
               <Img src={WORDMARK_URL} width="124" alt="NikNote" style={{ display: 'block', width: 124, height: 'auto', margin: '0 auto', border: 0 }} />
             </Link>
+            <Text style={{ margin: '8px 0 0', color: '#64748B', fontFamily: BODY_FONT, fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', lineHeight: 1.4, textTransform: 'uppercase' }}>
+              A little space for every idea
+            </Text>
           </Section>
-          <Section className="nn-email-card" style={{ padding: '30px 34px 28px', border: '2px solid #090707', borderRadius: 20, backgroundColor: '#FFFFFF', boxShadow: '6px 6px 0 #090707' }}>
-            <Text style={{ display: 'inline-block', margin: '0 0 14px', padding: '7px 11px', border: '1.5px solid #090707', borderRadius: 999, backgroundColor: theme.accent, color: '#090707', fontFamily: 'Arial, Helvetica, sans-serif', fontSize: 10, fontWeight: 800, letterSpacing: '1px', lineHeight: '1.4', textTransform: 'uppercase' }}>
+          <Section className="nn-email-card" style={{ padding: '32px 36px 28px', border: '1px solid #DCE4F0', borderTop: `5px solid ${theme.accent}`, borderRadius: 22, backgroundColor: '#FFFFFF', boxShadow: '0 14px 38px rgba(20, 32, 55, .08)' }}>
+            <Text style={{ display: 'inline-block', margin: '0 0 15px', padding: '7px 11px', border: '1px solid #DCE4F0', borderRadius: 999, backgroundColor: theme.accent, color: '#141B2B', fontFamily: BODY_FONT, fontSize: 10, fontWeight: 800, letterSpacing: '1px', lineHeight: '1.4', textTransform: 'uppercase' }}>
               {theme.label}
             </Text>
-            <Heading className="nn-email-title" style={{ margin: '0 0 13px', color: '#090707', fontFamily: theme.font, fontSize: 36, fontWeight: 800, lineHeight: 1.08, letterSpacing: '-.5px' }}>
+            <Heading className="nn-email-title" style={{ margin: '0 0 14px', color: '#111827', fontFamily: DISPLAY_FONT, fontSize: 36, fontWeight: 700, lineHeight: 1.12, letterSpacing: '-.7px' }}>
               {title}
             </Heading>
-            <Section style={{ color: '#090707', fontFamily: 'Arial, Helvetica, sans-serif', fontSize: 15, lineHeight: 1.6 }}>
+            <Section className="nn-email-copy" style={{ color: '#334155', fontFamily: BODY_FONT, fontSize: 15, lineHeight: 1.7 }}>
               {children}
             </Section>
             {confirmationUrl && ctaLabel && (
-              <Section style={{ padding: '10px 0 2px', textAlign: 'center' }}>
-                <Button className="nn-email-cta" href={confirmationUrl} style={{ display: 'inline-block', padding: '15px 26px', border: '2px solid #090707', borderRadius: 12, backgroundColor: buttonBackground, boxShadow: '4px 4px 0 #090707', color: buttonColor, fontFamily: 'Arial, Helvetica, sans-serif', fontSize: 14, fontWeight: 900, letterSpacing: '.5px', lineHeight: 1.25, textAlign: 'center', textDecoration: 'none' }}>
+              <Section style={{ padding: '12px 0 2px', textAlign: 'center' }}>
+                <Button className="nn-email-cta" href={confirmationUrl} style={{ display: 'inline-block', padding: '15px 26px', border: '2px solid #141B2B', borderRadius: 12, backgroundColor: buttonBackground, boxShadow: '0 4px 0 #141B2B', color: buttonColor, fontFamily: DISPLAY_FONT, fontSize: 14, fontWeight: 700, letterSpacing: '.4px', lineHeight: 1.3, textAlign: 'center', textDecoration: 'none' }}>
                   {ctaLabel}
                 </Button>
-                <Text style={{ margin: '13px 0 0', color: '#090707', fontSize: 11, lineHeight: 1.5, wordBreak: 'break-word' }}>
-                  If the button doesn’t open, copy this link: <Link href={confirmationUrl} style={{ color: '#090707', textDecoration: 'underline' }}>open NikNote</Link>
+                <Text style={{ margin: '14px 0 0', color: '#64748B', fontFamily: BODY_FONT, fontSize: 11, lineHeight: 1.6, wordBreak: 'break-word' }}>
+                  If the button doesn’t open, copy this link: <Link href={confirmationUrl} style={{ color: '#2869D5', fontWeight: 700, textDecoration: 'underline' }}>open NikNote</Link>
                 </Text>
               </Section>
             )}
-            <Section style={{ marginTop: 20, paddingTop: 15, borderTop: '1px solid #090707' }}>
-              <Text style={{ margin: 0, color: '#090707', fontSize: 12, lineHeight: 1.55 }}>
+            <Section style={{ marginTop: 22, paddingTop: 16, borderTop: '1px solid #E7ECF3' }}>
+              <Text style={{ margin: 0, color: '#526076', fontFamily: BODY_FONT, fontSize: 12, lineHeight: 1.6 }}>
                 {footer}
               </Text>
             </Section>
           </Section>
-          <Text style={{ margin: '17px 8px 0', color: '#090707', fontFamily: 'Arial, Helvetica, sans-serif', fontSize: 11, lineHeight: 1.6, textAlign: 'center' }}>
-            Need a hand? <Link href="mailto:support@niknote.online" style={{ color: '#090707', fontWeight: 700 }}>support@niknote.online</Link><br />
-            NikNote · <Link href={`${SITE_URL}/`} style={{ color: '#090707' }}>niknote.online</Link>
+          <Text style={{ margin: '18px 8px 0', color: '#64748B', fontFamily: BODY_FONT, fontSize: 11, lineHeight: 1.7, textAlign: 'center' }}>
+            Need a hand? <Link href="mailto:support@niknote.online" style={{ color: '#2869D5', fontWeight: 700, textDecoration: 'underline' }}>support@niknote.online</Link><br />
+            NikNote · <Link href={`${SITE_URL}/`} style={{ color: '#526076', textDecoration: 'underline' }}>niknote.online</Link>
           </Text>
         </Container>
       </Body>

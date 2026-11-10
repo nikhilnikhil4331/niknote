@@ -187,6 +187,33 @@ function callback(orderId: string, paymentId = 'pay_Test1', planCode = 'weekly')
   return { razorpay_order_id: orderId, razorpay_payment_id: paymentId, razorpay_signature: signature(orderId, paymentId), planCode };
 }
 
+describe('payment confirmation email presentation', () => {
+  it('uses the branded web fonts with safe fallbacks and keeps the receipt email responsive', () => {
+    const buildEmail = loadPaymentEmailHelper().buildPaymentConfirmationEmail as (details: {
+      customerName: string;
+      planCode: 'weekly' | 'monthly';
+      amountPaise: number;
+      paymentId: string;
+      transactionTimestamp?: number;
+    }) => { html: string; text: string; subject: string };
+    const { html, text } = buildEmail({
+      customerName: 'NikNote Student',
+      planCode: 'weekly',
+      amountPaise: 4900,
+      paymentId: 'pay_FontStyle1',
+      transactionTimestamp: 1_790_000_000,
+    });
+
+    expect(html).toContain('fonts.googleapis.com/css2?family=Fredoka');
+    expect(html).toContain('family=Inter:wght');
+    expect(html).toContain("font-family:'Fredoka', 'Inter', 'Aptos', 'Segoe UI', Arial, sans-serif");
+    expect(html).toContain("font-family:'Inter', 'Aptos', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif");
+    expect(html).toContain('border-top:5px solid #3285F4');
+    expect(html).toContain('nn-email-title');
+    expect(text).toContain('Payment ID: pay_FontStyle1');
+  });
+});
+
 describe('Razorpay edge functions (mock provider, no real payments)', () => {
   it('reports configuration without exposing credentials and refuses test mode', async () => {
     const world = mockWorld();

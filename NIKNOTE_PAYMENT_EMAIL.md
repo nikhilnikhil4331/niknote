@@ -2,7 +2,7 @@
 
 ## Implementation
 
-- `supabase/functions/_shared/payment-confirmation-email.ts` renders the branded, table-based HTML receipt and plain-text alternative, validates plan/amount/payment reference, resolves a deliverable account or Razorpay checkout email, and sends through the Lovable transactional email API already used by `auth-email-hook`.
+- `supabase/functions/_shared/payment-confirmation-email.ts` renders the branded, responsive table-based HTML receipt and plain-text alternative, validates plan/amount/payment reference, resolves a deliverable account or Razorpay checkout email, and sends through the Lovable transactional email API already used by `auth-email-hook`. The HTML requests Fredoka for display text and Inter for body text, with email-safe fallbacks when remote fonts are blocked.
 - `supabase/functions/verify-razorpay-payment/index.ts` sends only after server-side Razorpay capture validation and the atomic `activate_verified_purchase` RPC. Frontend checkout callbacks are never treated as proof of payment.
 - `supabase/functions/razorpay-webhook/index.ts` is the new signed `payment.captured` webhook path. It verifies the raw-body HMAC, fetches the canonical payment and order from Razorpay, checks the server-created `checkout_orders` row and fixed plan amount, activates idempotently, then sends the receipt.
 - Receipt delivery uses the stable `niknote-payment-{paymentId}` idempotency key. The order remains recoverable until the provider accepts the receipt; verification and webhook retries can safely retry delivery.
@@ -11,7 +11,7 @@
 
 ## Other email types and invite drafts
 
-- `supabase/functions/auth-email-hook/index.ts` maps the six account emails (signup, auth invite, magic link, password recovery, email change, and reauthentication) to a shared NikNote shell. Each kind has a distinct accent and email-safe system-font stack; no external font download is required.
+- `supabase/functions/auth-email-hook/index.ts` maps the six account emails (signup, auth invite, magic link, password recovery, email change, and reauthentication) to a shared NikNote shell. The shell uses Fredoka for headings and Inter for body text when a client permits the Google Fonts stylesheet, with Inter/Aptos/Segoe UI/Arial fallbacks. Each email kind retains its own branded accent; the layout and core styles remain inline for email-client compatibility.
 - `share-invite.tsx` and `referral-invite.tsx` are registered in the protected template preview renderer. They are templates only; there is no authorized private-note invitation backend in this repository to send a collaboration invite or grant access.
 - The referral widget and public-share panel create plain-text `mailto:` drafts in the user's own mail app. Referral drafts use the user's referral link; note-share drafts are available only for a public share URL. This does not send mail from NikNote or change private sharing permissions.
 
