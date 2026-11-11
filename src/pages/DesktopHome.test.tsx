@@ -1,8 +1,7 @@
 // ============================================================
 // DesktopHome smoke test (guest mode) — verifies the redesigned
-// dashboard renders REAL wiring: hero, badges, quick actions,
-// sample notes, tabs, right rail timer, honest empty analytics,
-// and the full new-task flow.
+// dashboard renders REAL wiring: hero, quick actions, an honest
+// empty notes state, tabs, right rail timer, and the new-task flow.
 // ============================================================
 
 import React from 'react';
@@ -18,7 +17,7 @@ vi.mock('@/hooks/useAccountName', () => ({
   useAccountName: () => ({ fullName: '' }),
 }));
 vi.mock('@/hooks/useStreak', () => ({
-  useStreak: () => ({ streak: { currentStreak: 4, longestStreak: 6, lastActiveDate: null }, recordActivity: vi.fn() }),
+  useStreak: () => ({ streak: { currentStreak: 0, longestStreak: 0, lastActiveDate: null }, recordActivity: vi.fn() }),
 }));
 vi.mock('@/contexts/PremiumContext', () => ({
   usePremiumContext: () => ({ isPremium: false }),
@@ -50,7 +49,7 @@ describe('DesktopHome — redesigned dashboard (guest)', () => {
     renderHome();
     expect(screen.getAllByText(/good (morning|afternoon|evening)/i).length).toBeGreaterThan(0);
     expect(screen.getByAltText('NikNote illustration: Write it down')).toBeInTheDocument(); // supplied brand illustration
-    expect(screen.getAllByText(/day streak/i)[0]).toBeInTheDocument();
+    expect(screen.getAllByText(/\b\d+ day streak\b/i)[0]).toBeInTheDocument();
     expect(screen.getAllByText(/0 notes/i)[0]).toBeInTheDocument();
     expect(screen.getAllByText(/tasks? done today/i)[0]).toBeInTheDocument();
   });
@@ -62,10 +61,12 @@ describe('DesktopHome — redesigned dashboard (guest)', () => {
     }
   });
 
-  it('shows starter sample notes + create tile when the guest has no notes', () => {
+  it('shows an honest empty notes state instead of inserting starter content', () => {
     renderHome();
-    expect(screen.getAllByText('Biology Class Notes').length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('button', { name: /create a new note/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ready for its first note/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText('Biology Class Notes')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /start writing/i }).length).toBeGreaterThan(0);
+    expect(JSON.parse(localStorage.getItem('niknote.mobile.notebooks.v1') || '[]')).toHaveLength(0);
   });
 
   it('renders the focus timer panel with all three modes and presets', () => {
@@ -79,7 +80,7 @@ describe('DesktopHome — redesigned dashboard (guest)', () => {
 
   it('analytics render without fabricated focus sessions', () => {
     renderHome();
-    // overview chart region exists (first-run seeded tasks are real data)
+    // overview region exists without invented first-run tasks or activity
     expect(screen.getAllByText('Productivity Overview').length).toBeGreaterThan(0);
     // but focus insights honestly reports the absence of sessions
     expect(screen.getAllByText(/no focus sessions in this period yet/i).length).toBeGreaterThan(0);

@@ -298,25 +298,43 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     Element.prototype.scrollIntoView = vi.fn();
   });
 
-  it('shows the NikNote desktop Home FIRST on desktop (1440px) without opening NikAI until AI Assistant is clicked', async () => {
+  it('opens the writing workspace at /, keeps the dashboard at /home, and opens NikAI on request', async () => {
     window.history.pushState({}, '', '/');
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1440 });
     window.dispatchEvent(new Event('resize'));
 
     render(<App />);
 
-    // 1. New desktop Home (sidebar workspace) loads first — NikAI is NOT open automatically!
-    const aiNav = await screen.findByText('AI Assistant', {}, { timeout: 5000 });
-    expect(document.querySelector('.nik-desktop')).not.toBeNull();
+    await waitFor(() => expect(document.querySelector('.nn-writing-workspace')).not.toBeNull());
+    expect(document.querySelector('.nik-desktop')).toBeNull();
     expect(document.querySelector('[data-nikai-root="true"]')).toBeNull();
 
-    // 2. Clicking AI Assistant in the sidebar opens full NikAI Studio (/ai)!
+    fireEvent.click(screen.getByRole('button', { name: 'NikNote workspace home' }));
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/home');
+      expect(document.querySelector('.nik-desktop')).not.toBeNull();
+    });
+
+    const aiNav = await screen.findByText('AI Assistant', {}, { timeout: 5000 });
     fireEvent.click(aiNav);
     await waitFor(() => {
       expect(window.location.pathname).toBe('/ai');
       expect(document.querySelector('[data-nikai-root="true"]')).not.toBeNull();
     });
     window.history.pushState({}, '', '/');
+  });
+
+  it('opens the root route in the mobile writing workspace without sample notes', async () => {
+    window.history.pushState({}, '', '/');
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 390 });
+    window.dispatchEvent(new Event('resize'));
+
+    render(<App />);
+
+    await waitFor(() => expect(document.querySelector('.nn-writing-workspace.nn-writing-mobile')).not.toBeNull());
+    expect(document.querySelector('.nn-mobile')).toBeNull();
+    expect(screen.queryByText('Operating System')).toBeNull();
+    expect(screen.queryByText('Machine Learning')).toBeNull();
   });
 
   it('mounts the entire <App /> tree cleanly at / without router or overlay errors', async () => {
@@ -326,19 +344,19 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     });
   });
 
-  it('renders MobileExperience Home cleanly with unified NikAI button and theme taps', async () => {
+  it('renders MobileExperience Home with real notes and only the globally persisted Light/Dark modes', async () => {
     wrap(<MobileExperience />, '/');
     expect(screen.getAllByText('NikAI').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Write Note')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Light' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Dark' })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: /Compass/i })).toBeNull();
 
-    const focusBtn = screen.getByRole('button', { name: /Focus/i });
-    fireEvent.click(focusBtn);
-    expect(focusBtn.getAttribute('aria-pressed')).toBe('true');
-
-    const compassBtn = screen.getByRole('button', { name: /Compass/i });
-    fireEvent.click(compassBtn);
-    expect(compassBtn.getAttribute('aria-pressed')).toBe('true');
-    expect(document.querySelector('.nn-mobile')?.getAttribute('data-theme')).toBe('niknote-paper');
+    fireEvent.click(screen.getByRole('button', { name: 'Dark' }));
+    await waitFor(() => {
+      expect(document.querySelector('.nn-mobile')?.getAttribute('data-theme')).toBe('dark');
+      expect(localStorage.getItem('theme')).toBe('dark');
+    });
   });
 
   it('hands off the Compass Journal template with its branded paper, Caveat font, and blue ink', () => {
@@ -375,11 +393,11 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     const { NiknoteAuth } = await import('@/components/auth/NiknoteAuth');
     const spyAnon = vi
       .spyOn(supabase.auth, 'signInAnonymously')
-      .mockResolvedValue({ data: null, error: new Error('Anonymous sign-ins are disabled') } as any);
+      .mockResolvedValue({ data: null, error: new Error('Anonymous sign-ins are disabled') } as unknown as Awaited<ReturnType<typeof supabase.auth.signInAnonymously>>);
     const spyEdgeInvoke = vi.fn().mockRejectedValue(new Error('Network offline'));
     const spyFunctionsGetter = vi
       .spyOn(supabase, 'functions', 'get')
-      .mockReturnValue({ invoke: spyEdgeInvoke } as any);
+      .mockReturnValue({ invoke: spyEdgeInvoke } as unknown as typeof supabase.functions);
 
     wrap(<NiknoteAuth mode="login" />, '/login');
     const nameInput = screen.getByPlaceholderText(/Your name/i);
@@ -402,7 +420,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     const fakeCloudUuid = '550e8400-e29b-41d4-a716-446655440000';
     const spyAnon = vi
       .spyOn(supabase.auth, 'signInAnonymously')
-      .mockResolvedValue({ data: null, error: new Error('Anonymous sign-ins are disabled') } as any);
+      .mockResolvedValue({ data: null, error: new Error('Anonymous sign-ins are disabled') } as unknown as Awaited<ReturnType<typeof supabase.auth.signInAnonymously>>);
     const spyEdgeInvoke = vi.fn().mockResolvedValue({
       data: {
         access_token: 'tok_live_access',
@@ -419,7 +437,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     });
     const spyFunctionsGetter = vi
       .spyOn(supabase, 'functions', 'get')
-      .mockReturnValue({ invoke: spyEdgeInvoke } as any);
+      .mockReturnValue({ invoke: spyEdgeInvoke } as unknown as typeof supabase.functions);
     const spySetSession = vi.spyOn(supabase.auth, 'setSession').mockResolvedValue({
       data: {
         session: {
@@ -430,7 +448,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
         user: { id: fakeCloudUuid, user_metadata: { full_name: 'Nikhil', is_guest: true } },
       },
       error: null,
-    } as any);
+    } as unknown as Awaited<ReturnType<typeof supabase.auth.setSession>>);
 
     wrap(<NiknoteAuth mode="login" />, '/login');
     fireEvent.click(screen.getByTestId('guest-continue-btn'));
@@ -470,23 +488,24 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
           data: { id: validUuid, amount: 250, target: 1000, saved: 0 },
           error: null,
         };
-        const builder: any = Promise.resolve(listRes);
-        builder.select = vi.fn().mockImplementation(() => makeBuilder());
-        builder.insert = vi.fn().mockImplementation(() => makeBuilder());
-        builder.update = vi.fn().mockImplementation(() => makeBuilder());
-        builder.upsert = vi.fn().mockImplementation(() => makeBuilder());
-        builder.delete = vi.fn().mockImplementation(() => makeBuilder());
-        builder.eq = vi.fn().mockImplementation(() => makeBuilder());
-        builder.in = vi.fn().mockImplementation(() => makeBuilder());
-        builder.order = vi.fn().mockImplementation(() => makeBuilder());
-        builder.limit = vi.fn().mockImplementation(() => makeBuilder());
-        builder.range = vi.fn().mockImplementation(() => makeBuilder());
-        builder.single = vi.fn().mockResolvedValue(singleRes);
-        builder.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+        const builder = Object.assign(Promise.resolve(listRes), {
+          select: vi.fn().mockImplementation(() => makeBuilder()),
+          insert: vi.fn().mockImplementation(() => makeBuilder()),
+          update: vi.fn().mockImplementation(() => makeBuilder()),
+          upsert: vi.fn().mockImplementation(() => makeBuilder()),
+          delete: vi.fn().mockImplementation(() => makeBuilder()),
+          eq: vi.fn().mockImplementation(() => makeBuilder()),
+          in: vi.fn().mockImplementation(() => makeBuilder()),
+          order: vi.fn().mockImplementation(() => makeBuilder()),
+          limit: vi.fn().mockImplementation(() => makeBuilder()),
+          range: vi.fn().mockImplementation(() => makeBuilder()),
+          single: vi.fn().mockResolvedValue(singleRes),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        });
         return builder;
       };
       return makeBuilder();
-    }) as any);
+    }) as unknown as typeof supabase.from);
 
     localStorage.setItem(
       'niknote.mobile.notebooks.v1',

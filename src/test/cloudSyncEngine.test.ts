@@ -90,6 +90,7 @@ describe('cloud sync safety and retry behavior', () => {
   it('does not mark a note synced after a page write fails, and retries that upload', async () => {
     save('niknote.mobile.notebooks.v1', [{
       id: 'local-note-1',
+      _ownerId: USER_ID,
       title: 'Local note',
       blocks: [{ id: 'b1', type: 'text', content: 'keep me' }],
       updated_at: '2026-11-07T10:00:00.000Z',
@@ -112,7 +113,7 @@ describe('cloud sync safety and retry behavior', () => {
     const afterFailure = saved<Array<Record<string, unknown>>>('niknote.mobile.notebooks.v1')[0];
     expect(afterFailure._syncedAt).toBeUndefined();
     expect(afterFailure.id).toBe('local-note-1');
-    expect(saved<Record<string, string>>('niknote.sync.notebook_map.v1')['local-note-1']).toBe(CLOUD_NOTE_ID);
+    expect(saved<Record<string, string>>(`niknote.sync.notebook_map.v1:${USER_ID}`)['local-note-1']).toBe(CLOUD_NOTE_ID);
 
     const moved = await syncLocalNotesWithCloud(USER_ID, { pullCloud: false });
     expect(moved).toBe(1);
@@ -122,9 +123,27 @@ describe('cloud sync safety and retry behavior', () => {
     expect(afterRetry._syncedAt).toBeTruthy();
   });
 
+  it('never uploads an unowned legacy note into the signed-in account', async () => {
+    save('niknote.mobile.notebooks.v1', [{
+      id: 'legacy-unowned-note',
+      title: 'Unclaimed device note',
+      blocks: [{ id: 'b1', type: 'text', content: 'keep private' }],
+    }]);
+    const calls: Query[] = [];
+    installQueryHandler((query) => {
+      calls.push({ ...query, filters: [...query.filters] });
+      return { data: null, error: null };
+    });
+
+    await expect(syncLocalNotesWithCloud(USER_ID, { pullCloud: false })).resolves.toBe(0);
+    expect(calls.filter((query) => query.table === 'notebooks' && query.action === 'insert')).toHaveLength(0);
+    expect(saved<Array<Record<string, unknown>>>('niknote.mobile.notebooks.v1')[0]._ownerId).toBeUndefined();
+  });
+
   it('treats a locally generated UUID as a new note unless cloud ownership is confirmed', async () => {
     save('niknote.mobile.notebooks.v1', [{
       id: LOCAL_UUID,
+      _ownerId: USER_ID,
       title: 'UUID local note',
       blocks: [{ id: 'b1', type: 'text', content: 'new' }],
       updated_at: '2026-11-07T10:00:00.000Z',
@@ -137,6 +156,7 @@ describe('cloud sync safety and retry behavior', () => {
         if (query.action === 'insert') return { data: cloudNotebook(), error: null };
       }
       if (query.table === 'pages' && query.action === 'select') return { data: [], error: null };
+      if (query.table === 'pages' && query.action === 'insert') return { data: { id: 'page-1' }, error: null };
       return { data: null, error: null };
     });
 
@@ -150,11 +170,11 @@ describe('cloud sync safety and retry behavior', () => {
     const createdAt = '2025-02-03T04:05:06.000Z';
     save('niknote.notes.v1', [
       {
-        id: 'source-note-1', title: 'Keep metadata', content: 'local text', starred: true,
+        id: 'source-note-1', _ownerId: USER_ID, title: 'Keep metadata', content: 'local text', starred: true,
         tags: ['Exam'], parentId: 'local-folder-1', trashedAt: null, createdAt, updatedAt: createdAt,
       },
       {
-        id: 'trash-note-1', title: 'In trash', content: 'restore later', starred: false,
+        id: 'trash-note-1', _ownerId: USER_ID, title: 'In trash', content: 'restore later', starred: false,
         tags: ['Old'], parentId: null, trashedAt: createdAt, createdAt, updatedAt: createdAt,
       },
     ]);
@@ -162,6 +182,7 @@ describe('cloud sync safety and retry behavior', () => {
     installQueryHandler(({ table, action }) => {
       if (table === 'notebooks' && action === 'insert') return { data: cloudNotebook(), error: null };
       if (table === 'pages' && action === 'select') return { data: [], error: null };
+      if (table === 'pages' && action === 'insert') return { data: { id: 'page-1' }, error: null };
       return { data: null, error: null };
     });
 
@@ -203,6 +224,74 @@ describe('cloud sync safety and retry behavior', () => {
     const local = saved<Array<Record<string, unknown>>>('niknote.mobile.notebooks.v1')[0];
     expect(local.title).toBe('Local note');
     expect(local.blocks[0].content).toBe('fresh from cloud');
+    expect(local._syncedAt).toBe('2026-11-07T10:00:03.000Z');
+  });
+
+  it('uploads edited content across every owned cloud page without deleting page rows', async () => {
+    save('niknote.mobile.notebooks.v1', [{
+      id: CLOUD_NOTE_ID,
+      _ownerId: USER_ID,
+      title: 'Multi-page note',
+      blocks: [
+        { id: 'new-1', type: 'text', content: 'one' },
+        { id: 'new-2', type: 'text', content: 'two' },
+        { id: 'new-3', type: 'text', content: 'three' },
+      ],
+      updated_at: '2026-11-07T10:00:00.000Z',
+    }]);
+    const pageRows = [
+      { id: 'page-2', notebook_id: CLOUD_NOTE_ID, page_number: 2, content: [{ id: 'old-2', type: 'text', content: 'old two' }, { id: 'old-3', type: 'text', content: 'old three' }], updated_at: '2026-11-06T10:00:00.000Z' },
+      { id: 'page-1', notebook_id: CLOUD_NOTE_ID, page_number: 1, content: [{ id: 'old-1', type: 'text', content: 'old one' }], updated_at: '2026-11-06T10:00:00.000Z' },
+    ];
+    const pageUpdates: Array<{ id: string; content: Array<{ id: string }> }> = [];
+    const nonUpdatePageActions: string[] = [];
+    installQueryHandler((query) => {
+      if (query.table === 'notebooks' && query.action === 'select') return { data: cloudNotebook(), error: null };
+      if (query.table === 'pages' && query.action === 'select') return { data: pageRows, error: null };
+      if (query.table === 'pages' && query.action === 'update') {
+        const id = query.filters.find(([column]) => column === 'id')?.[1] as string;
+        pageUpdates.push({ id, content: (query.payload as { content: Array<{ id: string }> }).content });
+        return { data: { id }, error: null };
+      }
+      if (query.table === 'pages') nonUpdatePageActions.push(query.action);
+      return { data: null, error: null };
+    });
+
+    await expect(syncLocalNotesWithCloud(USER_ID, { pullCloud: false })).resolves.toBe(1);
+    expect(pageUpdates.map((page) => [page.id, page.content.map((item) => item.id)])).toEqual([
+      ['page-1', ['new-1']],
+      ['page-2', ['new-2', 'new-3']],
+    ]);
+    expect(nonUpdatePageActions).toEqual([]);
+  });
+
+  it('combines every remote page when pulling a newer cloud note', async () => {
+    const lastSync = '2026-11-06T10:00:00.000Z';
+    const pageRows = [
+      { id: 'page-1', notebook_id: CLOUD_NOTE_ID, title: 'Remote title', content: [{ id: 'remote-1', type: 'text', content: 'first page' }], page_number: 1, updated_at: '2026-11-07T10:00:02.000Z' },
+      { id: 'page-2', notebook_id: CLOUD_NOTE_ID, title: 'Remote title', content: [{ id: 'remote-2', type: 'text', content: 'second page' }], page_number: 2, updated_at: '2026-11-07T10:00:03.000Z' },
+    ];
+    save('niknote.mobile.notebooks.v1', [{
+      id: CLOUD_NOTE_ID,
+      _ownerId: USER_ID,
+      title: 'Old title',
+      blocks: [{ id: 'old', type: 'text', content: 'stale' }],
+      updated_at: lastSync,
+      _syncedAt: lastSync,
+    }]);
+    installQueryHandler((query) => {
+      if (query.table === 'notebooks' && query.action === 'select') {
+        const isOwnedLookup = query.filters.some(([column]) => column === 'id');
+        return { data: isOwnedLookup ? cloudNotebook() : [cloudNotebook()], error: null };
+      }
+      if (query.table === 'pages' && query.action === 'select') return { data: pageRows, error: null };
+      return { data: null, error: null };
+    });
+
+    await syncLocalNotesWithCloud(USER_ID, { pullCloud: true });
+    const local = saved<Array<Record<string, unknown>>>('niknote.mobile.notebooks.v1')[0];
+    const blocks = local.blocks as Array<{ id: string }>;
+    expect(blocks.map((item) => item.id)).toEqual(['remote-1', 'remote-2']);
     expect(local._syncedAt).toBe('2026-11-07T10:00:03.000Z');
   });
 

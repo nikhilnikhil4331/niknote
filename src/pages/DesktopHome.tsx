@@ -19,7 +19,7 @@ import { NoteCard, SectionHeader } from '@/components/desktop/widgets';
 import { RightRail } from '@/components/desktop/RightRail';
 import { ProductivityOverview } from '@/components/desktop/analytics/ProductivityOverview';
 import { FocusInsights } from '@/components/desktop/analytics/FocusInsights';
-import { useDesktopNotes, SAMPLE_NOTES, type DNote } from '@/components/desktop/notes';
+import { useDesktopNotes, type DNote } from '@/components/desktop/notes';
 import {
   useTasks, useNoteMeta, useDesktopHabits, todayKey,
   greeting, openCommandPalette, TASK_TAGS,
@@ -131,7 +131,6 @@ const DesktopHome: React.FC = () => {
   }, [active, tab, noteQuery, isPinned, isFav]);
 
   const shownNotes = filteredNotes.slice(0, view === 'grid' ? 7 : 6);
-  const showSamples = !loading && active.length === 0;
 
   // ---------- new task modal ----------
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -173,12 +172,6 @@ const DesktopHome: React.FC = () => {
   // ---------- notifications (derived from real data) ----------
   const [bellOpen, setBellOpen] = useState(false);
   const bellCount = overdue + todayOpenTasks.length;
-
-  const sampleAsNote = (s: (typeof SAMPLE_NOTES)[number]): DNote => ({
-    id: s.id, title: s.title, folder: null, tags: [s.tag], cover: s.cover, style: 'ruled',
-    updatedAt: new Date().toISOString(), createdAt: new Date().toISOString(),
-    isLocal: true, trashed: false, preview: s.text, raw: null,
-  });
 
   const displayName = guest ? 'Guest' : account.fullName || user?.email?.split('@')[0] || 'there';
 
@@ -416,34 +409,19 @@ const DesktopHome: React.FC = () => {
                     <div key={i} className="nd-card animate-pulse" style={{ height: 200 }} />
                   ))}
                 </div>
-              ) : showSamples ? (
-                <>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5">
-                    <CreateTile onClick={() => openNew()} />
-                    {SAMPLE_NOTES.slice(0, 5).map((s) => (
-                      <NoteCard
-                        key={s.id}
-                        note={sampleAsNote(s)}
-                        onOpen={() => openNew({ title: s.title, text: s.text, style: 'ruled' })}
-                        footerMeta={<>Sample · {s.tag}</>}
-                      />
-                    ))}
-                  </div>
-                  <p className="mt-3 text-[12.5px]" style={{ color: 'var(--nd-text-3)' }}>
-                    ✨ These are starter samples — click any card to turn it into a real, editable note.
-                  </p>
-                </>
               ) : filteredNotes.length === 0 ? (
                 <div className="nd-card p-6 text-center">
                   <img className="nd-empty-art" src="/images/brand/niknote-spark-note.png" alt="" />
                   <p className="text-[13.5px] font-bold mt-1" style={{ color: 'var(--nd-ink)' }}>
-                    {noteQuery ? `No notes match “${noteQuery}”` : `Nothing in ${NOTES_TABS.find((t) => t.id === tab)?.label} yet`}
+                    {noteQuery ? `No notes match “${noteQuery}”` : active.length === 0 && tab === 'all' ? 'Your workspace is ready for its first note.' : `Nothing in ${NOTES_TABS.find((t) => t.id === tab)?.label} yet`}
                   </p>
                   <p className="text-[12px] mt-1" style={{ color: 'var(--nd-text-3)' }}>
-                    {tab === 'pinned' ? 'Pin a note from its ⋯ menu to keep it on top.' :
+                    {active.length === 0 && !noteQuery ? 'Start with a blank page. Your notes are saved to your workspace as you write.' :
+                     tab === 'pinned' ? 'Pin a note from its ⋯ menu to keep it on top.' :
                      tab === 'favorites' ? 'Star notes to find them here instantly.' :
                      tab === 'quick' ? 'Use the Quick Note action for instant captures.' : 'Try another tab or create a note.'}
                   </p>
+                  {active.length === 0 && !noteQuery && <button type="button" className="nd-btn-cta mt-4" onClick={() => openNew()}><PenLine size={14} /> Start writing</button>}
                 </div>
               ) : (
                 <div className={cn(view === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5' : 'flex flex-col gap-2.5')}>

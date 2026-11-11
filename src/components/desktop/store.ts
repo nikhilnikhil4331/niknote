@@ -101,27 +101,9 @@ const todayStr = () => {
 };
 export const todayKey = todayStr;
 
-function seedTasks(): NikTask[] {
-  const t = todayStr();
-  return [
-    { id: uid(), title: 'Complete Biology notes', status: 'todo', due: t, createdAt: new Date().toISOString() },
-    { id: uid(), title: 'Read Chapter 5', status: 'todo', due: t, createdAt: new Date().toISOString() },
-    { id: uid(), title: 'Prepare for test', status: 'todo', createdAt: new Date().toISOString() },
-    { id: uid(), title: 'Make summary', status: 'doing', due: t, createdAt: new Date().toISOString() },
-    { id: uid(), title: 'Create flashcards', status: 'doing', createdAt: new Date().toISOString() },
-    { id: uid(), title: 'Upload notes', status: 'done', due: t, createdAt: new Date().toISOString(), doneAt: new Date().toISOString() },
-    { id: uid(), title: 'Revise formulas', status: 'done', createdAt: new Date().toISOString(), doneAt: new Date().toISOString() },
-    { id: uid(), title: 'Workout', status: 'todo', due: t, createdAt: new Date().toISOString() },
-  ];
-}
-
 export function useTasks() {
-  const [tasks, setTasks] = useLocalStore<NikTask[]>(TASKS_KEY, () => {
-    const seeded = seedTasks();
-    // persist seed on first run only if key absent
-    if (!localStorage.getItem(TASKS_KEY)) writeJSON(TASKS_KEY, seeded);
-    return readJSON(TASKS_KEY, seeded);
-  });
+  // Existing task records are preserved; genuinely new workspaces start empty.
+  const [tasks, setTasks] = useLocalStore<NikTask[]>(TASKS_KEY, []);
 
   const addTask = useCallback(
     (title: string, status: TaskStatus = 'todo', due?: string, extra: Partial<Pick<NikTask, 'tag' | 'time' | 'priority'>> = {}) => {
@@ -311,24 +293,6 @@ export interface NikHabit {
 
 const HABITS_KEY = 'niknote.desktop.habits.v1';
 
-function seedHabits(): NikHabit[] {
-  const mkDays = (counts: number[]) => {
-    const days: Record<string, number> = {};
-    counts.forEach((c, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (counts.length - 1 - i));
-      days[`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`] = c;
-    });
-    return days;
-  };
-  return [
-    { id: 'habit-study', name: 'Study', emoji: '📚', color: '#2869d5', target: 4, unit: 'sessions', days: mkDays([1, 1, 1]) },
-    { id: 'habit-read', name: 'Read', emoji: '📖', color: '#836108', target: 3, unit: 'sessions', days: mkDays([1, 0, 1]) },
-    { id: 'habit-workout', name: 'Workout', emoji: '🏋️', color: '#c83f58', target: 1, unit: 'session', days: mkDays([0, 0, 1]) },
-    { id: 'habit-sleep', name: 'Sleep', emoji: '😴', color: '#347ff0', target: 8, unit: 'hours', days: mkDays([0, 0, 7]) },
-  ];
-}
-
 /** Week progress for a habit = sum of the last 7 days (capped at target for the ring). */
 export function habitWeekTotal(h: NikHabit): number {
   return habitRangeTotal(h, 0, 6);
@@ -352,11 +316,8 @@ export function habitCheckinsByDay(habits: NikHabit[], days: string[]): number[]
 }
 
 export function useDesktopHabits() {
-  const [habits, setHabits] = useLocalStore<NikHabit[]>(HABITS_KEY, () => {
-    const seeded = seedHabits();
-    if (!localStorage.getItem(HABITS_KEY)) writeJSON(HABITS_KEY, seeded);
-    return readJSON(HABITS_KEY, seeded);
-  });
+  // Keep existing logs untouched, but do not manufacture habits for new users.
+  const [habits, setHabits] = useLocalStore<NikHabit[]>(HABITS_KEY, []);
 
   const logToday = useCallback(
     (id: string, amount = 1) => {

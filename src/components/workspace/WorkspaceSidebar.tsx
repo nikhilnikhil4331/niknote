@@ -27,6 +27,7 @@ interface WorkspaceSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   onNewNote?: () => void;
+  onOpenDNA?: () => void;
   onOpenCommandPalette?: () => void;
 }
 
@@ -40,8 +41,8 @@ interface NavItem {
   color?: string;
 }
 
-export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({ 
-  isOpen, onToggle, onNewNote, onOpenCommandPalette 
+export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
+  isOpen, onToggle, onNewNote, onOpenDNA, onOpenCommandPalette
 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -81,9 +82,9 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
   // Main navigation items (Notion-style left rail)
   const mainNav: NavItem[] = [
-    { id: 'home', icon: <FileText className="w-4 h-4" />, label: 'Home', action: () => navigate('/') },
+    { id: 'home', icon: <FileText className="w-4 h-4" />, label: 'Home', action: () => navigate('/home') },
     { id: 'ai', icon: <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain" />, label: 'NikAI', action: () => navigate('/ai'), color: 'text-blue-700', badge: 'ASTRA' },
-    { id: 'dna', icon: <Scan className="w-4 h-4 text-emerald-500" />, label: 'DNA Scanner', action: () => {}, color: 'text-emerald-600' },
+    { id: 'dna', icon: <Scan className="w-4 h-4 text-emerald-500" />, label: 'DNA Scanner', action: () => onOpenDNA?.(), color: 'text-emerald-600' },
     { id: 'documents', icon: <BookOpen className="w-4 h-4" />, label: 'Documents', action: () => navigate('/documents') },
     { id: 'notebooks', icon: <Layers className="w-4 h-4" />, label: 'Notebooks', action: () => navigate('/notebooks') },
     { id: 'playground', icon: <Shapes className="w-4 h-4" />, label: 'Playground', action: () => navigate('/playground') },
@@ -95,7 +96,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: -260, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-      className="h-full w-[260px] bg-white/60 backdrop-blur-xl border-r border-gray-200/60 flex flex-col overflow-hidden"
+      className="nn-workspace-sidebar h-full w-[260px] bg-white/60 backdrop-blur-xl border-r border-gray-200/60 flex flex-col overflow-hidden"
     >
       {/* ===== WORKSPACE HEADER ===== */}
       <div className="p-3 flex items-center justify-between border-b border-gray-100">
@@ -387,7 +388,7 @@ const NotebookItem: React.FC<{
     <div className="relative group">
       <motion.button
         whileTap={{ scale: 0.98 }}
-        onClick={() => navigate('/notebooks')}
+        onClick={() => navigate(`/?editor=1&notebook=${encodeURIComponent(notebook.id)}`)}
         className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors text-left"
       >
         {isFavorite ? (

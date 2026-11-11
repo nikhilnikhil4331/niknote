@@ -117,14 +117,10 @@ function ResponsivePage({ children }: { children: React.ReactNode }) {
   return mobile ? <MobileExperience /> : <>{children}</>;
 }
 function WorkspaceEntry() {
-  const mobile = useIsMobile();
-  const { search } = useLocation();
-  const params = new URLSearchParams(search);
-  const wantsEditor = params.has('editor') || params.has('notebook');
-  // Desktop lands on the new Notion-style Home; the editor (Index) opens
-  // when a note is being written. Mobile flow is unchanged.
-  if (!mobile && !wantsEditor) return <DesktopHome />;
-  return mobile && !wantsEditor ? <MobileExperience /> : <Index />;
+  // Writing is the primary workspace on every screen size. The previous
+  // dashboard remains available at /home; existing note links still hydrate
+  // through the same editor route and backend.
+  return <Index />;
 }
 function LegacyEditorRedirect() {
   const { search } = useLocation();
@@ -165,7 +161,9 @@ const App = () => {
       registerServiceWorker();
     }
 
-    try { checkReferral(); } catch {}
+    try { checkReferral(); } catch {
+      // Referral attribution must never block application startup.
+    }
   }, []);
 
   return (
@@ -185,7 +183,7 @@ const App = () => {
                     <RouteErrorBoundary>
                       <Routes>
                         <Route path="/" element={<WorkspaceEntry />} />
-                        <Route path="/home" element={<WorkspaceEntry />} />
+                        <Route path="/home" element={<ResponsivePage><DesktopHome /></ResponsivePage>} />
                         <Route path="/studio" element={<Index />} />
                         <Route path="/app" element={<LegacyEditorRedirect />} />
                         <Route path="/account-details" element={<Account />} />

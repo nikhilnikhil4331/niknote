@@ -14,6 +14,7 @@ import {
   syncAllLocalDataToCloud,
   updateSyncSnapshot,
 } from '@/lib/cloudSyncEngine';
+import { transferLocalNotesToOwner } from '@/lib/localNoteStore';
 
 const GUEST_VAULT_KEY = 'niknote.guest.vault.v1';
 const OFFLINE_GUEST_KEY = 'niknote.offline.guest.v1';
@@ -112,7 +113,7 @@ function buildOfflineGuestUser(displayName?: string): User {
 export function isGuestUser(u: User | null | undefined): boolean {
   if (!u) return false;
   return Boolean(
-    (u as any).is_anonymous ||
+    u.is_anonymous ||
       u.user_metadata?.is_guest ||
       u.user_metadata?.is_local_guest ||
       (typeof u.email === 'string' && u.email.endsWith('@guest.niknote.online'))
@@ -158,10 +159,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [pendingGuestEmail, setPendingGuestEmail] = useState<string | null>(() => readGuestVault()?.pendingEmail || null);
   const guestRef = useRef<Promise<{ error: Error | null; offline?: boolean }> | null>(null);
 
-  const timed = (p: Promise<any>, ms: number, label: string): Promise<any> =>
+  const timed = (promise: Promise<unknown>, ms: number, label: string): Promise<unknown> =>
     Promise.race([
-      p,
-      new Promise<any>((_, reject) => setTimeout(() => reject(new Error(label)), ms)),
+      promise,
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error(label)), ms)),
     ]);
 
   // Core helper: provisions or resumes a REAL cloud guest session via single-flight lock:
@@ -177,11 +178,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       globalGuestProvisionInFlight = (async () => {
         try {
           try {
-            const { data: sessionData } = await timed(
+            const sessionResponse = await timed(
               supabase.auth.getSession(),
               4000,
               'Guest sign-in is taking too long — check your internet'
-            );
+            ) as Awaited<ReturnType<typeof supabase.auth.getSession>>;
+            const { data: sessionData } = sessionResponse;
             if (sessionData?.session?.user) {
               setSession(sessionData.session);
               setUser(sessionData.session.user);
@@ -193,9 +195,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           let firstErr: Error | null = null;
           const storedVault = readGuestVault();
+          const invokeFunction = supabase.functions?.invoke as unknown as { mock?: unknown } | undefined;
           const canInvokeEdge =
             typeof supabase.functions?.invoke === 'function' &&
-            (import.meta.env.MODE !== 'test' || Boolean((supabase.functions.invoke as any)?.mock));
+            (import.meta.env.MODE !== 'test' || Boolean(invokeFunction?.mock));
 
           const restoreEdgeGuest = async (payload: GuestSessionPayload) => {
             if (payload.email && payload.password) {
@@ -265,7 +268,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   }),
                   7000,
                   'Guest sign-in is taking too long — check your internet'
-                );
+                ) as Awaited<ReturnType<typeof supabase.functions.invoke>>;
                 const payload = resumeRes?.data as GuestSessionPayload | undefined;
                 if (!resumeRes?.error && payload?.access_token && payload?.refresh_token) {
                   return await restoreEdgeGuest(payload);
@@ -294,7 +297,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ),
               8000,
               'Guest sign-in is taking too long — check your internet'
-            );
+            ) as Awaited<ReturnType<typeof supabase.auth.signInAnonymously>>;
             if (!anonRes?.error) {
               return {
                 error: null,
@@ -319,7 +322,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }),
                 7000,
                 'Guest sign-in is taking too long — check your internet'
-              );
+              ) as Awaited<ReturnType<typeof supabase.functions.invoke>>;
               const payload = invokeRes?.data as GuestSessionPayload | undefined;
               if (!invokeRes?.error && payload?.access_token && payload?.refresh_token) {
                 return await restoreEdgeGuest(payload);
@@ -351,8 +354,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const allowFallback = opts?.allowOfflineFallback !== false;
       guestRef.current = (async () => {
         try {
+          const previousOwnerId = user?.id || readOfflineGuestUser()?.id || null;
           const result = await provisionCloudGuest(displayName);
           if (!result.error) {
+            if (
+              previousOwnerId?.startsWith('local-guest-') &&
+              isCloudUserId(result.user?.id) &&
+              result.user.id !== previousOwnerId
+            ) {
+              transferLocalNotesToOwner(previousOwnerId, result.user.id);
+            }
             if (isCloudUserId(result.user?.id)) {
               void syncAllLocalDataToCloud(result.user.id, { pullCloud: true });
             }
@@ -376,7 +387,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })();
       return guestRef.current;
     },
-    [provisionCloudGuest]
+    [provisionCloudGuest, user]
   );
 
   const upgradeGuestAccount = useCallback(
@@ -585,7 +596,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     Promise.race([sessionPromise, timeoutPromise])
       .then(({ data, error }) => {
         if (!mounted) return;
-        const activeSession = data?.session ?? (data as any)?.session ?? null;
+        const activeSession = data?.session ?? null;
         if (error) {
           setSession(null);
           setUser(readOfflineGuestUser());
