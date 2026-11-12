@@ -64,6 +64,7 @@ type LocalWritingNote = LocalNoteRecord & {
   page_style?: PageStyle;
   page_size?: NoteSettings['pageSize'];
   realPenMode?: boolean;
+  is_favorite?: boolean;
 };
 
 function scopedActiveKey(ownerId: string) {
@@ -164,10 +165,11 @@ function hasNoteContent(blocks: Block[]) {
   return blocks.some((block) => Boolean(block.content?.trim() || block.url || block.tableData || block.front || block.back));
 }
 
-function currentSignature(documentId: string, title: string, blocks: Block[], settings: NoteSettings, pages: NotebookPage[]) {
+function currentSignature(documentId: string, title: string, blocks: Block[], settings: NoteSettings, pages: NotebookPage[], isFavorite: boolean) {
   return JSON.stringify({
     documentId,
     title,
+    isFavorite,
     blocks,
     settings,
     pages: pages.map((page) => ({ id: page.id, lines: page.lines })),
@@ -201,25 +203,27 @@ async function exportPlainTextPdf(text: string, title: string, pageSize: NoteSet
   pdf.save(`${safeFileName(title)}.pdf`);
 }
 
-const Index = () => {
+const Index: React.FC<{ routeDocumentId?: string }> = ({ routeDocumentId }) => {
   const { user, loading } = useAuth();
   if (loading) {
     return <div className="nn-writing-loading"><Loader2 className="h-5 w-5 animate-spin" /><span>Opening your workspace…</span></div>;
   }
   const ownerId = user?.id || 'anonymous-device';
-  return <OwnerWritingWorkspace key={ownerId} ownerId={ownerId} isGuest={isGuestUser(user)} />;
+  return <OwnerWritingWorkspace key={ownerId} ownerId={ownerId} isGuest={isGuestUser(user)} routeDocumentId={routeDocumentId} />;
 };
 
-const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = ({ ownerId, isGuest }) => {
+const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; routeDocumentId?: string }> = ({ ownerId, isGuest, routeDocumentId }) => {
   const navigate = useNavigate();
-  const { search, pathname } = useLocation();
+  const { search } = useLocation();
   const params = useMemo(() => new URLSearchParams(search), [search]);
-  const requestedId = params.get('notebook');
-  const explicitNew = params.get('new') === '1' && !requestedId;
+  const requestedQueryId = params.get('notebook');
+  const requestedId = routeDocumentId && routeDocumentId !== 'new' ? routeDocumentId : requestedQueryId;
+  const explicitNew = routeDocumentId === 'new' || (params.get('new') === '1' && !requestedId);
   const [documentId, setDocumentId] = useState(() => requestedId || (explicitNew ? '' : readActiveDocumentId(ownerId) || ''));
   const [pendingReady, setPendingReady] = useState(false);
   const pendingOpenRef = useRef<PendingOpen | null>(null);
   const [title, setTitle] = useState(DEFAULT_NOTE_TITLE);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [documentLoading, setDocumentLoading] = useState(true);
   const [documentError, setDocumentError] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -243,7 +247,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
   const textSelectionRef = useRef<{ blockId: string; start: number; end: number } | null>(null);
   const exportContainerRef = useRef<HTMLDivElement>(null);
   const loadedDocumentRef = useRef<string | null>(null);
-  const lastSearchRef = useRef(search);
+  const lastRouteKeyRef = useRef(routeDocumentId || (requestedQueryId ? `note:${requestedQueryId}` : explicitNew ? 'new' : ''));
   const lastSavedSignatureRef = useRef('');
   const latestSignatureRef = useRef('');
   const saveInFlightRef = useRef(false);
@@ -261,7 +265,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
   }, []);
 
   const isMobile = useIsMobile();
-  const { notebooks, loading: notebooksLoading, refetch: refetchNotebooks } = useNotebooks();
+  const { notebooks, loading: notebooksLoading, refetch: refetchNotebooks, updateNotebook } = useNotebooks();
   const { settings, updateSettings, updateMargins, updateHeaderFooter } = useNoteSettings();
   const { isDark, toggle: toggleDark } = useDarkMode();
   const blockEditor = useBlockEditor();
@@ -295,8 +299,8 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
     return currentPage?.lines || [];
   }, [blockEditor.blocks, blockEditor.lines, currentPage]);
   const signature = useMemo(
-    () => currentSignature(documentId, title, blockEditor.blocks, settings, pages),
-    [documentId, title, blockEditor.blocks, settings, pages],
+    () => currentSignature(documentId, title, blockEditor.blocks, settings, pages, isFavorite),
+    [documentId, title, blockEditor.blocks, settings, pages, isFavorite],
   );
   latestSignatureRef.current = signature;
   const safeReady = isHydrated && !documentLoading && !documentError && (!requestedId || requestedId === documentId);
@@ -308,47 +312,47 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
     const handoff = readPendingOpen();
     if (handoff) {
       pendingOpenRef.current = handoff;
-      const routeId = new URLSearchParams(search).get('notebook');
-      if (!handoff.notebookId && !routeId) {
+      if (!handoff.notebookId && !requestedId) {
         setDocumentId((current) => current || makeDraftId(ownerId));
       }
       try { sessionStorage.removeItem(PENDING_MOBILE_OPEN_KEY); } catch { /* ignore */ }
     }
-    if (new URLSearchParams(search).get('new') === '1' && !new URLSearchParams(search).get('notebook')) {
+    if (explicitNew && !requestedId) {
       setDocumentId((current) => current || makeDraftId(ownerId));
-      navigate(`${pathname}?editor=1`, { replace: true });
     }
+    if (params.get('panel') === 'scan') setShowScanner(true);
     setPendingReady(true);
   // OwnerWritingWorkspace is keyed by owner, so this is a mount-only handoff.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!pendingReady || documentId || notebooksLoading) return;
+    if (!pendingReady || documentId || notebooksLoading || explicitNew) return;
     const lastActive = readActiveDocumentId(ownerId);
     setDocumentId(lastActive || notebooks[0]?.id || makeDraftId(ownerId));
-  }, [pendingReady, documentId, notebooksLoading, notebooks, ownerId]);
+  }, [pendingReady, documentId, notebooksLoading, notebooks, ownerId, explicitNew]);
 
-  // Route links are the document selector. A note ID from the URL is only a
-  // request; loadDocument below verifies local ownership or cloud user_id.
+  // Every editor route is just a requested document key; loadDocument below
+  // still verifies local ownership or the cloud notebook's owner before reading.
   useEffect(() => {
-    if (search === lastSearchRef.current) return;
-    lastSearchRef.current = search;
-    const next = new URLSearchParams(search);
-    const nextId = next.get('notebook');
-    if (nextId && nextId !== documentId) {
-      setIsHydrated(false);
-      setDocumentLoading(true);
-      setDocumentError(null);
-      setDocumentId(nextId);
-    } else if (!nextId && next.get('new') === '1') {
-      setIsHydrated(false);
-      setDocumentLoading(true);
-      setDocumentError(null);
+    const nextKey = routeDocumentId || (requestedQueryId ? `note:${requestedQueryId}` : explicitNew ? 'new' : '');
+    if (!nextKey || nextKey === lastRouteKeyRef.current) return;
+    lastRouteKeyRef.current = nextKey;
+    setIsHydrated(false);
+    setDocumentLoading(true);
+    setDocumentError(null);
+
+    if (nextKey === 'new') {
+      const handoff = readPendingOpen();
+      pendingOpenRef.current = handoff;
+      try { sessionStorage.removeItem(PENDING_MOBILE_OPEN_KEY); } catch { /* ignore */ }
       setDocumentId(makeDraftId(ownerId));
-      navigate(`${pathname}?editor=1`, { replace: true });
+      return;
     }
-  }, [search, documentId, ownerId, navigate, pathname]);
+
+    const nextId = nextKey.startsWith('note:') ? nextKey.slice('note:'.length) : nextKey;
+    setDocumentId(nextId);
+  }, [routeDocumentId, requestedQueryId, explicitNew, ownerId]);
 
   // Load only a note that has an owner-tagged local copy or a cloud notebook
   // whose user_id matches the active account. Unknown/unowned legacy rows are
@@ -369,6 +373,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
       if (note.font) noteSettings.font = note.font;
       if (note.ink_color) noteSettings.inkColor = note.ink_color;
       setTitle(note.title || notebook?.title || DEFAULT_NOTE_TITLE);
+      setIsFavorite(Boolean(note.is_favorite ?? notebook?.is_favorite));
       blockEditor.replaceBlocks(loadedBlocks);
       updateSettings(noteSettings);
       clearDiagrams();
@@ -389,6 +394,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
     const applyBlankDraft = (draftId: string, pending?: PendingOpen | null) => {
       if (cancelled) return;
       setTitle(pending?.title || DEFAULT_NOTE_TITLE);
+      setIsFavorite(false);
       const blocks = pending?.blocks?.length ? normalizeBlocks(pending.blocks) : [createBlock('text', '')];
       blockEditor.replaceBlocks(blocks);
       updateSettings({ ...DEFAULT_SETTINGS, ...(pending?.style ? { pageStyle: pending.style } : {}), ...(pending?.font ? { font: pending.font } : {}), ...(pending?.inkColor ? { inkColor: pending.inkColor } : {}) });
@@ -423,7 +429,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
       if (!isCloudUserId(ownerId) || !isCloudUserId(documentId)) {
         const nextDraft = makeDraftId(ownerId);
         setDocumentId(nextDraft);
-        if (requestedId) navigate('/?editor=1', { replace: true });
+        if (requestedId) navigate(`/editor/${encodeURIComponent(nextDraft)}`, { replace: true });
         return;
       }
 
@@ -449,7 +455,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
         toast.error('That note is not available in this account. A new draft was opened instead.');
         const nextDraft = makeDraftId(ownerId);
         setDocumentId(nextDraft);
-        navigate('/?editor=1', { replace: true });
+        navigate(`/editor/${encodeURIComponent(nextDraft)}`, { replace: true });
         return;
       }
 
@@ -567,6 +573,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
       cover_color: existing?.cover_color || knownNotebook?.cover_color || '#8b5cf6',
       folder: existing?.folder ?? knownNotebook?.folder ?? null,
       tags: existing?.tags || knownNotebook?.tags || ['Notes'],
+      is_favorite: isFavorite,
       realPenMode,
       handwritingPages: pagesForStorage,
       created_at: existing?.created_at || knownNotebook?.created_at || now,
@@ -606,6 +613,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
           settings: record.settings as unknown as Json,
           tags: record.tags,
           folder: record.folder,
+          is_favorite: record.is_favorite,
         }).select('id,updated_at').single();
         if (created.error || !created.data?.id) throw created.error || new Error('Could not create the cloud note.');
         cloudId = created.data.id;
@@ -623,6 +631,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
         settings: record.settings as unknown as Json,
         tags: record.tags,
         folder: record.folder,
+        is_favorite: record.is_favorite,
       }).eq('id', cloudId).eq('user_id', ownerId).select('id,updated_at').maybeSingle();
       if (notebookUpdate.error) throw notebookUpdate.error;
       if (!notebookUpdate.data?.id) throw new Error('The cloud note is no longer available to this account.');
@@ -681,9 +690,9 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
         removeLocalNoteForOwner(documentId, ownerId, { notify: false });
         loadedDocumentRef.current = null;
         setDocumentId(cloudId);
-        navigate(`/?editor=1&notebook=${encodeURIComponent(cloudId)}`, { replace: true });
+        navigate(`/editor/${encodeURIComponent(cloudId)}`, { replace: true });
       }
-      const nextSignature = currentSignature(cloudId, title, blockEditor.blocks, settings, pagesForStorage);
+      const nextSignature = currentSignature(cloudId, title, blockEditor.blocks, settings, pagesForStorage, isFavorite);
       lastSavedSignatureRef.current = nextSignature;
       setSaveStatus('saved');
       notifyLocalDataChanged();
@@ -704,7 +713,37 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
       saveInFlightRef.current = false;
       if (latestSignatureRef.current !== documentSignature) setSaveRevision((value) => value + 1);
     }
-  }, [safeReady, documentId, blockEditor.blocks, pagesForStorage, title, settings, realPenMode, ownerId, isGuest, notebooks, documentSignature, refetchNotebooks, navigate]);
+  }, [safeReady, documentId, blockEditor.blocks, pagesForStorage, title, settings, isFavorite, realPenMode, ownerId, isGuest, notebooks, documentSignature, refetchNotebooks, navigate]);
+
+  const toggleFavorite = useCallback(async () => {
+    if (!documentId) return;
+    const nextFavorite = !isFavorite;
+    setIsFavorite(nextFavorite);
+    const now = new Date().toISOString();
+
+    if (isCloudUserId(ownerId) && isCloudUserId(documentId)) {
+      const updated = await updateNotebook(documentId, { is_favorite: nextFavorite });
+      if (!updated) {
+        setIsFavorite(!nextFavorite);
+        toast.error('Could not update this note’s favorite status.');
+        return;
+      }
+    }
+
+    const existing = findOwnedLocalNote(documentId) as LocalWritingNote | null;
+    upsertLocalNoteForOwner({
+      ...(existing || {}),
+      id: documentId,
+      title: existing?.title || title || DEFAULT_NOTE_TITLE,
+      is_favorite: nextFavorite,
+      updated_at: now,
+      updatedAt: now,
+      _ownerId: ownerId,
+      user_id: ownerId,
+    }, ownerId, {}, { notify: false, allowLegacyClaim: isGuest });
+    notifyLocalDataChanged();
+    toast.success(nextFavorite ? 'Added to Favorites.' : 'Removed from Favorites.');
+  }, [documentId, isFavorite, ownerId, updateNotebook, findOwnedLocalNote, title, isGuest]);
 
   useEffect(() => {
     if (!safeReady || !documentId || signature === lastSavedSignatureRef.current) return;
@@ -949,7 +988,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
   }, [safeReady, documentId, title, blockEditor.blocks, settings, pagesForStorage, ownerId, isGuest]);
 
   const navigateToNewNote = useCallback(() => {
-    navigate('/?editor=1&new=1');
+    navigate('/editor/new');
   }, [navigate]);
 
   if (documentError) {
@@ -984,6 +1023,8 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
       <DirectWritingWorkspace
         title={title}
         onTitleChange={setTitle}
+        isFavorite={isFavorite}
+        onToggleFavorite={() => { void toggleFavorite(); }}
         blocks={blockEditor.blocks}
         onBlocksChange={blockEditor.setBlocks}
         settings={settings}
@@ -1006,6 +1047,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean }> = (
         onOpenNikAI={() => navigate('/ai')}
         onOpenScanner={() => setShowScanner(true)}
         onOpenImport={() => setShowImportPanel(true)}
+        onInsertImage={handleImagePick}
         mobileTool={mobileTool}
         isListening={dictation.isListening}
         onMobileTool={handleMobileTool}

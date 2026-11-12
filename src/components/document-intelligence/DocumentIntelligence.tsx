@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { readPdf } from '@/lib/pdfText';
 import { extractDocumentText } from '@/lib/documentExtraction';
+import { blocksFromNoteText } from '@/lib/noteTemplates';
 
 interface ExtractedContent {
   text: string;
@@ -141,8 +142,12 @@ export const DocumentIntelligence: React.FC = () => {
         timestamp: Date.now(),
       }));
 
+      sessionStorage.setItem('niknote-mobile-open', JSON.stringify({
+        title: 'Imported document notes',
+        blocks: blocksFromNoteText(extracted.text),
+      }));
       toast.success('Notes ready! Editor mein open ho rahe hain... ✍️');
-      navigate('/');
+      navigate('/editor/new');
     } catch (err) {
       toast.error('Notes generate nahi ho paye');
     } finally {

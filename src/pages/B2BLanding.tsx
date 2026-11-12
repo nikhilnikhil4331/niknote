@@ -151,14 +151,14 @@ const B2BPage = () => {
       {/* Nav */}
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <button onClick={() => navigate('/')} className="flex items-center gap-2">
+          <button onClick={() => navigate('/home')} className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
               <GraduationCap className="h-4 w-4 text-primary-foreground" />
             </div>
             <span className="font-bold text-base">NikNote</span>
           </button>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="text-xs">Home</Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/home')} className="text-xs">Home</Button>
             <Button variant="ghost" size="sm" onClick={() => navigate('/upgrade')} className="text-xs">Pricing</Button>
             <Button size="sm" className="rounded-xl text-xs" onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}>
               Get Started
@@ -323,7 +323,7 @@ const B2BPage = () => {
                   <Button
                     className={`w-full rounded-xl ${plan.highlighted ? 'bg-gradient-to-r from-primary to-primary/80' : ''}`}
                     variant={plan.highlighted ? 'default' : 'outline'}
-                    onClick={() => plan.action === 'editor' ? navigate('/studio') : plan.action === 'premium' ? navigate('/payment?plan=weekly') : document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => plan.action === 'editor' ? navigate('/editor/new') : plan.action === 'premium' ? navigate('/payment?plan=weekly') : document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
                   >
                     {plan.action === 'editor' ? 'Open free editor' : plan.action === 'premium' ? 'Choose Premium' : 'Contact us'}
                   </Button>

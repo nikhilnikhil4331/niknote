@@ -142,7 +142,7 @@ const Admin: React.FC = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/');
+    navigate('/home');
   };
 
   if (loading) {
@@ -175,7 +175,7 @@ const Admin: React.FC = () => {
             </CardHeader>
             <CardContent>
               <Button 
-                onClick={() => navigate('/')} 
+                onClick={() => navigate('/home')}
                 className="w-full rounded-xl"
               >
                 Back to Home

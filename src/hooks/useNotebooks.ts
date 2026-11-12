@@ -22,6 +22,7 @@ export interface Notebook {
   tags: string[];
   created_at: string;
   updated_at: string;
+  is_favorite?: boolean | null;
 }
 
 export interface Page {

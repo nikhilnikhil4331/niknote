@@ -89,7 +89,7 @@ const Upgrade = () => {
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
         <div className="container mx-auto px-3 h-14 flex items-center">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="rounded-xl h-10 w-10">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/home')} className="rounded-xl h-10 w-10">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="ml-2 font-semibold text-base sm:text-lg">Upgrade to Premium</h1>
@@ -117,7 +117,7 @@ const Upgrade = () => {
 
         {isPremium ? (
           <div className="text-center py-8">
-            <Button onClick={() => navigate('/')} className="rounded-xl">Go to Editor</Button>
+            <Button onClick={() => navigate('/editor/new')} className="rounded-xl">Go to Editor</Button>
           </div>
         ) : (
           <>

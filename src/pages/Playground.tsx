@@ -710,7 +710,7 @@ export default function PlaygroundPage() {
     return (
       <div className="nn-mobile pg-mobile-shell" {...attributes}>
         <header className="pg-mobile-header">
-          <Link to="/" className="pg-back-link" aria-label="Back to Notes"><ChevronLeft size={20} /></Link>
+          <Link to="/home" className="pg-back-link" aria-label="Back to Notes"><ChevronLeft size={20} /></Link>
           <div className="pg-mobile-brand">
             <img src="/images/brand/niknote-primary-mark.png" alt="" aria-hidden="true" />
             <span>PLAYGROUND</span>

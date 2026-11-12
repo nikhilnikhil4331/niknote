@@ -226,7 +226,9 @@ export function localNotebookAsCloudShape(note: LocalNoteRecord, ownerId: string
     page_size: note.page_size || note.settings?.pageSize || 'a4',
     settings: note.settings || null,
     folder: note.folder ?? (note.trashedAt ? '__trash__' : null),
+    trashedAt: note.trashedAt ?? null,
     tags: Array.isArray(note.tags) ? note.tags : ['Notes'],
+    is_favorite: Boolean(note.is_favorite),
     created_at: note.created_at || now,
     updated_at: now,
   };

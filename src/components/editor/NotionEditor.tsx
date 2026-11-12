@@ -20,6 +20,8 @@ import { LineInkColor, LINE_INK_COLORS } from '@/types/noteLine';
 import { toast } from 'sonner';
 import { BlockContextMenu } from './BlockContextMenu';
 import { Button } from '@/components/ui/button';
+import { EditableBlockTable } from './blocks/EditableBlockTable';
+import { DataChartBlock } from './blocks/DataChartBlock';
 
 interface NotionEditorProps {
   blocks: Block[];
@@ -44,8 +46,8 @@ const BLOCK_TEMPLATES: Partial<Record<BlockType, { content: string; extra?: Part
   bookmark: { content: '', extra: { url: '' } }, video: { content: '', extra: { url: '' } },
   audio: { content: '', extra: { url: '' } }, embed: { content: '', extra: { url: '' } },
   pdf: { content: '', extra: { url: '' } }, file: { content: '', extra: { url: '' } },
-  table: { content: '', extra: { tableData: { headers: ['Column 1', 'Column 2', 'Column 3'], rows: [[{id:'c1',content:'',type:'text' as const},{id:'c2',content:'',type:'text' as const},{id:'c3',content:'',type:'text' as const}], [{id:'c4',content:'',type:'text' as const},{id:'c5',content:'',type:'text' as const},{id:'c6',content:'',type:'text' as const}]], colCount: 3 } } },
-  'ai-generated': { content: '' }, mermaid: { content: 'graph TD\n  A[Start] --> B[End]' },
+  table: { content: '' }, chart: { content: '' },
+  'ai-generated': { content: '' }, mermaid: { content: '' },
   synced: { content: '', extra: { syncId: `sync-${Date.now()}` } },
   breadcrumb: { content: '' }, 'table_of_contents': { content: '' }, mention: { content: '' }, comment: { content: '' },
 };
@@ -67,8 +69,9 @@ const BLOCK_CONFIG: Record<string, { icon: string; placeholder: string; textClas
   image: { icon: '🖼️', placeholder: 'Paste image URL...', textClass: '' },
   bookmark: { icon: '🔗', placeholder: 'Paste URL...', textClass: '' },
   'ai-generated': { icon: '✨', placeholder: 'AI will generate...', textClass: 'bg-blue-50/60 rounded-lg px-3 border border-blue-200/50' },
-  mermaid: { icon: '🔀', placeholder: 'Mermaid diagram...', textClass: 'font-mono text-xs' },
+  mermaid: { icon: '🔀', placeholder: 'Diagram code…', textClass: 'font-mono text-xs' },
   table: { icon: '📊', placeholder: '', textClass: '' },
+  chart: { icon: '▥', placeholder: '', textClass: '' },
   video: { icon: '🎥', placeholder: 'Video URL...', textClass: '' },
   audio: { icon: '🎵', placeholder: 'Audio URL...', textClass: '' },
   pdf: { icon: '📄', placeholder: 'PDF URL...', textClass: '' },
@@ -350,9 +353,17 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
       updateBlock(blockId, { type: 'divider', content: '' });
       addBlockAfter(blockId);
     } else {
-      // Clear content to show placeholder for new block type
-      updateBlock(blockId, { type, content: '', ...template?.extra });
-      if (['image', 'bookmark', 'video', 'table', 'equation', 'ai-generated', 'code', 'toggle', 'callout'].includes(type)) {
+      // Initialize structured blocks with an empty, editable data source rather
+      // than sample rows or a non-editable preview.
+      const structuredDefault = type === 'table' || type === 'chart' ? createBlock(type) : null;
+      updateBlock(blockId, {
+        type,
+        content: '',
+        ...template?.extra,
+        ...(structuredDefault?.tableData ? { tableData: structuredDefault.tableData } : {}),
+        ...(type === 'chart' ? { chartType: structuredDefault?.chartType || 'bar' } : {}),
+      });
+      if (['image', 'bookmark', 'video', 'table', 'chart', 'equation', 'ai-generated', 'code', 'toggle', 'callout'].includes(type)) {
         setTimeout(() => addBlockAfter(blockId, 'text', ''), 50);
       }
       focusBlock(blockId, 0);
@@ -714,6 +725,7 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                 <div className="flex-1 relative min-w-0">
                   {isTyping && <div className="absolute -top-1 -right-1 z-10"><div className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: inkData?.hex || '#2869d5' }} /></div>}
 
+                  {!['table', 'chart'].includes(block.type) && (
                   <textarea
                     ref={(el) => setRef(block.id, el)}
                     value={block.content}
@@ -728,12 +740,14 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                     style={{ fontFamily: blockEditorFontFamily(settings?.font, settings?.customStyle?.baseFont), color: inkData?.hex || '#111827', caretColor: '#2869d5', WebkitUserSelect: 'text', userSelect: 'text', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                     autoComplete="off" autoCorrect="on" autoCapitalize="sentences" spellCheck={true}
                   />
+                  )}
 
                   {/* Block previews */}
                   {block.type === 'code' && block.content && <div className="mt-1 p-3 rounded-xl bg-gray-900 text-green-400 font-mono text-[11px] max-w-sm overflow-x-auto"><pre className="whitespace-pre-wrap">{block.content}</pre></div>}
                   {block.type === 'equation' && block.content && <div className="mt-1 p-2 rounded-xl bg-blue-50 border border-blue-200 font-mono text-xs text-blue-800">{block.content}</div>}
                   {block.type === 'bookmark' && (block.url || block.content) && <div className="mt-1 p-2.5 rounded-xl border border-gray-200 bg-gray-50 max-w-sm"><div className="text-[12px] font-medium text-blue-600 truncate">{block.content || 'Bookmark'}</div>{block.url && <div className="text-[10px] text-gray-400 truncate">🔗 {block.url}</div>}</div>}
-                  {block.type === 'table' && block.tableData && <div className="mt-1 rounded-xl border border-gray-200 overflow-hidden max-w-sm"><table className="w-full text-[10px]"><thead><tr className="bg-gray-50">{block.tableData.headers.map((h,i) => <th key={i} className="px-2 py-1.5 text-left border-r border-gray-100 last:border-r-0 font-medium">{h}</th>)}</tr></thead><tbody>{block.tableData.rows.map((row,i) => <tr key={i} className="border-t border-gray-100">{row.map((cell,j) => <td key={j} className="px-2 py-1.5 border-r border-gray-100 last:border-r-0">{cell.content}</td>)}</tr>)}</tbody></table></div>}
+                  {block.type === 'table' && <EditableBlockTable data={block.tableData || { headers: ['Column 1', 'Column 2'], rows: [], colCount: 2 }} onChange={(tableData) => updateBlock(block.id, { tableData })} />}
+                  {block.type === 'chart' && <DataChartBlock block={block} onChange={(patch) => updateBlock(block.id, patch)} />}
                   {block.type === 'image' && block.url && <div className="mt-1 rounded-xl overflow-hidden border border-gray-200 max-w-sm"><img src={block.url} alt="" className="w-full object-cover max-h-36" /></div>}
                   
                   {/* AI Generated block — PREMIUM styled */}

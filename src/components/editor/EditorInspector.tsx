@@ -1,23 +1,36 @@
 import React, { useMemo, useState } from 'react';
 import {
   AlignLeft,
-  ArrowDown,
-  ArrowUp,
+  AudioLines,
+  BarChart3,
   BookOpen,
+  Braces,
   CheckSquare2,
+  ChevronDown,
   Code2,
   FileText,
   Heading1,
   Image,
+  Layers3,
   List,
   ListOrdered,
-  MessageSquareQuote,
   Minus,
+  Music2,
+  PanelTop,
   Plus,
   ScanLine,
+  Search,
   Sparkles,
   Table2,
+  Video,
   WandSparkles,
+  Quote,
+  Link2,
+  FileUp,
+  File,
+  Columns3,
+  Sigma,
+  ToggleLeft,
 } from 'lucide-react';
 import type { Block, BlockType } from '@/types/block';
 import { Button } from '@/components/ui/button';
@@ -28,9 +41,11 @@ interface EditorInspectorProps {
   activeTab?: 'blocks' | 'ai';
   onTabChange?: (tab: 'blocks' | 'ai') => void;
   onInsertBlock: (type: BlockType) => void;
+  onInsertImage?: () => void;
   onOpenAI: () => void;
   onOpenNikAI: () => void;
   onOpenScanner: () => void;
+  onOpenImport: () => void;
   onOpenPageStyle: () => void;
   pageNumber: number;
   totalPages: number;
@@ -42,17 +57,68 @@ interface EditorInspectorProps {
   onExportPDF: () => void;
 }
 
-const INSERT_BLOCKS: { type: BlockType; label: string; description: string; icon: React.ElementType }[] = [
-  { type: 'text', label: 'Text', description: 'Start with a plain paragraph', icon: AlignLeft },
-  { type: 'heading1', label: 'Heading', description: 'Create a clear section title', icon: Heading1 },
-  { type: 'bullet', label: 'Bulleted list', description: 'Organize related points', icon: List },
-  { type: 'numbered', label: 'Numbered list', description: 'Add steps in order', icon: ListOrdered },
-  { type: 'todo', label: 'To-do', description: 'Track a task in this note', icon: CheckSquare2 },
-  { type: 'quote', label: 'Quote', description: 'Highlight a useful passage', icon: MessageSquareQuote },
-  { type: 'code', label: 'Code', description: 'Format a code snippet', icon: Code2 },
-  { type: 'table', label: 'Table', description: 'Add a structured table', icon: Table2 },
-  { type: 'image', label: 'Image', description: 'Insert an image block', icon: Image },
-  { type: 'divider', label: 'Divider', description: 'Separate sections', icon: Minus },
+type BlockGroup = {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  items: { type: BlockType; label: string; icon: React.ElementType }[];
+};
+
+const BLOCK_GROUPS: BlockGroup[] = [
+  {
+    id: 'essentials',
+    label: 'Essentials',
+    icon: Layers3,
+    items: [
+      { type: 'text', label: 'Text', icon: AlignLeft },
+      { type: 'heading1', label: 'Heading', icon: Heading1 },
+      { type: 'bullet', label: 'List', icon: List },
+      { type: 'todo', label: 'To-do', icon: CheckSquare2 },
+      { type: 'toggle', label: 'Toggle', icon: ToggleLeft },
+      { type: 'quote', label: 'Quote', icon: Quote },
+    ],
+  },
+  {
+    id: 'content',
+    label: 'Content',
+    icon: PanelTop,
+    items: [
+      { type: 'image', label: 'Image', icon: Image },
+      { type: 'video', label: 'Video', icon: Video },
+      { type: 'audio', label: 'Audio', icon: Music2 },
+      { type: 'file', label: 'File', icon: File },
+      { type: 'embed', label: 'Embed', icon: Braces },
+      { type: 'code', label: 'Code', icon: Code2 },
+    ],
+  },
+  {
+    id: 'layout',
+    label: 'Layout',
+    icon: Table2,
+    items: [
+      { type: 'table', label: 'Table', icon: Table2 },
+      { type: 'chart', label: 'Chart', icon: BarChart3 },
+      { type: 'column', label: 'Columns', icon: Columns3 },
+      { type: 'divider', label: 'Divider', icon: Minus },
+      { type: 'table_of_contents', label: 'Contents', icon: ListOrdered },
+    ],
+  },
+  {
+    id: 'advanced',
+    label: 'Advanced',
+    icon: Sigma,
+    items: [
+      { type: 'heading2', label: 'Heading 2', icon: Heading1 },
+      { type: 'heading3', label: 'Heading 3', icon: Heading1 },
+      { type: 'numbered', label: 'Numbered', icon: ListOrdered },
+      { type: 'callout', label: 'Callout', icon: Sparkles },
+      { type: 'equation', label: 'Equation', icon: Sigma },
+      { type: 'mermaid', label: 'Diagram', icon: Braces },
+      { type: 'bookmark', label: 'Bookmark', icon: Link2 },
+      { type: 'pdf', label: 'PDF link', icon: FileText },
+      { type: 'flashcard', label: 'Flashcard', icon: BookOpen },
+    ],
+  },
 ];
 
 export const EditorInspector: React.FC<EditorInspectorProps> = ({
@@ -60,9 +126,11 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
   activeTab: controlledTab,
   onTabChange,
   onInsertBlock,
+  onInsertImage,
   onOpenAI,
   onOpenNikAI,
   onOpenScanner,
+  onOpenImport,
   onOpenPageStyle,
   pageNumber,
   totalPages,
@@ -74,136 +142,116 @@ export const EditorInspector: React.FC<EditorInspectorProps> = ({
   onExportPDF,
 }) => {
   const [uncontrolledTab, setUncontrolledTab] = useState<'blocks' | 'ai'>('blocks');
+  const [query, setQuery] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ essentials: true, content: true, layout: false, advanced: false });
   const tab = controlledTab ?? uncontrolledTab;
   const changeTab = (next: 'blocks' | 'ai') => {
     setUncontrolledTab(next);
     onTabChange?.(next);
   };
-  const wordCount = useMemo(
-    () => blocks.reduce((count, block) => count + (block.content.trim().match(/\S+/g)?.length || 0), 0),
-    [blocks],
-  );
-  const headings = blocks.filter((block) => /^heading[123]$/.test(block.type) && block.content.trim());
-  const completedTodos = blocks.filter((block) => block.type === 'todo' && block.checked).length;
-  const todoCount = blocks.filter((block) => block.type === 'todo').length;
+  const normalizedQuery = query.trim().toLowerCase();
+  const groups = useMemo(() => BLOCK_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !normalizedQuery || `${item.label} ${item.type}`.toLowerCase().includes(normalizedQuery)),
+  })).filter((group) => group.items.length > 0), [normalizedQuery]);
 
-  const jumpToBlock = (id: string) => {
-    const wrapper = Array.from(document.querySelectorAll<HTMLElement>('[data-block-id]')).find(
-      (node) => node.dataset.blockId === id,
-    );
-    const textarea = wrapper?.querySelector('textarea');
-    textarea?.focus();
-    wrapper?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const insert = (type: BlockType) => {
+    if (type === 'image' && onInsertImage) onInsertImage();
+    else onInsertBlock(type);
   };
 
   return (
     <aside className="nn-editor-inspector" aria-label="Editor tools">
       <div className="nn-inspector-tabs" role="tablist" aria-label="Editor panel">
         <button type="button" role="tab" aria-selected={tab === 'blocks'} onClick={() => changeTab('blocks')}>
-          <Plus className="h-3.5 w-3.5" /> Blocks
+          <Layers3 aria-hidden="true" /> Blocks
         </button>
         <button type="button" role="tab" aria-selected={tab === 'ai'} onClick={() => changeTab('ai')}>
-          <Sparkles className="h-3.5 w-3.5" /> AI
+          <Sparkles aria-hidden="true" /> AI
         </button>
       </div>
 
       {tab === 'blocks' ? (
         <div className="nn-inspector-scroll">
-          <section className="nn-inspector-section">
-            <div className="nn-inspector-section-title">
-              <div>
-                <p className="nn-inspector-eyebrow">BUILD YOUR PAGE</p>
-                <h2>Blocks</h2>
-              </div>
-              <span className="nn-block-count">{blocks.length}</span>
-            </div>
-            <div className="nn-block-insert-list">
-              {INSERT_BLOCKS.map(({ type, label, description, icon: Icon }) => (
-                <button key={type} type="button" onClick={() => onInsertBlock(type)} className="nn-block-insert">
-                  <span className="nn-block-insert-icon"><Icon className="h-4 w-4" /></span>
-                  <span className="min-w-0 flex-1">
-                    <strong>{label}</strong>
-                    <small>{description}</small>
-                  </span>
-                  <Plus className="nn-block-insert-plus h-3.5 w-3.5" />
+          <label className="nn-block-search">
+            <Search aria-hidden="true" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search blocks…" aria-label="Search blocks" />
+          </label>
+          {groups.map((group) => {
+            const Icon = group.icon;
+            const isExpanded = normalizedQuery ? true : Boolean(expanded[group.id]);
+            return (
+              <section className="nn-block-group" key={group.id}>
+                <button
+                  type="button"
+                  className="nn-block-group-heading"
+                  aria-expanded={isExpanded}
+                  onClick={() => setExpanded((current) => ({ ...current, [group.id]: !current[group.id] }))}
+                >
+                  <Icon aria-hidden="true" />
+                  <span>{group.label}</span>
+                  <ChevronDown className={cn('nn-block-group-chevron', !isExpanded && 'is-collapsed')} aria-hidden="true" />
                 </button>
-              ))}
-            </div>
-          </section>
+                {isExpanded && (
+                  <div className="nn-insert-grid">
+                    {group.items.map(({ type, label, icon: ItemIcon }) => (
+                      <button key={type} type="button" onClick={() => insert(type)} className="nn-insert-tile" aria-label={`Insert ${label} block`}>
+                        <ItemIcon aria-hidden="true" />
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+          {groups.length === 0 && <p className="nn-inspector-empty">No blocks match “{query}”.</p>}
 
-          <section className="nn-inspector-section">
-            <div className="nn-inspector-section-title">
-              <div>
-                <p className="nn-inspector-eyebrow">DOCUMENT</p>
-                <h2>Outline</h2>
-              </div>
+          <details className="nn-integrations">
+            <summary><Sparkles aria-hidden="true" /><span>Integrations</span><ChevronDown aria-hidden="true" /></summary>
+            <div className="nn-integrations-actions">
+              <button type="button" onClick={onOpenScanner}><ScanLine aria-hidden="true" /><span>Scan handwriting</span></button>
+              <button type="button" onClick={onOpenAI}><WandSparkles aria-hidden="true" /><span>Work with this note</span></button>
+              <button type="button" onClick={onOpenNikAI}><Sparkles aria-hidden="true" /><span>Open NikAI</span></button>
+              <button type="button" onClick={onOpenImport}><FileUp aria-hidden="true" /><span>Import text or PDF</span></button>
             </div>
-            {headings.length ? (
-              <div className="nn-outline-list">
-                {headings.map((heading) => (
-                  <button
-                    type="button"
-                    key={heading.id}
-                    className={cn('nn-outline-item', heading.type === 'heading2' && 'is-nested', heading.type === 'heading3' && 'is-deep')}
-                    onClick={() => jumpToBlock(heading.id)}
-                  >
-                    <span>{heading.type === 'heading1' ? 'H1' : heading.type === 'heading2' ? 'H2' : 'H3'}</span>
-                    <strong>{heading.content}</strong>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="nn-inspector-empty">Headings you add will appear here.</p>
-            )}
-          </section>
+          </details>
 
-          <section className="nn-inspector-section nn-note-stats">
-            <p className="nn-inspector-eyebrow">AT A GLANCE</p>
-            <div className="nn-stat-grid">
-              <div><strong>{wordCount}</strong><span>Words</span></div>
-              <div><strong>{blocks.length}</strong><span>Blocks</span></div>
-              <div><strong>{todoCount ? `${completedTodos}/${todoCount}` : '—'}</strong><span>To-dos</span></div>
-            </div>
-          </section>
-
-          <section className="nn-inspector-section nn-page-tools">
-            <div className="nn-inspector-section-title">
-              <div>
-                <p className="nn-inspector-eyebrow">HANDWRITING EXPORT</p>
-                <h2>Page tools</h2>
+          <details className="nn-integrations nn-page-tools-accordion">
+            <summary><BookOpen aria-hidden="true" /><span>Handwriting &amp; pages</span><ChevronDown aria-hidden="true" /></summary>
+            <div className="nn-page-tools">
+              <div className="nn-page-stepper">
+                <Button variant="ghost" size="icon" onClick={onPreviousPage} disabled={!canGoPrev} aria-label="Previous page"><span aria-hidden="true">‹</span></Button>
+                <span>Page {pageNumber} <small>of {totalPages}</small></span>
+                <Button variant="ghost" size="icon" onClick={onNextPage} disabled={!canGoNext} aria-label="Next page"><span aria-hidden="true">›</span></Button>
               </div>
-              <BookOpen className="h-4 w-4" />
+              <div className="nn-page-actions">
+                <Button variant="outline" size="sm" onClick={onAddPage}><Plus aria-hidden="true" /> New page</Button>
+                <Button variant="outline" size="sm" onClick={onOpenPageStyle}>Paper style</Button>
+              </div>
+              <Button variant="outline" size="sm" className="nn-page-export" onClick={onExportPDF}><BookOpen aria-hidden="true" /> Export handwritten PDF</Button>
             </div>
-            <div className="nn-page-stepper">
-              <Button variant="ghost" size="icon" onClick={onPreviousPage} disabled={!canGoPrev} aria-label="Previous page"><ArrowUp className="h-4 w-4" /></Button>
-              <span>Page {pageNumber} <small>of {totalPages}</small></span>
-              <Button variant="ghost" size="icon" onClick={onNextPage} disabled={!canGoNext} aria-label="Next page"><ArrowDown className="h-4 w-4" /></Button>
-            </div>
-            <div className="nn-page-actions">
-              <Button variant="outline" size="sm" onClick={onAddPage}><Plus className="h-3.5 w-3.5" /> New page</Button>
-              <Button variant="outline" size="sm" onClick={onOpenPageStyle}>Paper style</Button>
-            </div>
-            <Button variant="outline" size="sm" className="w-full mt-2" onClick={onExportPDF}><BookOpen className="h-3.5 w-3.5" /> Export handwritten PDF</Button>
-          </section>
+          </details>
+          <div className="nn-inspector-current-count" aria-live="polite">{blocks.length} {blocks.length === 1 ? 'block' : 'blocks'} in this note</div>
         </div>
       ) : (
         <div className="nn-inspector-scroll nn-ai-panel">
           <div className="nn-ai-panel-card">
-            <div className="nn-ai-panel-mark"><WandSparkles className="h-5 w-5" /></div>
+            <div className="nn-ai-panel-mark"><WandSparkles aria-hidden="true" /></div>
             <p className="nn-inspector-eyebrow">NIKAI ASSISTANT</p>
             <h2>Think it through, together.</h2>
             <p>Ask a question, organize your notes, or turn a rough idea into something clearer.</p>
-            <Button onClick={onOpenNikAI} className="w-full"><Sparkles className="h-4 w-4" /> Open NikAI</Button>
+            <Button onClick={onOpenNikAI} className="w-full"><Sparkles aria-hidden="true" /> Open NikAI</Button>
           </div>
           <section className="nn-inspector-section">
-            <p className="nn-inspector-eyebrow">QUICK ACTIONS</p>
+            <p className="nn-inspector-eyebrow">AI ACTIONS</p>
             <div className="nn-ai-actions">
-              <button type="button" onClick={onOpenAI}><WandSparkles className="h-4 w-4" /><span><strong>Work with this note</strong><small>Summarize, rewrite, or expand</small></span></button>
-              <button type="button" onClick={onOpenNikAI}><BookOpen className="h-4 w-4" /><span><strong>Study from my notes</strong><small>Make a quiz or flashcards</small></span></button>
-              <button type="button" onClick={onOpenScanner}><ScanLine className="h-4 w-4" /><span><strong>Scan handwriting</strong><small>Extract text from a page</small></span></button>
+              <button type="button" onClick={onOpenAI}><WandSparkles aria-hidden="true" /><span><strong>Work with this note</strong><small>Summarize, rewrite, or expand</small></span></button>
+              <button type="button" onClick={onOpenNikAI}><BookOpen aria-hidden="true" /><span><strong>Study from my notes</strong><small>Ask NikAI about your workspace</small></span></button>
+              <button type="button" onClick={onOpenScanner}><ScanLine aria-hidden="true" /><span><strong>Scan handwriting</strong><small>Extract text from a page</small></span></button>
             </div>
           </section>
-          <div className="nn-ai-panel-hint"><FileText className="h-4 w-4" /> Your notes stay in your workspace. AI only runs when you choose an action.</div>
+          <div className="nn-ai-panel-hint"><FileText aria-hidden="true" /> AI only runs when you choose an action.</div>
         </div>
       )}
     </aside>

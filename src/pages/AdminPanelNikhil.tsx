@@ -787,7 +787,7 @@ const AdminPanelNikhil: React.FC = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/');
+    navigate('/home');
   };
 
   if (loading) {
@@ -823,7 +823,7 @@ const AdminPanelNikhil: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AdminGateForm onSuccess={() => setIsAdmin(true)} onBack={() => navigate('/')} />
+              <AdminGateForm onSuccess={() => setIsAdmin(true)} onBack={() => navigate('/home')} />
             </CardContent>
           </Card>
         </motion.div>

@@ -24,7 +24,7 @@ const Welcome = () => {
           featureName: 'handwriting_editor',
           pageType: 'landing',
         });
-        navigate('/');
+        navigate('/editor/new');
       }}
     />
   );

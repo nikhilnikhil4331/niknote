@@ -29,7 +29,7 @@ export default function Handbook() {
       {/* Header */}
       <header className="sticky top-0 z-20 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
-          <Link to="/" className="p-2 -ml-2 rounded-lg hover:bg-muted transition">
+          <Link to="/home" className="p-2 -ml-2 rounded-lg hover:bg-muted transition">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <BookOpen className="w-5 h-5 text-primary" />

@@ -42,7 +42,7 @@ export const LandingHeader: React.FC<LandingHeaderProps> = ({
         <div className="h-16 flex items-center justify-between">
           {/* Logo — Official NikNote Logo */}
           <motion.a
-            href="/"
+            href="/home"
             className="flex items-center gap-2.5"
             whileHover={{ scale: 1.02 }}
             transition={{ type: 'spring', stiffness: 400 }}

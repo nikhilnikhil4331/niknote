@@ -41,7 +41,7 @@ export default function OnboardingPage() {
     if (user && !String(user.id).startsWith('local-guest-')) {
       void supabase.from("profiles").update({ onboarding_completed: true } as any).eq("user_id", user.id);
     }
-    navigate("/");
+    navigate("/home");
   };
 
   const handleUseCaseSelect = async (uc: string) => {
@@ -108,7 +108,7 @@ export default function OnboardingPage() {
         .eq("user_id", user.id);
     }
     localStorage.setItem('niknote_onboarding_done', 'true');
-    navigate("/");
+    navigate("/home");
   };
 
   const slideVariants = reducedMotion

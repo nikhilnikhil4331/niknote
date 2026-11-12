@@ -100,7 +100,7 @@ export default function LegalPage({ policy }: { policy: keyof typeof policies })
   if (!content) {
     return (
       <main className="min-h-screen bg-background p-8">
-        <Link to="/">Back to NikNote</Link>
+        <Link to="/home">Back to NikNote</Link>
       </main>
     );
   }
@@ -110,7 +110,7 @@ export default function LegalPage({ policy }: { policy: keyof typeof policies })
       <header className="border-b border-border">
         <div className="mx-auto max-w-3xl px-5 py-4">
           <Button variant="ghost" asChild>
-            <Link to="/">
+            <Link to="/home">
               <ArrowLeft className="mr-2 h-4 w-4" /> NikNote
             </Link>
           </Button>

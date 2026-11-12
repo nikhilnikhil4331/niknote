@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotebooks, type Notebook } from '@/hooks/useNotebooks';
+import { useNoteMeta } from '@/components/desktop/store';
 import { createBlock, type Block } from '@/types/block';
 import { blocksFromNoteText } from '@/lib/noteTemplates';
 import type { HandwritingFont, InkColor } from '@/types/notes';
@@ -85,6 +86,7 @@ export function isGuestUser(user: { id?: string } | null | undefined): boolean {
 
 export function useDesktopNotes() {
   const { user } = useAuth();
+  const { setPrevFolder } = useNoteMeta();
   const ownerId = user?.id || null;
   const localOwnerId = ownerId || 'local-device-guest';
   const guest = isGuestUser(user);
@@ -186,7 +188,7 @@ export function useDesktopNotes() {
             style: note.style,
           }),
         );
-        navigate(`/?editor=1&notebook=${note.id}`);
+        navigate(`/editor/${encodeURIComponent(note.id)}`);
         return;
       }
       sessionStorage.setItem(
@@ -200,7 +202,7 @@ export function useDesktopNotes() {
           inkColor: note.inkColor,
         }),
       );
-      navigate(`/?editor=1&notebook=${note.id}`);
+      navigate(`/editor/${encodeURIComponent(note.id)}`);
     },
     [navigate, user?.id],
   );
@@ -219,9 +221,9 @@ export function useDesktopNotes() {
             inkColor: opts?.inkColor,
           }),
         );
-        navigate('/?editor=1');
+        navigate('/editor/new');
       } else {
-        navigate('/?editor=1&new=1');
+        navigate('/editor/new');
       }
     },
     [navigate],
@@ -305,6 +307,8 @@ export function useDesktopNotes() {
 
   const trashNote = useCallback(
     async (note: DNote) => {
+      if (note.trashed) return;
+      setPrevFolder(note.id, note.folder);
       if (note.isLocal) {
         patchLocalNote(note.id, localOwnerId, { trashedAt: new Date().toISOString() });
         refreshLocal();
@@ -314,7 +318,7 @@ export function useDesktopNotes() {
       }
       toast.success('Moved to Trash');
     },
-    [updateNotebook, refreshLocal, refetch, localOwnerId],
+    [updateNotebook, refreshLocal, refetch, localOwnerId, setPrevFolder],
   );
 
   const restoreNote = useCallback(

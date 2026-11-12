@@ -183,7 +183,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ blocks, onBlocksChange
       table: { content: '', extra: { tableData: { headers: ['Column 1', 'Column 2', 'Column 3'], rows: [[{id:'c1',content:'',type:'text' as const},{id:'c2',content:'',type:'text' as const},{id:'c3',content:'',type:'text' as const}], [{id:'c4',content:'',type:'text' as const},{id:'c5',content:'',type:'text' as const},{id:'c6',content:'',type:'text' as const}]], colCount: 3 } } },
       column: { content: '' },
       'ai-generated': { content: '✨ AI will generate content here...' },
-      mermaid: { content: 'graph TD\n  A[Start] --> B[Process]\n  B --> C[End]' },
+      mermaid: { content: '' },
       synced: { content: '', extra: { syncId: `sync-${Date.now()}` } },
       breadcrumb: { content: 'Home > Notes > Topic' },
       'table_of_contents': { content: '📋 Table of Contents (Auto-generated)' },

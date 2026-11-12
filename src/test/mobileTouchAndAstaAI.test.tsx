@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import App from '@/App';
+import App, { legacyEditorTarget, legacyWorkspaceTarget } from '@/App';
 import { TouchHealthGuard } from '@/components/mobile/TouchHealthGuard';
 import { AstaMarkdown } from '@/components/asta/AstaMarkdown';
 import { NikAIWorkspace } from '@/components/nikai/NikAIWorkspace';
@@ -20,6 +21,8 @@ import BoardPage from '@/pages/Board';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { PremiumProvider } from '@/contexts/PremiumContext';
 import { supabase } from '@/integrations/supabase/client';
+import { readLocalNotesForOwner, upsertLocalNoteForOwner } from '@/lib/localNoteStore';
+import { createBlock } from '@/types/block';
 import { streamAstaAI } from '@/lib/aiEngine';
 import {
   learnFromConversationTurn,
@@ -278,6 +281,18 @@ describe('NikAI Brand Identity, Cross-Session Memory, Multi-Ink Smart Notes & Th
   });
 });
 
+describe('Workspace route migration', () => {
+  it('maps legacy note IDs and scanner query links to explicit editor routes', () => {
+    expect(legacyEditorTarget('?notebook=note%2Fwith%20spaces')).toBe('/editor/note%2Fwith%20spaces');
+    expect(legacyEditorTarget('?editor=1&new=1&panel=scan')).toBe('/editor/new?panel=scan');
+    expect(legacyEditorTarget('?panel=scan')).toBe('/editor/new?panel=scan');
+    expect(legacyEditorTarget('')).toBe('/editor/new');
+    expect(legacyWorkspaceTarget('')).toBe('/home');
+    expect(legacyWorkspaceTarget('?panel=scan')).toBe('/editor/new?panel=scan');
+    expect(legacyWorkspaceTarget('?notebook=legacy-id')).toBe('/editor/legacy-id');
+  });
+});
+
 describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Board (390px phone viewport)', () => {
   const wrap = (ui: React.ReactNode, initial = '/') => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -298,16 +313,29 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     Element.prototype.scrollIntoView = vi.fn();
   });
 
-  it('opens the writing workspace at /, keeps the dashboard at /home, and opens NikAI on request', async () => {
+  it('redirects root to the dashboard, opens notes at /editor/new, and keeps NikAI navigation', async () => {
     window.history.pushState({}, '', '/');
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1440 });
     window.dispatchEvent(new Event('resize'));
 
     render(<App />);
 
-    await waitFor(() => expect(document.querySelector('.nn-writing-workspace')).not.toBeNull());
-    expect(document.querySelector('.nik-desktop')).toBeNull();
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/home');
+      expect(document.querySelector('.nik-desktop')).not.toBeNull();
+    });
+    expect(document.querySelector('.nn-writing-workspace')).toBeNull();
     expect(document.querySelector('[data-nikai-root="true"]')).toBeNull();
+
+    act(() => {
+      window.history.pushState({}, '', '/editor/new');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/editor/new');
+      expect(document.querySelector('.nn-writing-workspace')).not.toBeNull();
+    });
+    expect(document.querySelector('.nik-desktop')).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'NikNote workspace home' }));
     await waitFor(() => {
@@ -324,17 +352,42 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     window.history.pushState({}, '', '/');
   });
 
-  it('opens the root route in the mobile writing workspace without sample notes', async () => {
+  it('routes mobile root to the dashboard and /editor/new to a blank writing workspace', async () => {
     window.history.pushState({}, '', '/');
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 390 });
     window.dispatchEvent(new Event('resize'));
 
     render(<App />);
 
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/home');
+      expect(document.querySelector('.nn-mobile')).not.toBeNull();
+    });
+    expect(document.querySelector('.nn-writing-workspace')).toBeNull();
+
+    act(() => {
+      window.history.pushState({}, '', '/editor/new');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
     await waitFor(() => expect(document.querySelector('.nn-writing-workspace.nn-writing-mobile')).not.toBeNull());
     expect(document.querySelector('.nn-mobile')).toBeNull();
     expect(screen.queryByText('Operating System')).toBeNull();
     expect(screen.queryByText('Machine Learning')).toBeNull();
+  });
+
+  it('consumes imported-document session handoff into a new editor draft', async () => {
+    const importedText = 'Imported mechanics notes: velocity is displacement over time.';
+    sessionStorage.setItem('niknote-mobile-open', JSON.stringify({
+      title: 'Imported document notes',
+      blocks: [createBlock('text', importedText)],
+    }));
+    window.history.pushState({}, '', '/editor/new');
+
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByLabelText('Document title')).toHaveValue('Imported document notes'));
+    expect(document.querySelector('.nn-document-canvas textarea')).toHaveValue(importedText);
+    expect(sessionStorage.getItem('niknote-mobile-open')).toBeNull();
   });
 
   it('mounts the entire <App /> tree cleanly at / without router or overlay errors', async () => {
@@ -357,6 +410,49 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
       expect(document.querySelector('.nn-mobile')?.getAttribute('data-theme')).toBe('dark');
       expect(localStorage.getItem('theme')).toBe('dark');
     });
+  });
+
+  it('moves a mobile local note to Trash and restores its original folder', async () => {
+    const ownerId = 'local-guest-mobile-trash-test';
+    localStorage.setItem('niknote.offline.guest.v1', JSON.stringify({
+      id: ownerId,
+      is_anonymous: true,
+      email: '',
+      user_metadata: { is_guest: true, is_local_guest: true, full_name: 'Test Guest' },
+    }));
+    upsertLocalNoteForOwner({
+      id: 'mobile-trash-restore-test',
+      title: 'Mobile folder recovery note',
+      folder: 'Science',
+      tags: ['Study'],
+      content: 'Restore me to Science.',
+    }, ownerId);
+    const RouteProbe = () => <output data-testid="mobile-route">{useLocation().pathname}</output>;
+
+    wrap(<><MobileExperience /><RouteProbe /></>, '/notebooks');
+    const user = userEvent.setup();
+    await screen.findByText('Mobile folder recovery note');
+
+    await user.click(screen.getByRole('button', { name: 'Options for Mobile folder recovery note' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Move to Trash' }));
+    await waitFor(() => {
+      expect(readLocalNotesForOwner(ownerId)[0]).toMatchObject({ folder: '__trash__' });
+      expect(readLocalNotesForOwner(ownerId)[0].trashedAt).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Trash' }));
+    await waitFor(() => expect(screen.getByTestId('mobile-route')).toHaveTextContent('/trash'));
+    await screen.findByText('Mobile folder recovery note');
+    await user.click(screen.getByRole('button', { name: 'Options for Mobile folder recovery note' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Restore note' }));
+
+    await waitFor(() => {
+      const restored = readLocalNotesForOwner(ownerId)[0];
+      expect(restored).toMatchObject({ folder: 'Science', trashedAt: null });
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'All' }));
+    await waitFor(() => expect(screen.getByTestId('mobile-route')).toHaveTextContent('/notebooks'));
+    expect(await screen.findByText('Mobile folder recovery note')).toBeTruthy();
   });
 
   it('hands off the Compass Journal template with its branded paper, Caveat font, and blue ink', () => {

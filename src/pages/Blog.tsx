@@ -15,7 +15,7 @@ function getContextualToolLinks(post: BlogPost): { label: string; to: string; de
   const links: { label: string; to: string; desc: string }[] = [
     {
       label: 'Handwriting Notes Editor',
-      to: '/',
+      to: '/editor/new',
       desc: 'Type or paste notes and convert into 16+ realistic handwriting styles.',
     },
   ];
@@ -111,7 +111,7 @@ const BlogPage: React.FC = () => {
               <Link to="/blog">Browse all guides</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link to="/">Open Handwriting Editor</Link>
+              <Link to="/editor/new">Open Handwriting Editor</Link>
             </Button>
           </div>
         </main>
@@ -133,7 +133,7 @@ const BlogPage: React.FC = () => {
                 All Guides
               </Link>
             </Button>
-            <Link to="/" className="text-sm font-semibold text-primary hover:underline">
+            <Link to="/editor/new" className="text-sm font-semibold text-primary hover:underline">
               Open NikNote Editor →
             </Link>
           </div>
@@ -141,7 +141,7 @@ const BlogPage: React.FC = () => {
 
         <main className="container mx-auto px-4 py-8 max-w-3xl">
           <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground mb-5 flex flex-wrap items-center gap-1.5">
-            <Link to="/" className="hover:text-foreground">Home</Link>
+            <Link to="/home" className="hover:text-foreground">Home</Link>
             <span>/</span>
             <Link to="/blog" className="hover:text-foreground">Blog</Link>
             <span>/</span>
@@ -233,7 +233,7 @@ const BlogPage: React.FC = () => {
                       conversionSource: `blog_${selectedPost.slug}`,
                       pageType: 'blog_post',
                     });
-                    navigate('/');
+                    navigate('/editor/new');
                   }}
                   className="rounded-full bg-gradient-to-r from-primary to-blue-600"
                 >
@@ -275,7 +275,7 @@ const BlogPage: React.FC = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Button variant="ghost" asChild className="gap-2">
-              <Link to="/">
+              <Link to="/home">
                 <ArrowLeft className="w-4 h-4" />
                 Back to NikNote
               </Link>
@@ -297,7 +297,7 @@ const BlogPage: React.FC = () => {
             Practical tutorials on converting text to realistic handwriting, preparing CBSE, JEE, NEET &amp; UPSC notes, and studying smarter in Hindi &amp; English.
           </p>
           <nav aria-label="Quick feature links" className="mt-5 flex flex-wrap justify-center gap-2 text-xs">
-            <Link to="/" className="px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground hover:opacity-90">Handwriting Editor</Link>
+            <Link to="/editor/new" className="px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground hover:opacity-90">Handwriting Editor</Link>
             <Link to="/ai" className="px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground hover:opacity-90">NikAI Tutor</Link>
             <Link to="/pdf-editor" className="px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground hover:opacity-90">PDF Editor</Link>
             <Link to="/pdf-tools" className="px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground hover:opacity-90">PDF Tools</Link>

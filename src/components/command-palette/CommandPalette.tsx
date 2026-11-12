@@ -51,7 +51,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   // All commands
   const commands: CommandItem[] = useMemo(() => [
     // Pages
-    { id: 'home', label: 'Go to Home', icon: <FileText className="w-4 h-4" />, category: 'page', action: () => navigate('/') },
+    { id: 'home', label: 'Go to Home', icon: <FileText className="w-4 h-4" />, category: 'page', action: () => navigate('/home') },
     { id: 'ai', label: 'NikAI (Astra Core)', icon: <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain" />, category: 'page', action: () => navigate('/ai') },
     { id: 'notebooks', label: 'My Notebooks', icon: <BookOpen className="w-4 h-4" />, category: 'page', action: () => navigate('/notebooks') },
     { id: 'playground', label: 'Creative Playground', description: 'Arrange notes, checklists and ideas on a canvas', icon: <Shapes className="w-4 h-4 text-[#347ff0]" />, category: 'page', action: () => navigate('/playground') },

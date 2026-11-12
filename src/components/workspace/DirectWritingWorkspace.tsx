@@ -15,20 +15,21 @@ import {
   Image,
   List,
   ListOrdered,
+  Link2,
   Menu,
+  Minus,
   Moon,
   MoreHorizontal,
   PanelRight,
-  Plus,
   Quote,
   Save,
   Search,
   Share2,
   Sparkles,
+  Star,
   Sun,
   Table2,
   Video,
-  X,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Block, BlockType } from '@/types/block';
@@ -46,6 +47,8 @@ import type { CloudSyncState } from '@/lib/cloudSyncEngine';
 interface DirectWritingWorkspaceProps {
   title: string;
   onTitleChange: (title: string) => void;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
   blocks: Block[];
   onBlocksChange: (blocks: Block[]) => void;
   settings: NoteSettings;
@@ -68,6 +71,7 @@ interface DirectWritingWorkspaceProps {
   onOpenNikAI: () => void;
   onOpenScanner: () => void;
   onOpenImport: () => void;
+  onInsertImage: () => void;
   mobileTool: string;
   isListening: boolean;
   onMobileTool: (tool: string) => void;
@@ -92,15 +96,14 @@ interface DirectWritingWorkspaceProps {
 const QUICK_BLOCKS: { type: BlockType; label: string; short: string; icon: React.ElementType }[] = [
   { type: 'text', label: 'Text', short: 'Aa', icon: AlignLeft },
   { type: 'heading1', label: 'Heading', short: 'H1', icon: Heading1 },
-  { type: 'bullet', label: 'Bulleted list', short: '•', icon: List },
-  { type: 'numbered', label: 'Numbered list', short: '1.', icon: ListOrdered },
-  { type: 'todo', label: 'To-do', short: '☐', icon: CheckSquare2 },
-  { type: 'quote', label: 'Quote', short: '❝', icon: Quote },
-  { type: 'image', label: 'Image', short: '▧', icon: Image },
-  { type: 'video', label: 'Video', short: '▷', icon: Video },
-  { type: 'code', label: 'Code', short: '</>', icon: Code2 },
-  { type: 'table', label: 'Table', short: '▦', icon: Table2 },
-  { type: 'divider', label: 'Divider', short: '—', icon: Plus },
+  { type: 'bullet', label: 'Bulleted list', short: 'List', icon: List },
+  { type: 'todo', label: 'To-do', short: 'Todo', icon: CheckSquare2 },
+  { type: 'image', label: 'Image', short: 'Image', icon: Image },
+  { type: 'video', label: 'Video', short: 'Video', icon: Video },
+  { type: 'code', label: 'Code', short: 'Code', icon: Code2 },
+  { type: 'table', label: 'Table', short: 'Table', icon: Table2 },
+  { type: 'bookmark', label: 'Link', short: 'Link', icon: Link2 },
+  { type: 'divider', label: 'Divider', short: '—', icon: Minus },
 ];
 
 function saveLabel(status: EditorSaveStatus) {
@@ -124,6 +127,8 @@ function syncLabel(state: CloudSyncState) {
 export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
   title,
   onTitleChange,
+  isFavorite,
+  onToggleFavorite,
   blocks,
   onBlocksChange,
   settings,
@@ -146,6 +151,7 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
   onOpenNikAI,
   onOpenScanner,
   onOpenImport,
+  onInsertImage,
   mobileTool,
   isListening,
   onMobileTool,
@@ -170,7 +176,8 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [inspectorOpen, setInspectorOpen] = useState(!isMobile);
   const [activeInspectorTab, setActiveInspectorTab] = useState<'blocks' | 'ai'>('blocks');
-  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [floatingMoreOpen, setFloatingMoreOpen] = useState(false);
 
   useEffect(() => {
     if (isMobile) {
@@ -202,7 +209,7 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
       <header className="nn-writing-topbar">
         <div className="nn-topbar-brand">
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen((open) => !open)} aria-label="Toggle workspace sidebar" className="nn-topbar-icon">
-            {isMobile ? <Menu /> : <BookOpen />}
+            <Menu />
           </Button>
           <button type="button" className="nn-brand-button" onClick={() => navigate('/home')} aria-label="NikNote workspace home">
             <img src="/niknote-logo.png" alt="NikNote" />
@@ -247,8 +254,7 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
               <WorkspaceSidebar
                 isOpen
                 onToggle={() => setSidebarOpen(false)}
-                onNewNote={() => { setSidebarOpen(false); navigate('/?editor=1&new=1'); }}
-                onOpenDNA={() => { setSidebarOpen(false); onOpenScanner(); }}
+                onNewNote={() => { setSidebarOpen(false); navigate('/editor/new'); }}
                 onOpenCommandPalette={onOpenCommandPalette}
               />
             </aside>
@@ -258,6 +264,8 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
         <main className="nn-writing-main">
           <div className="nn-document-bar">
             <div className="nn-document-location">
+              {!isMobile && <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo} aria-label="Undo" title="Undo" className="nn-document-icon nn-history-control"><ArrowLeft /></Button>}
+              {!isMobile && <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo} aria-label="Redo" title="Redo" className="nn-document-icon nn-history-control"><ArrowRight /></Button>}
               {!isMobile && <span className="nn-location-muted">My workspace</span>}
               {!isMobile && <span className="nn-location-divider">/</span>}
               <FileText className="h-4 w-4" />
@@ -272,21 +280,44 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
             </div>
             <div className="nn-document-actions">
               <span className={cn('nn-save-indicator', `nn-save-${saveStatus}`)} role="status">{saveLabel(saveStatus)}</span>
-              {!isMobile && <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo} aria-label="Undo" title="Undo" className="nn-document-icon"><ArrowLeft /></Button>}
-              {!isMobile && <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo} aria-label="Redo" title="Redo" className="nn-document-icon"><ArrowRight /></Button>}
-              {!isMobile && <Button variant="ghost" onClick={onToggleHandwritingPreview} className="nn-action-button nn-preview-toggle" aria-label={showHandwritingPreview ? 'Hide handwriting preview' : 'Show handwriting preview'} title="Handwriting preview"><BookOpen /><span>{showHandwritingPreview ? 'Hide preview' : 'Preview'}</span></Button>}
-              <Button variant="outline" onClick={() => setShareMenuOpen((open) => !open)} className="nn-action-button nn-share-button" aria-label="Share note">
+              <Button variant="outline" onClick={onShare} className="nn-action-button nn-share-button" aria-label="Share note">
                 <Share2 />{!isMobile && <span>Share</span>}
               </Button>
-              {shareMenuOpen && (
-                <div className="nn-share-popover" role="menu">
-                  <button type="button" onClick={() => { setShareMenuOpen(false); onShare(); }}>Share note</button>
-                  <button type="button" onClick={() => { setShareMenuOpen(false); onExportPDF(); }} disabled={exporting}><FileUp /> Export PDF</button>
-                </div>
-              )}
-              <Button onClick={onSave} className="nn-action-button nn-save-button" disabled={saveStatus === 'saving'}>
-                <Save />{!isMobile && <span>Save</span>}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onToggleFavorite}
+                aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                aria-pressed={isFavorite}
+                title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                className={cn('nn-document-icon nn-favorite-toggle', isFavorite && 'is-favorite')}
+              >
+                <Star aria-hidden="true" />
               </Button>
+              <div className="nn-document-more-wrap">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setMoreMenuOpen((open) => !open)}
+                  aria-label="More note actions"
+                  aria-expanded={moreMenuOpen}
+                  className="nn-document-icon"
+                >
+                  <MoreHorizontal aria-hidden="true" />
+                </Button>
+                {moreMenuOpen && (
+                  <div className="nn-document-more-menu" role="menu" aria-label="More note actions">
+                    <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); onSave(); }} disabled={saveStatus === 'saving'}><Save aria-hidden="true" /> Save now</button>
+                    <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); onUndo(); }} disabled={!canUndo}><ArrowLeft aria-hidden="true" /> Undo</button>
+                    <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); onRedo(); }} disabled={!canRedo}><ArrowRight aria-hidden="true" /> Redo</button>
+                    <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); onToggleHandwritingPreview(); }}><BookOpen aria-hidden="true" /> {showHandwritingPreview ? 'Hide handwriting preview' : 'Handwriting preview'}</button>
+                    <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); onOpenPageStyle(); }}><BookOpen aria-hidden="true" /> Paper &amp; pen style</button>
+                    <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); onOpenImport(); }}><FileUp aria-hidden="true" /> Import</button>
+                    <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); onOpenScanner(); }}><Sparkles aria-hidden="true" /> Handwriting scanner</button>
+                    <button type="button" role="menuitem" onClick={() => { setMoreMenuOpen(false); onExportPDF(); }} disabled={exporting}><FileText aria-hidden="true" /> Export PDF</button>
+                  </div>
+                )}
+              </div>
               {isMobile && <Button variant="ghost" size="icon" onClick={() => setInspectorOpen((open) => !open)} aria-label="Toggle editor tools" className="nn-document-icon"><PanelRight /></Button>}
             </div>
           </div>
@@ -342,6 +373,8 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
                     onOpenAI={onOpenAI}
                     onOpenNikAI={onOpenNikAI}
                     onOpenScanner={onOpenScanner}
+                    onOpenImport={onOpenImport}
+                    onInsertImage={onInsertImage}
                     onOpenPageStyle={onOpenPageStyle}
                     pageNumber={pageNumber}
                     totalPages={totalPages}
@@ -360,14 +393,32 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
           <div className="nn-floating-tools" role="toolbar" aria-label="Insert a block">
             <div className="nn-floating-blocks">
               {QUICK_BLOCKS.map(({ type, label, short, icon: Icon }) => (
-                <button key={type} type="button" onClick={() => onAddBlock(type)} aria-label={`Insert ${label}`} title={label}>
+                <button key={type} type="button" onClick={() => type === 'image' ? onInsertImage() : onAddBlock(type)} aria-label={`Insert ${label}`} title={label}>
                   <Icon aria-hidden="true" />
                   <span>{short}</span>
                 </button>
               ))}
-              <button type="button" onClick={onOpenPageStyle} aria-label="Paper and pen style" title="Paper and pen style"><BookOpen /><span>Paper</span></button>
-              <button type="button" onClick={onOpenAI} aria-label="Open writing assistant" title="Writing assistant"><Sparkles /><span>AI</span></button>
+              <button
+                type="button"
+                className="nn-floating-more-trigger"
+                onClick={() => setFloatingMoreOpen((open) => !open)}
+                aria-label="More editor tools"
+                aria-expanded={floatingMoreOpen}
+                title="More editor tools"
+              >
+                <MoreHorizontal aria-hidden="true" />
+              </button>
             </div>
+            {floatingMoreOpen && (
+              <div className="nn-floating-more-menu" role="menu" aria-label="More editor tools">
+                <button type="button" role="menuitem" onClick={() => { setFloatingMoreOpen(false); onAddBlock('numbered'); }}><ListOrdered aria-hidden="true" /> Numbered list</button>
+                <button type="button" role="menuitem" onClick={() => { setFloatingMoreOpen(false); onAddBlock('quote'); }}><Quote aria-hidden="true" /> Quote</button>
+                <button type="button" role="menuitem" onClick={() => { setFloatingMoreOpen(false); onAddBlock('chart'); }}><Table2 aria-hidden="true" /> Data chart</button>
+                <button type="button" role="menuitem" onClick={() => { setFloatingMoreOpen(false); onAddBlock('audio'); }}><Video aria-hidden="true" /> Audio or media</button>
+                <button type="button" role="menuitem" onClick={() => { setFloatingMoreOpen(false); onOpenPageStyle(); }}><BookOpen aria-hidden="true" /> Paper &amp; pen</button>
+                <button type="button" role="menuitem" onClick={() => { setFloatingMoreOpen(false); onOpenAI(); }}><Sparkles aria-hidden="true" /> Writing assistant</button>
+              </div>
+            )}
             <div className="nn-appearance-toggle" aria-label="Appearance">
               <button type="button" onClick={() => !isDark && onToggleDark()} aria-label="Light mode" aria-pressed={!isDark} className={!isDark ? 'is-active' : ''}><Sun /></button>
               <button type="button" onClick={() => isDark && onToggleDark()} aria-label="Dark mode" aria-pressed={isDark} className={isDark ? 'is-active' : ''}><Moon /></button>

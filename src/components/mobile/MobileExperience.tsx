@@ -25,6 +25,7 @@ import { IconButton, MobileHeader, MobileNavigation, ThemeSelector } from './Mob
 import { useMobileAppearance } from './useMobileAppearance';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useAccountName } from '@/hooks/useAccountName';
+import { useNoteMeta } from '@/components/desktop/store';
 import { CLOUD_SYNC_EVENT, notifyLocalDataChanged } from '@/lib/cloudSyncEngine';
 import { findLocalNoteForOwner, readLocalNotesForOwner, removeLocalNoteForOwner, upsertLocalNoteForOwner, type LocalNoteRecord } from '@/lib/localNoteStore';
 
@@ -47,6 +48,7 @@ export function MobileExperience() {
   const guest = isGuestUser(user);
   const premium = usePremium();
   const { notebooks, loading, deleteNotebook, updateNotebook } = useNotebooks();
+  const { meta, setPrevFolder } = useNoteMeta();
   const { appearance, update, attributes } = useMobileAppearance();
   const [drawer, setDrawer] = useState(false);
   const [welcome, setWelcome] = useState(true);
@@ -68,7 +70,7 @@ export function MobileExperience() {
   const inputRef = useRef<HTMLInputElement>(null);
   const { fullName, firstName } = useAccountName();
   const reducedMotion = useReducedMotion();
-  const page = pathname === '/notebooks' || pathname === '/notes'
+  const page = pathname === '/notebooks' || pathname === '/notes' || pathname === '/trash'
     ? 'notes'
     : pathname === '/ai'
       ? 'ai'
@@ -85,7 +87,7 @@ export function MobileExperience() {
   useEffect(() => { previousPage.current = page; }, [page]);
   useEffect(() => {
     setQuery('');
-    setCategory(new URLSearchParams(search).get('category') || 'All');
+    setCategory(pathname === '/trash' ? 'Trash' : new URLSearchParams(search).get('category') || 'All');
     setSearchOpen(new URLSearchParams(search).has('search'));
   }, [pathname, search]);
 
@@ -118,7 +120,7 @@ export function MobileExperience() {
         inkColor,
       })
     );
-    navigate(`/?editor=1${id ? `&notebook=${id}` : ''}`);
+    navigate(`/editor/${id ? encodeURIComponent(id) : 'new'}`);
   };
 
   const openNotebook = async (notebook: Notebook) => {
@@ -135,7 +137,7 @@ export function MobileExperience() {
         style: notebook.page_style,
       })
     );
-    navigate(`/?editor=1&notebook=${notebook.id}`);
+    navigate(`/editor/${encodeURIComponent(notebook.id)}`);
   };
 
   const localNoteItems = localNotes.map((ln) => ({
@@ -151,6 +153,8 @@ export function MobileExperience() {
     localStyle: ln.page_style,
     localFont: ln.font,
     localInkColor: ln.ink_color,
+    folder: ln.folder ?? null,
+    isTrashed: Boolean(ln.trashedAt) || ln.folder === '__trash__',
     isLocal: true,
     notebook: undefined as Notebook | undefined,
   }));
@@ -168,20 +172,78 @@ export function MobileExperience() {
     localStyle: n.page_style,
     localFont: undefined as HandwritingFont | undefined,
     localInkColor: undefined as InkColor | undefined,
+    folder: n.folder ?? null,
+    isTrashed: n.folder === '__trash__',
     isLocal: false,
     notebook: n as Notebook | undefined,
   }));
 
   const allNotes = Array.from(new Map([...cloudItems, ...localNoteItems].map((note) => [note.id, note])).values());
+  const trashView = pathname === '/trash' || category === 'Trash';
   const visibleNotes = allNotes
-    .filter((n) => n.title.toLowerCase().includes(query.toLowerCase()) && (category === 'All' || n.tags.includes(category)))
+    .filter((note) => note.title.toLowerCase().includes(query.toLowerCase()))
+    .filter((note) => trashView
+      ? note.isTrashed
+      : !note.isTrashed && (category === 'All' || note.tags.includes(category)))
     .sort((a, b) => (sort ? a.title.localeCompare(b.title) : 0));
 
   const localOwnerId = user?.id || 'local-device-guest';
-  const deleteLocalNote = (id: string) => {
-    removeLocalNoteForOwner(id, localOwnerId);
-    setLocalNotes(readLocalDeviceNotes(user?.id, guest));
-    toast.success('Note deleted');
+  const moveToTrash = async (note: typeof allNotes[number]) => {
+    if (note.isTrashed) return;
+    setPrevFolder(note.id, note.folder);
+    if (note.notebook) {
+      const updated = await updateNotebook(note.id, { folder: '__trash__' });
+      if (updated) toast.success('Moved to Trash');
+      return;
+    }
+    if (note.isLocal) {
+      const current = findLocalNoteForOwner(note.id, localOwnerId, { allowLegacyClaim: guest });
+      if (!current) return;
+      const now = new Date().toISOString();
+      upsertLocalNoteForOwner({ ...current, folder: '__trash__', trashedAt: now, updated_at: now }, localOwnerId, {}, { allowLegacyClaim: guest });
+      setLocalNotes(readLocalDeviceNotes(user?.id, guest));
+      notifyLocalDataChanged();
+      toast.success('Moved to Trash');
+    }
+  };
+  const restoreFromTrash = async (note: typeof allNotes[number]) => {
+    const folder = meta[note.id]?.prevFolder ?? null;
+    if (note.notebook) {
+      const updated = await updateNotebook(note.id, { folder });
+      if (updated) toast.success('Restored');
+      return;
+    }
+    if (note.isLocal) {
+      const current = findLocalNoteForOwner(note.id, localOwnerId, { allowLegacyClaim: guest });
+      if (!current) return;
+      upsertLocalNoteForOwner({ ...current, folder, trashedAt: null, updated_at: new Date().toISOString() }, localOwnerId, {}, { allowLegacyClaim: guest });
+      setLocalNotes(readLocalDeviceNotes(user?.id, guest));
+      notifyLocalDataChanged();
+      toast.success('Restored');
+    }
+  };
+  const deleteForever = (note: typeof allNotes[number]) => {
+    if (note.notebook) {
+      void deleteNotebook(note.id);
+    } else if (note.isLocal) {
+      removeLocalNoteForOwner(note.id, localOwnerId);
+      setLocalNotes(readLocalDeviceNotes(user?.id, guest));
+      notifyLocalDataChanged();
+      toast.success('Deleted forever');
+    }
+  };
+  const selectCategory = (nextCategory: string) => {
+    if (nextCategory === 'Trash') {
+      navigate('/trash');
+      return;
+    }
+    setCategory(nextCategory);
+    const target = nextCategory === 'All'
+      ? '/notebooks'
+      : `/notebooks?category=${encodeURIComponent(nextCategory)}`;
+    if (pathname !== '/notebooks' || search !== (nextCategory === 'All' ? '' : `?category=${encodeURIComponent(nextCategory)}`)) {
+      navigate(target);
+    }
   };
 
   const renameLocalNote = (id: string, title: string) => {
@@ -240,17 +302,21 @@ export function MobileExperience() {
               Rename
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem
-            onClick={() => {
-              if (note.notebook) {
-                if (window.confirm(`Delete ${note.title}?`)) deleteNotebook(note.id);
-              } else if (note.isLocal) {
-                deleteLocalNote(note.id);
-              }
-            }}
-          >
-            Delete
-          </DropdownMenuItem>
+          {trashView ? (
+            <>
+              <DropdownMenuItem onClick={() => { void restoreFromTrash(note); }}>Restore note</DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => {
+                  if (window.confirm(`Delete “${note.title}” forever? This cannot be undone.`)) deleteForever(note);
+                }}
+              >
+                Delete forever
+              </DropdownMenuItem>
+            </>
+          ) : (
+            <DropdownMenuItem onClick={() => { void moveToTrash(note); }}>Move to Trash</DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </article>
@@ -265,7 +331,7 @@ export function MobileExperience() {
           <IconButton icon={Search} label="Search notes" onClick={() => navigate('/notebooks?search=1')} />
         </header>
       ) : (
-        <MobileHeader title={{ notes: 'All Notes', profile: 'Profile', appearance: 'Appearance', templates: 'Templates' }[page] || ''}>
+        <MobileHeader title={trashView ? 'Trash' : ({ notes: 'All Notes', profile: 'Profile', appearance: 'Appearance', templates: 'Templates' }[page] || '')}>
           {page === 'notes' ? (
             <>
               <IconButton icon={Search} label="Search notes" onClick={() => setSearchOpen((v) => !v)} />
@@ -299,7 +365,7 @@ export function MobileExperience() {
             <div className="nn-quick-actions">
               {[
                 { label: 'NikAI', icon: Sparkles, customImg: '/nikai-mark.png', tone: 'blue', action: () => navigate('/ai') },
-                { label: 'Write Note', icon: PenLine, customImg: '', tone: 'green', action: () => navigate('/?editor=1&new=1') },
+                { label: 'Write Note', icon: PenLine, customImg: '', tone: 'green', action: () => navigate('/editor/new') },
                 { label: 'Templates', icon: LayoutGrid, customImg: '', tone: 'blue', action: () => navigate('/templates') },
                 { label: 'Playground', icon: Shapes, customImg: '', tone: 'blue', action: () => navigate('/playground') },
                 { label: 'Draw Board', icon: ScanLine, customImg: '', tone: 'pink', action: () => navigate('/board') },
@@ -330,7 +396,7 @@ export function MobileExperience() {
                 <BookOpen />
                 <h2>No notes yet</h2>
                 <p>Your workspace starts blank. Create a note when you are ready.</p>
-                <Button onClick={() => navigate('/?editor=1&new=1')}>Start writing</Button>
+                <Button onClick={() => navigate('/editor/new')}>Start writing</Button>
               </div>
             )}
           </>
@@ -349,15 +415,13 @@ export function MobileExperience() {
               />
             )}
             <div className="nn-pills">
-              {(category === 'Important' || category === 'Trash'
-                ? ['All', 'Study', 'Work', 'Personal', category]
-                : ['All', 'Study', 'Work', 'Personal']
-              ).map((c) => (
+              {['All', 'Study', 'Work', 'Personal', 'Important', 'Trash'].map((c) => (
                 <Button
                   key={c}
                   variant="ghost"
+                  aria-pressed={category === c}
                   className={cn('nn-pill', category === c && 'nn-selected')}
-                  onClick={() => setCategory(c)}
+                  onClick={() => selectCategory(c)}
                 >
                   {c}
                 </Button>
@@ -371,12 +435,14 @@ export function MobileExperience() {
                 <BookOpen />
                 <h2>{category === 'Trash' ? 'No recoverable notes' : 'No notes here yet'}</h2>
                 {category === 'Trash' && <p className="text-center text-xs">Deleted notebooks are permanently removed.</p>}
-                <Button onClick={() => navigate('/?editor=1&new=1')}>Create a note</Button>
+                <Button onClick={() => trashView ? navigate('/notebooks') : navigate('/editor/new')}>
+                  {trashView ? 'Back to All Notes' : 'Create a note'}
+                </Button>
               </div>
             )}
-            <Button className="nn-fab" size="icon" aria-label="Create note" onClick={() => navigate('/?editor=1&new=1')}>
+            {!trashView && <Button className="nn-fab" size="icon" aria-label="Create note" onClick={() => navigate('/editor/new')}>
               <span className="text-3xl font-light">+</span>
-            </Button>
+            </Button>}
           </>
         )}
 
@@ -504,7 +570,7 @@ export function MobileExperience() {
                 onClick={async () => {
                   if (guest && !window.confirm('You are a guest. Signing out permanently loses access to your notes and trackers unless you add an email first. Sign out anyway?')) return;
                   await signOut();
-                  navigate('/');
+                  navigate('/home');
                 }}
               >
                 Sign out
@@ -531,12 +597,13 @@ export function MobileExperience() {
           </div>
           <div className="nn-drawer-menu">
             {[
-              { name: 'Home', icon: BookOpen, to: '/' },
+              { name: 'Home', icon: BookOpen, to: '/home' },
               { name: 'NikAI', icon: Sparkles, to: '/ai' },
-              { name: 'Notebook Studio', icon: PenLine, to: '/?editor=1' },
-              { name: 'DNA Scanner', icon: ScanLine, to: '/?editor=1&panel=scan' },
+              { name: 'Notebook Studio', icon: PenLine, to: '/editor/new' },
+              { name: 'DNA Scanner', icon: ScanLine, to: '/editor/new?panel=scan' },
               { name: 'Documents', icon: FileText, to: '/documents' },
               { name: 'Notebooks', icon: BookOpen, to: '/notebooks' },
+              { name: 'Trash', icon: Trash2, to: '/trash' },
               { name: 'Draw Board', icon: LayoutGrid, to: '/board' },
               { name: 'Playground', icon: Shapes, to: '/playground' },
             ].map(({ name, icon: Icon, to }) => (

@@ -406,7 +406,7 @@ export default function BoardScreen() {
 
   if (!boardId) return (
     <main className="mx-auto max-w-3xl p-6 pb-28">
-      <div className="mb-6 flex items-center justify-between"><div><Link to="/" className="text-sm text-muted-foreground">← Home</Link><h1 className="text-3xl font-semibold">Boards</h1><p className="text-muted-foreground">Free-form pages with text, images, drawing and voice notes.</p></div><Button onClick={createBoard}><Plus size={16} /> New board</Button></div>
+      <div className="mb-6 flex items-center justify-between"><div><Link to="/home" className="text-sm text-muted-foreground">← Home</Link><h1 className="text-3xl font-semibold">Boards</h1><p className="text-muted-foreground">Free-form pages with text, images, drawing and voice notes.</p></div><Button onClick={createBoard}><Plus size={16} /> New board</Button></div>
       {boards === null ? <div className="grid gap-3">{[0, 1, 2].map(i => <div key={i} className="h-16 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />)}</div>
         : boards.length === 0 ? <div className="rounded-2xl border border-dashed p-10 text-center text-muted-foreground">No boards yet. Create your first one.</div>
         : <ul className="grid gap-3">{boards.map(b => (

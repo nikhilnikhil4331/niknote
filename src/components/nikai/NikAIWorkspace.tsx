@@ -739,7 +739,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
 
         if (openInHandwritingEditor) {
           toast.success(`Opening "${res.title}" inside NikNote Handwriting Studio!${cardSuffix}`);
-          navigate(`/?editor=1&notebook=${encodeURIComponent(res.notebookId)}`);
+          navigate(`/editor/${encodeURIComponent(res.notebookId)}`);
         } else {
           toast.success(`Saved "${res.title}" (${res.blockCount} blocks)${cardSuffix}`);
         }
@@ -1416,7 +1416,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                       type="button"
                       onClick={() => {
                         setProfileMenuOpen(false);
-                        navigate('/');
+                        navigate('/home');
                       }}
                       className="w-full px-3 py-2.5 rounded-xl text-left font-semibold text-[#171313] hover:bg-[#EEF4FF] flex items-center gap-2.5"
                     >

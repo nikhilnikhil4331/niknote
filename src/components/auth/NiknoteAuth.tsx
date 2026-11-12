@@ -66,7 +66,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
       !requested.includes('\\') &&
       !/^\/(login|signup|auth)(?:[/?#]|$)/.test(requested)
       ? requested
-      : '/';
+      : '/home';
   };
 
   useEffect(() => {
@@ -201,7 +201,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
       {entering && <NiknoteLoader label="Opening guest workspace" />}
       <div className="nik-auth-backdrop" aria-hidden="true" />
       <Link
-        to="/"
+        to="/home"
         className="nik-auth-back text-muted-foreground"
         onClick={() => triggerHaptic('selection')}
       >

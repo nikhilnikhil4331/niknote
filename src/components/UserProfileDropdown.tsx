@@ -41,7 +41,7 @@ export const UserProfileDropdown = forwardRef<HTMLDivElement>((_, ref) => {
     setIsOpen(false);
     await signOut();
     toast.success('Signed out successfully');
-    navigate('/');
+    navigate('/home');
   };
 
   const displayName = user?.user_metadata?.full_name || 

@@ -170,7 +170,7 @@ export default function AccountPage() {
   const handleSignOut = async () => {
     await signOut();
     toast.success('Signed out successfully');
-    navigate('/');
+    navigate('/home');
   };
 
   const handleSaveApiKey = () => {
@@ -202,7 +202,7 @@ export default function AccountPage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+              <Button variant="ghost" size="icon" onClick={() => navigate('/home')}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>

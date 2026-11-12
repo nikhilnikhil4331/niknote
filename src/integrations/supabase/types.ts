@@ -650,6 +650,7 @@ export type Database = {
           folder: string | null
           handwriting_model_id: string | null
           id: string
+          is_favorite: boolean | null
           page_size: string
           page_style: string
           settings: Json | null
@@ -665,6 +666,7 @@ export type Database = {
           folder?: string | null
           handwriting_model_id?: string | null
           id?: string
+          is_favorite?: boolean | null
           page_size?: string
           page_style?: string
           settings?: Json | null
@@ -680,6 +682,7 @@ export type Database = {
           folder?: string | null
           handwriting_model_id?: string | null
           id?: string
+          is_favorite?: boolean | null
           page_size?: string
           page_style?: string
           settings?: Json | null

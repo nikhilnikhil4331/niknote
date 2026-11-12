@@ -27,6 +27,7 @@ export type BlockType =
   | 'equation'      // LaTeX / Math block
   | 'mermaid'       // Mermaid diagram
   | 'table'         // Inline table
+  | 'chart'         // Chart generated from editable table data
   | 'column'        // Multi-column layout
   | 'synced'        // Synced block (same content in multiple pages)
   | 'ai-generated'  // AI-generated content block
@@ -64,11 +65,12 @@ export interface Block {
   emoji?: string;           // for callout emoji, toggle icon
   collapsed?: boolean;      // for toggle blocks
   columns?: BlockColumn[];  // for column blocks
-  tableData?: {             // for table blocks
+  tableData?: {             // for table and chart data blocks
     rows: BlockCell[][];
     headers: string[];
     colCount: number;
   };
+  chartType?: 'bar' | 'line' | 'pie';
   // AI properties
   aiPrompt?: string;        // original AI prompt
   aiModel?: string;         // which model generated it
@@ -85,13 +87,30 @@ export interface Block {
 export const generateBlockId = (): string =>
   `block-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
-export const createBlock = (type: BlockType = 'text', content = ''): Block => ({
-  id: generateBlockId(),
-  type,
-  content,
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
-});
+function createEmptyTableData(headers: string[]): NonNullable<Block['tableData']> {
+  const makeRow = () => headers.map(() => ({
+    id: generateBlockId(),
+    content: '',
+    type: 'text' as const,
+  }));
+  return { headers, rows: [makeRow(), makeRow()], colCount: headers.length };
+}
+
+export const createBlock = (type: BlockType = 'text', content = ''): Block => {
+  const block: Block = {
+    id: generateBlockId(),
+    type,
+    content,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  if (type === 'table') block.tableData = createEmptyTableData(['Column 1', 'Column 2', 'Column 3']);
+  if (type === 'chart') {
+    block.tableData = createEmptyTableData(['Label', 'Value']);
+    block.chartType = 'bar';
+  }
+  return block;
+};
 
 // ============================================================
 // Slash Commands — Complete Notion-style command list
@@ -131,7 +150,8 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { id: 'file', label: 'File', description: 'Upload file attachment', icon: '📎', category: 'media' },
 
   // Database blocks
-  { id: 'table', label: 'Table', description: 'Inline table', icon: '📊', category: 'database' },
+  { id: 'table', label: 'Table', description: 'Editable inline table', icon: '▦', category: 'database' },
+  { id: 'chart', label: 'Chart', description: 'Chart your own table data', icon: '▥', category: 'database' },
 
   // Advanced blocks
   { id: 'equation', label: 'Equation', description: 'LaTeX math block', icon: '📐', category: 'advanced' },
