@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { GuestUpgradeCard } from '@/components/auth/GuestUpgradeCard';
@@ -70,12 +70,27 @@ function PendingSignOutHarness() {
   );
 }
 
+function SignUpAttemptHarness() {
+  const { signUp } = useAuth();
+  const [message, setMessage] = useState('');
+  return (
+    <>
+      <button type="button" onClick={async () => {
+        const result = await signUp('new@example.com', 'a-strong-password', 'New User');
+        setMessage(result.error?.message || 'Unexpected signup success');
+      }}>Attempt email sign-up</button>
+      <span data-testid="signup-result">{message}</span>
+    </>
+  );
+}
+
 describe('guest account email-confirmation upgrade', () => {
   let authChangeSpy: ReturnType<typeof vi.spyOn>;
   let getSessionSpy: ReturnType<typeof vi.spyOn>;
   let updateUserSpy: ReturnType<typeof vi.spyOn>;
   let signOutSpy: ReturnType<typeof vi.spyOn>;
   let invokeSpy: ReturnType<typeof vi.spyOn>;
+  let signUpSpy: ReturnType<typeof vi.spyOn> | undefined;
   let setSessionSpy: ReturnType<typeof vi.spyOn> | undefined;
   let anonSpy: ReturnType<typeof vi.spyOn> | undefined;
 
@@ -116,9 +131,23 @@ describe('guest account email-confirmation upgrade', () => {
     updateUserSpy.mockRestore();
     signOutSpy.mockRestore();
     invokeSpy.mockRestore();
+    signUpSpy?.mockRestore();
     setSessionSpy?.mockRestore();
     anonSpy?.mockRestore();
     localStorage.clear();
+  });
+
+  it('blocks email account creation when the central signup flag is disabled', async () => {
+    signUpSpy = vi.spyOn(supabase.auth, 'signUp');
+    render(
+      <AuthProvider>
+        <SignUpAttemptHarness />
+      </AuthProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Attempt email sign-up' }));
+    expect(await screen.findByTestId('signup-result')).toHaveTextContent(/Email sign-up is currently disabled/);
+    expect(signUpSpy).not.toHaveBeenCalled();
   });
 
   it('changes email on the existing authenticated account and reports confirmation as pending', async () => {

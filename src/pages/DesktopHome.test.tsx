@@ -12,6 +12,7 @@ import { MemoryRouter } from 'react-router-dom';
 // ---- context/hook mocks: keep the test 100% local (guest mode) ----
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ user: { id: 'local-guest-test', email: null }, signOut: vi.fn() }),
+  useOptionalAuth: () => ({ user: { id: 'local-guest-test', email: null } }),
 }));
 vi.mock('@/hooks/useAccountName', () => ({
   useAccountName: () => ({ fullName: '' }),

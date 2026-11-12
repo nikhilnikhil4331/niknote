@@ -6,6 +6,7 @@ import { Loader2, Wand2, FileText, BookOpen, PenTool, X, ChartLine } from 'lucid
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'framer-motion';
 import { NikAIMark } from './nikai/NikAIBrand';
+import { useOptionalAuth } from '@/contexts/AuthContext';
 import { markdownToStructuredLines, stripMarkdownNoise, type StructuredLine } from '@/lib/noteStructure';
 import { GRAPH_PRESETS, encodeGraphSpec, graphLabel, type GraphSpec } from '@/lib/noteGraphs';
 
@@ -29,6 +30,7 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
   locked = false,
   onLockedTap,
 }) => {
+  const userId = useOptionalAuth()?.user?.id;
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [prompt, setPrompt] = useState('');
@@ -106,6 +108,7 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
           { role: 'user', content: inputText },
         ],
         mode: selectedMode === 'generate' ? 'notes' : 'write',
+        userId,
         action: actionMap[selectedMode],
         onToken: (_delta, fullText) => setResult(fullText),
       });

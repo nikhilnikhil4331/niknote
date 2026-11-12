@@ -44,9 +44,10 @@ const ControlPanel = lazy(() => import('@/components/ControlPanel').then((module
 
 const ACTIVE_DOCUMENT_KEY = 'niknote.active-document.v1';
 const PENDING_MOBILE_OPEN_KEY = 'niknote-mobile-open';
-const DEFAULT_NOTE_TITLE = 'Untitled Note';
+const DEFAULT_NOTE_TITLE = 'Untitled';
 
 type PendingOpen = {
+  ownerId?: string;
   title?: string;
   blocks?: Block[];
   notebookId?: string;
@@ -148,14 +149,18 @@ function mergeNoteSettings(value: unknown, pageStyle?: string | null, pageSize?:
   };
 }
 
-function readPendingOpen(): PendingOpen | null {
+function readPendingOpen(expectedOwnerId: string): PendingOpen | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = sessionStorage.getItem(PENDING_MOBILE_OPEN_KEY);
     if (!raw) return null;
-    const data = JSON.parse(raw);
+    const data = JSON.parse(raw) as PendingOpen;
     if (!data || typeof data !== 'object') return null;
-    return data as PendingOpen;
+    if (data.ownerId && data.ownerId !== expectedOwnerId) return null;
+    // Legacy untagged handoffs may remain usable on device/guest workspaces,
+    // but must not seed a registered account with another session's content.
+    if (!data.ownerId && isCloudUserId(expectedOwnerId)) return null;
+    return data;
   } catch {
     return null;
   }
@@ -309,7 +314,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
   // includes an existing notebook ID. Existing documents are always loaded
   // again from this owner's local cache or owner-filtered cloud rows.
   useEffect(() => {
-    const handoff = readPendingOpen();
+    const handoff = readPendingOpen(ownerId);
     if (handoff) {
       pendingOpenRef.current = handoff;
       if (!handoff.notebookId && !requestedId) {
@@ -343,7 +348,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
     setDocumentError(null);
 
     if (nextKey === 'new') {
-      const handoff = readPendingOpen();
+      const handoff = readPendingOpen(ownerId);
       pendingOpenRef.current = handoff;
       try { sessionStorage.removeItem(PENDING_MOBILE_OPEN_KEY); } catch { /* ignore */ }
       setDocumentId(makeDraftId(ownerId));
@@ -1022,6 +1027,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
     <>
       <DirectWritingWorkspace
         title={title}
+        autoFocusTitle={explicitNew}
         onTitleChange={setTitle}
         isFavorite={isFavorite}
         onToggleFavorite={() => { void toggleFavorite(); }}

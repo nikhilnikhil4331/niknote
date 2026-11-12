@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, renderHook } from '@testing-library/react';
 
 const mockSupabase = vi.hoisted(() => ({ from: vi.fn() }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: mockSupabase }));
 
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 import {
   getSyncSnapshot,
+  updateSyncSnapshot,
+  useCloudSyncStatus,
   syncAllLocalDataToCloud,
   syncLocalMoneyToCloud,
   syncLocalNotesWithCloud,
@@ -85,6 +89,32 @@ describe('cloud sync safety and retry behavior', () => {
   beforeEach(() => {
     localStorage.clear();
     mockSupabase.from.mockReset();
+    const emptyStatus = { state: 'local' as const, lastSyncedAt: null, syncedCount: 0, errorMessage: null };
+    updateSyncSnapshot(emptyStatus, USER_ID);
+    updateSyncSnapshot(emptyStatus, '223e4567-e89b-42d3-a456-426614174099');
+    updateSyncSnapshot(emptyStatus);
+  });
+
+  it('keeps sync snapshots, listeners, and last-sync timestamps isolated by account', () => {
+    const otherUserId = '223e4567-e89b-42d3-a456-426614174099';
+    const ownerAStamp = '2026-11-07T10:00:00.000Z';
+    const ownerBStamp = '2026-11-08T10:00:00.000Z';
+    const { result, rerender } = renderHook(({ ownerId }) => useCloudSyncStatus(ownerId), {
+      initialProps: { ownerId: USER_ID as string | null },
+    });
+
+    act(() => updateSyncSnapshot({ state: 'synced', lastSyncedAt: ownerAStamp, syncedCount: 4 }, USER_ID));
+    expect(result.current).toMatchObject({ state: 'synced', lastSyncedAt: ownerAStamp, syncedCount: 4 });
+
+    act(() => updateSyncSnapshot({ state: 'error', lastSyncedAt: ownerBStamp, errorMessage: 'owner B issue' }, otherUserId));
+    expect(result.current).toMatchObject({ state: 'synced', lastSyncedAt: ownerAStamp, errorMessage: null });
+    expect(getSyncSnapshot(otherUserId)).toMatchObject({ state: 'error', lastSyncedAt: ownerBStamp, errorMessage: 'owner B issue' });
+
+    rerender({ ownerId: otherUserId });
+    expect(result.current).toMatchObject({ state: 'error', lastSyncedAt: ownerBStamp, errorMessage: 'owner B issue' });
+    expect(localStorage.getItem(ownerScopedStorageKey('niknote.sync.last_at.v1', USER_ID))).toBe(ownerAStamp);
+    expect(localStorage.getItem(ownerScopedStorageKey('niknote.sync.last_at.v1', otherUserId))).toBe(ownerBStamp);
+    expect(localStorage.getItem('niknote.sync.last_at.v1')).toBeNull();
   });
 
   it('does not mark a note synced after a page write fails, and retries that upload', async () => {
@@ -113,7 +143,7 @@ describe('cloud sync safety and retry behavior', () => {
     const afterFailure = saved<Array<Record<string, unknown>>>('niknote.mobile.notebooks.v1')[0];
     expect(afterFailure._syncedAt).toBeUndefined();
     expect(afterFailure.id).toBe('local-note-1');
-    expect(saved<Record<string, string>>(`niknote.sync.notebook_map.v1:${USER_ID}`)['local-note-1']).toBe(CLOUD_NOTE_ID);
+    expect(saved<Record<string, string>>(ownerScopedStorageKey('niknote.sync.notebook_map.v1', USER_ID))['local-note-1']).toBe(CLOUD_NOTE_ID);
 
     const moved = await syncLocalNotesWithCloud(USER_ID, { pullCloud: false });
     expect(moved).toBe(1);
@@ -296,7 +326,8 @@ describe('cloud sync safety and retry behavior', () => {
   });
 
   it('keeps currency and budget settings queued when the settings upsert fails', async () => {
-    save('niknote.money.v1.local', { currency: 'EUR', budget: 250, txs: [], goals: [], bills: [] });
+    const moneyKey = ownerScopedStorageKey('niknote.money.v1.local', USER_ID);
+    save(moneyKey, { currency: 'EUR', budget: 250, txs: [], goals: [], bills: [] });
     installQueryHandler(({ table, action }) =>
       table === 'tracker_settings' && action === 'upsert'
         ? { data: null, error: { message: 'settings unavailable' } }
@@ -304,11 +335,12 @@ describe('cloud sync safety and retry behavior', () => {
     );
 
     await expect(syncLocalMoneyToCloud(USER_ID)).rejects.toThrow('Money settings upload failed');
-    expect(saved<Record<string, unknown>>('niknote.money.v1.local')).toMatchObject({ currency: 'EUR', budget: 250 });
+    expect(saved<Record<string, unknown>>(moneyKey)).toMatchObject({ currency: 'EUR', budget: 250 });
   });
 
   it('clears only successful routine categories and preserves the failed queue', async () => {
-    save('niknote.routine.v1.local', {
+    const routineKey = ownerScopedStorageKey('niknote.routine.v1.local', USER_ID);
+    save(routineKey, {
       habits: [{ id: 'habit-1', name: 'Read' }],
       checks: [{ habit_id: 'habit-1', day: '2026-11-07' }],
       todos: [{ id: 'todo-1', title: 'Review', done: false }],
@@ -322,7 +354,7 @@ describe('cloud sync safety and retry behavior', () => {
     );
 
     await expect(syncLocalRoutineToCloud(USER_ID)).rejects.toThrow('Habit check upload failed');
-    expect(saved<Record<string, unknown>>('niknote.routine.v1.local')).toMatchObject({
+    expect(saved<Record<string, unknown>>(routineKey)).toMatchObject({
       habits: [],
       checks: [{ habit_id: 'habit-1', day: '2026-11-07' }],
       todos: [],
@@ -347,7 +379,7 @@ describe('cloud sync safety and retry behavior', () => {
     const result = await syncAllLocalDataToCloud(USER_ID, { pullCloud: true });
     expect(result.ok).toBe(false);
     expect(result.error).toContain('cloud unavailable');
-    expect(getSyncSnapshot().state).toBe('error');
-    expect(getSyncSnapshot().lastSyncedAt).toBeNull();
+    expect(getSyncSnapshot(USER_ID).state).toBe('error');
+    expect(getSyncSnapshot(USER_ID).lastSyncedAt).toBeNull();
   });
 });

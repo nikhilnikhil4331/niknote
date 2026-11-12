@@ -21,7 +21,7 @@ import { ProductivityOverview } from '@/components/desktop/analytics/Productivit
 import { FocusInsights } from '@/components/desktop/analytics/FocusInsights';
 import { useDesktopNotes, type DNote } from '@/components/desktop/notes';
 import {
-  useTasks, useNoteMeta, useDesktopHabits, todayKey,
+  useLocalStore, useTasks, useNoteMeta, useDesktopHabits, todayKey,
   greeting, openCommandPalette, TASK_TAGS,
 } from '@/components/desktop/store';
 import { doneTodayCount, overdueCount } from '@/lib/productivity';
@@ -89,9 +89,7 @@ const DesktopHome: React.FC = () => {
   // ---------- notes section state ----------
   const [tab, setTab] = useState<NotesTab>('all');
   const [noteQuery, setNoteQuery] = useState('');
-  const [view, setView] = useState<'grid' | 'list'>(() =>
-    localStorage.getItem('niknote.desktop.homeNotesView') === 'list' ? 'list' : 'grid',
-  );
+  const [view, setView] = useLocalStore<'grid' | 'list'>('niknote.desktop.homeNotesView', 'grid');
 
   const folders = useMemo(
     () => Array.from(new Set(active.map((n) => n.folder).filter(Boolean) as string[])),
@@ -390,10 +388,10 @@ const DesktopHome: React.FC = () => {
                     )}
                   </div>
                   <div className="nd-vtabs !p-[2.5px]">
-                    <button className={cn('!px-2', view === 'grid' && 'nd-on')} onClick={() => { setView('grid'); localStorage.setItem('niknote.desktop.homeNotesView', 'grid'); }} aria-label="Grid view" title="Grid view">
+                    <button className={cn('!px-2', view === 'grid' && 'nd-on')} onClick={() => setView('grid')} aria-label="Grid view" title="Grid view">
                       <LayoutGrid size={13} />
                     </button>
-                    <button className={cn('!px-2', view === 'list' && 'nd-on')} onClick={() => { setView('list'); localStorage.setItem('niknote.desktop.homeNotesView', 'list'); }} aria-label="List view" title="List view">
+                    <button className={cn('!px-2', view === 'list' && 'nd-on')} onClick={() => setView('list')} aria-label="List view" title="List view">
                       <List size={13} />
                     </button>
                   </div>

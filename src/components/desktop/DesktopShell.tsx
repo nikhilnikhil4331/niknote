@@ -16,7 +16,7 @@ import { CommandPalette, type CommandItem } from '@/components/command-palette/C
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccountName } from '@/hooks/useAccountName';
 import { usePremiumContext } from '@/contexts/PremiumContext';
-import { useSpaces, useTasks } from './store';
+import { useLocalStore, useSpaces, useTasks } from './store';
 import { isGuestUser, useDesktopNotes } from './notes';
 import { cn } from '@/lib/utils';
 import './desktop.css';
@@ -89,7 +89,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
     return items;
   }, [searchNotes, searchTasks, spaces, navigate, openSearchNote]);
 
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('niknote.desktop.sidebar') === '1');
+  const [collapsed, setCollapsed] = useLocalStore<boolean>('niknote.desktop.sidebar', false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [newSpaceOpen, setNewSpaceOpen] = useState(false);
@@ -102,10 +102,6 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
 
   const params = new URLSearchParams(search);
   const activeSpace = pathname === '/notebooks' || pathname === '/notes' ? params.get('space') : null;
-
-  useEffect(() => {
-    localStorage.setItem('niknote.desktop.sidebar', collapsed ? '1' : '0');
-  }, [collapsed]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -7,14 +7,19 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { AUTO_GUEST } from '@/config/features';
+import { AUTO_GUEST, SIGNUP_ENABLED } from '@/config/features';
 import {
   CLOUD_SYNC_EVENT,
   isCloudUserId,
   syncAllLocalDataToCloud,
   updateSyncSnapshot,
 } from '@/lib/cloudSyncEngine';
-import { transferLocalNotesToOwner } from '@/lib/localNoteStore';
+import { copyLocalNotesToOwner } from '@/lib/localNoteStore';
+import {
+  beginGuestPromotionIntent,
+  clearGuestPromotionIntent,
+  copyGuestDeviceDataToOwner,
+} from '@/lib/ownerScopedStorage';
 
 const GUEST_VAULT_KEY = 'niknote.guest.vault.v1';
 const OFFLINE_GUEST_KEY = 'niknote.offline.guest.v1';
@@ -151,6 +156,9 @@ export const useAuth = () => {
   }
   return context;
 };
+
+/** Optional auth access for reusable local-store hooks that also run in tests/tools. */
+export const useOptionalAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => readOfflineGuestUser());
@@ -355,6 +363,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       guestRef.current = (async () => {
         try {
           const previousOwnerId = user?.id || readOfflineGuestUser()?.id || null;
+          const promotingOfflineGuest = Boolean(previousOwnerId?.startsWith('local-guest-'));
+          if (promotingOfflineGuest && previousOwnerId) beginGuestPromotionIntent(previousOwnerId);
           const result = await provisionCloudGuest(displayName);
           if (!result.error) {
             if (
@@ -362,25 +372,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               isCloudUserId(result.user?.id) &&
               result.user.id !== previousOwnerId
             ) {
-              transferLocalNotesToOwner(previousOwnerId, result.user.id);
+              copyGuestDeviceDataToOwner(result.user.id, previousOwnerId);
+              copyLocalNotesToOwner(previousOwnerId, result.user.id);
             }
+            if (promotingOfflineGuest) clearGuestPromotionIntent();
             if (isCloudUserId(result.user?.id)) {
               void syncAllLocalDataToCloud(result.user.id, { pullCloud: true });
             }
             return { error: null, offline: false };
           }
 
+          if (promotingOfflineGuest) clearGuestPromotionIntent();
           // Zero-error guarantee across ALL Guest entry buttons: open instant device guest
           // workspace immediately and auto-promote to Supabase Cloud when network returns!
           if (allowFallback && !readGuestVault()?.pendingEmail) {
             const localUser = buildOfflineGuestUser(displayName);
             setUser(localUser);
             setSession(null);
-            updateSyncSnapshot({ state: 'offline', errorMessage: null });
+            updateSyncSnapshot({ state: 'offline', errorMessage: null }, localUser.id);
             return { error: null, offline: true };
           }
 
           return { error: result.error };
+        } catch (error) {
+          clearGuestPromotionIntent();
+          return { error: error instanceof Error ? error : new Error('Guest sign-in failed') };
         } finally {
           guestRef.current = null;
         }
@@ -422,6 +438,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { error: new Error('Connect to NikNote Cloud before saving this guest workspace') };
         }
 
+        // A device guest's caches were copied only during its explicit
+        // local-guest -> cloud-guest promotion above. Existing cloud guests
+        // keep their owner-scoped caches; do not adopt unmarked device data.
         const cleanName = (fullName || user.user_metadata?.full_name || 'NikNote User').trim().slice(0, 60);
         const { data, error } = await supabase.auth.updateUser(
           {
@@ -504,13 +523,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!user?.user_metadata?.is_local_guest) return;
     const onOnline = () => {
-      void signInAsGuest(user.user_metadata?.full_name, { allowOfflineFallback: false }).then(
-        (res) => {
-          if (!res.error) {
-            updateSyncSnapshot({ state: 'synced', errorMessage: null });
-          }
-        }
-      );
+      // Promotion and the subsequent cloud sync publish status under the new
+      // UUID; do not mark the previous device-guest status as synced here.
+      void signInAsGuest(user.user_metadata?.full_name, { allowOfflineFallback: false });
     };
     window.addEventListener('online', onOnline);
     return () => window.removeEventListener('online', onOnline);
@@ -636,6 +651,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [provisionCloudGuest]);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
+    if (!SIGNUP_ENABLED) {
+      return { error: new Error('Email sign-up is currently disabled. Continue as a guest or sign in to an existing account.') };
+    }
     try {
       const { error } = await supabase.auth.signUp({
         email,

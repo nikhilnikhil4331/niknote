@@ -112,6 +112,7 @@ export function MobileExperience() {
     sessionStorage.setItem(
       'niknote-mobile-open',
       JSON.stringify({
+        ownerId: user?.id,
         title,
         blocks: customBlocks?.length ? customBlocks : blocksFromNoteText(text),
         notebookId: id,
@@ -131,6 +132,7 @@ export function MobileExperience() {
     sessionStorage.setItem(
       'niknote-mobile-open',
       JSON.stringify({
+        ownerId: user.id,
         title: notebook.title,
         blocks: Array.isArray(content) && content.length ? content : [createBlock()],
         notebookId: notebook.id,

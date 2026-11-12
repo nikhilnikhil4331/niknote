@@ -22,6 +22,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { PremiumProvider } from '@/contexts/PremiumContext';
 import { supabase } from '@/integrations/supabase/client';
 import { readLocalNotesForOwner, upsertLocalNoteForOwner } from '@/lib/localNoteStore';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 import { createBlock } from '@/types/block';
 import { streamAstaAI } from '@/lib/aiEngine';
 import {
@@ -608,6 +609,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
       JSON.stringify([
         {
           id: 'local-note-1',
+          _ownerId: cloudUserId,
           title: 'Physics Revision',
           blocks: [{ id: 'b1', type: 'text', content: 'Newton Laws' }],
           updated_at: '2026-10-20T10:00:00.000Z',
@@ -615,7 +617,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
       ])
     );
     localStorage.setItem(
-      'niknote.money.v1.local',
+      ownerScopedStorageKey('niknote.money.v1.local', cloudUserId),
       JSON.stringify({
         txs: [{ id: 'local_tx_1', kind: 'expense', amount: 250, category: 'Food', note: 'Lunch', occurred_on: '2026-10-20', account: 'Cash', to_account: null }],
         goals: [],
@@ -625,7 +627,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
       })
     );
     localStorage.setItem(
-      'niknote.routine.v1.local',
+      ownerScopedStorageKey('niknote.routine.v1.local', cloudUserId),
       JSON.stringify({
         habits: [{ id: 'rt_h1', name: 'Morning Study', emoji: '📚', block: 'morning', days: [0, 1, 2, 3, 4, 5, 6], archived: false }],
         checks: [{ habit_id: 'rt_h1', day: '2026-10-20' }],
@@ -635,7 +637,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
       })
     );
     localStorage.setItem(
-      'niknote.boards.v1.local',
+      ownerScopedStorageKey('niknote.boards.v1.local', cloudUserId),
       JSON.stringify([
         {
           id: 'local-board-1',
@@ -648,7 +650,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     const res = await syncAllLocalDataToCloud(cloudUserId);
     expect(res.ok, JSON.stringify(res)).toBe(true);
     expect(res.synced).toBeGreaterThanOrEqual(4);
-    expect(getSyncSnapshot().state).toBe('synced');
+    expect(getSyncSnapshot(cloudUserId).state).toBe('synced');
     expect(tablesWritten).toContain('notebooks');
     expect(tablesWritten).toContain('money_transactions');
     expect(tablesWritten).toContain('habits');
@@ -673,7 +675,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1440 });
     wrap(<AstaAIWorkspace />, '/ai');
 
-    expect(screen.getByText('New Chat')).toBeTruthy();
+    expect(await screen.findByText('New Chat')).toBeTruthy();
     expect(screen.getByText('Chat')).toBeTruthy();
     expect(screen.getAllByText('Smart Notes').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('Quiz')).toBeTruthy();

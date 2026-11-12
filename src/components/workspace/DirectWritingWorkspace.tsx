@@ -5,10 +5,10 @@ import {
   ArrowRight,
   Bell,
   BookOpen,
-  Check,
   CheckSquare2,
   ChevronDown,
   Code2,
+  CloudUpload,
   FileText,
   FileUp,
   Heading1,
@@ -24,7 +24,7 @@ import {
   Quote,
   Save,
   Search,
-  Share2,
+  UsersRound,
   Sparkles,
   Star,
   Sun,
@@ -46,6 +46,7 @@ import type { CloudSyncState } from '@/lib/cloudSyncEngine';
 
 interface DirectWritingWorkspaceProps {
   title: string;
+  autoFocusTitle?: boolean;
   onTitleChange: (title: string) => void;
   isFavorite: boolean;
   onToggleFavorite: () => void;
@@ -93,17 +94,17 @@ interface DirectWritingWorkspaceProps {
   focusedBlockId: string | null;
 }
 
-const QUICK_BLOCKS: { type: BlockType; label: string; short: string; icon: React.ElementType }[] = [
+const QUICK_BLOCKS: { type: BlockType; label: string; short?: string; icon: React.ElementType }[] = [
   { type: 'text', label: 'Text', short: 'Aa', icon: AlignLeft },
   { type: 'heading1', label: 'Heading', short: 'H1', icon: Heading1 },
-  { type: 'bullet', label: 'Bulleted list', short: 'List', icon: List },
-  { type: 'todo', label: 'To-do', short: 'Todo', icon: CheckSquare2 },
-  { type: 'image', label: 'Image', short: 'Image', icon: Image },
-  { type: 'video', label: 'Video', short: 'Video', icon: Video },
-  { type: 'code', label: 'Code', short: 'Code', icon: Code2 },
-  { type: 'table', label: 'Table', short: 'Table', icon: Table2 },
-  { type: 'bookmark', label: 'Link', short: 'Link', icon: Link2 },
-  { type: 'divider', label: 'Divider', short: '—', icon: Minus },
+  { type: 'bullet', label: 'Bulleted list', icon: List },
+  { type: 'todo', label: 'To-do', icon: CheckSquare2 },
+  { type: 'image', label: 'Image', icon: Image },
+  { type: 'video', label: 'Video', icon: Video },
+  { type: 'code', label: 'Code', icon: Code2 },
+  { type: 'table', label: 'Table', icon: Table2 },
+  { type: 'bookmark', label: 'Link', icon: Link2 },
+  { type: 'divider', label: 'Divider', icon: Minus },
 ];
 
 function saveLabel(status: EditorSaveStatus) {
@@ -126,6 +127,7 @@ function syncLabel(state: CloudSyncState) {
 
 export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
   title,
+  autoFocusTitle = false,
   onTitleChange,
   isFavorite,
   onToggleFavorite,
@@ -212,17 +214,14 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
             <Menu />
           </Button>
           <button type="button" className="nn-brand-button" onClick={() => navigate('/home')} aria-label="NikNote workspace home">
-            <img src="/niknote-logo.png" alt="NikNote" />
-            {!isMobile && <span>Workspace</span>}
+            <img className="nn-brand-mark" src="/images/brand/niknote-primary-mark.png" alt="" aria-hidden="true" />
+            <img className="nn-brand-wordmark" src="/images/brand/niknote-primary-wordmark.png" alt="NikNote" />
           </button>
         </div>
 
         <div className="nn-topbar-actions">
           <Button variant="ghost" size="icon" onClick={onOpenCommandPalette} aria-label="Search workspace" title="Search (Ctrl+K)" className="nn-topbar-icon">
             <Search />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={onOpenImport} aria-label="Import a document" title="Import a document" className="nn-topbar-icon nn-import-button">
-            <FileUp />
           </Button>
           <Button variant="outline" onClick={onOpenNikAI} className="nn-topbar-ai" aria-label="Open NikAI">
             <img src="/nikai-mark.png" alt="" aria-hidden="true" />
@@ -232,11 +231,11 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
             variant="outline"
             onClick={onSync}
             className={cn('nn-sync-pill', `nn-sync-${syncState}`)}
-            title="Sync this workspace"
+            title={`Sync status: ${syncLabel(syncState)} — sync now`}
             aria-label={`Sync status: ${syncLabel(syncState)}. Sync now`}
           >
-            {syncState === 'syncing' ? <span className="nn-sync-dot is-spinning" /> : syncState === 'synced' ? <Check /> : <span className="nn-sync-dot" />}
-            {!isMobile && <span>{syncLabel(syncState)}</span>}
+            <CloudUpload aria-hidden="true" className={syncState === 'syncing' ? 'nn-cloud-uploading' : undefined} />
+            <span className="sr-only">{syncLabel(syncState)}</span>
           </Button>
           {isMobile && <Button variant="ghost" size="icon" onClick={onToggleDark} aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'} className="nn-topbar-icon">{isDark ? <Sun /> : <Moon />}</Button>}
           {!isMobile && <Button variant="ghost" size="icon" aria-label="Notifications" title="Notifications" className="nn-topbar-icon" onClick={() => navigate('/history')}><Bell /></Button>}
@@ -252,6 +251,7 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
             {isMobile && <button className="nn-writing-scrim" aria-label="Close sidebar" onClick={() => setSidebarOpen(false)} />}
             <aside className="nn-writing-sidebar">
               <WorkspaceSidebar
+                editorChrome
                 isOpen
                 onToggle={() => setSidebarOpen(false)}
                 onNewNote={() => { setSidebarOpen(false); navigate('/editor/new'); }}
@@ -264,11 +264,14 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
         <main className="nn-writing-main">
           <div className="nn-document-bar">
             <div className="nn-document-location">
-              {!isMobile && <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo} aria-label="Undo" title="Undo" className="nn-document-icon nn-history-control"><ArrowLeft /></Button>}
-              {!isMobile && <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo} aria-label="Redo" title="Redo" className="nn-document-icon nn-history-control"><ArrowRight /></Button>}
-              {!isMobile && <span className="nn-location-muted">My workspace</span>}
-              {!isMobile && <span className="nn-location-divider">/</span>}
-              <FileText className="h-4 w-4" />
+              {!isMobile && (
+                <div className="nn-history-actions" aria-label="History">
+                  <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo} aria-label="Undo" title="Undo" className="nn-document-icon nn-history-control"><ArrowLeft /></Button>
+                  <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo} aria-label="Redo" title="Redo" className="nn-document-icon nn-history-control"><ArrowRight /></Button>
+                  <span className="nn-history-divider" aria-hidden="true" />
+                </div>
+              )}
+              <FileText className="nn-document-file-icon" aria-hidden="true" />
               <input
                 aria-label="Document title"
                 className="nn-document-bar-title"
@@ -279,9 +282,9 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
               <ChevronDown className="h-3.5 w-3.5 nn-title-chevron" aria-hidden="true" />
             </div>
             <div className="nn-document-actions">
-              <span className={cn('nn-save-indicator', `nn-save-${saveStatus}`)} role="status">{saveLabel(saveStatus)}</span>
+              <span className="sr-only" role="status">{saveLabel(saveStatus)}</span>
               <Button variant="outline" onClick={onShare} className="nn-action-button nn-share-button" aria-label="Share note">
-                <Share2 />{!isMobile && <span>Share</span>}
+                <UsersRound />{!isMobile && <span>Share</span>}
               </Button>
               <Button
                 variant="ghost"
@@ -328,20 +331,16 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
                 <div className="nn-document-title-area">
                   <input
                     aria-label="Page title"
+                    autoFocus={autoFocusTitle}
                     className="nn-document-heading"
                     value={title}
                     onChange={(event) => onTitleChange(event.target.value)}
                     placeholder="Untitled"
                     onFocus={() => onFocusBlock(null)}
                   />
-                  <div className="nn-document-meta">
-                    <span>{blocks.reduce((sum, block) => sum + (block.content.trim().match(/\S+/g)?.length || 0), 0)} words</span>
-                    <span aria-hidden="true">·</span>
-                    <span>{blocks.length} blocks</span>
-                    <span aria-hidden="true">·</span>
-                    <span>Page {pageNumber} of {totalPages}</span>
+                  <div className="sr-only" aria-live="polite">
+                    {blocks.reduce((sum, block) => sum + (block.content.trim().match(/\S+/g)?.length || 0), 0)} words, {blocks.length} blocks, page {pageNumber} of {totalPages}
                   </div>
-                  <p className="nn-document-prompt">Type <kbd>/</kbd> for blocks, <kbd>@</kbd> for AI, or just start writing.</p>
                 </div>
                 <div className="nn-direct-editor" onFocusCapture={handleFocusCapture} data-paper={settings.pageStyle}>
                   <NotionEditor
@@ -353,6 +352,7 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
                     onOCRAction={onOpenScanner}
                     onExport={onExportPDF}
                     settings={settings}
+                    textPlaceholder="Type '/' for commands, '@' to mention, or just start writing..."
                     pageNumber={pageNumber}
                     totalPages={totalPages}
                   />
@@ -394,8 +394,7 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
             <div className="nn-floating-blocks">
               {QUICK_BLOCKS.map(({ type, label, short, icon: Icon }) => (
                 <button key={type} type="button" onClick={() => type === 'image' ? onInsertImage() : onAddBlock(type)} aria-label={`Insert ${label}`} title={label}>
-                  <Icon aria-hidden="true" />
-                  <span>{short}</span>
+                  {short ? <span>{short}</span> : <Icon aria-hidden="true" />}
                 </button>
               ))}
               <button

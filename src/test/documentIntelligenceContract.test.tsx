@@ -14,6 +14,7 @@ vi.mock('@/integrations/supabase/client', () => ({
 }));
 vi.mock('@/lib/pdfText', () => ({ readPdf: mocks.readPdf }));
 vi.mock('sonner', () => ({ toast: mocks.toast }));
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: null }) }));
 
 import { DocumentIntelligence } from '@/components/document-intelligence/DocumentIntelligence';
 

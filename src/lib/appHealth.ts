@@ -82,14 +82,16 @@ export async function checkAi(timeoutMs = 20000): Promise<CheckResult> {
     //    One GET, no stream, and it names the model that answered.
     let providers = '';
     let probe: ProbePayload | undefined;
-    const customKeys = readCustomAIKeys();
     const customHeaders: Record<string, string> = {};
+    let userId: string | undefined;
     try {
       const { data } = await supabase.auth.getSession();
+      userId = data.session?.user?.id;
       if (data.session?.access_token) customHeaders.Authorization = `Bearer ${data.session.access_token}`;
     } catch {
       // A missing cloud token is shown as a user-facing AI check warning below.
     }
+    const customKeys = readCustomAIKeys(userId);
     if (customKeys.larprouterKey) customHeaders['X-LarpRouter-Key'] = customKeys.larprouterKey;
     if (customKeys.groqKey) customHeaders['X-Groq-Key'] = customKeys.groqKey;
     if (customKeys.geminiKey) customHeaders['X-Gemini-Key'] = customKeys.geminiKey;

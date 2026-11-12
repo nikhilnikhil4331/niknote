@@ -15,7 +15,7 @@ import { DesktopShell } from '@/components/desktop/DesktopShell';
 import { NoteCard, StatusChip, EmptyState, STATUS_STYLE } from '@/components/desktop/widgets';
 import { MonthCalendar, dayKey, type CalItem } from '@/components/desktop/MonthCalendar';
 import { useDesktopNotes, type DNote } from '@/components/desktop/notes';
-import { useNoteMeta, useSpaces, niceDate, TASK_COLUMNS, type TaskStatus } from '@/components/desktop/store';
+import { useLocalStore, useNoteMeta, useSpaces, niceDate, TASK_COLUMNS, type TaskStatus } from '@/components/desktop/store';
 import { cn } from '@/lib/utils';
 
 type View = 'table' | 'board' | 'gallery' | 'list' | 'calendar';
@@ -44,14 +44,8 @@ const DesktopNotes: React.FC = () => {
   );
   const { spaces } = useSpaces(folders);
 
-  const [view, setViewState] = useState<View>(() => {
-    const v = localStorage.getItem('niknote.desktop.notesView');
-    return v && ['table', 'board', 'gallery', 'list', 'calendar'].includes(v) ? (v as View) : 'table';
-  });
-  const setView = (v: View) => {
-    setViewState(v);
-    try { localStorage.setItem('niknote.desktop.notesView', v); } catch { /* ignore */ }
-  };
+  const [storedView, setView] = useLocalStore<View>('niknote.desktop.notesView', 'table');
+  const view = VIEWS.some(({ id }) => id === storedView) ? storedView : 'table';
   const [query, setQuery] = useState('');
   const [favOnly, setFavOnly] = useState(false);
   const [menuFor, setMenuFor] = useState<string | null>(null);

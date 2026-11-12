@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { isCloudUserId } from '@/lib/cloudSyncEngine';
 import { trackLoginCompleted, trackSignUpCompleted } from '@/lib/tracking';
 import { trackSignupCompleted as trackSignupServer } from '@/utils/analytics';
+import { SIGNUP_ENABLED } from '@/config/features';
 
 export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
   const { signIn, signUp, signInWithGoogle, signInAsGuest, user, loading: authLoading } = useAuth();
@@ -21,7 +22,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [authTab, setAuthTab] = useState<'guest' | 'login' | 'signup'>(mode === 'signup' ? 'signup' : 'guest');
+  const [authTab, setAuthTab] = useState<'guest' | 'login' | 'signup'>(mode === 'signup' && SIGNUP_ENABLED ? 'signup' : 'guest');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,7 +36,7 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
   const [guestName, setGuestName] = useState('');
 
   useEffect(() => {
-    setAuthTab(mode === 'signup' ? 'signup' : 'guest');
+    setAuthTab(mode === 'signup' && SIGNUP_ENABLED ? 'signup' : 'guest');
   }, [mode]);
 
   // Warm up tracker chunks in background so guest entry opens instantly
@@ -90,6 +91,11 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (busy || website) return;
+    if (authTab === 'signup' && !SIGNUP_ENABLED) {
+      setAuthTab('login');
+      setError('Email sign-up is currently disabled. Continue as a guest or sign in to an existing account.');
+      return;
+    }
     const isSignup = authTab === 'signup';
     triggerHaptic('light');
     setError('');
@@ -356,18 +362,22 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
                   >
                     Already have an account? Sign in
                   </button>
-                  <span className="hidden sm:inline text-muted-foreground">•</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setError('');
-                      setAuthTab('signup');
-                      triggerHaptic('selection');
-                    }}
-                    className="min-h-[44px] text-muted-foreground hover:text-foreground font-medium hover:underline"
-                  >
-                    Create account
-                  </button>
+                  {SIGNUP_ENABLED && (
+                    <>
+                      <span className="hidden sm:inline text-muted-foreground">•</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setError('');
+                          setAuthTab('signup');
+                          triggerHaptic('selection');
+                        }}
+                        className="min-h-[44px] text-muted-foreground hover:text-foreground font-medium hover:underline"
+                      >
+                        Create account
+                      </button>
+                    </>
+                  )}
                 </div>
               </motion.form>
             ) : (
@@ -501,17 +511,21 @@ export function NiknoteAuth({ mode = 'login' }: { mode?: 'login' | 'signup' }) {
                 </Button>
 
                 <div className="flex flex-wrap items-center justify-center gap-3 text-sm pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setError('');
-                      setAuthTab(signup ? 'login' : 'signup');
-                    }}
-                    className="min-h-[44px] text-primary font-medium hover:underline"
-                  >
-                    {signup ? 'Already have an account? Sign in' : 'New here? Create account'}
-                  </button>
-                  <span className="text-muted-foreground">•</span>
+                  {SIGNUP_ENABLED && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setError('');
+                          setAuthTab(signup ? 'login' : 'signup');
+                        }}
+                        className="min-h-[44px] text-primary font-medium hover:underline"
+                      >
+                        {signup ? 'Already have an account? Sign in' : 'New here? Create account'}
+                      </button>
+                      <span className="text-muted-foreground">•</span>
+                    </>
+                  )}
                   <button
                     type="button"
                     onClick={() => {

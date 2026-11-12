@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFlashcards, ReviewRating } from '@/hooks/useFlashcards';
+import { isCloudUserId } from '@/lib/cloudSyncEngine';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 import { Block } from '@/types/block';
 import { toast } from 'sonner';
 
@@ -39,35 +41,75 @@ const extractCards = (pages: Array<{ content: any; notebook_id: string }>, nbTit
   return cards;
 };
 
+function readLocalGeneratedCards(ownerId?: string): Card[] {
+  try {
+    const key = ownerScopedStorageKey('niknote-flashcards-v1', ownerId);
+    const parsed = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((card) => card && typeof card.id === 'string')
+      .map((card) => ({
+        id: String(card.id),
+        front: String(card.front || '(no question)'),
+        back: String(card.back || '(no answer)'),
+        notebookTitle: String(card.deck || 'NikAI'),
+      }));
+  } catch {
+    return [];
+  }
+}
+
 const Flashcards: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const srs = useFlashcards();
+  const userId = user?.id;
+  const ownerKey = isCloudUserId(userId) ? userId : 'device-guest';
+  const srs = useFlashcards(userId);
   const reducedMotion = useReducedMotion();
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadedOwnerKey, setLoadedOwnerKey] = useState<string | null>(null);
   const [idx, setIdx] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [sessionOnlyDue, setSessionOnlyDue] = useState(true);
   const [sessionStats, setSessionStats] = useState({ again: 0, hard: 0, good: 0, easy: 0 });
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    let active = true;
+    const localCards = readLocalGeneratedCards(userId);
+    setLoading(true);
+    setCards([]);
+    if (!isCloudUserId(userId)) {
+      setCards(localCards);
+      setLoading(false);
+      setLoadedOwnerKey(ownerKey);
+      return () => { active = false; };
+    }
+
     (async () => {
       try {
-        const { data: nbs } = await supabase.from('notebooks').select('id, title').eq('user_id', user.id);
+        const { data: nbs, error: notebookError } = await supabase.from('notebooks').select('id, title').eq('user_id', userId);
+        if (notebookError) throw notebookError;
         const titles: Record<string, string> = {};
         (nbs || []).forEach((n: any) => { titles[n.id] = n.title || 'Untitled'; });
-        const { data: pages } = await supabase.from('pages').select('content, notebook_id').eq('user_id', user.id);
-        setCards(extractCards(pages || [], titles));
+        const { data: pages, error: pageError } = await supabase.from('pages').select('content, notebook_id').eq('user_id', userId);
+        if (pageError) throw pageError;
+        if (active) setCards([...localCards, ...extractCards(pages || [], titles)]);
       } catch (e) {
         console.error(e);
-        toast.error('Failed to load flashcards');
+        if (active) {
+          setCards(localCards);
+          toast.error('Cloud flashcards could not load; showing this account’s saved device cards.');
+        }
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(false);
+          setLoadedOwnerKey(ownerKey);
+        }
       }
     })();
-  }, [user]);
+    return () => { active = false; };
+  }, [userId, ownerKey]);
 
   const queue = useMemo(() => {
     if (!sessionOnlyDue) return cards;
@@ -85,7 +127,7 @@ const Flashcards: React.FC = () => {
     setIdx(i => i + 1);
   };
 
-  if (loading) {
+  if (loading || loadedOwnerKey !== ownerKey) {
     return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fffdf5] to-[#eef4ff] text-[#68636c]">Loading flashcards...</div>;
   }
 

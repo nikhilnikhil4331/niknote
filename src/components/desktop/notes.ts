@@ -182,6 +182,7 @@ export function useDesktopNotes() {
         sessionStorage.setItem(
           'niknote-mobile-open',
           JSON.stringify({
+            ownerId: user?.id,
             title: note.title,
             blocks: Array.isArray(content) && content.length ? content : [createBlock()],
             notebookId: note.id,
@@ -194,6 +195,7 @@ export function useDesktopNotes() {
       sessionStorage.setItem(
         'niknote-mobile-open',
         JSON.stringify({
+          ownerId: user?.id,
           title: note.title,
           blocks: note.localBlocks?.length ? note.localBlocks : blocksFromNoteText(note.preview || ''),
           notebookId: note.id,
@@ -214,6 +216,7 @@ export function useDesktopNotes() {
         sessionStorage.setItem(
           'niknote-mobile-open',
           JSON.stringify({
+            ownerId: user?.id,
             title: opts?.title || 'Untitled Note',
             blocks: blocksFromNoteText(opts?.text || ''),
             style: opts?.style,
@@ -226,7 +229,7 @@ export function useDesktopNotes() {
         navigate('/editor/new');
       }
     },
-    [navigate],
+    [navigate, user?.id],
   );
 
   // ---- Create (persists immediately, then caller may open) ----

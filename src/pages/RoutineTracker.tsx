@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { TrackerShell, Panel } from '@/components/trackers/TrackerShell';
 import { scheduledStreak, isScheduled, toDay } from '@/lib/trackers';
 import { syncLocalRoutineToCloud } from '@/lib/cloudSyncEngine';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 import { WaterGlass } from '@/components/motion/WaterGlass';
 import { RoutineArt } from '@/components/motion/FeatureArt';
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ReferenceLine } from 'recharts';
@@ -31,9 +32,9 @@ type Wellness = { water: number; sleep_hours: number; exercise_minutes: number; 
 const LOCAL_ROUTINE_KEY = 'niknote.routine.v1.local';
 const localRoutineId = () => `rt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
-function readLocalRoutine(): { habits: Habit[]; checks: { habit_id: string; day: string }[]; todos: Todo[]; week: Record<string, Wellness>; waterGoal: number } {
+function readLocalRoutine(storageKey = LOCAL_ROUTINE_KEY): { habits: Habit[]; checks: { habit_id: string; day: string }[]; todos: Todo[]; week: Record<string, Wellness>; waterGoal: number } {
   try {
-    const raw = localStorage.getItem(LOCAL_ROUTINE_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return { habits: [], checks: [], todos: [], week: {}, waterGoal: 8 };
     const parsed = JSON.parse(raw);
     return {
@@ -50,12 +51,15 @@ function readLocalRoutine(): { habits: Habit[]; checks: { habit_id: string; day:
 
 export default function RoutineTracker() {
   const { user, loading: authLoading } = useAuth();
+  const isLocalOnly = !user || String(user.id || '').startsWith('local-guest-');
+  const localStorageKey = ownerScopedStorageKey(LOCAL_ROUTINE_KEY, isLocalOnly ? undefined : user?.id);
+  const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
   const today = toDay(new Date());
-  const [habits, setHabits] = useState<Habit[]>(() => readLocalRoutine().habits);
-  const [checks, setChecks] = useState<{ habit_id: string; day: string }[]>(() => readLocalRoutine().checks);
-  const [todos, setTodos] = useState<Todo[]>(() => readLocalRoutine().todos);
-  const [week, setWeek] = useState<Record<string, Wellness>>(() => readLocalRoutine().week);
-  const [waterGoal, setWaterGoal] = useState(() => readLocalRoutine().waterGoal);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [checks, setChecks] = useState<{ habit_id: string; day: string }[]>([]);
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [week, setWeek] = useState<Record<string, Wellness>>({});
+  const [waterGoal, setWaterGoal] = useState(8);
   const [habitForm, setHabitForm] = useState({ name: '', emoji: '✅', block: 'morning', days: [0, 1, 2, 3, 4, 5, 6] as number[] });
   const [showArchived, setShowArchived] = useState(false);
   const [todoForm, setTodoForm] = useState({ title: '', priority: 'medium' });
@@ -64,29 +68,40 @@ export default function RoutineTracker() {
 
   const w: Wellness = week[today] ?? { water: 0, sleep_hours: 0, exercise_minutes: 0, mood: '', pomodoros: 0 };
 
-  const isLocalOnly = !user || String(user.id || '').startsWith('local-guest-');
+  useEffect(() => {
+    if (authLoading) return;
+    const local = readLocalRoutine(localStorageKey);
+    setHabits(local.habits);
+    setChecks(local.checks);
+    setTodos(local.todos);
+    setWeek(local.week);
+    setWaterGoal(local.waterGoal);
+    setLoadedStorageKey(localStorageKey);
+  }, [authLoading, localStorageKey]);
 
   useEffect(() => {
-    if (authLoading || !isLocalOnly) return;
-    try { localStorage.setItem(LOCAL_ROUTINE_KEY, JSON.stringify({ habits, checks, todos, week, waterGoal })); } catch { /* quota */ }
-  }, [habits, checks, todos, week, waterGoal, isLocalOnly, authLoading]);
+    if (authLoading || !isLocalOnly || loadedStorageKey !== localStorageKey) return;
+    try { localStorage.setItem(localStorageKey, JSON.stringify({ habits, checks, todos, week, waterGoal })); } catch { /* quota */ }
+  }, [habits, checks, todos, week, waterGoal, isLocalOnly, authLoading, loadedStorageKey, localStorageKey]);
 
   useEffect(() => {
-    if (isLocalOnly || !user) return;
+    if (authLoading || loadedStorageKey !== localStorageKey || isLocalOnly || !user) return;
+    let active = true;
     const from = new Date(); from.setDate(from.getDate() - 60);
-    const loadTimer = window.setTimeout(() => setLoadError(true), 12000);
+    const loadTimer = window.setTimeout(() => { if (active) setLoadError(true); }, 12000);
     (async () => {
-      // Upload any offline/local routine entries to Supabase BEFORE fetching cloud rows
+      // Upload only this user's pending routine queue before fetching cloud rows.
       await syncLocalRoutineToCloud(user.id).catch(() => 0);
 
       const [h, c, t, d, s] = await Promise.all([
-        db.from('habits').select('*').order('created_at'),
-        db.from('habit_checks').select('habit_id, day').gte('day', toDay(from)),
-        db.from('todos').select('*').order('position'),
-        db.from('daily_wellness').select('*').gte('day', toDay(new Date(Date.now() - 6 * 864e5))),
-        db.from('tracker_settings').select('water_goal').maybeSingle(),
+        db.from('habits').select('*').eq('user_id', user.id).order('created_at'),
+        db.from('habit_checks').select('habit_id, day').eq('user_id', user.id).gte('day', toDay(from)),
+        db.from('todos').select('*').eq('user_id', user.id).order('position'),
+        db.from('daily_wellness').select('*').eq('user_id', user.id).gte('day', toDay(new Date(Date.now() - 6 * 864e5))),
+        db.from('tracker_settings').select('water_goal').eq('user_id', user.id).maybeSingle(),
       ]);
       window.clearTimeout(loadTimer);
+      if (!active) return;
       setLoadError(!!h.error);
       if (!h.error) {
         setHabits(h.data ?? []); setChecks(c.data ?? []); setTodos(t.data ?? []);
@@ -94,26 +109,29 @@ export default function RoutineTracker() {
         if (s.data) setWaterGoal(s.data.water_goal);
       }
     })();
-    return () => window.clearTimeout(loadTimer);
-  }, [user, isLocalOnly, reload]);
+    return () => {
+      active = false;
+      window.clearTimeout(loadTimer);
+    };
+  }, [user, isLocalOnly, authLoading, reload, loadedStorageKey, localStorageKey]);
 
   const saveWellness = async (patch: Partial<Wellness>) => {
     const next = { ...w, ...patch };
     setWeek(p => ({ ...p, [today]: next }));
-    if (user) await db.from('daily_wellness').upsert({ user_id: user.id, day: today, ...next });
+    if (!isLocalOnly && user) await db.from('daily_wellness').upsert({ user_id: user.id, day: today, ...next });
   };
 
   // Habits
   const addHabit = async () => {
     if (!habitForm.name.trim()) return;
     if (!habitForm.days.length) return toast.error('Pick at least one day');
-    if (!user) {
+    if (isLocalOnly || !user) {
       haptic('light');
       setHabits(p => [...p, { id: localRoutineId(), ...habitForm, name: habitForm.name.trim(), archived: false }]);
       setHabitForm(f => ({ ...f, name: '' }));
       return;
     }
-    const { data, error } = await db.from('habits').insert({ ...habitForm, name: habitForm.name.trim() }).select().single();
+    const { data, error } = await db.from('habits').insert({ ...habitForm, name: habitForm.name.trim(), user_id: user.id }).select().single();
     if (error) return toast.error(error.message);
     haptic('light'); setHabits(p => [...p, data]); setHabitForm(f => ({ ...f, name: '' }));
   };
@@ -122,44 +140,44 @@ export default function RoutineTracker() {
     if (done) {
       setChecks(p => p.filter(c => !(c.habit_id === h.id && c.day === today)));
       haptic('light');
-      if (user) await db.from('habit_checks').delete().eq('habit_id', h.id).eq('day', today);
+      if (!isLocalOnly && user) await db.from('habit_checks').delete().eq('habit_id', h.id).eq('day', today).eq('user_id', user.id);
     } else {
       setChecks(p => [...p, { habit_id: h.id, day: today }]);
       haptic('medium');
-      if (user) await db.from('habit_checks').insert({ habit_id: h.id, day: today });
+      if (!isLocalOnly && user) await db.from('habit_checks').insert({ habit_id: h.id, user_id: user.id, day: today });
       const streak = scheduledStreak([...checks.filter(c => c.habit_id === h.id).map(c => c.day), today], h.days);
       if (streak > 0 && streak % 7 === 0) { haptic('success'); confetti({ particleCount: 120, spread: 80 }); toast.success(`${streak}-day streak on ${h.name}! 🔥`); }
     }
   };
-  const archiveHabit = async (h: Habit) => { haptic('light'); setHabits(p => p.map(x => x.id === h.id ? { ...x, archived: !h.archived } : x)); if (user) await db.from('habits').update({ archived: !h.archived }).eq('id', h.id); toast.success(h.archived ? 'Habit restored' : 'Habit archived — history kept'); };
-  const delHabit = async (id: string) => { if (!window.confirm('Delete this habit and all its history? Archive keeps history instead.')) return; haptic('heavy'); setHabits(p => p.filter(h => h.id !== id)); if (user) await db.from('habits').delete().eq('id', id); };
+  const archiveHabit = async (h: Habit) => { haptic('light'); setHabits(p => p.map(x => x.id === h.id ? { ...x, archived: !h.archived } : x)); if (!isLocalOnly && user) await db.from('habits').update({ archived: !h.archived }).eq('id', h.id).eq('user_id', user.id); toast.success(h.archived ? 'Habit restored' : 'Habit archived — history kept'); };
+  const delHabit = async (id: string) => { if (!window.confirm('Delete this habit and all its history? Archive keeps history instead.')) return; haptic('heavy'); setHabits(p => p.filter(h => h.id !== id)); if (!isLocalOnly && user) await db.from('habits').delete().eq('id', id).eq('user_id', user.id); };
 
   // Todos
   const addTodo = async () => {
     if (!todoForm.title.trim()) return;
-    if (!user) {
+    if (isLocalOnly || !user) {
       haptic('light');
       setTodos(p => [...p, { id: localRoutineId(), title: todoForm.title.trim(), priority: todoForm.priority, done: false, position: p.length }]);
       setTodoForm(f => ({ ...f, title: '' }));
       return;
     }
-    const { data, error } = await db.from('todos').insert({ ...todoForm, title: todoForm.title.trim(), position: todos.length }).select().single();
+    const { data, error } = await db.from('todos').insert({ ...todoForm, title: todoForm.title.trim(), position: todos.length, user_id: user.id }).select().single();
     if (error) return toast.error(error.message);
     haptic('light'); setTodos(p => [...p, data]); setTodoForm(f => ({ ...f, title: '' }));
   };
   const toggleTodo = async (t: Todo) => {
     haptic(t.done ? 'light' : 'medium');
     setTodos(p => p.map(x => x.id === t.id ? { ...x, done: !t.done } : x));
-    if (user) await db.from('todos').update({ done: !t.done }).eq('id', t.id);
+    if (!isLocalOnly && user) await db.from('todos').update({ done: !t.done }).eq('id', t.id).eq('user_id', user.id);
   };
-  const delTodo = async (id: string) => { haptic('heavy'); setTodos(p => p.filter(t => t.id !== id)); if (user) await db.from('todos').delete().eq('id', id); };
+  const delTodo = async (id: string) => { haptic('heavy'); setTodos(p => p.filter(t => t.id !== id)); if (!isLocalOnly && user) await db.from('todos').delete().eq('id', id).eq('user_id', user.id); };
   const reorderTimer = useRef<number>();
   const onReorder = (next: Todo[]) => {
     setTodos(next); haptic('selection');
-    if (!user) return;
+    if (isLocalOnly || !user) return;
     window.clearTimeout(reorderTimer.current);
     reorderTimer.current = window.setTimeout(() => {
-      next.forEach((t, i) => db.from('todos').update({ position: i }).eq('id', t.id));
+      next.forEach((t, i) => db.from('todos').update({ position: i }).eq('id', t.id).eq('user_id', user.id));
     }, 600);
   };
 
@@ -198,6 +216,10 @@ export default function RoutineTracker() {
     const done = sched.filter(h => checks.some(c => c.habit_id === h.id && c.day === d)).length;
     return { label: date.toLocaleDateString(undefined, { weekday: 'short' }), habits: sched.length ? Math.round((done / sched.length) * 100) : 0, water: week[d]?.water ?? 0, sleep: week[d]?.sleep_hours ?? 0 };
   });
+
+  if (authLoading || loadedStorageKey !== localStorageKey) {
+    return <TrackerShell title="Daily Routine" subtitle="Habits, tasks, focus & wellbeing"><div className="py-16 text-center text-sm text-muted-foreground">Loading your daily routine…</div></TrackerShell>;
+  }
 
   return (
     <TrackerShell title="Daily Routine" subtitle="Habits, tasks, focus & wellbeing">

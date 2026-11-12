@@ -5,6 +5,7 @@ import { DataChartBlock } from '@/components/editor/blocks/DataChartBlock';
 import { EditableBlockTable } from '@/components/editor/blocks/EditableBlockTable';
 import { createBlock } from '@/types/block';
 import {
+  copyLocalNotesToOwner,
   localNotebookAsCloudShape,
   readLocalNotesForOwner,
   removeLocalNoteForOwner,
@@ -71,5 +72,38 @@ describe('owner-scoped local note metadata', () => {
 
     expect(readLocalNotesForOwner('owner-a')).toEqual([]);
     expect(readLocalNotesForOwner('owner-b').map((note) => note.title)).toEqual(['B copy']);
+  });
+
+  it('copies only an explicitly promoted guest’s notes and keeps the device recovery rows intact', () => {
+    const guestId = 'local-guest-source';
+    const ownerId = '123e4567-e89b-42d3-a456-426614174000';
+    const deviceRows = [
+      { id: 'guest-note', _ownerId: guestId, title: 'Guest note', blocks: [] },
+      { id: 'legacy-note', title: 'Unclaimed guest draft', blocks: [] },
+      { id: 'synced-note', title: 'Previously synced', _syncedAt: '2026-10-01T00:00:00.000Z' },
+      { id: 'other-guest-note', _ownerId: 'local-guest-other', title: 'Other guest' },
+      { id: 'shared-id', _ownerId: guestId, title: 'Guest version' },
+      { id: 'shared-id', _ownerId: ownerId, title: 'Existing account version' },
+    ];
+    localStorage.setItem('niknote.mobile.notebooks.v1', JSON.stringify(deviceRows));
+
+    expect(copyLocalNotesToOwner(guestId, ownerId)).toBe(2);
+    const afterCopy = JSON.parse(localStorage.getItem('niknote.mobile.notebooks.v1') || '[]');
+    expect(afterCopy.slice(0, 2)).toEqual([
+      { id: 'guest-note', _ownerId: ownerId, title: 'Guest note', blocks: [] },
+      { id: 'legacy-note', title: 'Unclaimed guest draft', blocks: [], _ownerId: ownerId },
+    ]);
+    expect(afterCopy.slice(2)).toEqual(deviceRows);
+    expect(readLocalNotesForOwner(ownerId).map((note) => note.id).sort()).toEqual(['guest-note', 'legacy-note', 'shared-id']);
+    expect(readLocalNotesForOwner(ownerId).find((note) => note.id === 'shared-id')?.title).toBe('Existing account version');
+  });
+
+  it('does not copy unclaimed legacy notes when another owner is recorded as their claimant', () => {
+    localStorage.setItem('niknote.mobile.notebooks.v1', JSON.stringify([{ id: 'legacy', title: 'Keep with prior guest' }]));
+    localStorage.setItem('niknote.local-notes.legacy-owner.v1', 'local-guest-prior');
+
+    expect(copyLocalNotesToOwner('local-guest-current', '123e4567-e89b-42d3-a456-426614174000')).toBe(0);
+    expect(readLocalNotesForOwner('123e4567-e89b-42d3-a456-426614174000')).toEqual([]);
+    expect(JSON.parse(localStorage.getItem('niknote.mobile.notebooks.v1') || '[]')[0]._ownerId).toBeUndefined();
   });
 });

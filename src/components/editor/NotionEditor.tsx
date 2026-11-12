@@ -35,6 +35,7 @@ interface NotionEditorProps {
   settings?: any;
   pageNumber?: number;
   totalPages?: number;
+  textPlaceholder?: string;
 }
 
 const BLOCK_TEMPLATES: Partial<Record<BlockType, { content: string; extra?: Partial<Block> }>> = {
@@ -145,7 +146,7 @@ const blockEditorFontFamily = (font?: string, customFont?: string): string | und
 // ============================================================
 export const NotionEditor: React.FC<NotionEditorProps> = ({
   blocks, onBlocksChange, currentColor = 'black', onColorChange,
-  onAIAction, onOCRAction, onExport, dna, settings, pageNumber = 1, totalPages = 1,
+  onAIAction, onOCRAction, onExport, dna, settings, pageNumber = 1, totalPages = 1, textPlaceholder,
 }) => {
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
   const [slashMenu, setSlashMenu] = useState<{ blockId: string; query: string } | null>(null);
@@ -734,7 +735,7 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                     onPaste={(e) => handlePaste(block.id, e)}
                     onFocus={() => setFocusedBlockId(block.id)}
                     onClick={(e) => { e.stopPropagation(); setFocusedBlockId(block.id); }}
-                    placeholder={isMobile && block.type === 'text' ? 'Write here…' : config.placeholder}
+                    placeholder={isMobile && block.type === 'text' ? 'Write here…' : block.type === 'text' ? (textPlaceholder || config.placeholder) : config.placeholder}
                     rows={1}
                     className={cn("flex-1 bg-transparent border-0 outline-none resize-none py-1 px-1 leading-relaxed w-full overflow-hidden", isMobile ? "min-h-[48px] text-[16px] py-3 px-2 leading-7 text-gray-900" : "text-sm text-gray-900", block.checked && "line-through text-gray-400", config.textClass)}
                     style={{ fontFamily: blockEditorFontFamily(settings?.font, settings?.customStyle?.baseFont), color: inkData?.hex || '#111827', caretColor: '#2869d5', WebkitUserSelect: 'text', userSelect: 'text', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}

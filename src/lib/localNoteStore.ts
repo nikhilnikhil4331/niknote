@@ -186,30 +186,34 @@ export function removeLocalNoteForOwner(
 }
 
 /**
- * Promote an explicitly active offline guest's notes to the cloud guest identity.
- * Unclaimed legacy notes are included only during that transition; a sign-in to
- * another registered account must not automatically adopt them.
+ * Copy an explicitly promoted offline guest's notes into its cloud guest cache.
+ * Keep every device row and legacy ownership marker unchanged as a recovery
+ * source; an account switch must never move or overwrite another owner's row.
  */
-export function transferLocalNotesToOwner(fromOwnerId: string | null | undefined, toOwnerId: string) {
-  if (!toOwnerId || !fromOwnerId || !fromOwnerId.startsWith('local-guest-')) return;
-  const mobile = readList(LOCAL_NOTEBOOKS_KEY);
-  const plain = readList(LOCAL_PLAIN_NOTES_KEY);
-  const transfer = (note: LocalNoteRecord) =>
-    ownerOf(note) === fromOwnerId || (!ownerOf(note) && isUnclaimedOfflineNote(note));
-  const nextMobile = mobile.map((note) => transfer(note) ? { ...note, _ownerId: toOwnerId } : note);
-  const nextPlain = plain.map((note) => transfer(note) ? { ...note, _ownerId: toOwnerId } : note);
-  const changed = nextMobile.some((note, index) => note !== mobile[index]) ||
-    nextPlain.some((note, index) => note !== plain[index]);
-  if (changed) {
-    writeList(LOCAL_NOTEBOOKS_KEY, nextMobile);
-    writeList(LOCAL_PLAIN_NOTES_KEY, nextPlain);
-    try {
-      if (localStorage.getItem(LEGACY_NOTE_OWNER_KEY) === fromOwnerId) {
-        localStorage.setItem(LEGACY_NOTE_OWNER_KEY, toOwnerId);
-      }
-    } catch { /* ignore */ }
-    notifyLocalChange();
+export function copyLocalNotesToOwner(fromOwnerId: string | null | undefined, toOwnerId: string): number {
+  if (!toOwnerId || !fromOwnerId || !fromOwnerId.startsWith('local-guest-')) return 0;
+  let mayCopyUnclaimed = false;
+  try {
+    const legacyOwner = localStorage.getItem(LEGACY_NOTE_OWNER_KEY);
+    mayCopyUnclaimed = !legacyOwner || legacyOwner === fromOwnerId;
+  } catch {
+    // Only copy unclaimed legacy notes when their legacy owner marker is readable.
   }
+  let copied = 0;
+  for (const key of [LOCAL_NOTEBOOKS_KEY, LOCAL_PLAIN_NOTES_KEY]) {
+    const notes = readList(key);
+    const existingTargetIds = new Set(notes.filter((note) => ownerOf(note) === toOwnerId).map((note) => note.id));
+    const additions = notes
+      .filter((note) => ownerOf(note) === fromOwnerId || (mayCopyUnclaimed && !ownerOf(note) && isUnclaimedOfflineNote(note)))
+      .filter((note) => !existingTargetIds.has(note.id))
+      .map((note) => ({ ...note, _ownerId: toOwnerId }));
+    if (additions.length) {
+      writeList(key, [...additions, ...notes]);
+      copied += additions.length;
+    }
+  }
+  if (copied) notifyLocalChange();
+  return copied;
 }
 
 /** Normalize a device note for the existing notebooks list UI. */

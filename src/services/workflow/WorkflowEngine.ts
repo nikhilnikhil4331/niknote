@@ -384,7 +384,9 @@ export class WorkflowEngine {
     // 1. Route through unified NikAI Astra Neural Core (/api/ai -> LarpRouter / Cloud)
     try {
       const { streamAstaAI } = await import('@/lib/aiEngine');
+      const { data: sessionData } = await supabase.auth.getSession();
       const result = await streamAstaAI({
+        userId: sessionData.session?.user.id,
         messages: [
           ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
           { role: 'user' as const, content: prompt },

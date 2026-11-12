@@ -5,6 +5,7 @@ import type { Json } from '@/integrations/supabase/types';
 import type { NoteSettings } from '@/types/notes';
 import { readLocalNotesForOwner, removeLocalNoteForOwner, upsertLocalNoteForOwner, type LocalNoteRecord } from '@/lib/localNoteStore';
 import { blocksFromNotebookCloudPages, orderNotebookCloudPages, partitionNotebookBlocks, type NotebookCloudPage } from '@/lib/notebookCloudPages';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 
 export type CloudSyncState = 'synced' | 'syncing' | 'local' | 'offline' | 'error';
 
@@ -118,15 +119,32 @@ function writeJson(key: string, value: unknown): void {
   }
 }
 
-// ── Reactive Sync Snapshot Store ──
-let currentSnapshot: SyncSnapshot = {
-  state: typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'local',
-  lastSyncedAt: typeof window !== 'undefined' ? localStorage.getItem(LAST_SYNC_KEY) : null,
-  syncedCount: 0,
-  errorMessage: null,
-};
+// ── Owner-scoped reactive sync snapshots ──
+const DEVICE_STATUS_OWNER = '__device__';
+const snapshots = new Map<string, SyncSnapshot>();
+const listeners = new Map<string, Set<(snap: SyncSnapshot) => void>>();
 
-const listeners = new Set<(snap: SyncSnapshot) => void>();
+function syncStatusOwner(userId?: string | null) {
+  return userId || DEVICE_STATUS_OWNER;
+}
+
+function syncStatusStorageKey(userId?: string | null) {
+  return userId ? `${LAST_SYNC_KEY}:owner:${encodeURIComponent(userId)}` : LAST_SYNC_KEY;
+}
+
+function initialSyncSnapshot(userId?: string | null): SyncSnapshot {
+  let lastSyncedAt: string | null = null;
+  if (typeof window !== 'undefined') {
+    try { lastSyncedAt = localStorage.getItem(syncStatusStorageKey(userId)); } catch { /* storage disabled */ }
+  }
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  return {
+    state: offline ? 'offline' : isCloudUserId(userId) && lastSyncedAt ? 'synced' : 'local',
+    lastSyncedAt,
+    syncedCount: 0,
+    errorMessage: null,
+  };
+}
 
 export const CLOUD_SYNC_EVENT = 'niknote:local-data-changed';
 
@@ -139,51 +157,65 @@ export function notifyLocalDataChanged() {
   }
 }
 
-export function updateSyncSnapshot(patch: Partial<SyncSnapshot>) {
-  currentSnapshot = { ...currentSnapshot, ...patch };
-  if (patch.lastSyncedAt && typeof window !== 'undefined') {
-    try {
-      localStorage.setItem(LAST_SYNC_KEY, patch.lastSyncedAt);
-    } catch {
-      // ignore
-    }
+export function getSyncSnapshot(userId?: string | null): SyncSnapshot {
+  const ownerKey = syncStatusOwner(userId);
+  let snapshot = snapshots.get(ownerKey);
+  if (!snapshot) {
+    snapshot = initialSyncSnapshot(userId);
+    snapshots.set(ownerKey, snapshot);
   }
-  listeners.forEach((fn) => fn(currentSnapshot));
+  return snapshot;
 }
 
-export function getSyncSnapshot(): SyncSnapshot {
-  return currentSnapshot;
+export function updateSyncSnapshot(patch: Partial<SyncSnapshot>, userId?: string | null) {
+  const ownerKey = syncStatusOwner(userId);
+  const snapshot = { ...getSyncSnapshot(userId), ...patch };
+  snapshots.set(ownerKey, snapshot);
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'lastSyncedAt') && typeof window !== 'undefined') {
+    try {
+      if (patch.lastSyncedAt) localStorage.setItem(syncStatusStorageKey(userId), patch.lastSyncedAt);
+      else localStorage.removeItem(syncStatusStorageKey(userId));
+    } catch {
+      // ignore storage errors; the in-memory status remains available
+    }
+  }
+
+  listeners.get(ownerKey)?.forEach((listener) => listener(snapshot));
 }
 
 export function useCloudSyncStatus(userId?: string | null) {
-  const [snap, setSnap] = useState<SyncSnapshot>(() => ({
-    ...currentSnapshot,
-    state:
-      typeof navigator !== 'undefined' && navigator.onLine === false
-        ? 'offline'
-        : isCloudUserId(userId) && currentSnapshot.lastSyncedAt
-          ? 'synced'
-          : currentSnapshot.state,
+  const ownerKey = syncStatusOwner(userId);
+  const [stored, setStored] = useState<{ ownerKey: string; snapshot: SyncSnapshot }>(() => ({
+    ownerKey,
+    snapshot: getSyncSnapshot(userId),
   }));
+  // On an account switch, show that account's snapshot immediately rather than
+  // rendering the previous account's in-memory status for one frame.
+  const snapshot = stored.ownerKey === ownerKey ? stored.snapshot : getSyncSnapshot(userId);
 
   useEffect(() => {
-    const onChange = (next: SyncSnapshot) => setSnap(next);
-    listeners.add(onChange);
+    const ownerListeners = listeners.get(ownerKey) || new Set<(next: SyncSnapshot) => void>();
+    listeners.set(ownerKey, ownerListeners);
+    const onChange = (next: SyncSnapshot) => setStored({ ownerKey, snapshot: next });
+    ownerListeners.add(onChange);
+    onChange(getSyncSnapshot(userId));
     return () => {
-      listeners.delete(onChange);
+      ownerListeners.delete(onChange);
+      if (!ownerListeners.size) listeners.delete(ownerKey);
     };
-  }, []);
+  }, [ownerKey, userId]);
 
   useEffect(() => {
     const handleOnline = () => {
       if (isCloudUserId(userId)) {
         void syncAllLocalDataToCloud(userId);
       } else {
-        updateSyncSnapshot({ state: 'local', errorMessage: null });
+        updateSyncSnapshot({ state: 'local', errorMessage: null }, userId);
       }
     };
     const handleOffline = () => {
-      updateSyncSnapshot({ state: 'offline' });
+      updateSyncSnapshot({ state: 'offline' }, userId);
     };
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -200,7 +232,7 @@ export function useCloudSyncStatus(userId?: string | null) {
     return syncAllLocalDataToCloud(userId, { pullCloud: true });
   }, [userId]);
 
-  return { ...snap, syncNow };
+  return { ...snapshot, syncNow };
 }
 
 // ── 1. Sync Mobile & Smart Notes <-> public.notebooks + public.pages ──
@@ -210,11 +242,8 @@ export async function syncLocalNotesWithCloud(
 ): Promise<number> {
   if (!isCloudUserId(userId)) return 0;
 
-  const mapKey = `${NOTEBOOK_MAP_KEY}:${userId}`;
-  const idMap = {
-    ...readJson<Record<string, string>>(NOTEBOOK_MAP_KEY, {}),
-    ...readJson<Record<string, string>>(mapKey, {}),
-  };
+  const mapKey = ownerScopedStorageKey(NOTEBOOK_MAP_KEY, userId);
+  const idMap = readJson<Record<string, string>>(mapKey, {});
   let localNotes = readLocalNotesForOwner(userId);
   let moved = 0;
   let localMutated = false;
@@ -568,13 +597,14 @@ export async function syncLocalNotesWithCloud(
 // ── 2. Sync Money Tracker Local Queue -> Cloud ──
 export async function syncLocalMoneyToCloud(userId: string): Promise<number> {
   if (!isCloudUserId(userId)) return 0;
+  const localKey = ownerScopedStorageKey('niknote.money.v1.local', userId);
   const local = readJson<{
     txs?: LocalMoneyTransaction[];
     goals?: LocalMoneyGoal[];
     bills?: LocalMoneyBill[];
     currency?: string;
     budget?: number;
-  }>('niknote.money.v1.local', {});
+  }>(localKey, {});
 
   let moved = 0;
   const failures: string[] = [];
@@ -675,7 +705,7 @@ export async function syncLocalMoneyToCloud(userId: string): Promise<number> {
 
   // Successful records are removed from the local queue; failed records and
   // failed settings remain intact for a later retry.
-  writeJson('niknote.money.v1.local', {
+  writeJson(localKey, {
     txs: remainingTxs.filter((row) => String(row?.id || '').startsWith('local_')),
     goals: remainingGoals.filter((row) => String(row?.id || '').startsWith('local_')),
     bills: remainingBills.filter((row) => String(row?.id || '').startsWith('local_')),
@@ -692,6 +722,7 @@ export async function syncLocalMoneyToCloud(userId: string): Promise<number> {
 // ── 3. Sync Routine Tracker Local Queue -> Cloud ──
 export async function syncLocalRoutineToCloud(userId: string): Promise<number> {
   if (!isCloudUserId(userId)) return 0;
+  const localKey = ownerScopedStorageKey('niknote.routine.v1.local', userId);
   const local = readJson<{
     habits?: LocalHabit[];
     checks?: { habit_id: string; day: string }[];
@@ -699,7 +730,7 @@ export async function syncLocalRoutineToCloud(userId: string): Promise<number> {
     week?: Record<string, LocalWellnessDay>;
     waterGoal?: number;
     _synced?: boolean;
-  }>('niknote.routine.v1.local', {});
+  }>(localKey, {});
 
   const habits = local.habits || [];
   const checks = local.checks || [];
@@ -795,7 +826,7 @@ export async function syncLocalRoutineToCloud(userId: string): Promise<number> {
     }
   }
 
-  writeJson('niknote.routine.v1.local', {
+  writeJson(localKey, {
     habits: remainingHabits,
     checks: remainingChecks,
     todos: remainingTodos,
@@ -813,10 +844,12 @@ export async function syncLocalRoutineToCloud(userId: string): Promise<number> {
 // ── 4. Sync Whiteboards Local Queue -> Cloud ──
 export async function syncLocalBoardsToCloud(userId: string): Promise<number> {
   if (!isCloudUserId(userId)) return 0;
-  const localBoards = readJson<LocalBoard[]>('niknote.boards.v1.local', []);
+  const localKey = ownerScopedStorageKey('niknote.boards.v1.local', userId);
+  const boardMapKey = ownerScopedStorageKey(BOARD_MAP_KEY, userId);
+  const localBoards = readJson<LocalBoard[]>(localKey, []);
   if (!localBoards.length) return 0;
 
-  const boardMap = readJson<Record<string, string>>(BOARD_MAP_KEY, {});
+  const boardMap = readJson<Record<string, string>>(boardMapKey, {});
   let moved = 0;
   const failures: string[] = [];
   const remaining: LocalBoard[] = [];
@@ -866,8 +899,8 @@ export async function syncLocalBoardsToCloud(userId: string): Promise<number> {
     }
   }
 
-  writeJson(BOARD_MAP_KEY, boardMap);
-  writeJson('niknote.boards.v1.local', remaining);
+  writeJson(boardMapKey, boardMap);
+  writeJson(localKey, remaining);
   if (failures.length) {
     throw new Error(`Board sync incomplete (${failures.length} issue${failures.length === 1 ? '' : 's'}): ${failures[0]}`);
   }
@@ -884,7 +917,7 @@ export function syncAllLocalDataToCloud(
   if (!isCloudUserId(userId)) {
     updateSyncSnapshot({
       state: typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'local',
-    });
+    }, userId);
     return Promise.resolve({ synced: 0, ok: false, error: 'Device mode active' });
   }
 
@@ -892,7 +925,7 @@ export function syncAllLocalDataToCloud(
   if (existing) return existing;
 
   const task = (async () => {
-    updateSyncSnapshot({ state: 'syncing', errorMessage: null });
+    updateSyncSnapshot({ state: 'syncing', errorMessage: null }, userId);
     try {
       const results = await Promise.allSettled([
         syncLocalNotesWithCloud(userId, opts),
@@ -914,7 +947,7 @@ export function syncAllLocalDataToCloud(
           state: typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'error',
           syncedCount: synced,
           errorMessage: message,
-        });
+        }, userId);
         return { synced, ok: false, error: message };
       }
 
@@ -924,14 +957,14 @@ export function syncAllLocalDataToCloud(
         lastSyncedAt: nowIso,
         syncedCount: synced,
         errorMessage: null,
-      });
+      }, userId);
       return { synced, ok: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Cloud sync error';
       updateSyncSnapshot({
         state: typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'error',
         errorMessage: msg,
-      });
+      }, userId);
       return { synced: 0, ok: false, error: msg };
     } finally {
       activeSyncPromisesByUser.delete(userId);

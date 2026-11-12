@@ -573,6 +573,18 @@ export function resolveRouteSeo(pathname: string): RouteSeoEntry & { blogPost?: 
     };
   }
 
+  if (clean === '/editor' || clean.startsWith('/editor/')) {
+    return {
+      path: clean,
+      title: 'Notes Editor — NikNote',
+      description: 'Write, format, and organize notes in your private NikNote workspace.',
+      canonicalPath: '/home',
+      robots: 'noindex, nofollow',
+      pageType: 'workspace',
+      inSitemap: false,
+    };
+  }
+
   const nonIdx = NON_INDEXABLE_ROUTES[clean];
   if (nonIdx) {
     return {

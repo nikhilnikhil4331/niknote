@@ -6,6 +6,8 @@
 // ============================================================
 
 import { useCallback, useEffect, useState } from 'react';
+import { useOptionalAuth } from '@/contexts/AuthContext';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 
 const uid = () =>
   Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -13,7 +15,15 @@ const uid = () =>
 function readJSON<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
+    if (raw === null) return fallback;
+    try {
+      const parsed = JSON.parse(raw);
+      if (typeof fallback === 'boolean' && (parsed === 0 || parsed === 1)) return Boolean(parsed) as T;
+      return parsed as T;
+    } catch {
+      // Older simple preferences were stored as bare strings instead of JSON.
+      return (typeof fallback === 'string' ? raw : fallback) as T;
+    }
   } catch {
     return fallback;
   }
@@ -28,33 +38,47 @@ function writeJSON(key: string, value: unknown) {
   }
 }
 
-/** localStorage-backed state shared live across components in the same tab. */
+/**
+ * localStorage-backed state shared live across components in the same tab.
+ * A valid cloud account gets its own key; guest/device mode keeps using the
+ * legacy key so existing offline work remains accessible. Account changes
+ * switch the visible value synchronously and never write the prior account's
+ * in-memory state into the newly selected key.
+ */
 export function useLocalStore<T>(key: string, initial: T | (() => T)) {
-  const [value, setValue] = useState<T>(() =>
-    readJSON<T>(key, typeof initial === 'function' ? (initial as () => T)() : initial),
-  );
+  const auth = useOptionalAuth();
+  const storageKey = ownerScopedStorageKey(key, auth?.user?.id);
+  const fallback = () => typeof initial === 'function' ? (initial as () => T)() : initial;
+  const [stored, setStored] = useState<{ key: string; value: T }>(() => ({
+    key: storageKey,
+    value: readJSON<T>(storageKey, fallback()),
+  }));
+  const value = stored.key === storageKey ? stored.value : readJSON<T>(storageKey, fallback());
 
   useEffect(() => {
-    const sync = () =>
-      setValue(readJSON<T>(key, typeof initial === 'function' ? (initial as () => T)() : initial));
-    window.addEventListener(`nik-store:${key}`, sync);
+    const sync = () => setStored({ key: storageKey, value: readJSON<T>(storageKey, fallback()) });
+    sync();
+    window.addEventListener(`nik-store:${storageKey}`, sync);
     window.addEventListener('storage', sync);
     return () => {
-      window.removeEventListener(`nik-store:${key}`, sync);
+      window.removeEventListener(`nik-store:${storageKey}`, sync);
       window.removeEventListener('storage', sync);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [storageKey]);
 
   const set = useCallback(
     (next: T | ((prev: T) => T)) => {
-      setValue((prev) => {
-        const resolved = typeof next === 'function' ? (next as (p: T) => T)(prev) : next;
-        writeJSON(key, resolved);
-        return resolved;
+      setStored((previous) => {
+        const priorValue = previous.key === storageKey
+          ? previous.value
+          : readJSON<T>(storageKey, fallback());
+        const resolved = typeof next === 'function' ? (next as (p: T) => T)(priorValue) : next;
+        writeJSON(storageKey, resolved);
+        return { key: storageKey, value: resolved };
       });
     },
-    [key],
+    [storageKey],
   );
 
   return [value, set] as const;
@@ -465,9 +489,9 @@ export function useLinkedTask() {
 
 const TIMER_STATE_KEY = 'niknote.desktop.timerState.v1';
 
-export function loadPersistedTimer(): PersistedTimer | null {
+export function loadPersistedTimer(ownerId?: string): PersistedTimer | null {
   try {
-    const raw = localStorage.getItem(TIMER_STATE_KEY);
+    const raw = localStorage.getItem(ownerScopedStorageKey(TIMER_STATE_KEY, ownerId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as PersistedTimer;
     if (!parsed || typeof parsed !== 'object' || !parsed.mode) return null;
@@ -479,12 +503,13 @@ export function loadPersistedTimer(): PersistedTimer | null {
   }
 }
 
-export function savePersistedTimer(state: PersistedTimer | null) {
+export function savePersistedTimer(state: PersistedTimer | null, ownerId?: string) {
+  const storageKey = ownerScopedStorageKey(TIMER_STATE_KEY, ownerId);
   try {
     if (!state) {
-      localStorage.removeItem(TIMER_STATE_KEY);
+      localStorage.removeItem(storageKey);
     } else {
-      localStorage.setItem(TIMER_STATE_KEY, JSON.stringify({ ...state, savedAt: Date.now() }));
+      localStorage.setItem(storageKey, JSON.stringify({ ...state, savedAt: Date.now() }));
     }
   } catch {
     /* quota — ignore */

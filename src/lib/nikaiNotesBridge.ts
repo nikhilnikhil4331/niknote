@@ -8,6 +8,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Block, BlockType, createBlock } from '@/types/block';
 import { isCloudUserId, notifyLocalDataChanged } from '@/lib/cloudSyncEngine';
+import { upsertLocalNoteForOwner } from '@/lib/localNoteStore';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 
 export interface SavedNikNoteResult {
   notebookId: string;
@@ -146,7 +148,7 @@ export function markdownToRichNikNoteBlocks(markdown: string): Block[] {
  * Extracts study flashcards automatically from headings/bullet definitions/MCQs
  * and stores them into NikNote's local flashcard deck (`niknote-flashcards-v1`).
  */
-export function extractAndSaveFlashcardsFromMarkdown(topicTitle: string, markdown: string): number {
+export function extractAndSaveFlashcardsFromMarkdown(topicTitle: string, markdown: string, ownerId?: string): number {
   const cards: { id: string; front: string; back: string; deck: string; createdAt: number }[] = [];
 
   // 1. Extract "**Term:** Definition" or "**Term** — Definition" bullets & numbered items
@@ -183,10 +185,11 @@ export function extractAndSaveFlashcardsFromMarkdown(topicTitle: string, markdow
   if (cards.length === 0) return 0;
 
   try {
-    const raw = localStorage.getItem('niknote-flashcards-v1');
+    const storageKey = ownerScopedStorageKey('niknote-flashcards-v1', ownerId);
+    const raw = localStorage.getItem(storageKey);
     const existing = raw ? JSON.parse(raw) : [];
     const merged = [...cards, ...(Array.isArray(existing) ? existing : [])].slice(0, 200);
-    localStorage.setItem('niknote-flashcards-v1', JSON.stringify(merged));
+    localStorage.setItem(storageKey, JSON.stringify(merged));
   } catch {
     // ignore storage quota
   }
@@ -212,45 +215,54 @@ export async function implementNikAINote(params: {
   const now = new Date().toISOString();
   let notebookId = `local-${Date.now()}`;
 
-  // 1. Always save locally so offline/guest mobile & desktop work instantaneously
-  try {
-    const mobileListRaw = localStorage.getItem('niknote.mobile.notebooks.v1');
-    const mobileList = mobileListRaw ? JSON.parse(mobileListRaw) : [];
-    const localNotebook = {
-      id: notebookId,
-      title,
-      blocks,
-      page_style: params.pageStyle || 'ruled',
-      tags: ['NikAI', 'Smart Notes'],
-      updated_at: now,
-    };
-    localStorage.setItem(
-      'niknote.mobile.notebooks.v1',
-      JSON.stringify([localNotebook, ...(Array.isArray(mobileList) ? mobileList : [])])
-    );
+  // 1. Always save a device copy. Known workspaces get an owner tag so this
+  // cache stays private across account changes; only a no-auth legacy session
+  // writes the original unclaimed device keys.
+  const localNotebookId = notebookId;
+  const localNotebook = {
+    id: localNotebookId,
+    title,
+    blocks,
+    content: params.markdown,
+    page_style: params.pageStyle || 'ruled',
+    tags: ['NikAI', 'Smart Notes'],
+    created_at: now,
+    updated_at: now,
+  };
+  if (params.userId) {
+    upsertLocalNoteForOwner(localNotebook, params.userId, { is_favorite: true });
+  } else {
+    try {
+      const mobileListRaw = localStorage.getItem('niknote.mobile.notebooks.v1');
+      const mobileList = mobileListRaw ? JSON.parse(mobileListRaw) : [];
+      localStorage.setItem(
+        'niknote.mobile.notebooks.v1',
+        JSON.stringify([localNotebook, ...(Array.isArray(mobileList) ? mobileList : [])])
+      );
 
-    const notesRaw = localStorage.getItem('niknote.notes.v1');
-    const notesList = notesRaw ? JSON.parse(notesRaw) : [];
-    localStorage.setItem(
-      'niknote.notes.v1',
-      JSON.stringify([
-        {
-          id: notebookId,
-          title,
-          icon: '✦',
-          content: params.markdown,
-          starred: true,
-          tags: ['NikAI', 'Smart Notes'],
-          parentId: null,
-          trashedAt: null,
-          createdAt: now,
-          updatedAt: now,
-        },
-        ...(Array.isArray(notesList) ? notesList : []),
-      ])
-    );
-  } catch {
-    // ignore quota issues
+      const notesRaw = localStorage.getItem('niknote.notes.v1');
+      const notesList = notesRaw ? JSON.parse(notesRaw) : [];
+      localStorage.setItem(
+        'niknote.notes.v1',
+        JSON.stringify([
+          {
+            id: localNotebookId,
+            title,
+            icon: '✦',
+            content: params.markdown,
+            starred: true,
+            tags: ['NikAI', 'Smart Notes'],
+            parentId: null,
+            trashedAt: null,
+            createdAt: now,
+            updatedAt: now,
+          },
+          ...(Array.isArray(notesList) ? notesList : []),
+        ])
+      );
+    } catch {
+      // ignore quota issues
+    }
   }
 
   // 2. Also sync to Supabase Cloud Notebooks if user has a valid Cloud UUID
@@ -270,22 +282,31 @@ export async function implementNikAINote(params: {
         .single();
 
       if (nb?.id) {
+        const mapKey = ownerScopedStorageKey('niknote.sync.notebook_map.v1', params.userId);
         try {
-          const mapRaw = localStorage.getItem('niknote.sync.notebook_map.v1');
+          const mapRaw = localStorage.getItem(mapKey);
           const mapObj = mapRaw ? JSON.parse(mapRaw) : {};
-          mapObj[notebookId] = nb.id;
-          localStorage.setItem('niknote.sync.notebook_map.v1', JSON.stringify(mapObj));
+          mapObj[localNotebookId] = nb.id;
+          localStorage.setItem(mapKey, JSON.stringify(mapObj));
         } catch {
-          // ignore
+          // Local note still carries its owner tag and can sync later.
         }
         notebookId = nb.id;
-        await supabase.from('pages').insert({
+        const pageResult = await supabase.from('pages').insert({
           notebook_id: nb.id,
           user_id: params.userId,
           page_number: 1,
           title,
           content: blocks as any,
         });
+        if (!pageResult.error) {
+          upsertLocalNoteForOwner({
+            ...localNotebook,
+            cloud_id: nb.id,
+            _syncedAt: now,
+          }, params.userId, { is_favorite: true }, { notify: false });
+          notifyLocalDataChanged();
+        }
       }
     } catch {
       // local copy already persisted safely
@@ -295,7 +316,7 @@ export async function implementNikAINote(params: {
   }
 
   // 3. Also auto-build study flashcards in the background
-  const flashcardCount = extractAndSaveFlashcardsFromMarkdown(title, params.markdown);
+  const flashcardCount = extractAndSaveFlashcardsFromMarkdown(title, params.markdown, params.userId);
 
   // 4. Prepare immediate editor open payload when requested
   if (params.prepareEditorOpen) {
@@ -303,13 +324,14 @@ export async function implementNikAINote(params: {
       sessionStorage.setItem(
         'niknote-mobile-open',
         JSON.stringify({
+          ownerId: params.userId,
           title,
           blocks,
           notebookId,
           style: params.pageStyle || 'ruled',
         })
       );
-      localStorage.setItem('niknote-mobile-draft-title', title);
+      localStorage.setItem(ownerScopedStorageKey('niknote-mobile-draft-title', params.userId), title);
     } catch {
       // ignore storage issues
     }
