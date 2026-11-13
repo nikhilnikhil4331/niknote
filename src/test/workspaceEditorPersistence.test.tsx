@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { NotionEditor } from '@/components/editor/NotionEditor';
 import { DataChartBlock } from '@/components/editor/blocks/DataChartBlock';
 import { EditableBlockTable } from '@/components/editor/blocks/EditableBlockTable';
-import { createBlock } from '@/types/block';
+import { createBlock, type Block } from '@/types/block';
 import {
   copyLocalNotesToOwner,
   localNotebookAsCloudShape,
@@ -13,6 +14,20 @@ import {
 } from '@/lib/localNoteStore';
 
 beforeEach(() => localStorage.clear());
+
+function CachedBlockEditor({ noteId, initialBlocks }: { noteId: string; initialBlocks: Block[] }) {
+  const [blocks, setBlocks] = useState(initialBlocks);
+  const onBlocksChange = (next: Block[]) => {
+    setBlocks(next);
+    upsertLocalNoteForOwner({
+      id: noteId,
+      title: 'Structured editor QA',
+      content: next.map((block) => block.content).join('\n'),
+      blocks: next,
+    }, 'owner-a');
+  };
+  return <NotionEditor blocks={blocks} onBlocksChange={onBlocksChange} />;
+}
 
 describe('editable structured blocks', () => {
   it('starts a chart without demo data and plots only values entered in its table', () => {
@@ -45,6 +60,76 @@ describe('editable structured blocks', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Add table column' }));
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ headers: [...data.headers, 'Column 4'], colCount: 4 }));
+  });
+
+  it('persists actual table cell, header, row, and column edits and reloads them in the editor', () => {
+    const table = createBlock('table');
+    const { unmount } = render(<CachedBlockEditor noteId="edited-table" initialBlocks={[table]} />);
+
+    fireEvent.change(screen.getByLabelText('Column 1 name'), { target: { value: 'Topic' } });
+    fireEvent.change(screen.getByLabelText('Row 1, column 1'), { target: { value: 'Cell biology' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add table column' }));
+    fireEvent.change(screen.getByLabelText('Column 4 name'), { target: { value: 'Priority' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add row' }));
+    fireEvent.change(screen.getByLabelText('Row 3, column 4'), { target: { value: 'High' } });
+
+    const saved = readLocalNotesForOwner('owner-a').find((note) => note.id === 'edited-table');
+    const savedTable = saved?.blocks?.[0]?.tableData;
+    expect(savedTable?.headers).toEqual(['Topic', 'Column 2', 'Column 3', 'Priority']);
+    expect(savedTable?.rows[0]?.[0]?.content).toBe('Cell biology');
+    expect(savedTable?.rows[2]?.[3]?.content).toBe('High');
+
+    unmount();
+    render(<NotionEditor blocks={saved?.blocks || []} onBlocksChange={vi.fn()} />);
+    expect(screen.getByLabelText('Column 1 name')).toHaveValue('Topic');
+    expect(screen.getByLabelText('Row 1, column 1')).toHaveValue('Cell biology');
+    expect(screen.getByLabelText('Row 3, column 4')).toHaveValue('High');
+  });
+
+  it('persists chart style and plotted table edits and restores a plotted chart from cache', () => {
+    const chart = createBlock('chart');
+    const { unmount } = render(<CachedBlockEditor noteId="edited-chart" initialBlocks={[chart]} />);
+
+    fireEvent.change(screen.getByLabelText('Chart style'), { target: { value: 'line' } });
+    fireEvent.change(screen.getByLabelText('Row 1, column 1'), { target: { value: 'Week 1' } });
+    fireEvent.change(screen.getByLabelText('Row 1, column 2'), { target: { value: '12' } });
+    expect(screen.getByRole('img', { name: 'line chart with 1 data point' })).toBeInTheDocument();
+
+    const saved = readLocalNotesForOwner('owner-a').find((note) => note.id === 'edited-chart');
+    expect(saved?.blocks?.[0]?.chartType).toBe('line');
+    expect(saved?.blocks?.[0]?.tableData?.rows[0]?.map((cell) => cell.content)).toEqual(['Week 1', '12']);
+
+    unmount();
+    render(<NotionEditor blocks={saved?.blocks || []} onBlocksChange={vi.fn()} />);
+    expect(screen.getByLabelText('Chart style')).toHaveValue('line');
+    expect(screen.getByRole('img', { name: 'line chart with 1 data point' })).toBeInTheDocument();
+  });
+
+  it('round-trips table and chart source data in the owning note cache', () => {
+    const table = createBlock('table');
+    table.tableData = {
+      headers: ['Task', 'Hours'],
+      rows: [[
+        { id: 'table-task', content: 'Study', type: 'text' },
+        { id: 'table-hours', content: '2', type: 'number' },
+      ]],
+      colCount: 2,
+    };
+    const chart = createBlock('chart');
+    chart.chartType = 'line';
+    chart.tableData = {
+      headers: ['Week', 'Score'],
+      rows: [[
+        { id: 'chart-week', content: 'Week 1', type: 'text' },
+        { id: 'chart-score', content: '85', type: 'number' },
+      ]],
+      colCount: 2,
+    };
+
+    upsertLocalNoteForOwner({ id: 'structured-note', title: 'Structured data', blocks: [table, chart] }, 'owner-a');
+
+    expect(readLocalNotesForOwner('owner-a').find((note) => note.id === 'structured-note')?.blocks).toEqual([table, chart]);
+    expect(readLocalNotesForOwner('owner-b')).toEqual([]);
   });
 });
 

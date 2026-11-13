@@ -91,6 +91,7 @@ export interface NikAIMessage {
   latencyMs?: number;
   followUps?: string[];
   savedNoteId?: string;
+  cancelled?: boolean;
   createdAt: number;
 }
 
@@ -571,7 +572,9 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
   }, [userId, isGuest]);
 
   const startNewChat = useCallback((nextMode?: AstaMode) => {
-    abortRef.current?.abort();
+    const controller = abortRef.current;
+    abortRef.current = null;
+    controller?.abort();
     setIsGenerating(false);
     setLiveThinkingText('');
     setActiveThreadId(null);
@@ -689,8 +692,11 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
   );
 
   const stopGeneration = useCallback(() => {
-    abortRef.current?.abort();
+    const controller = abortRef.current;
+    abortRef.current = null;
+    controller?.abort();
     setIsGenerating(false);
+    setLiveThinkingText('');
   }, []);
 
   const handleImplementNote = useCallback(
@@ -827,6 +833,21 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
 
       const controller = new AbortController();
       abortRef.current = controller;
+      const markAssistantCancelled = () => {
+        setThreads((prev) =>
+          prev.map((thread) =>
+            thread.id !== targetThreadId
+              ? thread
+              : {
+                  ...thread,
+                  updatedAt: Date.now(),
+                  messages: thread.messages.map((message) =>
+                    message.id === assistantMsgId ? { ...message, cancelled: true } : message
+                  ),
+                }
+          )
+        );
+      };
       const freshMemoryPrompt = buildNikAIMemoryPrompt(targetThreadId, userId);
 
       try {
@@ -848,6 +869,7 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
           memoryContext: freshMemoryPrompt,
           signal: controller.signal,
           onMeta: (meta) => {
+            if (controller.signal.aborted) return;
             setLiveModelName(meta.model);
             setThreads((prev) =>
               prev.map((t) =>
@@ -865,6 +887,7 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
             );
           },
           onThinking: (_delta, fullThinking) => {
+            if (controller.signal.aborted) return;
             setLiveThinkingText(fullThinking);
             setThreads((prev) =>
               prev.map((t) =>
@@ -880,6 +903,7 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
             );
           },
           onToken: (_delta, fullText) => {
+            if (controller.signal.aborted) return;
             setThreads((prev) =>
               prev.map((t) =>
                 t.id === targetThreadId
@@ -895,6 +919,10 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
           },
         });
 
+        if (controller.signal.aborted) {
+          markAssistantCancelled();
+          return;
+        }
         const finalText = result.content;
         const followUps = buildFollowUps(finalText, effectiveMode);
 
@@ -939,7 +967,10 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
           });
         }
       } catch (err: any) {
-        if (err?.name === 'AbortError') return;
+        if (err?.name === 'AbortError' || controller.signal.aborted) {
+          markAssistantCancelled();
+          return;
+        }
         const fallbackError =
           'NikAI hit a brief network snag — tap Regenerate to retry immediately.';
         setThreads((prev) =>
@@ -955,8 +986,11 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
           )
         );
       } finally {
-        setIsGenerating(false);
-        setLiveThinkingText('');
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+          setIsGenerating(false);
+          setLiveThinkingText('');
+        }
       }
     },
     [
@@ -1643,6 +1677,13 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
                           content={msg.content}
                           isStreaming={isCurrentlyStreaming}
                         />
+                        {msg.cancelled && (
+                          <p role="status" className="mt-2 text-xs font-medium text-rose-600">
+                            {msg.content.trim()
+                              ? 'Generation stopped. This response may be incomplete.'
+                              : 'Generation stopped before a response was received.'}
+                          </p>
+                        )}
 
                         {!isCurrentlyStreaming && msg.content && (
                           <div className="mt-4 pt-3 border-t border-[#E2E7F0] flex flex-wrap items-center gap-1.5">

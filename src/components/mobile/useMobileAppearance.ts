@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useLayoutEffect, useState } from 'react';
 
 export interface MobileAppearance {
   theme: 'light' | 'dark';
@@ -38,7 +38,7 @@ function readAppearance(): MobileAppearance {
 export function useMobileAppearance() {
   const [appearance, setAppearance] = useState<MobileAppearance>(readAppearance);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const dark = appearance.theme === 'dark';
     document.documentElement.classList.toggle('dark', dark);
     try {

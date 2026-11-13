@@ -247,7 +247,6 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
   const [mobileTool, setMobileTool] = useState('text');
   const [realPenMode, setRealPenMode] = useState(false);
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
-  const [currentColor, setCurrentColor] = useState<LineInkColor>('black');
   const imageInputRef = useRef<HTMLInputElement>(null);
   const textSelectionRef = useRef<{ blockId: string; start: number; end: number } | null>(null);
   const exportContainerRef = useRef<HTMLDivElement>(null);
@@ -271,9 +270,22 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
 
   const isMobile = useIsMobile();
   const { notebooks, loading: notebooksLoading, refetch: refetchNotebooks, updateNotebook } = useNotebooks();
+  const notebooksRef = useRef(notebooks);
+  notebooksRef.current = notebooks;
   const { settings, updateSettings, updateMargins, updateHeaderFooter } = useNoteSettings();
+  const currentColor = settings.inkColor as LineInkColor;
   const { isDark, toggle: toggleDark } = useDarkMode();
   const blockEditor = useBlockEditor();
+  const {
+    blocks: editorBlocks,
+    replaceBlocks: replaceEditorBlocks,
+    setCurrentColor: setEditorCurrentColor,
+    updateBlock: updateEditorBlock,
+  } = blockEditor;
+
+  useEffect(() => {
+    setEditorCurrentColor(currentColor);
+  }, [setEditorCurrentColor, currentColor]);
   const {
     pages,
     currentPageIndex,
@@ -295,6 +307,8 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
   const { tableData, updateTableData, resetTableData } = useTableData(settings.table.rows, settings.table.columns);
   const [paywallOpen, setPaywallOpen] = useState(false);
   const requirePremium = useCallback((_feature: PremiumFeature) => setPaywallOpen(true), []);
+  const openAIWorkspace = useCallback(() => setShowAIWorkspace(true), []);
+  const openScanner = useCallback(() => setShowScanner(true), []);
 
   const findOwnedLocalNote = useCallback((id: string) =>
     findLocalNoteForOwner(id, ownerId, { allowLegacyClaim: isGuest }), [ownerId, isGuest]);
@@ -332,9 +346,17 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
   }, []);
 
   useEffect(() => {
-    if (!pendingReady || documentId || notebooksLoading || explicitNew) return;
+    if (!pendingReady || documentId || explicitNew) return;
     const lastActive = readActiveDocumentId(ownerId);
-    setDocumentId(lastActive || notebooks[0]?.id || makeDraftId(ownerId));
+    if (lastActive) {
+      setDocumentId(lastActive);
+      return;
+    }
+    if (notebooks[0]) {
+      setDocumentId(notebooks[0].id);
+      return;
+    }
+    if (!notebooksLoading) setDocumentId(makeDraftId(ownerId));
   }, [pendingReady, documentId, notebooksLoading, notebooks, ownerId, explicitNew]);
 
   // Every editor route is just a requested document key; loadDocument below
@@ -379,12 +401,12 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
       if (note.ink_color) noteSettings.inkColor = note.ink_color;
       setTitle(note.title || notebook?.title || DEFAULT_NOTE_TITLE);
       setIsFavorite(Boolean(note.is_favorite ?? notebook?.is_favorite));
-      blockEditor.replaceBlocks(loadedBlocks);
+      replaceEditorBlocks(loadedBlocks);
       updateSettings(noteSettings);
+      setEditorCurrentColor((noteSettings.inkColor || DEFAULT_SETTINGS.inkColor) as LineInkColor);
       clearDiagrams();
       resetTableData(noteSettings.table.rows, noteSettings.table.columns);
       setShowHandwritingPreview(false);
-      setCurrentColor((note.ink_color || noteSettings.inkColor || 'black') as LineInkColor);
       setRealPenMode(Boolean(note.realPenMode));
       const handwriting = normalizeHandwritingPages(note.handwritingPages) || legacyPages;
       if (handwriting?.length) replaceAllPages(handwriting);
@@ -401,12 +423,13 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
       setTitle(pending?.title || DEFAULT_NOTE_TITLE);
       setIsFavorite(false);
       const blocks = pending?.blocks?.length ? normalizeBlocks(pending.blocks) : [createBlock('text', '')];
-      blockEditor.replaceBlocks(blocks);
-      updateSettings({ ...DEFAULT_SETTINGS, ...(pending?.style ? { pageStyle: pending.style } : {}), ...(pending?.font ? { font: pending.font } : {}), ...(pending?.inkColor ? { inkColor: pending.inkColor } : {}) });
+      replaceEditorBlocks(blocks);
+      const blankSettings = { ...DEFAULT_SETTINGS, ...(pending?.style ? { pageStyle: pending.style } : {}), ...(pending?.font ? { font: pending.font } : {}), ...(pending?.inkColor ? { inkColor: pending.inkColor } : {}) };
+      updateSettings(blankSettings);
+      setEditorCurrentColor(blankSettings.inkColor as LineInkColor);
       clearDiagrams();
       resetTableData(DEFAULT_SETTINGS.table.rows, DEFAULT_SETTINGS.table.columns);
       setShowHandwritingPreview(false);
-      if (pending?.inkColor) setCurrentColor(pending.inkColor as unknown as LineInkColor);
       setRealPenMode(false);
       setDocumentError(null);
       setDocumentLoading(false);
@@ -438,9 +461,10 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
         return;
       }
 
-      if (notebooksLoading) return;
-      let notebook = notebooks.find((row) => row.id === documentId && row.user_id === ownerId);
+      let notebook = notebooksRef.current.find((row) => row.id === documentId && row.user_id === ownerId);
       if (!notebook) {
+        // Fetch a deep-linked document directly instead of waiting for the
+        // entire notebook list request to finish first.
         const lookup = await supabase
           .from('notebooks')
           .select('*')
@@ -464,12 +488,25 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
         return;
       }
 
-      const pageResult = await supabase
+      const pageRequest = supabase
         .from('pages')
         .select('id,title,content,page_number,updated_at')
         .eq('notebook_id', documentId)
         .eq('user_id', ownerId)
         .order('page_number', { ascending: true });
+      const handwritingPageRequest = (async () => {
+        try {
+          return await supabase
+            .from('notebook_pages')
+            .select('id,page_number,lines')
+            .eq('notebook_id', documentId)
+            .order('page_number', { ascending: true });
+        } catch {
+          // The legacy handwriting table is optional for newer block-only notes.
+          return null;
+        }
+      })();
+      const [pageResult, handPageResult] = await Promise.all([pageRequest, handwritingPageRequest]);
       if (cancelled) return;
       if (pageResult.error) {
         setDocumentError('The note was verified, but its pages could not be loaded. Nothing has been overwritten.');
@@ -479,24 +516,14 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
       }
 
       let legacyPages: NotebookPage[] | undefined;
-      try {
-        const handPageResult = await supabase
-          .from('notebook_pages')
-          .select('id,page_number,lines')
-          .eq('notebook_id', documentId)
-          .order('page_number', { ascending: true });
-        const handPageRows = handPageResult.data as Array<{ id: string; lines: unknown }> | null;
-        if (!handPageResult.error && Array.isArray(handPageRows) && handPageRows.length) {
-          legacyPages = handPageRows.map((page, index) => ({
-            id: typeof page.id === 'string' ? page.id : `page-cloud-${index}`,
-            lines: Array.isArray(page.lines) ? page.lines as NotebookPage['lines'] : [],
-            createdAt: Date.now(),
-          }));
-        }
-      } catch {
-        // The legacy handwriting table is optional for newer block-only notes.
+      const handPageRows = handPageResult?.data as Array<{ id: string; lines: unknown }> | null;
+      if (handPageResult && !handPageResult.error && Array.isArray(handPageRows) && handPageRows.length) {
+        legacyPages = handPageRows.map((page, index) => ({
+          id: typeof page.id === 'string' ? page.id : `page-cloud-${index}`,
+          lines: Array.isArray(page.lines) ? page.lines as NotebookPage['lines'] : [],
+          createdAt: Date.now(),
+        }));
       }
-      if (cancelled) return;
 
       const cloudPages = orderNotebookCloudPages(pageResult.data || []);
       const remoteBlocks = blocksFromNotebookCloudPages(cloudPages);
@@ -532,7 +559,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
     });
 
     return () => { cancelled = true; };
-  }, [documentId, ownerId, isGuest, requestedId, navigate, notebooks, notebooksLoading, findOwnedLocalNote, blockEditor.replaceBlocks, updateSettings, replaceAllPages, clearDiagrams, resetTableData]);
+  }, [documentId, ownerId, isGuest, requestedId, pendingReady, navigate, findOwnedLocalNote, replaceEditorBlocks, setEditorCurrentColor, updateSettings, replaceAllPages, clearDiagrams, resetTableData]);
 
   useEffect(() => {
     if (!safeReady || !documentId) return;
@@ -855,9 +882,16 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
   }, [blockEditor, focusedBlockId, dictation, handleImagePick]);
 
   const onColorChange = useCallback((color: LineInkColor) => {
-    setCurrentColor(color);
-    blockEditor.setCurrentColor(color);
-  }, [blockEditor]);
+    setEditorCurrentColor(color);
+    updateSettings({ inkColor: color });
+  }, [setEditorCurrentColor, updateSettings]);
+
+  const handlePenPaletteColorChange = useCallback((color: LineInkColor) => {
+    onColorChange(color);
+    if (focusedBlockId && editorBlocks.some((block) => block.id === focusedBlockId)) {
+      updateEditorBlock(focusedBlockId, { color });
+    }
+  }, [editorBlocks, updateEditorBlock, focusedBlockId, onColorChange]);
 
   const handleExportPDF = useCallback(async () => {
     const hasBlockText = hasNoteContent(blockEditor.blocks);
@@ -1013,14 +1047,16 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
   }
 
   const handwritingPreview = (
-    <NotebookPreview
-      lines={previewLines}
-      settings={settings}
-      realPenMode={realPenMode}
-      pageNumber={currentPageIndex + 1}
-      totalPages={totalPages}
-      dna={dna.dna}
-    />
+    <div key={currentPageIndex} className="nn-page-preview-enter">
+      <NotebookPreview
+        lines={previewLines}
+        settings={settings}
+        realPenMode={realPenMode}
+        pageNumber={currentPageIndex + 1}
+        totalPages={totalPages}
+        dna={dna.dna}
+      />
+    </div>
   );
 
   return (
@@ -1049,9 +1085,9 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
         onExportPDF={() => { void handleExportPDF(); }}
         exporting={exporting}
         onShare={() => { void handleShare(); }}
-        onOpenAI={() => setShowAIWorkspace(true)}
+        onOpenAI={openAIWorkspace}
         onOpenNikAI={() => navigate('/ai')}
-        onOpenScanner={() => setShowScanner(true)}
+        onOpenScanner={openScanner}
         onOpenImport={() => setShowImportPanel(true)}
         onInsertImage={handleImagePick}
         mobileTool={mobileTool}
@@ -1085,7 +1121,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
       <SlidePanel isOpen={showPenPanel} onClose={() => setShowPenPanel(false)} title="Pen palette & writing tools" icon={<Sparkles className="h-4 w-4" />} side="right">
         <PenPalette
           currentColor={currentColor}
-          onColorChange={onColorChange}
+          onColorChange={handlePenPaletteColorChange}
           selectedCount={focusedBlockId ? 1 : 0}
           onUndo={blockEditor.undo}
           onRedo={blockEditor.redo}

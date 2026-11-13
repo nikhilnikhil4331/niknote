@@ -1,23 +1,26 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useLayoutEffect, useCallback } from 'react';
 
 export function useDarkMode() {
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
-      // Only check localStorage, never system preference
-      const stored = localStorage.getItem('theme');
-      return stored === 'dark' ? true : false;
+      // Only check localStorage, never system preference. Storage can be
+      // blocked in private browsing, so theme selection must remain usable.
+      try {
+        return window.localStorage.getItem('theme') === 'dark';
+      } catch {
+        return false;
+      }
     }
     return false;
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
-    if (isDark) {
-      root.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      root.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+    root.classList.toggle('dark', isDark);
+    try {
+      window.localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    } catch {
+      // The in-memory theme still works when persistence is unavailable.
     }
   }, [isDark]);
 

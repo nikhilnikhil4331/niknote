@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,14 +40,17 @@ export const useNotebooks = () => {
   const { user, isGuest, loading: authLoading } = useAuth();
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [loading, setLoading] = useState(true);
+  const latestFetchRef = useRef(0);
+  const notebooksOwnerRef = useRef<string | null>(null);
 
   const fetchNotebooks = useCallback(async () => {
+    const fetchId = ++latestFetchRef.current;
     if (authLoading) return;
-    setLoading(true);
 
     if (!user) {
       // Never expose a previous device guest's unowned notes during auth
       // startup or after sign-out.
+      notebooksOwnerRef.current = null;
       setNotebooks([]);
       setLoading(false);
       return;
@@ -55,9 +58,22 @@ export const useNotebooks = () => {
 
     const localNotes = readLocalNotesForOwner(user.id, { allowLegacyClaim: isGuest });
     const localRows = localNotes.map((note) => localNotebookAsCloudShape(note, user.id) as Notebook);
+    // Render this account's cache immediately. On same-account refreshes keep
+    // existing cloud rows visible while replacing/upserting local drafts.
+    if (notebooksOwnerRef.current !== user.id) {
+      notebooksOwnerRef.current = user.id;
+      setNotebooks(localRows);
+    } else {
+      setNotebooks((previous) => {
+        const localIds = new Set(localRows.map((notebook) => notebook.id));
+        return [
+          ...localRows,
+          ...previous.filter((notebook) => notebook.user_id === user.id && !localIds.has(notebook.id)),
+        ];
+      });
+    }
 
     if (String(user.id || '').startsWith('local-guest-')) {
-      setNotebooks(localRows);
       setLoading(false);
       return;
     }
@@ -69,6 +85,7 @@ export const useNotebooks = () => {
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false });
 
+      if (fetchId !== latestFetchRef.current) return;
       if (error) throw error;
       const cloudRows = (data || []) as Notebook[];
       const cloudIds = new Set(cloudRows.map((notebook) => notebook.id));
@@ -77,10 +94,13 @@ export const useNotebooks = () => {
       // ever mixed into this list.
       setNotebooks([...cloudRows, ...localRows.filter((notebook) => !cloudIds.has(notebook.id))]);
     } catch (error) {
+      if (fetchId !== latestFetchRef.current) return;
       console.warn('Notebook fetch fallback to owner-scoped local cache:', error);
       setNotebooks(localRows);
     } finally {
-      setLoading(false);
+      // Keep already-loaded rows visible during refreshes and ignore stale
+      // requests when the active account changes or a newer fetch starts.
+      if (fetchId === latestFetchRef.current) setLoading(false);
     }
   }, [user, isGuest, authLoading]);
 

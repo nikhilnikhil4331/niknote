@@ -23,7 +23,7 @@ export const useBlockEditor = (autoSaveKey?: string) => {
   // FIX: Use state for history position so canUndo/canRedo trigger re-renders
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [historyLength, setHistoryLength] = useState(0);
-  const currentColorRef = useRef<LineInkColor>('black');
+  const [currentColor, setCurrentColorState] = useState<LineInkColor>('black');
   const historyRef = useRef<HistoryEntry[]>([]);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -130,7 +130,7 @@ export const useBlockEditor = (autoSaveKey?: string) => {
     setBlocks(prev => {
       const next = prev.map(b => b.id === id ? { ...b, ...updates, updatedAt: Date.now() } : b);
       // Don't push history for every keystroke — only structural changes
-      if ('type' in updates || 'checked' in updates || 'collapsed' in updates) {
+      if ('type' in updates || 'checked' in updates || 'collapsed' in updates || 'color' in updates) {
         pushHistory(next);
       }
       triggerAutoSave(next);
@@ -183,11 +183,11 @@ export const useBlockEditor = (autoSaveKey?: string) => {
   }, [pushHistory, triggerAutoSave]);
 
   const setCurrentColor = useCallback((color: LineInkColor) => {
-    currentColorRef.current = color;
+    setCurrentColorState(color);
   }, []);
 
   const updateAllBlockColors = useCallback((color: LineInkColor) => {
-    currentColorRef.current = color;
+    setCurrentColorState(color);
     setBlocks(prev => {
       const next = prev.map(b => ({ ...b, color }));
       pushHistory(next);
@@ -227,7 +227,7 @@ export const useBlockEditor = (autoSaveKey?: string) => {
         return {
           id: `line-${block.id}`,
           text,
-          color: (block.color || currentColorRef.current) as LineInkColor,
+          color: (block.color || currentColor) as LineInkColor,
           timestamp: Date.now(),
           blockType,
           fontSize,
@@ -235,7 +235,7 @@ export const useBlockEditor = (autoSaveKey?: string) => {
           indent: block.indent,
         };
       });
-  }, [blocks]);
+  }, [blocks, currentColor]);
 
   const getPlainText = useCallback(() => {
     return blocks.map(b => b.content).join('\n');

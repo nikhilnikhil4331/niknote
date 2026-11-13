@@ -14,7 +14,6 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { InstallBanner } from "@/components/InstallBanner";
 import { PricingPopup } from "@/components/premium/PricingPopup";
-import { ShareButtons } from "@/components/promotion/ShareButtons";
 import { HandwritingDNAProvider } from "@/contexts/HandwritingDNAContext";
 import { TouchHealthGuard } from "@/components/mobile/TouchHealthGuard";
 import Index from "./pages/Index";
@@ -143,15 +142,6 @@ function LegacyEditorRedirect() {
 }
 const NIKAI_FULLSCREEN_ROUTES = ['/ai', '/nikai', '/ai-workspace', '/agents'];
 
-function DesktopFloatingShare() {
-  const mobile = useIsMobile();
-  const { pathname } = useLocation();
-  if (mobile || NIKAI_FULLSCREEN_ROUTES.includes(pathname) || pathname.startsWith('/habit') || pathname === '/playground') {
-    return null;
-  }
-  return <ShareButtons variant="floating" />;
-}
-
 function GlobalCookieConsent() {
   const { pathname } = useLocation();
   if (NIKAI_FULLSCREEN_ROUTES.includes(pathname)) return null;
@@ -278,7 +268,6 @@ const App = () => {
                         It suppresses itself on checkout, auth and B2B routes and
                         remembers a dismissal for a week. */}
                     <PricingPopup />
-                    <DesktopFloatingShare />
                   </Suspense>
                 </BrowserRouter>
               </TooltipProvider>

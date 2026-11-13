@@ -36,6 +36,41 @@
 .dark .nn-writing-loading { color: #a0a7b3; background: #14171d; }
 .nn-writing-error-state > p { max-width: 420px; line-height: 1.6; }
 
+@media (prefers-reduced-motion: no-preference) {
+  .nn-page-preview-enter {
+    animation: nn-page-preview-enter 160ms cubic-bezier(.2, .7, .3, 1) both;
+  }
+
+  .nn-writing-workspace,
+  .nn-writing-workspace :is(
+    .nn-writing-topbar,
+    .nn-writing-sidebar,
+    .nn-writing-sidebar > *,
+    .nn-writing-main,
+    .nn-document-bar,
+    .nn-document-scroll,
+    .nn-document-canvas,
+    .nn-document-heading,
+    .nn-document-bar-title,
+    .nn-editor-inspector,
+    .nn-inspector-tabs,
+    .nn-floating-blocks,
+    .nn-appearance-toggle,
+    .nn-page-stepper,
+    .nn-page-stepper button,
+    .nn-page-actions > button,
+    .nn-topbar-icon,
+    .nn-topbar-ai,
+    .nn-sync-pill,
+    .nn-document-icon,
+    .nn-action-button,
+    .nn-block-search,
+    .nn-insert-tile
+  ) {
+    transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+}
+
 .nn-writing-topbar { z-index: 40; display: flex; flex: 0 0 52px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 20px; border-bottom: 1px solid var(--nn-border); background: var(--nn-surface); }
 .nn-topbar-brand,.nn-topbar-actions { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .nn-topbar-actions { justify-content: flex-end; }
@@ -103,7 +138,6 @@
 .nn-direct-editor .nn-block-row { border-radius: 8px; }
 .nn-direct-editor .nn-add-block { min-height: 40px; margin-top: 14px; border: 1px dashed var(--nn-border); border-radius: 10px; color: var(--nn-muted); }
 .nn-direct-editor .nn-add-block:hover { color: var(--nn-accent); background: var(--nn-accent-soft); }
-.dark .nn-direct-editor textarea { color: var(--nn-ink) !important; }
 .dark .nn-direct-editor textarea::placeholder { color: var(--nn-muted) !important; }
 .dark .nn-direct-editor .nn-block-row:focus-within { background: rgba(122,170,255,.075) !important; }
 .nn-visible-handwriting-preview { margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--nn-border); }
@@ -753,12 +787,10 @@
 }
 .nn-direct-editor .notion-editor { min-height: 90px; }
 .nn-direct-editor .nn-block-row { min-height: 33px; padding: 0 !important; border-radius: 0; }
-.nn-direct-editor [data-block-type="text"] .nn-block-color,
 .nn-direct-editor [data-block-type="text"] .nn-block-prefix { display: none !important; }
 .nn-direct-editor [data-block-type="text"] textarea {
   min-height: 32px;
   padding: 0 4px !important;
-  color: #707681 !important;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif !important;
   font-size: 18px !important;
   font-weight: 400 !important;
@@ -782,6 +814,11 @@
 .nn-appearance-toggle button.is-active { color: #171717; background: #ffdd69; }
 .nn-appearance-toggle button:nth-child(2) { color: #fff; background: #151923; }
 .nn-appearance-toggle button:nth-child(2).is-active { color: #ffe28a; background: #090c12; }
+
+@keyframes nn-page-preview-enter {
+  from { opacity: .72; transform: translateX(7px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 
 @media (max-width: 1120px) and (min-width: 768px) {
   .nn-writing-sidebar { flex-basis: 235px; width: 235px; }
