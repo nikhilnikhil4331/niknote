@@ -55,7 +55,7 @@
 .nn-mobile .nn-editor-canvas[data-paper=dotted]{background-image:radial-gradient(hsl(var(--nn-paper-rule)) 1px,transparent 1px);background-size:16px 16px}
 .nn-mobile .nn-editor-canvas .notion-editor>div:last-child{opacity:1}
 .nn-mobile .nn-editor-canvas .nn-block-row{min-height:32px;padding-top:2px;padding-bottom:2px;padding-left:0!important;border-radius:4px;background:transparent}
-.nn-mobile .nn-editor-canvas .nn-block-color{display:none}
+
 .nn-mobile .nn-editor-canvas .nn-block-prefix{width:22px;margin-top:7px}
 .nn-mobile .nn-editor-canvas [data-block-type=text] .nn-block-prefix,.nn-mobile .nn-editor-canvas [data-block-type^=heading] .nn-block-prefix{display:none}
 .nn-mobile .nn-editor-canvas textarea{font-size:21px!important;line-height:32px!important;min-height:32px!important;padding:0 3px!important;letter-spacing:0}

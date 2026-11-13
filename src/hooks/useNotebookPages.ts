@@ -129,22 +129,18 @@ export function useNotebookPages(ownerId?: string, documentId?: string): UseNote
   const canGoPrev = currentPageIndex > 0;
 
   const goToPage = useCallback((index: number) => {
-    if (index >= 0 && index < pages.length) {
-      setCurrentPageIndex(index);
-    }
+    if (!Number.isFinite(index)) return;
+    const targetIndex = Math.trunc(index);
+    setCurrentPageIndex(Math.max(0, Math.min(targetIndex, pages.length - 1)));
   }, [pages.length]);
 
   const nextPage = useCallback(() => {
-    if (canGoNext) {
-      setCurrentPageIndex((prev) => prev + 1);
-    }
-  }, [canGoNext]);
+    setCurrentPageIndex((currentIndex) => Math.min(currentIndex + 1, pages.length - 1));
+  }, [pages.length]);
 
   const prevPage = useCallback(() => {
-    if (canGoPrev) {
-      setCurrentPageIndex((prev) => prev - 1);
-    }
-  }, [canGoPrev]);
+    setCurrentPageIndex((currentIndex) => Math.max(currentIndex - 1, 0));
+  }, []);
 
   const insertPageAfter = useCallback((index: number, page?: NotebookPage) => {
     updatePages((prev) => {

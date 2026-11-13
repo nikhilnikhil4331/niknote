@@ -31,10 +31,7 @@ interface NotionEditorProps {
   onAIAction?: (action: string) => void;
   onOCRAction?: () => void;
   onExport?: () => void;
-  dna?: any;
   settings?: any;
-  pageNumber?: number;
-  totalPages?: number;
   textPlaceholder?: string;
 }
 
@@ -144,9 +141,9 @@ const blockEditorFontFamily = (font?: string, customFont?: string): string | und
 // ============================================================
 // COMPONENT
 // ============================================================
-export const NotionEditor: React.FC<NotionEditorProps> = ({
+const NotionEditorView: React.FC<NotionEditorProps> = ({
   blocks, onBlocksChange, currentColor = 'black', onColorChange,
-  onAIAction, onOCRAction, onExport, dna, settings, pageNumber = 1, totalPages = 1, textPlaceholder,
+  onAIAction, onOCRAction, onExport, settings, textPlaceholder,
 }) => {
   const [focusedBlockId, setFocusedBlockId] = useState<string | null>(null);
   const [slashMenu, setSlashMenu] = useState<{ blockId: string; query: string } | null>(null);
@@ -692,12 +689,13 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                 onContextMenu={(e) => handleContextMenu(e, block.id)}
               >
                 {/* Color dot */}
-                <div className={cn("nn-block-color flex items-center gap-0 flex-shrink-0 mt-1", isMobile ? "opacity-30" : "opacity-0 group-hover:opacity-100")}>
+                <div className={cn("nn-block-color flex items-center gap-0 flex-shrink-0 mt-1", isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
                   <button
                     onMouseDown={preventFocusSteal}
                     onClick={(e) => { e.stopPropagation(); setShowInlineColor(showInlineColor === block.id ? null : block.id); }}
                     aria-label="Change block ink" title="Change block ink"
-                    className="p-1 rounded-md active:bg-gray-100 transition-colors"
+                    aria-expanded={showInlineColor === block.id}
+                    className={cn("rounded-md active:bg-gray-100 transition-colors", isMobile ? "inline-flex h-11 w-11 items-center justify-center" : "p-1")}
                     style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
                   >
                     <div className="w-3 h-3 rounded-full border border-white/40 shadow-sm" style={{ backgroundColor: inkData?.hex || '#1a1a2e' }} />
@@ -818,7 +816,17 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
                 {showInlineColor === block.id && (
                   <div data-inline-color className="absolute left-4 top-full mt-1 z-50 bg-white rounded-xl border border-gray-200 shadow-xl p-2 flex gap-1 flex-wrap max-w-[240px]" style={{ touchAction: 'manipulation' }}>
                     {LINE_INK_COLORS.map((ink) => (
-                      <button key={ink.value} onMouseDown={preventFocusSteal} onClick={() => { updateBlock(block.id, { color: ink.value }); onColorChange?.(ink.value); setShowInlineColor(null); }} className={cn("w-7 h-7 rounded-full border-2 transition-transform active:scale-110", blockColor === ink.value ? "border-blue-500 scale-110 ring-2 ring-blue-200" : "border-transparent")} style={{ backgroundColor: ink.hex, touchAction: 'manipulation', cursor: 'pointer' }} title={ink.label} />
+                      <button
+                        key={ink.value}
+                        type="button"
+                        onMouseDown={preventFocusSteal}
+                        onClick={() => { updateBlock(block.id, { color: ink.value }); onColorChange?.(ink.value); setShowInlineColor(null); }}
+                        aria-label={`Set block ink to ${ink.label}`}
+                        aria-pressed={blockColor === ink.value}
+                        className={cn("rounded-full border-2 transition-transform active:scale-110", isMobile ? "h-11 w-11" : "h-7 w-7", blockColor === ink.value ? "border-blue-500 scale-110 ring-2 ring-blue-200" : "border-transparent")}
+                        style={{ backgroundColor: ink.hex, touchAction: 'manipulation', cursor: 'pointer' }}
+                        title={ink.label}
+                      />
                     ))}
                   </div>
                 )}
@@ -1014,3 +1022,6 @@ export const NotionEditor: React.FC<NotionEditorProps> = ({
     </div>
   );
 };
+
+NotionEditorView.displayName = 'NotionEditor';
+export const NotionEditor = React.memo(NotionEditorView);

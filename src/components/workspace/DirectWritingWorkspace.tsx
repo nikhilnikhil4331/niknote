@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   AlignLeft,
   ArrowLeft,
@@ -191,10 +191,11 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
     }
   }, [isMobile]);
 
-  const openAIInspector = () => {
+  const handleEditorAIAction = useCallback(() => {
     setActiveInspectorTab('ai');
     setInspectorOpen(true);
-  };
+    onOpenAI();
+  }, [onOpenAI]);
 
   const insertBlock = (type: BlockType) => {
     onAddBlock(type);
@@ -348,13 +349,11 @@ export const DirectWritingWorkspace: React.FC<DirectWritingWorkspaceProps> = ({
                     onBlocksChange={onBlocksChange}
                     currentColor={currentColor}
                     onColorChange={onColorChange}
-                    onAIAction={() => { openAIInspector(); onOpenAI(); }}
+                    onAIAction={handleEditorAIAction}
                     onOCRAction={onOpenScanner}
                     onExport={onExportPDF}
                     settings={settings}
                     textPlaceholder="Type '/' for commands, '@' to mention, or just start writing..."
-                    pageNumber={pageNumber}
-                    totalPages={totalPages}
                   />
                 </div>
                 {showHandwritingPreview && <section className="nn-visible-handwriting-preview"><div className="nn-preview-title"><BookOpen /><span>Handwriting preview</span></div>{handwritingPreview}</section>}

@@ -23,6 +23,25 @@
     linear-gradient(150deg, #fffdf5, #fff8f3 58%, #eef4ff);
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .nn-mobile,
+  .nn-mobile :is(
+    .nn-header,
+    .nn-welcome,
+    .nn-note,
+    .nn-quick,
+    .nn-quick-actions,
+    .nn-ai-action,
+    .nn-drawer,
+    .nn-profile,
+    .nn-theme,
+    .nn-editor-header,
+    .nn-editor-canvas
+  ) {
+    transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+}
+
 .nn-mobile[data-color=blue] { --nn-accent: #2869d5; --primary: 217 68% 50%; --nn-soft: #eaf2ff; }
 .nn-mobile[data-color=purple] { --nn-accent: #7456d8; --primary: 254 60% 59%; --nn-soft: #f0ebff; }
 .nn-mobile[data-color=pink] { --nn-accent: #c83f58; --primary: 350 55% 52%; --nn-soft: #fff0f0; }
