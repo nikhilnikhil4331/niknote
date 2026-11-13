@@ -31,3 +31,10 @@ project_id = "ievggapvfidhygkhtkug"
 
 [functions.sales-overview]
 verify_jwt = true
+
+[functions.customer-email]
+verify_jwt = false
+
+# The function enforces admin sessions or admin JWT roles itself.
+[functions.resend-inbox-sync]
+verify_jwt = false

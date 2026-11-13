@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import type { ComposePrefill } from '@/lib/mailflareClient';
 
 type Lead = { id: string; name: string; email: string; phone: string | null; institution: string; students: number | null; message: string | null; stage: string; created_at: string };
 type Overview = { verifiedPayments: number; grossVerifiedPaise: number; institutionLeads: number; recentLeads: Lead[] };
 
-export function AdminSalesOverview() {
+export function AdminSalesOverview({ onComposeEmail }: { onComposeEmail?: (prefill: ComposePrefill) => void } = {}) {
   const [data, setData] = useState<Overview | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -47,7 +48,32 @@ export function AdminSalesOverview() {
         <CardContent className="space-y-4">
           {data.recentLeads.length === 0 && <p className="text-sm text-muted-foreground">No inquiries recorded yet.</p>}
           {data.recentLeads.map(lead => <article key={lead.id} className="border rounded-xl p-4 space-y-1 text-sm">
-            <div className="flex flex-wrap justify-between gap-2"><strong>{lead.institution}</strong><span className="text-xs text-muted-foreground">{new Date(lead.created_at).toLocaleDateString('en-IN')} · {lead.stage}</span></div>
+            <div className="flex flex-wrap justify-between gap-2 items-center">
+              <strong>{lead.institution}</strong>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{new Date(lead.created_at).toLocaleDateString('en-IN')} · {lead.stage}</span>
+                {onComposeEmail && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2.5 text-xs rounded-lg"
+                    onClick={() =>
+                      onComposeEmail({
+                        to: lead.email,
+                        recipientName: lead.name,
+                        institution: lead.institution,
+                        leadId: lead.id,
+                        templateId: 'institution_followup',
+                      })
+                    }
+                  >
+                    <Mail className="w-3 h-3 mr-1" />
+                    Email via Mailflare
+                  </Button>
+                )}
+              </div>
+            </div>
             <p>{lead.name} · <a className="underline" href={`mailto:${encodeURIComponent(lead.email)}?subject=${encodeURIComponent('Your NikNote inquiry')}`}>{lead.email}</a>{lead.phone ? ` · ${lead.phone}` : ''}</p>
             {lead.students !== null && <p className="text-muted-foreground">Students: {lead.students}</p>}
             {lead.message && <p className="whitespace-pre-wrap text-muted-foreground">{lead.message}</p>}

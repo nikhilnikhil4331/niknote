@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Shield, Users, BarChart3, Crown, 
-  CheckCircle2, XCircle, RefreshCw, LogOut, Lock
+  CheckCircle2, XCircle, RefreshCw, LogOut, Lock, Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { AdminMailflareStudio } from '@/components/admin/AdminMailflareStudio';
 
 interface UserData {
   id: string;
@@ -259,85 +261,104 @@ const Admin: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Users Table */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <Card className="rounded-2xl">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Users</CardTitle>
-                <CardDescription>Manage user accounts and premium access</CardDescription>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={loadDashboardData}
-                disabled={refreshing}
-                className="rounded-xl gap-2"
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {users.map((userData) => (
-                  <motion.div
-                    key={userData.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-sm font-semibold text-primary">
-                          {(userData.display_name || 'U').charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">{userData.display_name || 'Unknown User'}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Joined {new Date(userData.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge 
-                        variant={userData.is_premium ? 'default' : 'secondary'}
-                        className="rounded-full"
-                      >
-                        {userData.is_premium ? 'Premium' : 'Free'}
-                      </Badge>
-                      <Button
-                        variant={userData.is_premium ? 'destructive' : 'default'}
-                        size="sm"
-                        onClick={() => togglePremium(userData.id, userData.is_premium)}
-                        className="rounded-lg text-xs gap-1"
-                      >
-                        {userData.is_premium ? (
-                          <>
-                            <XCircle className="w-3.5 h-3.5" />
-                            Revoke
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Grant
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))}
+        <Tabs defaultValue="users" className="space-y-4">
+          <TabsList className="rounded-xl bg-secondary/50 p-1">
+            <TabsTrigger value="users" className="gap-2 rounded-lg">
+              <Users className="w-4 h-4" />
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="email" className="gap-2 rounded-lg">
+              <Mail className="w-4 h-4" />
+              Customer Email (Mailflare)
+            </TabsTrigger>
+          </TabsList>
 
-                {users.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No users found
+          <TabsContent value="users">
+            {/* Users Table */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <Card className="rounded-2xl">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Users</CardTitle>
+                    <CardDescription>Manage user accounts and premium access</CardDescription>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={loadDashboardData}
+                    disabled={refreshing}
+                    className="rounded-xl gap-2"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {users.map((userData) => (
+                      <motion.div
+                        key={userData.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-sm font-semibold text-primary">
+                              {(userData.display_name || 'U').charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{userData.display_name || 'Unknown User'}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Joined {new Date(userData.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            variant={userData.is_premium ? 'default' : 'secondary'}
+                            className="rounded-full"
+                          >
+                            {userData.is_premium ? 'Premium' : 'Free'}
+                          </Badge>
+                          <Button
+                            variant={userData.is_premium ? 'destructive' : 'default'}
+                            size="sm"
+                            onClick={() => togglePremium(userData.id, userData.is_premium)}
+                            className="rounded-lg text-xs gap-1"
+                          >
+                            {userData.is_premium ? (
+                              <>
+                                <XCircle className="w-3.5 h-3.5" />
+                                Revoke
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                Grant
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))}
+
+                    {users.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        No users found
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="email">
+            <AdminMailflareStudio />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
