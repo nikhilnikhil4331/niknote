@@ -72,6 +72,7 @@ import {
   sendCustomerCampaign,
   sendCustomerEmail,
   syncMailflareToWebmail,
+  syncResendInbox,
   testMailflareConnection,
   updateCustomMailbox,
   updateWebmailMessage,
@@ -287,6 +288,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
   const [selectedMessage, setSelectedMessage] = useState<AdminWebmailMessage | null>(null);
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
   const [syncingMailflare, setSyncingMailflare] = useState<boolean>(false);
+  const [syncingResend, setSyncingResend] = useState<boolean>(false);
 
   // ---------------- Compose & Broadcast State ----------------
   const [mode, setMode] = useState<'single' | 'campaign'>('single');
@@ -949,7 +951,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
     setHeading('');
     setCtaLabel('');
     setCtaUrl('');
-    setInReplyTo(msg.provider_message_id || undefined);
+    setInReplyTo((msg.provider === 'resend-inbound' ? msg.in_reply_to : msg.provider_message_id) || undefined);
     const quoted = (msg.body_text || msg.snippet || '')
       .split('\n')
       .slice(0, 12)
@@ -984,6 +986,22 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
       toast.error(err instanceof Error ? err.message : 'Mailflare sync failed');
     } finally {
       setSyncingMailflare(false);
+    }
+  };
+
+  const handleSyncResendInbox = async () => {
+    setSyncingResend(true);
+    try {
+      const res = await syncResendInbox();
+      const message = `Checked ${res.checked} recent Resend email(s); ${res.saved} new message(s) saved.`;
+      if (res.hasMore) toast.warning(`${message} Only the latest 30 are checked.`);
+      else toast.success(message);
+      await loadMessages(undefined, undefined, undefined, true);
+      void loadWorkspace();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Resend inbox sync failed');
+    } finally {
+      setSyncingResend(false);
     }
   };
 
@@ -1470,6 +1488,14 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${loadingMessages ? 'animate-spin' : ''}`} />
                   </Button>
+                  {config?.provider === 'resend' && config.hasResendKey && (
+                    <Button size="sm" variant="outline" className="h-8 px-2.5 text-xs gap-1"
+                      onClick={handleSyncResendInbox} disabled={syncingResend}
+                      title="Import recent received messages from Resend">
+                      {syncingResend ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Server className="w-3.5 h-3.5" />}
+                      Sync Resend
+                    </Button>
+                  )}
                   {config?.mailflareUrl && config.hasMailflareKey && (
                     <Button
                       size="sm"
@@ -1490,7 +1516,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                 </div>
                 {config && !(config.mailflareUrl && config.hasMailflareKey) && (
                   <p className="text-xs text-muted-foreground">
-                    Refresh shows saved messages only. Receiving new mail requires an inbound provider connected to the webhook; sending via Resend alone does not receive mail.
+                    Refresh shows saved messages only. Sync Resend checks recent received messages after receiving and MX records are configured; sending alone does not enable receiving.
                   </p>
                 )}
 

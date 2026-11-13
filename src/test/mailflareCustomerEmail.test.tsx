@@ -540,6 +540,17 @@ describe('AdminMailflareStudio component', () => {
     expect(invoke.mock.calls.some((call: any[]) => call[1].body.action === 'sync_mailflare_inbox')).toBe(false);
   });
 
+  it('offers Resend sync for a configured Resend key', async () => {
+    invoke.mockImplementation(async (fn: string, opts: any) => {
+      if (opts.body.action === 'get_workspace') return { data: { config: { provider: 'resend', fromName: 'NikNote', fromEmail: 'support@niknote.online', configured: true, hasResendKey: true, mailflareUrl: '', hasMailflareKey: false }, domains: [], mailboxes: [] }, error: null };
+      if (fn === 'resend-inbox-sync') return { data: { success: true, checked: 1, matched: 1, saved: 1, hasMore: false }, error: null };
+      return { data: { messages: [] }, error: null };
+    });
+    render(<AdminMailflareStudio />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync Resend' }));
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith('resend-inbox-sync', expect.objectContaining({ body: expect.objectContaining({ action: 'sync' }) })));
+  });
+
   it('retains Mailflare sync when a server and key are configured', async () => {
     invoke.mockImplementation(async (_fn: string, opts: any) => {
       if (opts.body.action === 'get_workspace') return { data: { config: { provider: 'mailflare', fromName: 'NikNote', fromEmail: 'support@niknote.online', configured: true, mailflareUrl: 'https://mail.example.com', hasMailflareKey: true }, domains: [], mailboxes: [] }, error: null };

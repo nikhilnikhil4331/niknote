@@ -789,13 +789,14 @@ export async function fileToAttachmentBase64(file: File): Promise<EmailAttachmen
 export async function invokeCustomerEmail<T = any>(
   action: string,
   payload: Record<string, unknown> = {},
+  functionName = 'customer-email',
 ): Promise<T> {
   const headers: Record<string, string> = {};
   if (typeof window !== 'undefined') {
     const adminToken = sessionStorage.getItem('admin_token');
     if (adminToken) headers['x-admin-token'] = adminToken;
   }
-  const { data, error } = await supabase.functions.invoke('customer-email', {
+  const { data, error } = await supabase.functions.invoke(functionName, {
     body: { action, payload },
     headers,
   });
@@ -969,6 +970,10 @@ export async function bulkWebmailMessages(input: {
   ids?: string[];
 }): Promise<{ success: boolean; count?: number }> {
   return invokeCustomerEmail('bulk_messages', input);
+}
+
+export async function syncResendInbox(): Promise<{ success: boolean; checked: number; matched: number; saved: number; hasMore: boolean }> {
+  return invokeCustomerEmail('sync', {}, 'resend-inbox-sync');
 }
 
 export async function syncMailflareToWebmail(): Promise<{
