@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { NoteLine, LineInkColor, generateLineId } from '@/types/noteLine';
-import { PC_ACTIVE_PAGES_KEY } from '@/lib/cloudSyncEngine';
+import { PC_ACTIVE_META_KEY, PC_ACTIVE_PAGES_KEY } from '@/lib/cloudSyncEngine';
 
 export interface NotebookPage {
   id: string;
@@ -38,38 +38,90 @@ const ensureAtLeastOneLine = (lines: NoteLine[]): NoteLine[] => {
   return [{ id: generateLineId(), text: '', color: 'black' as LineInkColor, timestamp: Date.now() }];
 };
 
-function loadInitialPages(): NotebookPage[] {
+function normalizePages(parsed: unknown): NotebookPage[] | null {
+  if (!Array.isArray(parsed) || parsed.length === 0) return null;
+  return parsed.map((item: unknown, index) => {
+    const page = item && typeof item === 'object' && !Array.isArray(item)
+      ? item as Record<string, unknown>
+      : {};
+    const lines = Array.isArray(page.lines) ? page.lines as NoteLine[] : [];
+    return {
+      id: typeof page.id === 'string' ? page.id : `page-restored-${index}`,
+      lines: ensureAtLeastOneLine(lines),
+      createdAt: typeof page.createdAt === 'number' ? page.createdAt : Date.now(),
+    };
+  });
+}
+
+function loadInitialPages(storageKey: string, ownerId?: string, documentId?: string): NotebookPage[] {
   if (typeof window === 'undefined') return [createEmptyPage()];
   try {
-    const raw = localStorage.getItem(PC_ACTIVE_PAGES_KEY);
-    if (!raw) return [createEmptyPage()];
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed.map((p: any, idx: number) => ({
-        id: p?.id || `page-restored-${idx}`,
-        lines: ensureAtLeastOneLine(Array.isArray(p?.lines) ? p.lines : []),
-        createdAt: typeof p?.createdAt === 'number' ? p.createdAt : Date.now(),
-      }));
+    const scoped = localStorage.getItem(storageKey);
+    if (scoped) {
+      const normalized = normalizePages(JSON.parse(scoped));
+      if (normalized) return normalized;
     }
   } catch {
-    // ignore corrupt draft
+    // Ignore a corrupt scoped draft and keep the editor usable.
+  }
+
+  // Migrate old unscoped handwriting pages only when the stored owner marker
+  // matches this account (or it was an unclaimed device-guest draft). Keep the
+  // legacy key intact so this migration is non-destructive.
+  try {
+    const legacy = localStorage.getItem(PC_ACTIVE_PAGES_KEY);
+    const metaKey = ownerId ? `${PC_ACTIVE_META_KEY}:${ownerId}` : PC_ACTIVE_META_KEY;
+    const scopedMeta = localStorage.getItem(metaKey);
+    const rawMeta = scopedMeta || localStorage.getItem(PC_ACTIVE_META_KEY) || '{}';
+    const meta = JSON.parse(rawMeta);
+    const sameOwner = Boolean(ownerId && meta?.userId === ownerId && (!documentId || meta?.notebookId === documentId));
+    const unclaimedGuest = Boolean(ownerId && ownerId.startsWith('local-guest-') && !meta?.userId);
+    if (legacy && (sameOwner || unclaimedGuest)) {
+      const normalized = normalizePages(JSON.parse(legacy));
+      if (normalized) {
+        localStorage.setItem(storageKey, JSON.stringify(normalized));
+        return normalized;
+      }
+    }
+  } catch {
+    // A first-run user simply receives a clean page.
   }
   return [createEmptyPage()];
 }
 
-export function useNotebookPages(): UseNotebookPagesReturn {
-  const [pages, setPages] = useState<NotebookPage[]>(loadInitialPages);
+export function useNotebookPages(ownerId?: string, documentId?: string): UseNotebookPagesReturn {
+  const storageKey = `${PC_ACTIVE_PAGES_KEY}:owner:${ownerId || 'device'}:document:${documentId || 'workspace'}`;
+  const initialPages = useMemo(() => loadInitialPages(storageKey, ownerId, documentId), [storageKey, ownerId, documentId]);
+  const [pageState, setPageState] = useState<{ storageKey: string; pages: NotebookPage[] }>(() => ({
+    storageKey,
+    pages: initialPages,
+  }));
+  const pages = pageState.storageKey === storageKey ? pageState.pages : initialPages;
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
 
-  // Instant zero-lag local persistence on every page/line change
+  const updatePages = useCallback((updater: (current: NotebookPage[]) => NotebookPage[]) => {
+    setPageState((previous) => {
+      const current = previous.storageKey === storageKey ? previous.pages : loadInitialPages(storageKey, ownerId, documentId);
+      return { storageKey, pages: updater(current) };
+    });
+  }, [storageKey, ownerId, documentId]);
+
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (pageState.storageKey !== storageKey) {
+      setPageState({ storageKey, pages: initialPages });
+      setCurrentPageIndex(0);
+    }
+  }, [storageKey, ownerId, documentId, initialPages, pageState.storageKey]);
+
+  // Persist only the state that belongs to the currently selected owner.
+  useEffect(() => {
+    if (typeof window === 'undefined' || pageState.storageKey !== storageKey) return;
     try {
-      localStorage.setItem(PC_ACTIVE_PAGES_KEY, JSON.stringify(pages));
+      localStorage.setItem(storageKey, JSON.stringify(pageState.pages));
     } catch {
       // ignore storage quota errors
     }
-  }, [pages]);
+  }, [pageState, storageKey]);
 
   const currentPage = pages[currentPageIndex] || pages[0];
   const totalPages = pages.length;
@@ -95,67 +147,67 @@ export function useNotebookPages(): UseNotebookPagesReturn {
   }, [canGoPrev]);
 
   const insertPageAfter = useCallback((index: number, page?: NotebookPage) => {
-    setPages((prev) => {
+    updatePages((prev) => {
       const newPages = [...prev];
       const newPage = page ?? createEmptyPage();
       newPages.splice(index + 1, 0, newPage);
       return newPages;
     });
-  }, []);
+  }, [updatePages]);
 
   const addNewPage = useCallback(() => {
     const newPage = createEmptyPage();
-    setPages((prev) => {
+    updatePages((prev) => {
       const newPages = [...prev];
       newPages.splice(currentPageIndex + 1, 0, newPage);
       return newPages;
     });
     setCurrentPageIndex((prev) => prev + 1);
-  }, [currentPageIndex]);
+  }, [currentPageIndex, updatePages]);
 
   const deletePage = useCallback((index: number) => {
     if (pages.length <= 1) return;
-    setPages((prev) => prev.filter((_, i) => i !== index));
+    updatePages((prev) => prev.filter((_, i) => i !== index));
     setCurrentPageIndex((prev) => (prev >= index && prev > 0 ? prev - 1 : prev));
-  }, [pages.length]);
+  }, [pages.length, updatePages]);
 
   const updatePageLines = useCallback((index: number, lines: NoteLine[]) => {
-    setPages((prev) =>
+    updatePages((prev) =>
       prev.map((page, i) => (i === index ? { ...page, lines: ensureAtLeastOneLine(lines) } : page))
     );
-  }, []);
+  }, [updatePages]);
 
   const updateCurrentPageLines = useCallback(
     (lines: NoteLine[]) => {
-      setPages((prev) =>
+      updatePages((prev) =>
         prev.map((page, i) =>
           i === currentPageIndex ? { ...page, lines: ensureAtLeastOneLine(lines) } : page
         )
       );
     },
-    [currentPageIndex]
+    [currentPageIndex, updatePages]
   );
 
   const replaceAllPages = useCallback((nextPages: NotebookPage[]) => {
     if (!Array.isArray(nextPages) || nextPages.length === 0) {
-      setPages([createEmptyPage()]);
+      updatePages(() => [createEmptyPage()]);
       setCurrentPageIndex(0);
       return;
     }
-    setPages(
-      nextPages.map((p, idx) => ({
+    updatePages(
+      () => nextPages.map((p, idx) => ({
         id: p.id || `page-${Date.now()}-${idx}`,
         lines: ensureAtLeastOneLine(p.lines || []),
         createdAt: p.createdAt || Date.now(),
       }))
     );
     setCurrentPageIndex(0);
-  }, []);
+  }, [updatePages]);
 
   const flowOverflowFrom = useCallback((startPageIndex: number, linesPerPage: number) => {
     if (!Number.isFinite(linesPerPage) || linesPerPage <= 0) return;
 
-    setPages((prev) => {
+    updatePages((prev) => {
       const newPages = [...prev];
       let i = Math.max(0, Math.min(startPageIndex, newPages.length - 1));
 
@@ -196,7 +248,7 @@ export function useNotebookPages(): UseNotebookPagesReturn {
 
       return newPages;
     });
-  }, []);
+  }, [updatePages]);
 
   return {
     pages,

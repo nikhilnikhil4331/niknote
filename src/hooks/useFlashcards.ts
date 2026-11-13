@@ -1,6 +1,7 @@
 // Simple SM-2-lite spaced repetition backed by localStorage.
-// Keyed by block id. Portable, no DB dependency.
+// Reviews are portable but scoped to the active cloud owner.
 import { useCallback, useEffect, useState } from 'react';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 
 export type ReviewRating = 'again' | 'hard' | 'good' | 'easy';
 
@@ -14,33 +15,50 @@ export interface ReviewState {
 
 const KEY = 'niknote_flashcard_reviews_v1';
 
-const load = (): Record<string, ReviewState> => {
-  try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { return {}; }
+type StoredReviews = { key: string; value: Record<string, ReviewState> };
+
+const load = (key: string): Record<string, ReviewState> => {
+  try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; }
 };
-const save = (data: Record<string, ReviewState>) => {
-  try { localStorage.setItem(KEY, JSON.stringify(data)); } catch {}
+const save = (key: string, data: Record<string, ReviewState>) => {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
 };
 
 const defaultState = (): ReviewState => ({
   ease: 2.5, interval: 0, dueAt: Date.now(), reps: 0,
 });
 
-export const useFlashcards = () => {
-  const [reviews, setReviews] = useState<Record<string, ReviewState>>(() => load());
+export const useFlashcards = (ownerId?: string) => {
+  const storageKey = ownerScopedStorageKey(KEY, ownerId);
+  const [stored, setStored] = useState<StoredReviews>(() => ({ key: storageKey, value: load(storageKey) }));
+  const reviews = stored.key === storageKey ? stored.value : load(storageKey);
 
-  useEffect(() => { save(reviews); }, [reviews]);
+  useEffect(() => {
+    if (stored.key !== storageKey) setStored({ key: storageKey, value: load(storageKey) });
+  }, [storageKey, stored.key]);
+
+  useEffect(() => {
+    if (stored.key === storageKey) save(storageKey, stored.value);
+  }, [storageKey, stored]);
+
+  const updateReviews = useCallback((updater: (previous: Record<string, ReviewState>) => Record<string, ReviewState>) => {
+    setStored((previous) => {
+      const current = previous.key === storageKey ? previous.value : load(storageKey);
+      return { key: storageKey, value: updater(current) };
+    });
+  }, [storageKey]);
 
   const getState = useCallback((id: string): ReviewState => reviews[id] || defaultState(), [reviews]);
 
   const isDue = useCallback((id: string): boolean => {
-    const s = reviews[id];
-    return !s || s.dueAt <= Date.now();
+    const state = reviews[id];
+    return !state || state.dueAt <= Date.now();
   }, [reviews]);
 
   const rate = useCallback((id: string, rating: ReviewRating) => {
-    setReviews(prev => {
-      const s = prev[id] || defaultState();
-      let { ease, interval, reps } = s;
+    updateReviews((previous) => {
+      const state = previous[id] || defaultState();
+      let { ease, interval, reps } = state;
 
       if (rating === 'again') {
         reps = 0;
@@ -52,18 +70,21 @@ export const useFlashcards = () => {
         else if (reps === 2) interval = 3;
         else interval = Math.round(interval * ease);
         if (rating === 'hard') { ease = Math.max(1.3, ease - 0.15); interval = Math.max(1, Math.round(interval * 0.8)); }
-        if (rating === 'good') { /* no change */ }
         if (rating === 'easy') { ease = ease + 0.15; interval = Math.round(interval * 1.3); }
       }
 
       const dueAt = Date.now() + interval * 86400000;
-      return { ...prev, [id]: { ease, interval, reps, dueAt, lastReviewedAt: Date.now() } };
+      return { ...previous, [id]: { ease, interval, reps, dueAt, lastReviewedAt: Date.now() } };
     });
-  }, []);
+  }, [updateReviews]);
 
   const reset = useCallback((id: string) => {
-    setReviews(prev => { const n = { ...prev }; delete n[id]; return n; });
-  }, []);
+    updateReviews((previous) => {
+      const next = { ...previous };
+      delete next[id];
+      return next;
+    });
+  }, [updateReviews]);
 
   return { getState, isDue, rate, reset, all: reviews };
 };

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ChevronDown, ChevronUp, Flame, Gamepad2, Sparkles, Trophy, Zap } from 'lucide-react';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 
 const HIGHSCORE_KEY = 'niknote.nikai.highscore.v1';
 
@@ -46,6 +47,7 @@ function makeMathChallenge(): MathChallenge {
 }
 
 interface NikAIThinkingArenaProps {
+  userId?: string;
   isStreaming: boolean;
   thinkingText?: string;
   modelName?: string;
@@ -68,6 +70,7 @@ const THINKING_PHASES = [
  * default so the panel never competes with the answer.
  */
 export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
+  userId,
   isStreaming,
   thinkingText,
   modelName,
@@ -75,13 +78,14 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
   onCloseManual,
 }) => {
   const reducedMotion = useReducedMotion();
+  const highscoreKey = ownerScopedStorageKey(HIGHSCORE_KEY, userId);
   const [miniMode, setMiniMode] = useState<'stars' | 'math'>('stars');
   const [gameExpanded, setGameExpanded] = useState(false); // collapsed by default
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
   const [highScore, setHighScore] = useState<number>(() => {
     try {
-      return Number(localStorage.getItem(HIGHSCORE_KEY) || '0') || 0;
+      return Number(localStorage.getItem(highscoreKey) || '0') || 0;
     } catch {
       return 0;
     }
@@ -111,12 +115,12 @@ export const NikAIThinkingArena: React.FC<NikAIThinkingArenaProps> = ({
     if (score > highScore) {
       setHighScore(score);
       try {
-        localStorage.setItem(HIGHSCORE_KEY, String(score));
+        localStorage.setItem(highscoreKey, String(score));
       } catch {
         // ignore storage quota
       }
     }
-  }, [score, highScore]);
+  }, [score, highScore, highscoreKey]);
 
   // Spawn interactive orbs while the game is open
   useEffect(() => {

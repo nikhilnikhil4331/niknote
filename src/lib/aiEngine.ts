@@ -8,6 +8,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { buildNikAIMemoryPrompt } from '@/lib/nikaiMemory';
 import { evaluateSafeExpression } from '@/lib/safeExpression';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 
 export type AstaMode =
   | 'auto'
@@ -99,6 +100,7 @@ export interface AstaStreamOptions {
   messages: AstaChatTurn[];
   mode?: AstaMode;
   model?: AstaModelChoice;
+  userId?: string;
   threadId?: string;
   noteContext?: string;
   memoryContext?: string;
@@ -131,9 +133,9 @@ export function cleanClientApiKey(raw?: string | null): string {
     .trim();
 }
 
-export function readCustomAIKeys(): AstaCustomKeys {
+export function readCustomAIKeys(ownerId?: string): AstaCustomKeys {
   try {
-    const raw = localStorage.getItem(KEYS_STORAGE_KEY);
+    const raw = localStorage.getItem(ownerScopedStorageKey(KEYS_STORAGE_KEY, ownerId));
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     return {
@@ -147,10 +149,10 @@ export function readCustomAIKeys(): AstaCustomKeys {
   }
 }
 
-export function saveCustomAIKeys(keys: AstaCustomKeys): void {
+export function saveCustomAIKeys(keys: AstaCustomKeys, ownerId?: string): void {
   try {
     localStorage.setItem(
-      KEYS_STORAGE_KEY,
+      ownerScopedStorageKey(KEYS_STORAGE_KEY, ownerId),
       JSON.stringify({
         larprouterKey: cleanClientApiKey(keys.larprouterKey),
         groqKey: cleanClientApiKey(keys.groqKey),
@@ -163,8 +165,8 @@ export function saveCustomAIKeys(keys: AstaCustomKeys): void {
   }
 }
 
-function getEffectiveClientKeys(): { larprouter: string; groq: string; gemini: string; openai: string } {
-  const custom = readCustomAIKeys();
+function getEffectiveClientKeys(ownerId?: string): { larprouter: string; groq: string; gemini: string; openai: string } {
+  const custom = readCustomAIKeys(ownerId);
   // Provider credentials configured on the server must never be bundled into
   // browser JavaScript. Only keys explicitly supplied by this user live here.
   let larprouter = cleanClientApiKey(custom.larprouterKey);
@@ -189,8 +191,8 @@ function getEffectiveClientKeys(): { larprouter: string; groq: string; gemini: s
   return { larprouter, groq, gemini, openai };
 }
 
-export async function probeAstaProviders(): Promise<{ cloudReady: boolean; providers: string[] }> {
-  const localKeys = getEffectiveClientKeys();
+export async function probeAstaProviders(ownerId?: string): Promise<{ cloudReady: boolean; providers: string[] }> {
+  const localKeys = getEffectiveClientKeys(ownerId);
   const active = new Set<string>();
   if (localKeys.larprouter) active.add('NikAI Astra LarpRouter 1M');
   if (localKeys.openai) active.add('NikAI Astra OpenAI Core');
@@ -266,7 +268,7 @@ export function generateFollowUpSuggestions(query: string, mode: AstaMode): stri
 
 // ── Shared NikAI gateway request builder ──
 async function buildGatewayRequest(opts: AstaStreamOptions, memoryContext: string): Promise<RequestInit> {
-  const custom = readCustomAIKeys();
+  const custom = readCustomAIKeys(opts.userId);
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   try {
     const { data } = await supabase.auth.getSession();
@@ -419,7 +421,7 @@ async function tryDirectCloudStream(
   opts: AstaStreamOptions,
   memoryContext: string
 ): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
-  const keys = getEffectiveClientKeys();
+  const keys = getEffectiveClientKeys(opts.userId);
   if (!keys.larprouter && !keys.groq && !keys.gemini && !keys.openai) return null;
 
   const mode = opts.mode || 'auto';
@@ -710,7 +712,7 @@ async function trySupabaseEdge(
       quiz: 'quiz',
       write: 'notes',
     };
-    const custom = readCustomAIKeys();
+    const custom = readCustomAIKeys(opts.userId);
     const extraHeaders: Record<string, string> = {};
     if (custom.larprouterKey) extraHeaders['x-larprouter-key'] = custom.larprouterKey;
     if (custom.groqKey) extraHeaders['x-groq-key'] = custom.groqKey;
@@ -837,7 +839,7 @@ export async function streamAstaAI(opts: AstaStreamOptions): Promise<AstaResult>
   const t0 = performance.now();
   const lastUser = [...opts.messages].reverse().find((m) => m.role === 'user')?.content || '';
   const mode = resolveAstaMode(opts.mode);
-  const memoryContext = opts.memoryContext ?? buildNikAIMemoryPrompt(opts.threadId);
+  const memoryContext = opts.memoryContext ?? buildNikAIMemoryPrompt(opts.threadId, opts.userId);
 
   const request: AstaStreamOptions = { ...opts, mode, model: resolveAstaModel(opts.model) };
 

@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { trackFirstNoteCreated } from '@/utils/analytics';
 import { trackStartNoteCreation } from '@/lib/tracking';
+import { localNotebookAsCloudShape, readLocalNotesForOwner, removeLocalNoteForOwner, upsertLocalNoteForOwner } from '@/lib/localNoteStore';
+import type { NoteSettings } from '@/types/notes';
 
 export interface Notebook {
   id: string;
@@ -14,10 +17,12 @@ export interface Notebook {
   handwriting_model_id: string | null;
   page_style: string;
   page_size: string;
+  settings?: Partial<NoteSettings> | null;
   folder: string | null;
   tags: string[];
   created_at: string;
   updated_at: string;
+  is_favorite?: boolean | null;
 }
 
 export interface Page {
@@ -25,25 +30,34 @@ export interface Page {
   notebook_id: string;
   user_id: string;
   title: string;
-  content: any[];
+  content: Json;
   page_number: number;
   created_at: string;
   updated_at: string;
 }
 
 export const useNotebooks = () => {
-  const { user } = useAuth();
+  const { user, isGuest, loading: authLoading } = useAuth();
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchNotebooks = useCallback(async () => {
-    if (!user || String(user.id || '').startsWith('local-guest-')) {
-      try {
-        const localRaw = localStorage.getItem('niknote.mobile.notebooks.v1');
-        setNotebooks(localRaw ? (JSON.parse(localRaw) as Notebook[]) : []);
-      } catch {
-        setNotebooks([]);
-      }
+    if (authLoading) return;
+    setLoading(true);
+
+    if (!user) {
+      // Never expose a previous device guest's unowned notes during auth
+      // startup or after sign-out.
+      setNotebooks([]);
+      setLoading(false);
+      return;
+    }
+
+    const localNotes = readLocalNotesForOwner(user.id, { allowLegacyClaim: isGuest });
+    const localRows = localNotes.map((note) => localNotebookAsCloudShape(note, user.id) as Notebook);
+
+    if (String(user.id || '').startsWith('local-guest-')) {
+      setNotebooks(localRows);
       setLoading(false);
       return;
     }
@@ -56,23 +70,25 @@ export const useNotebooks = () => {
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-
-      setNotebooks((data || []) as Notebook[]);
+      const cloudRows = (data || []) as Notebook[];
+      const cloudIds = new Set(cloudRows.map((notebook) => notebook.id));
+      // Local-first drafts for this same account remain visible during an
+      // outage or while their first cloud save is retrying. No other owner is
+      // ever mixed into this list.
+      setNotebooks([...cloudRows, ...localRows.filter((notebook) => !cloudIds.has(notebook.id))]);
     } catch (error) {
-      console.warn('Notebook fetch fallback to local cache:', error);
-      try {
-        const localRaw = localStorage.getItem('niknote.mobile.notebooks.v1');
-        if (localRaw) setNotebooks(JSON.parse(localRaw) as Notebook[]);
-      } catch {
-        // ignore
-      }
+      console.warn('Notebook fetch fallback to owner-scoped local cache:', error);
+      setNotebooks(localRows);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, isGuest, authLoading]);
 
   useEffect(() => {
-    fetchNotebooks();
+    void fetchNotebooks();
+    const refresh = () => { void fetchNotebooks(); };
+    window.addEventListener('niknote:local-data-changed', refresh);
+    return () => window.removeEventListener('niknote:local-data-changed', refresh);
   }, [fetchNotebooks]);
 
   const createNotebook = async (notebookData: Partial<Notebook>) => {
@@ -111,11 +127,21 @@ export const useNotebooks = () => {
   };
 
   const updateNotebook = async (id: string, updates: Partial<Notebook>) => {
+    if (!user) return null;
+    const local = readLocalNotesForOwner(user.id, { allowLegacyClaim: isGuest }).find((note) => note.id === id);
+    if (local && !local._syncedAt) {
+      const updated = { ...local, ...updates, updated_at: new Date().toISOString() };
+      upsertLocalNoteForOwner(updated, user.id, {}, { allowLegacyClaim: isGuest });
+      await fetchNotebooks();
+      return localNotebookAsCloudShape(updated, user.id) as Notebook;
+    }
+
     try {
       const { data, error } = await supabase
         .from('notebooks')
         .update(updates)
         .eq('id', id)
+        .eq('user_id', user.id)
         .select()
         .single();
 
@@ -132,11 +158,20 @@ export const useNotebooks = () => {
   };
 
   const deleteNotebook = async (id: string) => {
+    if (!user) return;
+    const local = readLocalNotesForOwner(user.id, { allowLegacyClaim: isGuest }).find((note) => note.id === id);
+    if (local && !local._syncedAt) {
+      removeLocalNoteForOwner(id, user.id);
+      setNotebooks(prev => prev.filter((notebook) => notebook.id !== id));
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('notebooks')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
@@ -175,6 +210,7 @@ export const usePages = (notebookId: string | null) => {
         .from('pages')
         .select('*')
         .eq('notebook_id', notebookId)
+        .eq('user_id', user.id)
         .order('page_number', { ascending: true });
 
       if (error) throw error;
@@ -203,11 +239,11 @@ export const usePages = (notebookId: string | null) => {
       const { data, error } = await supabase
         .from('pages')
         .insert([{
+          ...pageData,
           user_id: user.id,
           notebook_id: notebookId,
           page_number: nextPageNumber,
-          content: [] as any,
-          ...pageData,
+          content: pageData.content ?? [],
         }])
         .select()
         .single();
@@ -228,8 +264,9 @@ export const usePages = (notebookId: string | null) => {
     try {
       const { data, error } = await supabase
         .from('pages')
-        .update(updates as any)
+        .update(updates)
         .eq('id', id)
+        .eq('user_id', user?.id || '')
         .select()
         .single();
 
@@ -249,7 +286,8 @@ export const usePages = (notebookId: string | null) => {
       const { error } = await supabase
         .from('pages')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user?.id || '');
 
       if (error) throw error;
 

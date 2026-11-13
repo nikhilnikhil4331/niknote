@@ -51,6 +51,10 @@ import {
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { useOptionalAuth } from '@/contexts/AuthContext';
+import { isCloudUserId } from '@/lib/cloudSyncEngine';
+import { readLocalNotesForOwner } from '@/lib/localNoteStore';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 import { AstaMarkdown } from '@/components/asta/AstaMarkdown';
 import {
   streamAstaAI,
@@ -289,14 +293,14 @@ function formatRelativeTime(timestamp: number): string {
   return `${days} days ago`;
 }
 
-function loadSavedThreads(): NikAIThread[] {
+function loadSavedThreads(ownerId?: string): NikAIThread[] {
   try {
-    const primary = localStorage.getItem(THREADS_KEY);
+    const primary = localStorage.getItem(ownerScopedStorageKey(THREADS_KEY, ownerId));
     if (primary) {
       const parsed = JSON.parse(primary);
       if (Array.isArray(parsed)) return parsed;
     }
-    const legacy = localStorage.getItem(LEGACY_THREADS_KEY);
+    const legacy = localStorage.getItem(ownerScopedStorageKey(LEGACY_THREADS_KEY, ownerId));
     if (legacy) {
       const parsed = JSON.parse(legacy);
       if (Array.isArray(parsed)) return parsed;
@@ -307,9 +311,9 @@ function loadSavedThreads(): NikAIThread[] {
   }
 }
 
-function persistThreads(threads: NikAIThread[]) {
+function persistThreads(threads: NikAIThread[], ownerId?: string) {
   try {
-    localStorage.setItem(THREADS_KEY, JSON.stringify(threads.slice(0, 60)));
+    localStorage.setItem(ownerScopedStorageKey(THREADS_KEY, ownerId), JSON.stringify(threads.slice(0, 60)));
   } catch {
     // ignore storage quota overflow
   }
@@ -380,21 +384,21 @@ function fileToAttachment(file: File): Promise<AstaImageAttachment> {
   });
 }
 
-export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
+const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; isGuest: boolean }> = ({
   embedded = false,
   onClose,
   noteTitle,
   noteContent,
   onInsertContent,
+  userId,
+  isGuest,
 }) => {
   const navigate = useNavigate();
-
-  const [userId, setUserId] = useState<string | undefined>(undefined);
   const [userAvatarSrc, setUserAvatarSrc] = useState<string>('/nikai-avatar.jpg');
 
-  const [threads, setThreads] = useState<NikAIThread[]>(() => loadSavedThreads());
+  const [threads, setThreads] = useState<NikAIThread[]>(() => loadSavedThreads(userId));
   const [activeThreadId, setActiveThreadId] = useState<string | null>(() => {
-    const initial = loadSavedThreads();
+    const initial = loadSavedThreads(userId);
     return initial[0]?.id ?? null;
   });
   const [mode, setMode] = useState<AstaMode>('auto');
@@ -419,15 +423,16 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const hiddenSeedsKey = ownerScopedStorageKey(HIDDEN_SEEDS_KEY, userId);
   const [hiddenSeeds, setHiddenSeeds] = useState<string[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem(HIDDEN_SEEDS_KEY) || '[]');
+      return JSON.parse(localStorage.getItem(hiddenSeedsKey) || '[]');
     } catch {
       return [];
     }
   });
 
-  const [memoryState, setMemoryState] = useState<NikAIMemoryStore>(() => loadNikAIMemory());
+  const [memoryState, setMemoryState] = useState<NikAIMemoryStore>(() => loadNikAIMemory(userId));
   const [memoryOpen, setMemoryOpen] = useState(false);
   const [newMemoryFact, setNewMemoryFact] = useState('');
 
@@ -444,7 +449,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   const [listening, setListening] = useState(false);
   const [implementingId, setImplementingId] = useState<string | null>(null);
 
-  const customKeys = readCustomAIKeys();
+  const customKeys = readCustomAIKeys(userId);
   const [larprouterInput, setLarprouterInput] = useState(customKeys.larprouterKey || '');
   const [groqInput, setGroqInput] = useState(customKeys.groqKey || '');
   const [geminiInput, setGeminiInput] = useState(customKeys.geminiKey || '');
@@ -469,7 +474,6 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       .then(({ data }) => {
         if (!active) return;
         const u = data?.session?.user;
-        if (u?.id) setUserId(u.id);
         const pic = (u?.user_metadata as any)?.avatar_url || (u?.user_metadata as any)?.picture;
         if (pic) setUserAvatarSrc(pic);
       })
@@ -530,8 +534,8 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   );
 
   useEffect(() => {
-    persistThreads(threads);
-  }, [threads]);
+    persistThreads(threads, userId);
+  }, [threads, userId]);
 
   useEffect(() => {
     scrollEndRef.current?.scrollIntoView({ behavior: isGenerating ? 'auto' : 'smooth' });
@@ -545,46 +549,26 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   }, [input]);
 
   const loadNotesForPicker = useCallback(() => {
-    const collected: AttachedNoteContext[] = [];
-    try {
-      const mobileRaw = localStorage.getItem('niknote.mobile.notebooks.v1');
-      if (mobileRaw) {
-        const list = JSON.parse(mobileRaw);
-        if (Array.isArray(list)) {
-          for (const item of list) {
-            const text = Array.isArray(item.blocks)
-              ? item.blocks.map((b: any) => b.content || '').join('\n')
-              : item.content || '';
-            if (item.title || text) {
-              collected.push({
-                id: String(item.id || Math.random()),
-                title: String(item.title || 'Untitled Note'),
-                preview: String(text).slice(0, 24000),
-              });
-            }
-          }
-        }
-      }
-      const wsRaw = localStorage.getItem('niknote.notes.v1');
-      if (wsRaw) {
-        const list = JSON.parse(wsRaw);
-        if (Array.isArray(list)) {
-          for (const item of list) {
-            if (!item.trashedAt && (item.title || item.content)) {
-              collected.push({
-                id: String(item.id || Math.random()),
-                title: String(item.title || 'Workspace Note'),
-                preview: String(item.content || '').slice(0, 24000),
-              });
-            }
-          }
-        }
-      }
-    } catch {
-      // ignore parse errors
+    if (!userId) {
+      setAvailableNotes([]);
+      return;
     }
+    const ownedNotes = readLocalNotesForOwner(userId, { allowLegacyClaim: isGuest });
+    const collected: AttachedNoteContext[] = ownedNotes
+      .filter((item) => !item.trashedAt)
+      .map((item) => {
+        const text = Array.isArray(item.blocks)
+          ? item.blocks.map((block: any) => String(block?.content || '')).join('\n')
+          : String(item.content || '');
+        return {
+          id: String(item.id),
+          title: String(item.title || 'Untitled Note'),
+          preview: text.slice(0, 24000),
+        };
+      })
+      .filter((item) => item.title || item.preview);
     setAvailableNotes(collected.slice(0, 30));
-  }, []);
+  }, [userId, isGuest]);
 
   const startNewChat = useCallback((nextMode?: AstaMode) => {
     abortRef.current?.abort();
@@ -617,13 +601,13 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
     setHiddenSeeds((prev) => {
       const next = [...prev, id];
       try {
-        localStorage.setItem(HIDDEN_SEEDS_KEY, JSON.stringify(next));
+        localStorage.setItem(hiddenSeedsKey, JSON.stringify(next));
       } catch {
         // ignore
       }
       return next;
     });
-  }, []);
+  }, [hiddenSeedsKey]);
 
   const handleFilesSelected = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -739,7 +723,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
 
         if (openInHandwritingEditor) {
           toast.success(`Opening "${res.title}" inside NikNote Handwriting Studio!${cardSuffix}`);
-          navigate(`/?editor=1&notebook=${encodeURIComponent(res.notebookId)}`);
+          navigate(`/editor/${encodeURIComponent(res.notebookId)}`);
         } else {
           toast.success(`Saved "${res.title}" (${res.blockCount} blocks)${cardSuffix}`);
         }
@@ -756,7 +740,8 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
     (msg: NikAIMessage) => {
       const count = extractAndSaveFlashcardsFromMarkdown(
         activeThread?.title || 'NikAI Flashcard Deck',
-        msg.content
+        msg.content,
+        userId
       );
       if (count > 0) {
         toast.success(`Extracted ${count} study flashcards! Opening Flashcard Arena…`);
@@ -765,7 +750,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
         toast.info('Ask NikAI for notes with bold key terms or an MCQ quiz first!');
       }
     },
-    [activeThread?.title, navigate]
+    [activeThread?.title, navigate, userId]
   );
 
   const sendPrompt = useCallback(
@@ -842,7 +827,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
 
       const controller = new AbortController();
       abortRef.current = controller;
-      const freshMemoryPrompt = buildNikAIMemoryPrompt(targetThreadId);
+      const freshMemoryPrompt = buildNikAIMemoryPrompt(targetThreadId, userId);
 
       try {
         const noteCtx = attachedNote
@@ -857,6 +842,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
           })),
           mode: effectiveMode,
           model: effectiveModel,
+          userId,
           threadId: targetThreadId,
           noteContext: noteCtx,
           memoryContext: freshMemoryPrompt,
@@ -939,7 +925,8 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
           userMsg.content,
           finalText,
           targetThreadId,
-          titleSource.slice(0, 56) || 'Study Session'
+          titleSource.slice(0, 56) || 'Study Session',
+          userId
         );
         setMemoryState(updatedMemory);
 
@@ -1416,7 +1403,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                       type="button"
                       onClick={() => {
                         setProfileMenuOpen(false);
-                        navigate('/');
+                        navigate('/home');
                       }}
                       className="w-full px-3 py-2.5 rounded-xl text-left font-semibold text-[#171313] hover:bg-[#EEF4FF] flex items-center gap-2.5"
                     >
@@ -1631,6 +1618,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
 
                     {isCurrentlyStreaming && (
                       <NikAIThinkingArena
+                        userId={userId}
                         isStreaming
                         modelName={liveModelName}
                         thinkingText={liveThinkingText || msg.thinking}
@@ -2058,7 +2046,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (!newMemoryFact.trim()) return;
-                  const next = addManualMemoryFact(newMemoryFact);
+                  const next = addManualMemoryFact(newMemoryFact, 'custom', userId);
                   setMemoryState(next);
                   setNewMemoryFact('');
                   toast.success('Pinned to NikAI Session Memory!');
@@ -2122,7 +2110,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                         <span className="text-slate-800 font-medium">{f.text}</span>
                         <button
                           type="button"
-                          onClick={() => setMemoryState(deleteMemoryFact(f.id))}
+                          onClick={() => setMemoryState(deleteMemoryFact(f.id, userId))}
                           className="text-slate-400 hover:text-rose-600"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -2157,7 +2145,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      setMemoryState(clearAllNikAIMemory());
+                      setMemoryState(clearAllNikAIMemory(userId));
                       toast.info('Cleared NikAI memory vault');
                     }}
                     className="text-xs font-bold text-rose-600 hover:underline"
@@ -2192,6 +2180,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
               </button>
             </div>
             <NikAIThinkingArena
+              userId={userId}
               isStreaming={isGenerating}
               forceOpen
               modelName={liveModelName}
@@ -2443,7 +2432,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                       groqKey: groqInput,
                       geminiKey: geminiInput,
                       openaiKey: openaiInput,
-                    });
+                    }, userId);
                     setKeysModalOpen(false);
                     toast.success('NikAI Cloud keys saved');
                   }}
@@ -2461,6 +2450,19 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       )}
     </div>
   );
+};
+
+export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = (props) => {
+  const auth = useOptionalAuth();
+  const user = auth?.user;
+  const loading = auth?.loading ?? false;
+  const isGuest = auth?.isGuest ?? true;
+  if (loading) {
+    return <div className="grid min-h-[40vh] place-items-center text-sm text-slate-500">Opening NikAI…</div>;
+  }
+  const userId = user?.id;
+  const ownerKey = isCloudUserId(userId) ? userId : 'device-guest';
+  return <NikAIWorkspaceContent key={ownerKey} {...props} userId={userId} isGuest={isGuest} />;
 };
 
 export default NikAIWorkspace;

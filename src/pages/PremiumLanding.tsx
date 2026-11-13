@@ -46,7 +46,7 @@ const PremiumLanding: React.FC = () => {
       featureName: 'handwriting_editor',
       pageType: 'landing',
     });
-    navigate('/');
+    navigate('/editor/new');
   };
 
   return (

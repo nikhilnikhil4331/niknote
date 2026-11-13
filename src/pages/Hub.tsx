@@ -30,7 +30,7 @@ const TONES: Record<HubTone, { background: string; color: string; border: string
 
 const GROUPS: { title: string; items: HubItem[] }[] = [
   { title: 'Write & make', items: [
-    { to: '/', label: 'Handwriting Notes', desc: 'Type it, make it yours', icon: PenLine, tone: 'coral' },
+    { to: '/editor/new', label: 'Handwriting Notes', desc: 'Type it, make it yours', icon: PenLine, tone: 'coral' },
     { to: '/playground', label: 'Playground', desc: 'Arrange ideas on a little canvas', icon: Shapes, tone: 'blue' },
     { to: '/notebooks', label: 'My Notebooks', desc: 'All your pages in one place', icon: BookOpen, tone: 'blue' },
     { to: '/documents', label: 'Documents', desc: 'Bring in PDFs and images', icon: FileText, tone: 'ink' },

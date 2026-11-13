@@ -537,6 +537,45 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_documents: {
+        Row: {
+          content: string
+          created_at: string
+          document_type: string
+          embeddings: Json | null
+          id: string
+          metadata: Json
+          source: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          document_type?: string
+          embeddings?: Json | null
+          id: string
+          metadata?: Json
+          source?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          document_type?: string
+          embeddings?: Json | null
+          id?: string
+          metadata?: Json
+          source?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       money_goals: {
         Row: {
           created_at: string
@@ -611,8 +650,10 @@ export type Database = {
           folder: string | null
           handwriting_model_id: string | null
           id: string
+          is_favorite: boolean | null
           page_size: string
           page_style: string
+          settings: Json | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -625,8 +666,10 @@ export type Database = {
           folder?: string | null
           handwriting_model_id?: string | null
           id?: string
+          is_favorite?: boolean | null
           page_size?: string
           page_style?: string
+          settings?: Json | null
           tags?: string[] | null
           title?: string
           updated_at?: string
@@ -639,8 +682,10 @@ export type Database = {
           folder?: string | null
           handwriting_model_id?: string | null
           id?: string
+          is_favorite?: boolean | null
           page_size?: string
           page_style?: string
+          settings?: Json | null
           tags?: string[] | null
           title?: string
           updated_at?: string

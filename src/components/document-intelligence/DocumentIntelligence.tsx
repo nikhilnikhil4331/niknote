@@ -16,6 +16,9 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { readPdf } from '@/lib/pdfText';
 import { extractDocumentText } from '@/lib/documentExtraction';
+import { blocksFromNoteText } from '@/lib/noteTemplates';
+import { useAuth } from '@/contexts/AuthContext';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 
 interface ExtractedContent {
   text: string;
@@ -30,6 +33,7 @@ type ProcessingStep = 'idle' | 'extracting' | 'analyzing' | 'done' | 'error';
 
 export const DocumentIntelligence: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<ProcessingStep>('idle');
   const [file, setFile] = useState<File | null>(null);
@@ -131,7 +135,7 @@ export const DocumentIntelligence: React.FC = () => {
     try {
       // Navigate to main editor with the extracted content
       // Store in localStorage for the editor to pick up
-      localStorage.setItem('niknote-imported-content', JSON.stringify({
+      localStorage.setItem(ownerScopedStorageKey('niknote-imported-content', user?.id), JSON.stringify({
         text: extracted.text,
         summary: extracted.summary,
         keyPoints: extracted.keyPoints,
@@ -141,14 +145,19 @@ export const DocumentIntelligence: React.FC = () => {
         timestamp: Date.now(),
       }));
 
+      sessionStorage.setItem('niknote-mobile-open', JSON.stringify({
+        ownerId: user?.id,
+        title: 'Imported document notes',
+        blocks: blocksFromNoteText(extracted.text),
+      }));
       toast.success('Notes ready! Editor mein open ho rahe hain... ✍️');
-      navigate('/');
+      navigate('/editor/new');
     } catch (err) {
       toast.error('Notes generate nahi ho paye');
     } finally {
       setIsGeneratingNotes(false);
     }
-  }, [extracted, navigate]);
+  }, [extracted, navigate, user?.id]);
 
   // Copy section to clipboard
   const handleCopy = async (text: string, section: string) => {

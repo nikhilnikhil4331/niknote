@@ -14,20 +14,11 @@ interface HistoryEntry {
 }
 
 const MAX_HISTORY = 100;
-const AUTO_SAVE_KEY = 'niknote_autosave';
-
-export const useBlockEditor = () => {
-  const [blocks, setBlocks] = useState<Block[]>(() => {
-    // Try to restore from auto-save
-    try {
-      const saved = localStorage.getItem(AUTO_SAVE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-    return [createBlock('text', '')];
-  });
+export const useBlockEditor = (autoSaveKey?: string) => {
+  // The editor is intentionally born empty. The caller owns hydration and
+  // chooses an account-scoped draft key; a global localStorage key can leak a
+  // previous user's draft into a new workspace.
+  const [blocks, setBlocks] = useState<Block[]>(() => [createBlock('text', '')]);
 
   // FIX: Use state for history position so canUndo/canRedo trigger re-renders
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -80,13 +71,16 @@ export const useBlockEditor = () => {
 
   // ─── AUTO-SAVE ───
   const triggerAutoSave = useCallback((newBlocks: Block[]) => {
+    if (!autoSaveKey) return;
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => {
       try {
-        localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(newBlocks));
-      } catch {}
+        localStorage.setItem(autoSaveKey, JSON.stringify(newBlocks));
+      } catch {
+        // The editor stays usable if local storage is unavailable.
+      }
     }, 1000);
-  }, []);
+  }, [autoSaveKey]);
 
   // ─── CORE UPDATE ───
   const updateBlocks = useCallback((newBlocks: Block[]) => {
@@ -95,6 +89,16 @@ export const useBlockEditor = () => {
     pushHistory(final);
     triggerAutoSave(final);
   }, [pushHistory, triggerAutoSave]);
+
+  // Hydrate a different document without carrying undo history across notes.
+  const replaceBlocks = useCallback((newBlocks: Block[]) => {
+    const final = newBlocks.length > 0 ? newBlocks : [createBlock('text', '')];
+    historyRef.current = [{ blocks: final, timestamp: Date.now() }];
+    setHistoryIndex(0);
+    setHistoryLength(1);
+    setBlocks(final);
+    triggerAutoSave(final);
+  }, [triggerAutoSave]);
 
   // ─── BLOCK OPERATIONS ───
 
@@ -256,6 +260,7 @@ export const useBlockEditor = () => {
   return {
     blocks,
     setBlocks: updateBlocks,
+    replaceBlocks,
     lines,
     getPlainText,
     importText,

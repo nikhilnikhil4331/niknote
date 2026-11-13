@@ -151,6 +151,7 @@ describe('NikNote SEO, Sitemap, Consent & Tracking Verification', () => {
     expect(resolveRouteSeo('/adminpanelnikhil').robots).toBe('noindex, nofollow');
     expect(resolveRouteSeo('/playground').robots).toBe('noindex, nofollow');
     expect(resolveRouteSeo('/payment').robots).toBe('noindex, nofollow');
+    expect(resolveRouteSeo('/editor/new')).toMatchObject({ title: 'Notes Editor — NikNote', robots: 'noindex, nofollow', pageType: 'workspace' });
     expect(resolveRouteSeo('/non-existent-route-xyz').robots).toBe('noindex, nofollow');
   });
 

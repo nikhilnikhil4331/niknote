@@ -31,6 +31,8 @@ import {
 import { DIAL_PRESETS, formatMinutesLabel, type DialRange } from '@/lib/dialMath';
 import { playCompletionChime, playTick, primeAudio } from '@/lib/chime';
 import { cn } from '@/lib/utils';
+import { useOptionalAuth } from '@/contexts/AuthContext';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 
 type CdownPhase = 'idle' | 'focus' | 'shortBreak' | 'longBreak';
 
@@ -51,6 +53,8 @@ interface FocusTimerPanelProps {
 }
 
 export const FocusTimerPanel: React.FC<FocusTimerPanelProps> = ({ tasks, compact = false, onSessionRecorded }) => {
+  const userId = useOptionalAuth()?.user?.id;
+  const timerStorageKey = ownerScopedStorageKey('niknote.desktop.timerState.v1', userId);
   const { settings, update } = useTimerSettings();
   const { recordSession } = useFocusSessions();
   const [mode, setMode] = useLocalStore<FocusKind>('niknote.desktop.timerMode.v1', 'pomodoro');
@@ -95,6 +99,7 @@ export const FocusTimerPanel: React.FC<FocusTimerPanelProps> = ({ tasks, compact
   const completedTokenRef = useRef<string | null>(null);
   const persistTimer = useRef<number | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [hydratedFor, setHydratedFor] = useState<string | null>(null);
 
   const setConfiguredMinutes = useCallback(
     (m: number) => {
@@ -105,23 +110,43 @@ export const FocusTimerPanel: React.FC<FocusTimerPanelProps> = ({ tasks, compact
     [mode, update],
   );
 
-  // ---------- hydrate from persisted runtime state (refresh-safe) ----------
+  // ---------- hydrate from this owner's persisted runtime state ----------
   useEffect(() => {
-    const saved = loadPersistedTimer();
+    setHydrated(false);
+    setEndAt(null);
+    setPhase('idle');
+    setSw(stopped());
+    setSwElapsed(0);
+    setLaps([]);
+    const saved = loadPersistedTimer(userId);
     if (!saved) {
+      setMode('pomodoro');
+      setPhase('idle');
+      setTimerMinutes(25);
+      setEndAt(null);
+      setRemainingSec(settings.pomodoroFocus * 60);
+      setRoundsDone(0);
+      setCategory(FOCUS_CATEGORIES[0].name);
+      setTaskId('');
+      setSessionStartedAt(null);
+      setSw(stopped());
+      setSwElapsed(0);
+      setLaps([]);
       setHydrated(true);
+      setHydratedFor(timerStorageKey);
       return;
     }
-    if (!saved) return;
     try {
       setMode(saved.mode);
       setCategory(saved.category || FOCUS_CATEGORIES[0].name);
       setTaskId(saved.taskId || '');
       if (saved.mode === 'stopwatch') {
-        setSw({ baseMs: saved.baseMs ?? 0, startedAt: saved.startedAt ?? null });
-        setSwElapsed(elapsedSw({ baseMs: saved.baseMs ?? 0, startedAt: saved.startedAt ?? null }, Date.now()));
+        const nextStopwatch = { baseMs: saved.baseMs ?? 0, startedAt: saved.startedAt ?? null };
+        setSw(nextStopwatch);
+        setSwElapsed(elapsedSw(nextStopwatch, Date.now()));
         setLaps(Array.isArray(saved.laps) ? saved.laps : []);
         setHydrated(true);
+        setHydratedFor(timerStorageKey);
         return;
       }
       if (saved.configuredMin) {
@@ -131,9 +156,9 @@ export const FocusTimerPanel: React.FC<FocusTimerPanelProps> = ({ tasks, compact
       setPhase(saved.phase || 'idle');
       setRoundsDone(saved.roundsDone ?? 0);
       setSessionStartedAt(saved.sessionStartedAt ?? null);
+      setEndAt(saved.endAt ?? null);
       if (saved.endAt != null) {
-        setEndAt(saved.endAt);
-        setRemainingSec(secondsLeft(saved.endAt, Date.now())); // handles "completed while away": → 0 → completion flow
+        setRemainingSec(secondsLeft(saved.endAt, Date.now()));
       } else if (typeof saved.remainingSec === 'number') {
         setRemainingSec(saved.remainingSec);
       } else {
@@ -143,31 +168,32 @@ export const FocusTimerPanel: React.FC<FocusTimerPanelProps> = ({ tasks, compact
       /* corrupt state → start clean */
     }
     setHydrated(true);
+    setHydratedFor(timerStorageKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [userId, timerStorageKey]);
 
   // ---------- persist on TRANSITIONS only, debounced (never per tick) ----------
   // remainingSec / swElapsed update continuously while ticking, so they are
   // deliberately NOT dependencies: endAt/startedAt fully determine them.
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || hydratedFor !== timerStorageKey) return;
     if (persistTimer.current) window.clearTimeout(persistTimer.current);
     persistTimer.current = window.setTimeout(() => {
       if (mode === 'stopwatch') {
         savePersistedTimer({
           mode, baseMs: sw.baseMs, startedAt: sw.startedAt, laps, savedAt: Date.now(),
-        });
+        }, userId);
       } else {
         savePersistedTimer({
           mode, phase, remainingSec, endAt,
           configuredMin, roundsDone, category, taskId, sessionStartedAt,
           savedAt: Date.now(),
-        });
+        }, userId);
       }
     }, 60);
     return () => { if (persistTimer.current) window.clearTimeout(persistTimer.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, mode, phase, endAt, configuredMin, roundsDone, category, taskId, sessionStartedAt, sw, laps, remainingSec === 0]);
+  }, [hydrated, hydratedFor, timerStorageKey, userId, mode, phase, endAt, configuredMin, roundsDone, category, taskId, sessionStartedAt, sw, laps, remainingSec === 0]);
 
   // ---------- countdown ticking (timestamp derived) ----------
   useEffect(() => {

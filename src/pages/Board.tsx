@@ -14,6 +14,7 @@ import {
   duplicatePage, emptyBoard, eraseAt, movePage, newPage, normalizeBoard, orient, paginateText, strokesInLasso, textCapacity, uid, validateImage,
 } from '@/lib/board';
 import { syncLocalBoardsToCloud } from '@/lib/cloudSyncEngine';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 const COLORS = ['#1a1a2e', '#1565c0', '#d32f2f', '#2e7d32', '#7b1fa2', '#ef6c00', '#facc15'];
@@ -86,7 +87,7 @@ function MediaAudio({ item }: { item: BoardItem }) {
   return <audio controls src={url} className="w-full" aria-label="Voice note" />;
 }
 
-export default function BoardScreen() {
+function BoardScreenContent() {
   const { user, loading } = useAuth();
   const reduced = useReducedMotion();
   const [params, setParams] = useSearchParams();
@@ -110,45 +111,51 @@ export default function BoardScreen() {
   const [, force] = useState(0);
   const page = data.pages[Math.min(pageIdx, data.pages.length - 1)];
 
-  // ---------- load (cloud when signed in, local device storage when guest) ----------
+  // ---------- load (cloud when signed in, owner-scoped device cache otherwise) ----------
   const LOCAL_BOARDS_KEY = 'niknote.boards.v1.local';
+  const isLocalOnly = !user || String(user.id || '').startsWith('local-guest-');
+  const localBoardsKey = ownerScopedStorageKey(LOCAL_BOARDS_KEY, isLocalOnly ? undefined : user?.id);
+  const boardDraftKey = ownerScopedStorageKey(`nn-board:${boardId}`, isLocalOnly ? undefined : user?.id);
   const readLocalBoards = (): { id: string; title: string; updated_at: string; data: BoardData }[] => {
-    try { return JSON.parse(localStorage.getItem(LOCAL_BOARDS_KEY) || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(localBoardsKey) || '[]'); } catch { return []; }
   };
   const writeLocalBoards = (list: { id: string; title: string; updated_at: string; data: BoardData }[]) => {
-    try { localStorage.setItem(LOCAL_BOARDS_KEY, JSON.stringify(list)); } catch { /* quota */ }
+    try { localStorage.setItem(localBoardsKey, JSON.stringify(list)); } catch { /* quota */ }
   };
-
-  const isLocalOnly = !user || String(user.id || '').startsWith('local-guest-');
 
   useEffect(() => {
     if (loading) return;
+    let active = true;
+    const cancel = () => { active = false; };
     if (isLocalOnly || !user) {
       const list = readLocalBoards();
-      if (!boardId) { setBoards(list); return; }
+      if (!boardId) { setBoards(list); return cancel; }
       const row = list.find(b => b.id === boardId);
-      if (!row) { toast.error('Board not found'); setParams({}); return; }
+      if (!row) { toast.error('Board not found'); setParams({}); return cancel; }
       const d = normalizeBoard(row.data);
       setData(d); setTitle(row.title); setPageIdx(0); history.current = new History(); setReady(true); setSave('saved');
       if (typeof window !== 'undefined' && window.innerWidth < 768) {
         setZoom(Math.max(0.35, Math.min(1, +((window.innerWidth - 36) / d.pages[0].width).toFixed(2))));
       }
-      return;
+      return cancel;
     }
     if (!boardId) {
-      (async () => {
+      void (async () => {
         await syncLocalBoardsToCloud(user.id).catch(() => 0);
-        const { data: rows, error } = await supabase.from('boards').select('id,title,updated_at').order('updated_at', { ascending: false });
+        if (!active) return;
+        const { data: rows, error } = await supabase.from('boards').select('id,title,updated_at').eq('user_id', user.id).order('updated_at', { ascending: false });
+        if (!active) return;
         if (error) {
           setBoards(readLocalBoards());
           return;
         }
         setBoards(rows ?? []);
       })();
-      return;
+      return cancel;
     }
     setReady(false);
-    supabase.from('boards').select('*').eq('id', boardId).maybeSingle().then(({ data: row, error }: any) => {
+    void supabase.from('boards').select('*').eq('id', boardId).eq('user_id', user.id).maybeSingle().then(({ data: row, error }: any) => {
+      if (!active) return;
       if (error || !row) {
         const localFallback = readLocalBoards().find(b => b.id === boardId);
         if (localFallback) {
@@ -158,7 +165,7 @@ export default function BoardScreen() {
         }
         toast.error('Board not found'); setParams({}); return;
       }
-      const local = localStorage.getItem(`nn-board:${boardId}`);
+      const local = localStorage.getItem(boardDraftKey);
       let d = normalizeBoard(row.data);
       if (local) { try { const l = JSON.parse(local); if (l.at > new Date(row.updated_at).getTime()) { d = normalizeBoard(l.data); toast.info('Restored unsaved changes'); } } catch { /* ignore */ } }
       setData(d); setTitle(row.title); setPageIdx(0); history.current = new History(); setReady(true); setSave('saved');
@@ -166,7 +173,8 @@ export default function BoardScreen() {
         setZoom(Math.max(0.35, Math.min(1, +((window.innerWidth - 36) / d.pages[0].width).toFixed(2))));
       }
     });
-  }, [user, isLocalOnly, loading, boardId, setParams]);
+    return cancel;
+  }, [user, isLocalOnly, loading, boardId, setParams, localBoardsKey, boardDraftKey]);
 
   // ---------- autosave ----------
   const dirty = useRef(false);
@@ -182,16 +190,16 @@ export default function BoardScreen() {
       dirty.current = false; setSave('saved');
       return;
     }
-    const { error } = await supabase.from('boards').update({ data, title }).eq('id', boardId);
+    const { error } = await supabase.from('boards').update({ data, title }).eq('id', boardId).eq('user_id', user.id);
     if (error) { setSave('error'); return; }
-    dirty.current = false; localStorage.removeItem(`nn-board:${boardId}`); setSave('saved');
-  }, [boardId, data, title, user, isLocalOnly]);
+    dirty.current = false; localStorage.removeItem(boardDraftKey); setSave('saved');
+  }, [boardId, data, title, user, isLocalOnly, boardDraftKey]);
   useEffect(() => {
     if (!ready || !dirty.current) return;
-    localStorage.setItem(`nn-board:${boardId}`, JSON.stringify({ at: Date.now(), data }));
+    localStorage.setItem(boardDraftKey, JSON.stringify({ at: Date.now(), data }));
     const t = setTimeout(persist, 900);
     return () => clearTimeout(t);
-  }, [data, title, ready, boardId, persist]);
+  }, [data, title, ready, boardId, persist, boardDraftKey]);
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => { if (dirty.current) { e.preventDefault(); e.returnValue = ''; } };
     window.addEventListener('beforeunload', warn); return () => window.removeEventListener('beforeunload', warn);
@@ -388,7 +396,7 @@ export default function BoardScreen() {
 
   // ---------- board list / create ----------
   const createBoard = async () => {
-    if (!user) {
+    if (isLocalOnly || !user) {
       const id = `local_${uid()}`;
       const list = readLocalBoards();
       const entry = { id, title: 'Untitled board', updated_at: new Date().toISOString(), data: emptyBoard() };
@@ -406,13 +414,13 @@ export default function BoardScreen() {
 
   if (!boardId) return (
     <main className="mx-auto max-w-3xl p-6 pb-28">
-      <div className="mb-6 flex items-center justify-between"><div><Link to="/" className="text-sm text-muted-foreground">← Home</Link><h1 className="text-3xl font-semibold">Boards</h1><p className="text-muted-foreground">Free-form pages with text, images, drawing and voice notes.</p></div><Button onClick={createBoard}><Plus size={16} /> New board</Button></div>
+      <div className="mb-6 flex items-center justify-between"><div><Link to="/home" className="text-sm text-muted-foreground">← Home</Link><h1 className="text-3xl font-semibold">Boards</h1><p className="text-muted-foreground">Free-form pages with text, images, drawing and voice notes.</p></div><Button onClick={createBoard}><Plus size={16} /> New board</Button></div>
       {boards === null ? <div className="grid gap-3">{[0, 1, 2].map(i => <div key={i} className="h-16 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />)}</div>
         : boards.length === 0 ? <div className="rounded-2xl border border-dashed p-10 text-center text-muted-foreground">No boards yet. Create your first one.</div>
         : <ul className="grid gap-3">{boards.map(b => (
           <li key={b.id} className="flex items-center gap-2 rounded-xl border bg-card p-4 transition-shadow hover:shadow-md">
             <button className="flex-1 text-left" onClick={() => setParams({ id: b.id })}><p className="font-medium">{b.title}</p><p className="text-xs text-muted-foreground">Edited {new Date(b.updated_at).toLocaleString()}</p></button>
-            <Button variant="ghost" size="icon" aria-label="Delete board" onClick={async () => { if (!confirm(`Delete “${b.title}”?`)) return; if (!user) { const next = (boards || []).filter(y => y.id !== b.id) as any; writeLocalBoards(next); setBoards(next); return; } const { error } = await supabase.from('boards').delete().eq('id', b.id); if (error) toast.error('Delete failed'); else setBoards(x => x!.filter(y => y.id !== b.id)); }}><Trash2 size={16} /></Button>
+            <Button variant="ghost" size="icon" aria-label="Delete board" onClick={async () => { if (!confirm(`Delete “${b.title}”?`)) return; if (isLocalOnly || !user) { const next = (boards || []).filter(y => y.id !== b.id) as any; writeLocalBoards(next); setBoards(next); return; } const { error } = await supabase.from('boards').delete().eq('id', b.id).eq('user_id', user.id); if (error) toast.error('Delete failed'); else setBoards(x => x!.filter(y => y.id !== b.id)); }}><Trash2 size={16} /></Button>
           </li>))}</ul>}
     </main>
   );
@@ -617,4 +625,10 @@ export default function BoardScreen() {
       </div>
     </main>
   );
+}
+
+export default function BoardScreen() {
+  const { user } = useAuth();
+  const ownerKey = user?.id && !String(user.id).startsWith('local-guest-') ? user.id : 'device-guest';
+  return <BoardScreenContent key={ownerKey} />;
 }

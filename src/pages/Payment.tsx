@@ -279,7 +279,7 @@ export default function PaymentPage() {
         {checking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         {checking ? 'Retrying receipt…' : 'Retry receipt delivery'}
       </Button>}
-      <Button onClick={() => navigate('/')} className="nn-payment-button w-full">OPEN MY NIKNOTE</Button>
+      <Button onClick={() => navigate('/home')} className="nn-payment-button w-full">OPEN MY NIKNOTE</Button>
       <p className="nn-payment-support">Need a hand? <a href="mailto:support@niknote.online">support@niknote.online</a></p>
     </section></main>;
   }
@@ -293,7 +293,7 @@ export default function PaymentPage() {
       {paymentReference && <div className="nn-payment-receipt-mini"><p><strong>Payment reference:</strong> {paymentReference}</p></div>}
       {recovery}
       <p className="nn-payment-support">Need a hand? <a href="mailto:support@niknote.online">support@niknote.online</a></p>
-      <Button variant="ghost" onClick={() => navigate('/')}>Back to editor</Button>
+      <Button variant="ghost" onClick={() => navigate('/editor/new')}>Back to editor</Button>
     </section></main>;
   }
 
@@ -305,7 +305,7 @@ export default function PaymentPage() {
       <p className="nn-payment-state-copy">Your paid access is linked to this account.</p>
       {notice && <p role="status" className="nn-payment-note">{notice}</p>}
       {recovery}
-      <Button onClick={() => navigate('/')} className="nn-payment-button w-full mt-4">OPEN MY NIKNOTE</Button>
+      <Button onClick={() => navigate('/home')} className="nn-payment-button w-full mt-4">OPEN MY NIKNOTE</Button>
     </section></main>;
   }
 

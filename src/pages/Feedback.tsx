@@ -115,7 +115,7 @@ const FeedbackPage = () => {
         >
           <ThankYouBurst title="Thank you!" subtitle="Your feedback means a lot! We'll use it to make Niknote even better for you." />
           <div className="space-y-3">
-              <Button onClick={() => navigate('/')} className="w-full rounded-xl">
+              <Button onClick={() => navigate('/editor/new')} className="w-full rounded-xl">
               Back to Editor
             </Button>
             <Button

@@ -4,26 +4,23 @@
 // favorites, recent, trash, templates, search, workspace switcher
 // ============================================================
 
-import React, { useState, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   FileText, FolderClosed, FolderOpen, Star, Trash2, Plus, Search,
-  ChevronRight, ChevronDown, PanelLeftClose, Settings,
-  BookOpen, Clock, Palette, Brain, Scan, MoreHorizontal,
-  Pin, Share2, Copy, Edit3, Heart, Hash, Globe,
-  LayoutGrid, Layers, ChevronUp, LogOut, Crown, Flame,
-  MessageCircle, BarChart3, Zap, X, Shapes
+  ChevronRight, ChevronDown, PanelLeftClose, Settings, BookOpen,
+  MoreHorizontal, LayoutGrid, Layers, LogOut, Shapes,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNotebooks, Notebook } from '@/hooks/useNotebooks';
-import { useStudyStreak } from '@/components/gamification/StudyStreak';
 import { useAuth } from '@/contexts/AuthContext';
-import { Input } from '@/components/ui/input';
+import { useNoteMeta } from '@/components/desktop/store';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface WorkspaceSidebarProps {
+  editorChrome?: boolean;
   isOpen: boolean;
   onToggle: () => void;
   onNewNote?: () => void;
@@ -40,19 +37,28 @@ interface NavItem {
   color?: string;
 }
 
-export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({ 
-  isOpen, onToggle, onNewNote, onOpenCommandPalette 
+export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
+  editorChrome = false, isOpen, onToggle, onNewNote, onOpenCommandPalette
 }) => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { user } = useAuth();
-  const { notebooks, loading, deleteNotebook } = useNotebooks();
+  const { notebooks, loading, updateNotebook } = useNotebooks();
+  const { setPrevFolder } = useNoteMeta();
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['__unfiled']));
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const moveToTrash = useCallback((id: string) => {
+    const notebook = notebooks.find((item) => item.id === id);
+    if (!notebook || notebook.folder === '__trash__') return;
+    setPrevFolder(id, notebook.folder ?? null);
+    void updateNotebook(id, { folder: '__trash__' });
+  }, [notebooks, setPrevFolder, updateNotebook]);
 
   const folderTree = useMemo(() => {
-    const filtered = notebooks.filter(n =>
-      !searchQuery || n.title.toLowerCase().includes(searchQuery.toLowerCase())
+    const filtered = notebooks.filter((notebook) =>
+      notebook.folder !== '__trash__' &&
+      (!searchQuery || notebook.title.toLowerCase().includes(searchQuery.toLowerCase()))
     );
     const folders = new Map<string, Notebook[]>();
     filtered.forEach(nb => {
@@ -63,7 +69,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
     return folders;
   }, [notebooks, searchQuery]);
 
-  const favorites = useMemo(() => notebooks.filter((n) => (n as unknown as { is_favorite?: boolean }).is_favorite), [notebooks]);
+  const favorites = useMemo(() => notebooks.filter((notebook) => notebook.folder !== '__trash__' && notebook.is_favorite), [notebooks]);
 
   const toggleFolder = (folder: string) => {
     setExpandedFolders(prev => {
@@ -79,14 +85,15 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
   if (!isOpen) return null;
 
-  // Main navigation items (Notion-style left rail)
+  // Keep the primary rail focused on real workspace destinations. NikAI and
+  // handwriting tools remain available from the editor top bar and integrations.
   const mainNav: NavItem[] = [
-    { id: 'home', icon: <FileText className="w-4 h-4" />, label: 'Home', action: () => navigate('/') },
-    { id: 'ai', icon: <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-4 w-auto object-contain" />, label: 'NikAI', action: () => navigate('/ai'), color: 'text-blue-700', badge: 'ASTRA' },
-    { id: 'dna', icon: <Scan className="w-4 h-4 text-emerald-500" />, label: 'DNA Scanner', action: () => {}, color: 'text-emerald-600' },
-    { id: 'documents', icon: <BookOpen className="w-4 h-4" />, label: 'Documents', action: () => navigate('/documents') },
-    { id: 'notebooks', icon: <Layers className="w-4 h-4" />, label: 'Notebooks', action: () => navigate('/notebooks') },
-    { id: 'playground', icon: <Shapes className="w-4 h-4" />, label: 'Playground', action: () => navigate('/playground') },
+    { id: 'home', icon: <FileText className="w-4 h-4" />, label: 'Home', action: () => navigate('/home'), active: pathname === '/home' },
+    { id: 'notes', icon: <BookOpen className="w-4 h-4" />, label: 'Notes', action: () => navigate('/notes'), active: pathname.startsWith('/editor') || pathname === '/notes' },
+    { id: 'notebooks', icon: <Layers className="w-4 h-4" />, label: 'Notebooks', action: () => navigate('/notebooks'), active: pathname === '/notebooks' },
+    { id: 'documents', icon: <FileText className="w-4 h-4" />, label: 'Documents', action: () => navigate('/documents'), active: pathname === '/documents' },
+    { id: 'playground', icon: <Shapes className="w-4 h-4" />, label: 'Playground', action: () => navigate('/playground'), active: pathname === '/playground' },
+    { id: 'trash', icon: <Trash2 className="w-4 h-4" />, label: 'Trash', action: () => navigate('/trash'), active: pathname === '/trash' },
   ];
 
   return (
@@ -95,72 +102,87 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: -260, opacity: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-      className="h-full w-[260px] bg-white/60 backdrop-blur-xl border-r border-gray-200/60 flex flex-col overflow-hidden"
+      className={cn('nn-workspace-sidebar h-full w-[260px] bg-white/60 backdrop-blur-xl border-r border-gray-200/60 flex flex-col overflow-hidden', editorChrome && 'nn-workspace-sidebar-editor')}
     >
       {/* ===== WORKSPACE HEADER ===== */}
-      <div className="p-3 flex items-center justify-between border-b border-gray-100">
+      <div className="nn-sidebar-workspace-header p-3 flex items-center justify-between border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center bg-[#EAF2FF] border border-[#C7D9F5] shadow-sm">
+          <div className="nn-sidebar-workspace-mark w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center bg-[#EAF2FF] border border-[#C7D9F5] shadow-sm">
             <img src="/images/brand/niknote-primary-mark.png" alt="" aria-hidden="true" className="w-5 h-5 object-contain" />
           </div>
-          <div>
-            <div className="text-sm font-bold text-gray-900 leading-tight">NikNote</div>
-            <div className="text-[10px] text-gray-400">Workspace</div>
-          </div>
+          <div className="text-sm font-bold text-gray-900 leading-tight">Workspace</div>
         </div>
         <div className="flex items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onOpenCommandPalette}
-            className="h-7 w-7 rounded-lg hover:bg-gray-100"
-            title="Command Palette (⌘K)"
-          >
-            <Search className="w-3.5 h-3.5 text-gray-400" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggle}
-            className="h-7 w-7 rounded-lg hover:bg-gray-100"
-          >
-            <PanelLeftClose className="w-3.5 h-3.5 text-gray-400" />
-          </Button>
+          {editorChrome ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggle}
+              aria-label="Collapse workspace sidebar"
+              className="nn-sidebar-workspace-chevron h-7 w-7 rounded-lg hover:bg-gray-100"
+            >
+              <ChevronDown className="w-4 h-4 text-gray-700" />
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onOpenCommandPalette}
+                className="h-7 w-7 rounded-lg hover:bg-gray-100"
+                title="Command Palette (⌘K)"
+              >
+                <Search className="w-3.5 h-3.5 text-gray-400" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onToggle}
+                className="h-7 w-7 rounded-lg hover:bg-gray-100"
+              >
+                <PanelLeftClose className="w-3.5 h-3.5 text-gray-400" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
       {/* ===== QUICK ACTIONS BAR ===== */}
-      <div className="px-3 pt-3 pb-1">
+      <div className="nn-sidebar-quick-actions px-3 pt-3 pb-1">
         <div className="flex items-center gap-1.5">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={onNewNote}
-            className="flex-1 flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-white bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md transition-shadow"
+            className="nn-sidebar-new-note flex-1 flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium text-white bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md transition-shadow"
           >
             <Plus className="w-3.5 h-3.5" />
             New Note
           </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={onOpenCommandPalette}
-            className="h-8 px-2.5 rounded-lg text-xs text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
-            title="Search (⌘K)"
-          >
-            <Search className="w-3.5 h-3.5" />
-          </motion.button>
+          {!editorChrome && (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={onOpenCommandPalette}
+              className="h-8 px-2.5 rounded-lg text-xs text-gray-500 bg-gray-100 hover:bg-gray-200 transition-colors"
+              title="Search (⌘K)"
+            >
+              <Search className="w-3.5 h-3.5" />
+            </motion.button>
+          )}
         </div>
       </div>
 
       {/* ===== MAIN NAVIGATION ===== */}
-      <div className="px-2 py-2">
-        {mainNav.map((item) => (
+      <div className="nn-sidebar-main-nav px-2 py-2">
+        {mainNav.filter((item) => !editorChrome || item.id !== 'trash').map((item) => (
           <motion.button
             key={item.id}
             whileTap={{ scale: 0.98 }}
             onClick={item.action}
             className={cn(
-              "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-all group",
-              item.active ? "bg-blue-50 text-blue-800" : "text-gray-600 hover:bg-gray-100"
+              "nn-sidebar-nav-item w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left transition-all group",
+              editorChrome
+                ? item.active ? "bg-[#FFE59B] text-[#171717]" : "text-gray-900 hover:bg-gray-100"
+                : item.active ? "bg-blue-50 text-blue-800" : "text-gray-600 hover:bg-gray-100"
             )}
           >
             <span className={cn("flex-shrink-0", item.color || "text-gray-400")}>
@@ -180,19 +202,17 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
 
       <ScrollArea className="flex-1">
         {/* ===== FAVORITES ===== */}
-        {favorites.length > 0 && (
-          <div className="px-2 py-2">
+        {editorChrome ? (
+          <div className="nn-sidebar-favorites px-2 py-2">
             <button
+              type="button"
               onClick={() => toggleSection('favorites')}
-              className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-gray-50 transition-colors"
+              aria-expanded={!collapsed.favorites}
+              className="nn-sidebar-section-heading w-full flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              {collapsed.favorites ? (
-                <ChevronRight className="w-3 h-3 text-gray-400" />
-              ) : (
-                <ChevronDown className="w-3 h-3 text-gray-400" />
-              )}
-              <Star className="w-3 h-3 text-amber-500" />
-              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Favorites</span>
+              <Star className="nn-sidebar-section-star w-3.5 h-3.5 text-gray-900" />
+              <span className="flex-1 text-left text-[13px] font-semibold text-gray-900">Favorites</span>
+              <ChevronDown className={cn('nn-sidebar-section-chevron w-4 h-4 text-gray-700', collapsed.favorites && 'is-collapsed')} />
             </button>
             <AnimatePresence>
               {!collapsed.favorites && (
@@ -200,139 +220,117 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
+                  className="nn-sidebar-folder-list overflow-hidden"
                 >
-                  {favorites.map((nb) => (
-                    <NotebookItem key={nb.id} notebook={nb} isFavorite onDelete={deleteNotebook} />
-                  ))}
+                  {loading ? (
+                    <div className="space-y-1.5 px-2.5 py-2">
+                      {[1, 2, 3].map((i) => <div key={i} className="h-5 bg-gray-100 rounded-lg animate-pulse" />)}
+                    </div>
+                  ) : folderTree.size > 0 ? (
+                    Array.from(folderTree.entries()).map(([folder, nbs]) => (
+                      <FolderItem
+                        key={folder}
+                        folder={folder}
+                        notebooks={nbs}
+                        isExpanded={expandedFolders.has(folder)}
+                        onToggle={() => toggleFolder(folder)}
+                        onDelete={moveToTrash}
+                      />
+                    ))
+                  ) : favorites.length > 0 ? (
+                    favorites.map((nb) => <NotebookItem key={nb.id} notebook={nb} isFavorite onDelete={moveToTrash} />)
+                  ) : (
+                    <button type="button" onClick={onNewNote} className="nn-sidebar-empty-favorites">
+                      <Plus aria-hidden="true" /> Add your first favorite
+                    </button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <>
+            {favorites.length > 0 && (
+              <div className="px-2 py-2">
+                <button onClick={() => toggleSection('favorites')} className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-gray-50 transition-colors">
+                  {collapsed.favorites ? <ChevronRight className="w-3 h-3 text-gray-400" /> : <ChevronDown className="w-3 h-3 text-gray-400" />}
+                  <Star className="w-3 h-3 text-amber-500" />
+                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Favorites</span>
+                </button>
+                <AnimatePresence>
+                  {!collapsed.favorites && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                      {favorites.map((nb) => <NotebookItem key={nb.id} notebook={nb} isFavorite onDelete={moveToTrash} />)}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+            <div className="px-2 py-1">
+              <button onClick={() => toggleSection('pages')} className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-gray-50 transition-colors">
+                {collapsed.pages ? <ChevronRight className="w-3 h-3 text-gray-400" /> : <ChevronDown className="w-3 h-3 text-gray-400" />}
+                <FileText className="w-3 h-3 text-gray-400" />
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Pages</span>
+              </button>
+              <AnimatePresence>
+                {!collapsed.pages && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                    {loading ? (
+                      <div className="space-y-1.5 px-2.5 py-2">{[1, 2, 3].map((i) => <div key={i} className="h-5 bg-gray-100 rounded-lg animate-pulse" />)}</div>
+                    ) : folderTree.size === 0 ? (
+                      <div className="text-center py-6 px-4">
+                        <FileText className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                        <p className="text-[11px] text-gray-400">No notes yet</p>
+                        <Button variant="ghost" size="sm" onClick={onNewNote} className="mt-2 text-xs h-7 text-blue-700"><Plus className="w-3 h-3 mr-1" /> Create first note</Button>
+                      </div>
+                    ) : (
+                      Array.from(folderTree.entries()).map(([folder, nbs]) => (
+                        <FolderItem key={folder} folder={folder} notebooks={nbs} isExpanded={expandedFolders.has(folder)} onToggle={() => toggleFolder(folder)} onDelete={moveToTrash} />
+                      ))
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </>
+        )}
+
+        {/* ===== TEMPLATES ===== */}
+        {editorChrome ? (
+          <>
+            <button type="button" onClick={() => navigate('/templates')} className="nn-sidebar-nav-item w-full flex items-center gap-2.5 mx-2 px-2.5 py-1.5 rounded-lg text-left text-gray-900 hover:bg-gray-100 transition-all group">
+              <LayoutGrid className="w-4 h-4 text-gray-900" aria-hidden="true" />
+              <span className="text-[13px] font-medium">Templates</span>
+            </button>
+            <button type="button" onClick={() => navigate('/trash')} className="nn-sidebar-nav-item w-full flex items-center gap-2.5 mx-2 px-2.5 py-1.5 rounded-lg text-left text-gray-900 hover:bg-gray-100 transition-all group">
+              <Trash2 className="w-4 h-4 text-gray-900" aria-hidden="true" />
+              <span className="text-[13px] font-medium">Trash</span>
+            </button>
+          </>
+        ) : (
+          <div className="px-2 py-1">
+            <button onClick={() => toggleSection('templates')} className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-gray-50 transition-colors">
+              {collapsed.templates ? <ChevronRight className="w-3 h-3 text-gray-400" /> : <ChevronDown className="w-3 h-3 text-gray-400" />}
+              <LayoutGrid className="w-3 h-3 text-gray-400" />
+              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Templates</span>
+            </button>
+            <AnimatePresence>
+              {!collapsed.templates && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                  <button type="button" onClick={() => navigate('/templates')} className="w-full flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-left">
+                    <LayoutGrid className="w-4 h-4 text-gray-500" />
+                    <span className="text-[12px] text-gray-600">Browse templates</span>
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
         )}
-
-        {/* ===== FOLDERS & PAGES ===== */}
-        <div className="px-2 py-1">
-          <button
-            onClick={() => toggleSection('pages')}
-            className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            {collapsed.pages ? (
-              <ChevronRight className="w-3 h-3 text-gray-400" />
-            ) : (
-              <ChevronDown className="w-3 h-3 text-gray-400" />
-            )}
-            <FileText className="w-3 h-3 text-gray-400" />
-            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Pages</span>
-          </button>
-          <AnimatePresence>
-            {!collapsed.pages && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                {loading ? (
-                  <div className="space-y-1.5 px-2.5 py-2">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="h-5 bg-gray-100 rounded-lg animate-pulse" />
-                    ))}
-                  </div>
-                ) : folderTree.size === 0 ? (
-                  <div className="text-center py-6 px-4">
-                    <FileText className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                    <p className="text-[11px] text-gray-400">No notes yet</p>
-                    <Button variant="ghost" size="sm" onClick={onNewNote} className="mt-2 text-xs h-7 text-blue-700">
-                      <Plus className="w-3 h-3 mr-1" /> Create first note
-                    </Button>
-                  </div>
-                ) : (
-                  Array.from(folderTree.entries()).map(([folder, nbs]) => (
-                    <FolderItem
-                      key={folder}
-                      folder={folder}
-                      notebooks={nbs}
-                      isExpanded={expandedFolders.has(folder)}
-                      onToggle={() => toggleFolder(folder)}
-                      onDelete={deleteNotebook}
-                    />
-                  ))
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* ===== TEMPLATES ===== */}
-        <div className="px-2 py-1">
-          <button
-            onClick={() => toggleSection('templates')}
-            className="w-full flex items-center gap-1.5 px-2.5 py-1 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            {collapsed.templates ? (
-              <ChevronRight className="w-3 h-3 text-gray-400" />
-            ) : (
-              <ChevronDown className="w-3 h-3 text-gray-400" />
-            )}
-            <LayoutGrid className="w-3 h-3 text-gray-400" />
-            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Templates</span>
-          </button>
-          <AnimatePresence>
-            {!collapsed.templates && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                {[
-                  { icon: '📝', label: 'Blank Note' },
-                  { icon: '📋', label: 'To-Do List' },
-                  { icon: '📚', label: 'Study Notes' },
-                  { icon: '🔬', label: 'Lab Report' },
-                  { icon: '📊', label: 'Project Tracker' },
-                  { icon: '🗓️', label: 'Weekly Planner' },
-                  { icon: '✍️', label: 'Handwriting Practice' },
-                ].map(t => (
-                  <button
-                    key={t.label}
-                    onClick={onNewNote}
-                    className="w-full flex items-center gap-2 px-4 py-1.5 rounded-lg hover:bg-gray-50 transition-colors text-left"
-                  >
-                    <span className="text-sm">{t.icon}</span>
-                    <span className="text-[12px] text-gray-600">{t.label}</span>
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
       </ScrollArea>
 
       {/* ===== BOTTOM SECTION ===== */}
-      <div className="border-t border-gray-100">
-        {/* Streak + Quick Stats */}
-        <StreakDisplay />
-
-        {/* Quick Stats */}
-        <div className="px-3 py-2">
-          <div className="flex items-center gap-2 text-[10px] text-gray-400">
-            <Flame className="w-3 h-3 text-orange-500" />
-            <span>{notebooks.length} notes</span>
-            <span className="text-gray-300">•</span>
-            <span>Free Plan</span>
-            <button 
-              onClick={() => navigate('/upgrade')}
-              className="ml-auto text-amber-600 font-semibold hover:text-amber-700 transition-colors flex items-center gap-0.5"
-            >
-              <Crown className="w-3 h-3" />
-              Pro
-            </button>
-          </div>
-        </div>
-
-        {/* User */}
+      {!editorChrome && <div className="border-t border-gray-100">
+        {/* Account */}
         {user ? (
           <div className="px-3 py-2 border-t border-gray-100">
             <div className="flex items-center gap-2">
@@ -368,7 +366,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             </Button>
           </div>
         )}
-      </div>
+      </div>}
     </motion.div>
   );
 };
@@ -382,51 +380,77 @@ const NotebookItem: React.FC<{
 }> = ({ notebook, isFavorite, onDelete }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Element && (target.closest('.nn-sidebar-note-menu') || target.closest('.nn-sidebar-note-menu-trigger'))) return;
+      setShowMenu(false);
+      setMenuPosition(null);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowMenu(false);
+        setMenuPosition(null);
+      }
+    };
+    window.addEventListener('pointerdown', closeOnOutsideClick);
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      window.removeEventListener('pointerdown', closeOnOutsideClick);
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [showMenu]);
 
   return (
     <div className="relative group">
-      <motion.button
-        whileTap={{ scale: 0.98 }}
-        onClick={() => navigate('/notebooks')}
-        className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors text-left"
-      >
-        {isFavorite ? (
-          <Star className="w-3 h-3 text-amber-500 flex-shrink-0" />
-        ) : (
-          <FileText className="w-3 h-3 text-gray-400 flex-shrink-0" />
-        )}
-        <span className="text-[12px] text-gray-700 truncate flex-1">{notebook.title}</span>
+      <div className="nn-sidebar-note-row">
         <button
-          onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-200 transition-all"
+          type="button"
+          onClick={() => navigate(`/editor/${encodeURIComponent(notebook.id)}`)}
+          className="nn-sidebar-note-open"
+          title={notebook.title}
         >
-          <MoreHorizontal className="w-3 h-3 text-gray-400" />
+          {isFavorite ? <Star aria-hidden="true" /> : <FileText aria-hidden="true" />}
+          <span>{notebook.title}</span>
         </button>
-      </motion.button>
-
+        <button
+          type="button"
+          onClick={(event) => {
+            const opening = !showMenu;
+            setShowMenu(opening);
+            if (opening) {
+              const rect = event.currentTarget.getBoundingClientRect();
+              setMenuPosition({ top: Math.min(rect.bottom + 5, window.innerHeight - 48), right: Math.max(8, window.innerWidth - rect.right) });
+            } else {
+              setMenuPosition(null);
+            }
+          }}
+          aria-label={`More actions for ${notebook.title}`}
+          aria-expanded={showMenu}
+          className="nn-sidebar-note-menu-trigger"
+        >
+          <MoreHorizontal aria-hidden="true" />
+        </button>
+      </div>
       <AnimatePresence>
         {showMenu && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+            initial={{ opacity: 0, scale: 0.97, y: -3 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -4 }}
-            className="absolute right-0 top-full z-50 w-40 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-gray-200/60 shadow-lg"
+            exit={{ opacity: 0, scale: 0.97, y: -3 }}
+            className="nn-sidebar-note-menu"
+            style={menuPosition ? { top: menuPosition.top, right: menuPosition.right } : undefined}
+            role="menu"
           >
-            <button className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50">
-              <Edit3 className="w-3 h-3" /> Rename
-            </button>
-            <button className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50">
-              <Copy className="w-3 h-3" /> Duplicate
-            </button>
-            <button className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-600 hover:bg-gray-50">
-              <Share2 className="w-3 h-3" /> Share
-            </button>
-            <div className="h-px bg-gray-100 my-1" />
             <button
-              onClick={() => { onDelete(notebook.id); setShowMenu(false); }}
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-red-500 hover:bg-red-50"
+              type="button"
+              role="menuitem"
+              onClick={() => { onDelete(notebook.id); setShowMenu(false); setMenuPosition(null); }}
             >
-              <Trash2 className="w-3 h-3" /> Delete
+              <Trash2 aria-hidden="true" /> Move to Trash
             </button>
           </motion.div>
         )}
@@ -480,33 +504,5 @@ const FolderItem: React.FC<{
         )}
       </AnimatePresence>
     </div>
-  );
-};
-
-// Compact streak display for sidebar
-const StreakDisplay: React.FC = () => {
-  const { streakData } = useStudyStreak();
-  const navigate = useNavigate();
-
-  return (
-    <button
-      onClick={() => navigate('/account')}
-      className="w-full px-3 py-2 flex items-center gap-2 hover:bg-gray-50 transition-colors text-left"
-    >
-      <div className={`flex items-center justify-center w-7 h-7 rounded-lg ${
-        streakData.currentStreak > 0 ? 'bg-orange-500/10' : 'bg-gray-100'
-      }`}>
-        <Flame className={`w-3.5 h-3.5 ${
-          streakData.currentStreak > 0 ? 'text-orange-500' : 'text-gray-400'
-        }`} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-[10px] font-semibold text-gray-600">
-          {streakData.currentStreak > 0 ? `${streakData.currentStreak} day streak 🔥` : 'Start your streak!'}
-        </div>
-        <div className="text-[9px] text-gray-400">Write daily to earn rewards</div>
-      </div>
-      <Crown className="w-3 h-3 text-amber-500" />
-    </button>
   );
 };

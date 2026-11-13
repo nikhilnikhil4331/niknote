@@ -16,7 +16,7 @@ import { CommandPalette, type CommandItem } from '@/components/command-palette/C
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccountName } from '@/hooks/useAccountName';
 import { usePremiumContext } from '@/contexts/PremiumContext';
-import { useSpaces, useTasks } from './store';
+import { useLocalStore, useSpaces, useTasks } from './store';
 import { isGuestUser, useDesktopNotes } from './notes';
 import { cn } from '@/lib/utils';
 import './desktop.css';
@@ -29,7 +29,7 @@ interface ShellProps {
 }
 
 const NAV = [
-  { label: 'Home', icon: Home, to: '/', match: (p: string, s: string) => p === '/' && !s.includes('editor') },
+  { label: 'Home', icon: Home, to: '/home', match: (p: string, _search: string) => p === '/home' || p === '/' },
   { label: 'My Notes', icon: NotebookPen, to: '/notebooks', match: (p: string) => p === '/notebooks' || p === '/notes', countKey: 'notes' as const },
   { label: 'Playground', icon: Shapes, to: '/playground', match: (p: string) => p === '/playground' },
   { label: 'AI Assistant', icon: Sparkles, to: '/ai', match: (p: string) => p === '/ai' },
@@ -89,7 +89,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
     return items;
   }, [searchNotes, searchTasks, spaces, navigate, openSearchNote]);
 
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('niknote.desktop.sidebar') === '1');
+  const [collapsed, setCollapsed] = useLocalStore<boolean>('niknote.desktop.sidebar', false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [newSpaceOpen, setNewSpaceOpen] = useState(false);
@@ -102,10 +102,6 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
 
   const params = new URLSearchParams(search);
   const activeSpace = pathname === '/notebooks' || pathname === '/notes' ? params.get('space') : null;
-
-  useEffect(() => {
-    localStorage.setItem('niknote.desktop.sidebar', collapsed ? '1' : '0');
-  }, [collapsed]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -173,7 +169,7 @@ export const DesktopShell: React.FC<ShellProps> = ({ children, counts, folders =
         {/* Logo */}
         <div className={cn('flex items-center gap-2 px-3 pt-3.5 pb-1', collapsed && '!px-2 !gap-1')}>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/home')}
             className={cn('nd-logo-button flex items-center gap-2 min-w-0 rounded-lg px-1 py-1 transition-colors', collapsed && '!px-0')}
             title="NikNote Home"
             aria-label="NikNote Home"
@@ -415,7 +411,7 @@ style={{ background: 'var(--nd-grad-brand)', color: '#fff', border: '1px solid v
                 {guest ? (
                   <button onClick={() => { setMenuOpen(false); navigate('/login'); }}><LogIn size={15} /> Sign in</button>
                 ) : (
-                  <button className="nd-danger" onClick={async () => { setMenuOpen(false); await signOut(); navigate('/'); }}>
+                  <button className="nd-danger" onClick={async () => { setMenuOpen(false); await signOut(); navigate('/home'); }}>
                     <LogOut size={15} /> Sign out
                   </button>
                 )}
@@ -433,7 +429,7 @@ style={{ background: 'var(--nd-grad-brand)', color: '#fff', border: '1px solid v
       <CommandPalette
         isOpen={paletteOpen}
         onClose={() => setPaletteOpen(false)}
-        onNewNote={() => navigate('/?editor=1&new=1')}
+        onNewNote={() => navigate('/editor/new')}
       />
     </div>
   );

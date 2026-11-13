@@ -6,16 +6,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatMoney, isScheduled, monthSummary, toDay } from '@/lib/trackers';
 import { readState } from '@/lib/routineStore';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 import { useHaptics } from '@/hooks/useHaptics';
 
-function readLocalMoneySummary(now = new Date()): { money: ReturnType<typeof monthSummary>; currency: string } {
+function readLocalMoneySummary(ownerId?: string, now = new Date()): { money: ReturnType<typeof monthSummary>; currency: string } {
   try {
-    const raw = localStorage.getItem('niknote.money.v1.local');
+    const storageKey = ownerScopedStorageKey('niknote.money.v1.local', ownerId);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return { money: monthSummary([], now), currency: 'INR' };
     const parsed = JSON.parse(raw);
-    const rows: { kind: string; amount: number | string; occurred_on: string }[] =
-      Array.isArray(parsed?.rows) ? parsed.rows : [];
-    const currency = typeof parsed?.settings?.currency === 'string' ? parsed.settings.currency : 'INR';
+    const source = Array.isArray(parsed?.txs) ? parsed.txs : Array.isArray(parsed?.rows) ? parsed.rows : [];
+    const rows: { kind: string; amount: number | string; occurred_on: string }[] = source;
+    const currency = typeof parsed?.currency === 'string'
+      ? parsed.currency
+      : typeof parsed?.settings?.currency === 'string' ? parsed.settings.currency : 'INR';
     return { money: monthSummary(rows, now), currency };
   } catch {
     return { money: monthSummary([], now), currency: 'INR' };
@@ -27,16 +31,16 @@ function useTrackerSummary(userId?: string) {
     queryKey: ['mobile-tracker-summary', userId || 'local-device'],
     staleTime: 10_000,
     queryFn: async () => {
-      if (!userId) {
-        return readLocalMoneySummary(new Date());
+      if (!userId || userId.startsWith('local-guest-')) {
+        return readLocalMoneySummary(userId, new Date());
       }
       const now = new Date();
       const monthStart = toDay(new Date(now.getFullYear(), now.getMonth(), 1));
       const [tx, settings] = await Promise.all([
-        supabase.from('money_transactions').select('kind,amount,occurred_on').gte('occurred_on', monthStart).limit(2000),
-        supabase.from('tracker_settings').select('currency').maybeSingle(),
+        supabase.from('money_transactions').select('kind,amount,occurred_on').eq('user_id', userId).gte('occurred_on', monthStart).limit(2000),
+        supabase.from('tracker_settings').select('currency').eq('user_id', userId).maybeSingle(),
       ]);
-      if (tx.error) return readLocalMoneySummary(now);
+      if (tx.error) return readLocalMoneySummary(userId, now);
       return {
         money: monthSummary(tx.data ?? [], now),
         currency: settings.data?.currency ?? 'INR',
@@ -65,8 +69,9 @@ export function MobileTrackerCards() {
   const reduced = useReducedMotion();
   const { triggerHaptic } = useHaptics();
   const q = useTrackerSummary(user?.id);
-  const d = q.data ?? (!user ? readLocalMoneySummary() : undefined);
-  const habits = localHabitSummary(user?.id || 'anon');
+  const d = q.data ?? (!user || user.id.startsWith('local-guest-') ? readLocalMoneySummary(user?.id) : undefined);
+  const habitOwnerId = user?.id?.startsWith('local-guest-') ? 'anon' : user?.id || 'anon';
+  const habits = localHabitSummary(habitOwnerId);
   const pct = habits.habitsTotal ? Math.round((habits.habitsDone / habits.habitsTotal) * 100) : 0;
 
   const value = (ready: string, empty: string) =>

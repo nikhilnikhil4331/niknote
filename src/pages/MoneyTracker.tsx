@@ -13,6 +13,7 @@ import { TrackerShell, Panel } from '@/components/trackers/TrackerShell';
 import { SemiCircularDial, type DialItem } from '@/components/dial/SemiCircularDial';
 import { EXPENSE_CATEGORIES, CURRENCIES, formatMoney, accountBalances, cashflow, ACCOUNTS, toDay, splitBill, billStatus, topCategories, dailyCashSeries } from '@/lib/trackers';
 import { syncLocalMoneyToCloud } from '@/lib/cloudSyncEngine';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 
 type Tx = { id: string; kind: string; amount: number; category: string; note: string; occurred_on: string; account: string; to_account: string | null };
 type Goal = { id: string; name: string; target: number; saved: number };
@@ -23,9 +24,9 @@ const catOf = (n: string) => EXPENSE_CATEGORIES.find(c => c.name === n) ?? EXPEN
 const db = supabase as any;
 const LOCAL_MONEY_KEY = 'niknote.money.v1.local';
 
-function readLocalMoney(): { txs: Tx[]; goals: Goal[]; bills: Bill[]; currency: string; budget: number } {
+function readLocalMoney(storageKey = LOCAL_MONEY_KEY): { txs: Tx[]; goals: Goal[]; bills: Bill[]; currency: string; budget: number } {
   try {
-    const raw = localStorage.getItem(LOCAL_MONEY_KEY);
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return { txs: [], goals: [], bills: [], currency: 'INR', budget: 0 };
     const parsed = JSON.parse(raw);
     return {
@@ -40,18 +41,25 @@ function readLocalMoney(): { txs: Tx[]; goals: Goal[]; bills: Bill[]; currency: 
   }
 }
 
-function writeLocalMoney(state: { txs: Tx[]; goals: Goal[]; bills: Bill[]; currency: string; budget: number }) {
-  try { localStorage.setItem(LOCAL_MONEY_KEY, JSON.stringify(state)); } catch { /* quota */ }
+function writeLocalMoney(
+  state: { txs: Tx[]; goals: Goal[]; bills: Bill[]; currency: string; budget: number },
+  storageKey = LOCAL_MONEY_KEY,
+) {
+  try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch { /* quota */ }
 }
 
 const localId = () => `local_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 
 export default function MoneyTracker() {
   const { user, loading: authLoading } = useAuth();
-  const [txs, setTxs] = useState<Tx[]>(() => readLocalMoney().txs);
-  const [goals, setGoals] = useState<Goal[]>(() => readLocalMoney().goals);
-  const [currency, setCurrency] = useState(() => readLocalMoney().currency);
-  const [budget, setBudget] = useState(() => readLocalMoney().budget);
+  const isLocalOnly = !user || String(user.id || '').startsWith('local-guest-');
+  const storageOwnerId = isLocalOnly ? undefined : user?.id;
+  const localStorageKey = ownerScopedStorageKey(LOCAL_MONEY_KEY, storageOwnerId);
+  const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
+  const [txs, setTxs] = useState<Tx[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [currency, setCurrency] = useState('INR');
+  const [budget, setBudget] = useState(0);
   const [range, setRange] = useState<Range>('month');
   const [form, setForm] = useState({ kind: 'expense', amount: '', category: 'Food', note: '', occurred_on: toDay(new Date()), account: 'Cash', to_account: 'Bank' });
   const [loadError, setLoadError] = useState(false);
@@ -59,14 +67,12 @@ export default function MoneyTracker() {
   const [goalForm, setGoalForm] = useState({ name: '', target: '' });
   const [split, setSplit] = useState({ total: '', people: '2' });
   const [scanning, setScanning] = useState(false);
-  const [bills, setBills] = useState<Bill[]>(() => readLocalMoney().bills);
+  const [bills, setBills] = useState<Bill[]>([]);
   const [billForm, setBillForm] = useState({ name: '', amount: '', due_day: '' });
   const [search, setSearch] = useState('');
 
   const amountRef = useRef<HTMLInputElement>(null);
   const scanRef = useRef<HTMLInputElement>(null);
-
-  const isLocalOnly = !user || String(user.id || '').startsWith('local-guest-');
 
   /** Smoothly reveal a panel (and focus an input when given) — used by the dial. */
   const focusPanel = (id: string, focus?: React.RefObject<HTMLInputElement>) => {
@@ -74,26 +80,40 @@ export default function MoneyTracker() {
     window.setTimeout(() => focus?.current?.focus({ preventScroll: true }), 350);
   };
 
-  // Always mirror device state cleanly when not signed in to cloud
   useEffect(() => {
-    if (authLoading || !isLocalOnly) return;
-    writeLocalMoney({ txs, goals, bills, currency, budget });
-  }, [txs, goals, bills, currency, budget, isLocalOnly, authLoading]);
+    if (authLoading) return;
+    const local = readLocalMoney(localStorageKey);
+    setTxs(local.txs);
+    setGoals(local.goals);
+    setBills(local.bills);
+    setCurrency(local.currency);
+    setBudget(local.budget);
+    setLoadedStorageKey(localStorageKey);
+  }, [authLoading, localStorageKey]);
+
+  // Keep device/guest state local; a registered account writes only to its own
+  // pending queue when a cloud request fails.
+  useEffect(() => {
+    if (authLoading || !isLocalOnly || loadedStorageKey !== localStorageKey) return;
+    writeLocalMoney({ txs, goals, bills, currency, budget }, localStorageKey);
+  }, [txs, goals, bills, currency, budget, isLocalOnly, authLoading, loadedStorageKey, localStorageKey]);
 
   useEffect(() => {
-    if (isLocalOnly || !user) return;
-    const loadTimer = window.setTimeout(() => setLoadError(true), 12000);
+    if (authLoading || isLocalOnly || !user) return;
+    let active = true;
+    const loadTimer = window.setTimeout(() => { if (active) setLoadError(true); }, 12000);
     (async () => {
-      // Push any offline/guest local transactions, goals & bills to cloud FIRST so nothing is ever lost
+      // Upload only this user's pending queue before loading their cloud rows.
       await syncLocalMoneyToCloud(user.id).catch(() => 0);
 
       const [t, g, s, b] = await Promise.all([
-        db.from('money_transactions').select('*').order('occurred_on', { ascending: false }).limit(1000),
-        db.from('money_goals').select('*').order('created_at'),
-        db.from('tracker_settings').select('*').maybeSingle(),
-        db.from('bill_reminders').select('*').order('due_day'),
+        db.from('money_transactions').select('*').eq('user_id', user.id).order('occurred_on', { ascending: false }).limit(1000),
+        db.from('money_goals').select('*').eq('user_id', user.id).order('created_at'),
+        db.from('tracker_settings').select('*').eq('user_id', user.id).maybeSingle(),
+        db.from('bill_reminders').select('*').eq('user_id', user.id).order('due_day'),
       ]);
       window.clearTimeout(loadTimer);
+      if (!active) return;
       setLoadError(!!t.error);
       if (!t.error) {
         setTxs((t.data ?? []).map((x: any) => ({ ...x, amount: Number(x.amount) })));
@@ -108,8 +128,11 @@ export default function MoneyTracker() {
         }
       }
     })();
-    return () => window.clearTimeout(loadTimer);
-  }, [user, isLocalOnly, reload]);
+    return () => {
+      active = false;
+      window.clearTimeout(loadTimer);
+    };
+  }, [user, isLocalOnly, authLoading, reload]);
 
   const saveSettings = async (patch: { currency?: string; monthly_budget?: number }) => {
     if (isLocalOnly || !user) return;
@@ -123,19 +146,19 @@ export default function MoneyTracker() {
     if (form.kind === 'transfer' && form.account === form.to_account) { haptic('error'); return toast.error('Pick two different accounts'); }
     const row = { kind: form.kind, amount, note: form.note, occurred_on: form.occurred_on, account: form.account, to_account: form.kind === 'transfer' ? form.to_account : null,
       category: form.kind === 'income' ? 'Income' : form.kind === 'transfer' ? 'Transfer' : form.category };
-    if (isLocalOnly) {
+    if (isLocalOnly || !user) {
       haptic('medium');
       setTxs(p => [{ id: localId(), ...row }, ...p]);
       setForm(f => ({ ...f, amount: '', note: '' }));
       toast.success('Saved on device');
       return;
     }
-    const { data, error } = await db.from('money_transactions').insert(row).select().single();
+    const { data, error } = await db.from('money_transactions').insert({ user_id: user.id, ...row }).select().single();
     if (error) {
       // Flaky network fallback: save locally and queue for cloud sync!
       const fallbackEntry = { id: localId(), ...row };
       setTxs(p => [fallbackEntry, ...p]);
-      writeLocalMoney({ txs: [fallbackEntry, ...readLocalMoney().txs], goals, bills, currency, budget });
+      writeLocalMoney({ txs: [fallbackEntry, ...readLocalMoney(localStorageKey).txs], goals, bills, currency, budget }, localStorageKey);
       setForm(f => ({ ...f, amount: '', note: '' }));
       toast.success('Saved on device — will sync when online ✨');
       return;
@@ -150,8 +173,8 @@ export default function MoneyTracker() {
     haptic('heavy');
     const prev = txs;
     setTxs(p => p.filter(t => t.id !== id));
-    if (!user) return;
-    const { error } = await db.from('money_transactions').delete().eq('id', id);
+    if (isLocalOnly || !user) return;
+    const { error } = await db.from('money_transactions').delete().eq('id', id).eq('user_id', user.id);
     if (error) { setTxs(prev); toast.error('Could not delete. Try again.'); }
   };
 
@@ -159,14 +182,15 @@ export default function MoneyTracker() {
     const a = window.prompt('Amount', String(t.amount)); if (a === null) return;
     const amount = Number(a); if (!amount || amount <= 0) return toast.error('Enter a valid amount');
     const note = window.prompt('Note', t.note) ?? t.note;
-    if (user) {
-      const { error } = await db.from('money_transactions').update({ amount, note }).eq('id', t.id);
+    if (!isLocalOnly && user) {
+      const { error } = await db.from('money_transactions').update({ amount, note }).eq('id', t.id).eq('user_id', user.id);
       if (error) return toast.error('Could not save the change');
     }
     setTxs(p => p.map(x => x.id === t.id ? { ...x, amount, note } : x)); haptic('success');
   };
 
   const scanReceipt = async (file?: File) => {
+    if (isLocalOnly || !user) return toast.info('Receipt scanning needs a cloud connection');
     if (!file) return;
     if (!/^image\/(png|jpe?g|webp)$/.test(file.type)) return toast.error('Use a PNG, JPG or WEBP photo');
     if (file.size > 5 * 1024 * 1024) return toast.error('Photo must be under 5MB');
@@ -179,7 +203,7 @@ export default function MoneyTracker() {
         try { msg = msg || (await (error as any)?.context?.json())?.error; } catch { /* noop */ }
         throw new Error(msg || 'Could not read the receipt');
       }
-      const { data: row, error: insErr } = await db.from('money_transactions').insert({ kind: 'expense', amount: data.amount, category: data.category, note: data.note || 'Receipt', occurred_on: data.date }).select().single();
+      const { data: row, error: insErr } = await db.from('money_transactions').insert({ user_id: user.id, kind: 'expense', amount: data.amount, category: data.category, note: data.note || 'Receipt', occurred_on: data.date }).select().single();
       if (insErr) throw insErr;
       setTxs(p => [{ ...row, amount: Number(row.amount) }, ...p]);
       haptic('success');
@@ -192,13 +216,13 @@ export default function MoneyTracker() {
   const addBill = async () => {
     const due_day = Number(billForm.due_day);
     if (!billForm.name.trim() || !(due_day >= 1 && due_day <= 31)) return toast.error('Add a bill name and due day (1-31)');
-    if (!user) {
+    if (isLocalOnly || !user) {
       haptic('light');
       setBills(p => [...p, { id: localId(), name: billForm.name.trim(), amount: Number(billForm.amount) || 0, due_day, last_paid_month: null }].sort((a, b) => a.due_day - b.due_day));
       setBillForm({ name: '', amount: '', due_day: '' });
       return;
     }
-    const { data, error } = await db.from('bill_reminders').insert({ name: billForm.name.trim(), amount: Number(billForm.amount) || 0, due_day }).select().single();
+    const { data, error } = await db.from('bill_reminders').insert({ user_id: user.id, name: billForm.name.trim(), amount: Number(billForm.amount) || 0, due_day }).select().single();
     if (error) return toast.error(error.message);
     haptic('light');
     setBills(p => [...p, { ...data, amount: Number(data.amount) }].sort((a, b) => a.due_day - b.due_day));
@@ -208,30 +232,30 @@ export default function MoneyTracker() {
   const payBill = async (b: Bill) => {
     const month = toDay(new Date()).slice(0, 7);
     setBills(p => p.map(x => x.id === b.id ? { ...x, last_paid_month: month } : x));
-    if (!user) {
+    if (isLocalOnly || !user) {
       if (b.amount > 0) setTxs(p => [{ id: localId(), kind: 'expense', amount: b.amount, category: 'Bills', note: b.name, occurred_on: toDay(new Date()), account: 'Cash', to_account: null }, ...p]);
       haptic('success'); toast.success(`${b.name} marked paid`);
       return;
     }
-    await db.from('bill_reminders').update({ last_paid_month: month }).eq('id', b.id);
+    await db.from('bill_reminders').update({ last_paid_month: month }).eq('id', b.id).eq('user_id', user.id);
     if (b.amount > 0) {
-      const { data } = await db.from('money_transactions').insert({ kind: 'expense', amount: b.amount, category: 'Bills', note: b.name }).select().single();
+      const { data } = await db.from('money_transactions').insert({ user_id: user.id, kind: 'expense', amount: b.amount, category: 'Bills', note: b.name }).select().single();
       if (data) setTxs(p => [{ ...data, amount: Number(data.amount) }, ...p]);
     }
     haptic('success'); toast.success(`${b.name} marked paid`);
   };
-  const delBill = async (id: string) => { haptic('heavy'); setBills(p => p.filter(b => b.id !== id)); if (user) await db.from('bill_reminders').delete().eq('id', id); };
+  const delBill = async (id: string) => { haptic('heavy'); setBills(p => p.filter(b => b.id !== id)); if (!isLocalOnly && user) await db.from('bill_reminders').delete().eq('id', id).eq('user_id', user.id); };
 
   const addGoal = async () => {
     const target = Number(goalForm.target);
     if (!goalForm.name.trim() || !target) return toast.error('Add a name and target');
-    if (!user) {
+    if (isLocalOnly || !user) {
       haptic('light');
       setGoals(p => [...p, { id: localId(), name: goalForm.name.trim(), target, saved: 0 }]);
       setGoalForm({ name: '', target: '' });
       return;
     }
-    const { data, error } = await db.from('money_goals').insert({ name: goalForm.name.trim(), target }).select().single();
+    const { data, error } = await db.from('money_goals').insert({ user_id: user.id, name: goalForm.name.trim(), target }).select().single();
     if (error) return toast.error(error.message);
     haptic('light');
     setGoals(p => [...p, { ...data, target: Number(data.target), saved: 0 }]);
@@ -241,7 +265,7 @@ export default function MoneyTracker() {
   const addToGoal = async (g: Goal, amt: number) => {
     const saved = Math.max(0, g.saved + amt);
     setGoals(p => p.map(x => x.id === g.id ? { ...x, saved } : x));
-    if (user) await db.from('money_goals').update({ saved }).eq('id', g.id);
+    if (!isLocalOnly && user) await db.from('money_goals').update({ saved }).eq('id', g.id).eq('user_id', user.id);
     if (g.saved < g.target && saved >= g.target) {
       haptic('success');
       confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 } });
@@ -252,7 +276,7 @@ export default function MoneyTracker() {
   const delGoal = async (id: string) => {
     haptic('heavy');
     setGoals(p => p.filter(g => g.id !== id));
-    if (user) await db.from('money_goals').delete().eq('id', id);
+    if (!isLocalOnly && user) await db.from('money_goals').delete().eq('id', id).eq('user_id', user.id);
   };
 
   const now = new Date();
@@ -311,6 +335,10 @@ export default function MoneyTracker() {
   };
 
   const shares = splitBill(Number(split.total) || 0, Number(split.people) || 0);
+
+  if (authLoading || loadedStorageKey !== localStorageKey) {
+    return <TrackerShell title="Money Tracker" subtitle="Income, budgets & savings goals"><div className="py-16 text-center text-sm text-muted-foreground">Loading your money tracker…</div></TrackerShell>;
+  }
 
   return (
     <TrackerShell title="Money Tracker" subtitle="Income, budgets & savings goals">

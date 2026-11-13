@@ -7,13 +7,19 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { AUTO_GUEST } from '@/config/features';
+import { AUTO_GUEST, SIGNUP_ENABLED } from '@/config/features';
 import {
   CLOUD_SYNC_EVENT,
   isCloudUserId,
   syncAllLocalDataToCloud,
   updateSyncSnapshot,
 } from '@/lib/cloudSyncEngine';
+import { copyLocalNotesToOwner } from '@/lib/localNoteStore';
+import {
+  beginGuestPromotionIntent,
+  clearGuestPromotionIntent,
+  copyGuestDeviceDataToOwner,
+} from '@/lib/ownerScopedStorage';
 
 const GUEST_VAULT_KEY = 'niknote.guest.vault.v1';
 const OFFLINE_GUEST_KEY = 'niknote.offline.guest.v1';
@@ -112,7 +118,7 @@ function buildOfflineGuestUser(displayName?: string): User {
 export function isGuestUser(u: User | null | undefined): boolean {
   if (!u) return false;
   return Boolean(
-    (u as any).is_anonymous ||
+    u.is_anonymous ||
       u.user_metadata?.is_guest ||
       u.user_metadata?.is_local_guest ||
       (typeof u.email === 'string' && u.email.endsWith('@guest.niknote.online'))
@@ -151,6 +157,9 @@ export const useAuth = () => {
   return context;
 };
 
+/** Optional auth access for reusable local-store hooks that also run in tests/tools. */
+export const useOptionalAuth = () => useContext(AuthContext);
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => readOfflineGuestUser());
   const [session, setSession] = useState<Session | null>(null);
@@ -158,10 +167,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [pendingGuestEmail, setPendingGuestEmail] = useState<string | null>(() => readGuestVault()?.pendingEmail || null);
   const guestRef = useRef<Promise<{ error: Error | null; offline?: boolean }> | null>(null);
 
-  const timed = (p: Promise<any>, ms: number, label: string): Promise<any> =>
+  const timed = (promise: Promise<unknown>, ms: number, label: string): Promise<unknown> =>
     Promise.race([
-      p,
-      new Promise<any>((_, reject) => setTimeout(() => reject(new Error(label)), ms)),
+      promise,
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error(label)), ms)),
     ]);
 
   // Core helper: provisions or resumes a REAL cloud guest session via single-flight lock:
@@ -177,11 +186,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       globalGuestProvisionInFlight = (async () => {
         try {
           try {
-            const { data: sessionData } = await timed(
+            const sessionResponse = await timed(
               supabase.auth.getSession(),
               4000,
               'Guest sign-in is taking too long — check your internet'
-            );
+            ) as Awaited<ReturnType<typeof supabase.auth.getSession>>;
+            const { data: sessionData } = sessionResponse;
             if (sessionData?.session?.user) {
               setSession(sessionData.session);
               setUser(sessionData.session.user);
@@ -193,9 +203,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           let firstErr: Error | null = null;
           const storedVault = readGuestVault();
+          const invokeFunction = supabase.functions?.invoke as unknown as { mock?: unknown } | undefined;
           const canInvokeEdge =
             typeof supabase.functions?.invoke === 'function' &&
-            (import.meta.env.MODE !== 'test' || Boolean((supabase.functions.invoke as any)?.mock));
+            (import.meta.env.MODE !== 'test' || Boolean(invokeFunction?.mock));
 
           const restoreEdgeGuest = async (payload: GuestSessionPayload) => {
             if (payload.email && payload.password) {
@@ -265,7 +276,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   }),
                   7000,
                   'Guest sign-in is taking too long — check your internet'
-                );
+                ) as Awaited<ReturnType<typeof supabase.functions.invoke>>;
                 const payload = resumeRes?.data as GuestSessionPayload | undefined;
                 if (!resumeRes?.error && payload?.access_token && payload?.refresh_token) {
                   return await restoreEdgeGuest(payload);
@@ -294,7 +305,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               ),
               8000,
               'Guest sign-in is taking too long — check your internet'
-            );
+            ) as Awaited<ReturnType<typeof supabase.auth.signInAnonymously>>;
             if (!anonRes?.error) {
               return {
                 error: null,
@@ -319,7 +330,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }),
                 7000,
                 'Guest sign-in is taking too long — check your internet'
-              );
+              ) as Awaited<ReturnType<typeof supabase.functions.invoke>>;
               const payload = invokeRes?.data as GuestSessionPayload | undefined;
               if (!invokeRes?.error && payload?.access_token && payload?.refresh_token) {
                 return await restoreEdgeGuest(payload);
@@ -351,32 +362,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const allowFallback = opts?.allowOfflineFallback !== false;
       guestRef.current = (async () => {
         try {
+          const previousOwnerId = user?.id || readOfflineGuestUser()?.id || null;
+          const promotingOfflineGuest = Boolean(previousOwnerId?.startsWith('local-guest-'));
+          if (promotingOfflineGuest && previousOwnerId) beginGuestPromotionIntent(previousOwnerId);
           const result = await provisionCloudGuest(displayName);
           if (!result.error) {
+            if (
+              previousOwnerId?.startsWith('local-guest-') &&
+              isCloudUserId(result.user?.id) &&
+              result.user.id !== previousOwnerId
+            ) {
+              copyGuestDeviceDataToOwner(result.user.id, previousOwnerId);
+              copyLocalNotesToOwner(previousOwnerId, result.user.id);
+            }
+            if (promotingOfflineGuest) clearGuestPromotionIntent();
             if (isCloudUserId(result.user?.id)) {
               void syncAllLocalDataToCloud(result.user.id, { pullCloud: true });
             }
             return { error: null, offline: false };
           }
 
+          if (promotingOfflineGuest) clearGuestPromotionIntent();
           // Zero-error guarantee across ALL Guest entry buttons: open instant device guest
           // workspace immediately and auto-promote to Supabase Cloud when network returns!
           if (allowFallback && !readGuestVault()?.pendingEmail) {
             const localUser = buildOfflineGuestUser(displayName);
             setUser(localUser);
             setSession(null);
-            updateSyncSnapshot({ state: 'offline', errorMessage: null });
+            updateSyncSnapshot({ state: 'offline', errorMessage: null }, localUser.id);
             return { error: null, offline: true };
           }
 
           return { error: result.error };
+        } catch (error) {
+          clearGuestPromotionIntent();
+          return { error: error instanceof Error ? error : new Error('Guest sign-in failed') };
         } finally {
           guestRef.current = null;
         }
       })();
       return guestRef.current;
     },
-    [provisionCloudGuest]
+    [provisionCloudGuest, user]
   );
 
   const upgradeGuestAccount = useCallback(
@@ -411,6 +438,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { error: new Error('Connect to NikNote Cloud before saving this guest workspace') };
         }
 
+        // A device guest's caches were copied only during its explicit
+        // local-guest -> cloud-guest promotion above. Existing cloud guests
+        // keep their owner-scoped caches; do not adopt unmarked device data.
         const cleanName = (fullName || user.user_metadata?.full_name || 'NikNote User').trim().slice(0, 60);
         const { data, error } = await supabase.auth.updateUser(
           {
@@ -493,13 +523,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!user?.user_metadata?.is_local_guest) return;
     const onOnline = () => {
-      void signInAsGuest(user.user_metadata?.full_name, { allowOfflineFallback: false }).then(
-        (res) => {
-          if (!res.error) {
-            updateSyncSnapshot({ state: 'synced', errorMessage: null });
-          }
-        }
-      );
+      // Promotion and the subsequent cloud sync publish status under the new
+      // UUID; do not mark the previous device-guest status as synced here.
+      void signInAsGuest(user.user_metadata?.full_name, { allowOfflineFallback: false });
     };
     window.addEventListener('online', onOnline);
     return () => window.removeEventListener('online', onOnline);
@@ -585,7 +611,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     Promise.race([sessionPromise, timeoutPromise])
       .then(({ data, error }) => {
         if (!mounted) return;
-        const activeSession = data?.session ?? (data as any)?.session ?? null;
+        const activeSession = data?.session ?? null;
         if (error) {
           setSession(null);
           setUser(readOfflineGuestUser());
@@ -625,12 +651,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [provisionCloudGuest]);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
+    if (!SIGNUP_ENABLED) {
+      return { error: new Error('Email sign-up is currently disabled. Continue as a guest or sign in to an existing account.') };
+    }
     try {
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}/home`,
           data: {
             full_name: fullName,
           },
@@ -673,7 +702,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${window.location.origin}/home`,
           queryParams: { prompt: 'select_account' },
         },
       });
@@ -696,7 +725,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: `${window.location.origin}/home`,
         },
       });
       if (error) {

@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -116,19 +116,30 @@ function ResponsivePage({ children }: { children: React.ReactNode }) {
   const mobile = useIsMobile();
   return mobile ? <MobileExperience /> : <>{children}</>;
 }
-function WorkspaceEntry() {
-  const mobile = useIsMobile();
-  const { search } = useLocation();
+function EditorRoute() {
+  const { documentId = 'new' } = useParams();
+  return <Index routeDocumentId={documentId} />;
+}
+export function legacyEditorTarget(search: string) {
   const params = new URLSearchParams(search);
-  const wantsEditor = params.has('editor') || params.has('notebook');
-  // Desktop lands on the new Notion-style Home; the editor (Index) opens
-  // when a note is being written. Mobile flow is unchanged.
-  if (!mobile && !wantsEditor) return <DesktopHome />;
-  return mobile && !wantsEditor ? <MobileExperience /> : <Index />;
+  const noteId = params.get('notebook');
+  if (noteId) return `/editor/${encodeURIComponent(noteId)}`;
+  const panel = params.get('panel');
+  return `/editor/new${panel ? `?panel=${encodeURIComponent(panel)}` : ''}`;
+}
+export function legacyWorkspaceTarget(search: string) {
+  const params = new URLSearchParams(search);
+  return params.has('notebook') || params.has('editor') || params.get('new') === '1' || params.has('panel')
+    ? legacyEditorTarget(search)
+    : '/home';
+}
+function LegacyWorkspaceRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={legacyWorkspaceTarget(search)} replace />;
 }
 function LegacyEditorRedirect() {
   const { search } = useLocation();
-  return <Navigate to={`/${search || '?editor=1'}`} replace />;
+  return <Navigate to={legacyEditorTarget(search)} replace />;
 }
 const NIKAI_FULLSCREEN_ROUTES = ['/ai', '/nikai', '/ai-workspace', '/agents'];
 
@@ -165,7 +176,9 @@ const App = () => {
       registerServiceWorker();
     }
 
-    try { checkReferral(); } catch {}
+    try { checkReferral(); } catch {
+      // Referral attribution must never block application startup.
+    }
   }, []);
 
   return (
@@ -184,9 +197,11 @@ const App = () => {
                   <Suspense fallback={<PageLoader />}>
                     <RouteErrorBoundary>
                       <Routes>
-                        <Route path="/" element={<WorkspaceEntry />} />
-                        <Route path="/home" element={<WorkspaceEntry />} />
-                        <Route path="/studio" element={<Index />} />
+                        <Route path="/" element={<LegacyWorkspaceRedirect />} />
+                        <Route path="/home" element={<ResponsivePage><DesktopHome /></ResponsivePage>} />
+                        <Route path="/editor" element={<LegacyEditorRedirect />} />
+                        <Route path="/editor/:documentId" element={<EditorRoute />} />
+                        <Route path="/studio" element={<LegacyEditorRedirect />} />
                         <Route path="/app" element={<LegacyEditorRedirect />} />
                         <Route path="/account-details" element={<Account />} />
                         <Route path="/ai" element={<AstaAIWorkspace />} />

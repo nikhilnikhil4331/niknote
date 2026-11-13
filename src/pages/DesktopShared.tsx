@@ -41,7 +41,7 @@ const DesktopShared: React.FC = () => {
       }
       window.open(u.toString(), '_blank', 'noopener,noreferrer');
     } catch {
-      // allow raw paths like /?editor=1&notebook=...
+      // allow legacy paths like /?notebook=...
       if (clean.startsWith('/')) {
         setHistory((prev) => [{ url: clean, at: new Date().toISOString() }, ...prev.filter((h) => h.url !== clean)].slice(0, 12));
         window.location.href = clean;

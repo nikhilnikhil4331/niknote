@@ -1,5 +1,5 @@
 import { ComponentType, ReactNode } from 'react';
-import { Sun, Sparkles, Moon, Coffee, Compass, Home, BookOpen, Plus, User, ChevronLeft } from 'lucide-react';
+import { Sun, Sparkles, Moon, Home, BookOpen, Plus, User, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -12,16 +12,16 @@ export function IconButton({ icon: Icon, label, onClick, className = '', disable
 }
 export function MobileHeader({ title, children, onBack }: { title: string; children?: ReactNode; onBack?: () => void }) {
   const navigate = useNavigate();
-  return <header className="nn-header"><IconButton icon={ChevronLeft} label="Back" onClick={onBack || (() => navigate('/'))} /><h1>{title}</h1><div className="flex items-center">{children || <span className="w-11" />}</div></header>;
+  return <header className="nn-header"><IconButton icon={ChevronLeft} label="Back" onClick={onBack || (() => navigate('/home'))} /><h1>{title}</h1><div className="flex items-center">{children || <span className="w-11" />}</div></header>;
 }
-export function ThemeSelector({ theme, onChange }: { theme: string; onChange: (value: string) => void }) {
-  return <div className="nn-themes">{[{ id: 'calm', name: 'Calm', icon: Sun }, { id: 'focus', name: 'Focus', icon: Sparkles }, { id: 'dark', name: 'Dark', icon: Moon }, { id: 'vintage', name: 'Vintage', icon: Coffee }, { id: 'niknote-paper', name: 'Compass', icon: Compass }].map(({ id, name, icon: Icon }) => <Button variant="ghost" key={id} className={cn('nn-theme', theme === id && 'nn-selected')} onClick={() => onChange(id)} aria-pressed={theme === id}><Icon className="h-5 w-5" /><span>{name}</span></Button>)}</div>;
+export function ThemeSelector({ theme, onChange }: { theme: string; onChange: (value: 'light' | 'dark') => void }) {
+  return <div className="nn-themes" aria-label="Appearance mode">{[{ id: 'light' as const, name: 'Light', icon: Sun }, { id: 'dark' as const, name: 'Dark', icon: Moon }].map(({ id, name, icon: Icon }) => <Button variant="ghost" key={id} className={cn('nn-theme', theme === id && 'nn-selected')} onClick={() => onChange(id)} aria-pressed={theme === id}><Icon className="h-5 w-5" /><span>{name}</span></Button>)}</div>;
 }
 export function MobileNavigation({ active }: { active: string }) {
   const navigate = useNavigate();
   const reducedMotion = useReducedMotion();
   const { appearance } = useMobileAppearance();
-  const items = [{ id: 'home', label: 'Home', icon: Home, path: '/' }, { id: 'notes', label: 'Notes', icon: BookOpen, path: '/notebooks' }, { id: 'create', label: 'Create note', icon: Plus, path: '/?editor=1&new=1' }, { id: 'ai', label: 'NikAI', icon: Sparkles, path: '/ai' }, { id: 'profile', label: 'Profile', icon: User, path: '/account' }];
+  const items = [{ id: 'home', label: 'Home', icon: Home, path: '/home' }, { id: 'notes', label: 'Notes', icon: BookOpen, path: '/notebooks' }, { id: 'create', label: 'Create note', icon: Plus, path: '/editor/new' }, { id: 'ai', label: 'NikAI', icon: Sparkles, path: '/ai' }, { id: 'profile', label: 'Profile', icon: User, path: '/account' }];
   const index = items.findIndex(item => item.id === active);
   const noMotion = reducedMotion || !appearance.animations;
   return <nav className="nn-navigation nn-navigation-swift" aria-label="Main navigation"><div className="nn-nav-track" aria-hidden="true"><motion.div className="nn-nav-highlight" initial={false} animate={{ x: `${Math.max(0, index) * 100}%`, opacity: index < 0 ? 0 : 1 }} transition={noMotion ? { duration: 0 } : { type: 'spring', stiffness: 440, damping: 34, mass: .7 }} /></div>{items.map(({ id, label, icon: Icon, path }) => <Button variant="ghost" key={id} aria-label={label} title={label} aria-current={active === id ? 'page' : undefined} className={cn('nn-nav-item', active === id && 'nn-active', id === 'create' && 'nn-create')} onClick={() => { if (active === id) return; haptic('selection'); navigate(path); }}><motion.span className="nn-nav-icon" animate={{ y: active === id ? -2 : 0, scale: active === id ? 1.08 : 1 }} transition={noMotion ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 25 }}><Icon className="h-5 w-5" /></motion.span>{id !== 'create' && <span>{label}</span>}</Button>)}</nav>;
