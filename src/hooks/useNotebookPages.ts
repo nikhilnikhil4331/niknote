@@ -8,6 +8,10 @@ export interface NotebookPage {
   createdAt: number;
 }
 
+export function notebookPagesStorageKey(ownerId?: string, documentId?: string) {
+  return `${PC_ACTIVE_PAGES_KEY}:owner:${ownerId || 'device'}:document:${documentId || 'workspace'}`;
+}
+
 interface UseNotebookPagesReturn {
   pages: NotebookPage[];
   currentPageIndex: number;
@@ -90,7 +94,7 @@ function loadInitialPages(storageKey: string, ownerId?: string, documentId?: str
 }
 
 export function useNotebookPages(ownerId?: string, documentId?: string): UseNotebookPagesReturn {
-  const storageKey = `${PC_ACTIVE_PAGES_KEY}:owner:${ownerId || 'device'}:document:${documentId || 'workspace'}`;
+  const storageKey = notebookPagesStorageKey(ownerId, documentId);
   const initialPages = useMemo(() => loadInitialPages(storageKey, ownerId, documentId), [storageKey, ownerId, documentId]);
   const [pageState, setPageState] = useState<{ storageKey: string; pages: NotebookPage[] }>(() => ({
     storageKey,

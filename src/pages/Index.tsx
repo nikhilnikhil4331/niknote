@@ -7,7 +7,7 @@ import { useAuth, isGuestUser } from '@/contexts/AuthContext';
 import { useHandwritingDNA } from '@/contexts/HandwritingDNAContext';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useBlockEditor } from '@/hooks/useBlockEditor';
-import { useNotebookPages, type NotebookPage } from '@/hooks/useNotebookPages';
+import { notebookPagesStorageKey, useNotebookPages, type NotebookPage } from '@/hooks/useNotebookPages';
 import { useNoteSettings } from '@/hooks/useNoteSettings';
 import { useNotebooks, type Notebook } from '@/hooks/useNotebooks';
 import { useCloudSyncStatus, PC_ACTIVE_META_KEY, isCloudUserId, notifyLocalDataChanged } from '@/lib/cloudSyncEngine';
@@ -720,7 +720,17 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
       upsertLocalNoteForOwner(savedRecord, ownerId, {}, { notify: false, allowLegacyClaim: isGuest });
       if (documentId !== cloudId) {
         removeLocalNoteForOwner(documentId, ownerId, { notify: false });
-        loadedDocumentRef.current = null;
+        // The editor already contains the note we just saved. Keep it mounted
+        // while switching the URL from its local draft ID to the cloud ID; a
+        // second read here can flash (or strand the user on) the loading screen
+        // if the device's local cache is unavailable or the network is slow.
+        try {
+          localStorage.setItem(notebookPagesStorageKey(ownerId, cloudId), JSON.stringify(pagesForStorage));
+        } catch {
+          // The note content is already safely saved above; page cache is best effort.
+        }
+        loadedDocumentRef.current = cloudId;
+        lastRouteKeyRef.current = cloudId;
         setDocumentId(cloudId);
         navigate(`/editor/${encodeURIComponent(cloudId)}`, { replace: true });
       }
