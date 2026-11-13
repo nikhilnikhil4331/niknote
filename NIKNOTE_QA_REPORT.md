@@ -1,20 +1,23 @@
 # NikNote QA Report
 
-**Audit date:** 2026-11-04 (UTC)  
-**Branch:** `arena/fa802f8f-niknote`  
-**QA level:** Local automated verification and source review. This is not a production end-to-end certification.
+**Audit date:** 2026-11-04 (UTC)<br>
+**Branch:** `arena/fa802f8f-niknote` (implementation commit `0d22a8c` pushed)<br>
+**QA level:** Local automated verification, HTTP route smoke checks, source review, and a Vercel production deployment. This is not a browser-based or production end-to-end certification.
 
 ## Result summary
 
 | Check | Result | Evidence / limitation |
 |---|---|---|
-| Vitest suite | **PASS — 53 files, 757 tests** | `npm test -- --reporter=dot`; completed after quota, document/OCR, guest recovery, and test-network isolation changes. |
-| TypeScript app check | **PASS** | `npm run typecheck` (`tsc -p tsconfig.app.json --noEmit`). This app tsconfig is not a Deno deployment/typecheck. |
-| Production build | **PASS** | `npm run build`; 4,868 modules transformed and 35 route HTML files prerendered. Build warnings remain (see below). |
-| Patch whitespace | **PASS** | `git diff --check` passed with the typecheck run. Recheck after any later edits. |
-| Full ESLint | **FAIL — 386 errors, 68 warnings** | `npm run lint`; 454 total diagnostics. Recorded earlier repository baseline: 395 errors / 68 warnings. Net count is down 9 errors, but that is not proof each diagnostic was pre-existing or that the changed files are lint-clean. |
-| Browser/manual responsive QA | **NOT RUN** | No browser executable was available in the workspace for this audit; no screenshot, device, screen-reader, or accessibility automation was run. |
-| Production smoke/E2E | **NOT RUN in this audit** | Earlier Vercel/Supabase review was read-only. This turn did not send production user flows or change remote state. |
+| Vitest suite | **PASS — 68 files, 816 tests** | `npx vitest run --reporter=dot`; includes the added editor ink, table/chart persistence, NikAI abort/thread isolation, owner-scoped notebook loading, page navigation, and dark-mode tests. Existing chart-size, render-phase state-update, and mocked network/provider diagnostics are emitted. |
+| TypeScript app check | **PASS** | `npm run typecheck` (`tsc -p tsconfig.app.json --noEmit`), run after the latest source edit. This app tsconfig is not a Deno deployment/typecheck. |
+| Production build | **PASS** | `npm run build`; 4,864 modules transformed and 35 route HTML files prerendered. Existing Browserslist, chunk-splitting, and large-chunk warnings remain (see below). |
+| Patch whitespace | **PASS** | `git diff --check` passed after the latest source edit; documentation edits are also checked before commit. |
+| Inventory date/references | **PASS** | Audit date remains 2026-11-04 UTC; a source-path check found 253 references across 149 unique repository paths, with none missing. The two 2026-11-11 migrations remain correctly marked future-dated in the inventory. |
+| Focused ESLint | **PASS — 0 errors, 3 warnings** | Selected application, hook, and test files; warnings are two Fast Refresh warnings in `src/App.tsx` and the `findOwnedLocalNote` exhaustive-deps warning in `src/pages/Index.tsx`. |
+| Full ESLint | **FAIL — 300 errors, 73 warnings** | `npm run lint`; 373 total diagnostics across the repository. An earlier audit baseline was 300 errors / 74 warnings; the error count is unchanged and the current warning count is one lower. |
+| Browser/manual responsive QA | **NOT RUN** | No browser-based interaction, screenshots, screen-reader, or device-layout testing. HTTP smoke checks against the local production preview returned 200 for `/`, `/editor/new`, `/home`, `/notebooks`, and `/admin-panel-nikhil`; this verifies routing only. |
+| Vercel deployment | **PASS — READY / PROMOTED** | Deployment `dpl_W3m5tggZyYp56CqZhfE4zaNzE9CU` built from branch commit `0d22a8c`; Vercel reports `READY`, `PROMOTED`, and aliases assigned to `www.niknote.online` and `niknote.online`. The deployment was created from the active feature branch, not the configured `main` production branch. |
+| Production smoke/E2E | **NOT RUN** | No live production user flows or Supabase changes were performed. The production aliases were promoted, but a browser/application acceptance test against them was not run. |
 | Deno Edge Function deployment check | **NOT RUN** | Edge Function behavior is covered in Vitest harnesses for selected paths; no Supabase deploy or remote invocation. |
 
 ## Regression coverage added/updated in this audit
@@ -26,11 +29,17 @@
 - `src/test/anonAiQuotaMigration.test.ts`: static checks for RLS, service-role-only table/RPC grants, service-role claims, fixed per-IP limit/window, and atomic quota upsert.
 - `src/test/documentExtraction.test.ts` and `src/test/documentIntelligenceContract.test.tsx`: PDF/OCR page and text caps plus the JSON client/function request contract.
 - Other audit tests cover cloud-sync error/conflict handling, service-worker lifecycle, safe expressions, security headers, and rejection of arbitrary workflow JS.
-- Focused guest/quota/document/OCR verification passed: **7 files / 31 tests**. ESLint passed on these regression tests and `src/lib/documentExtraction.ts`; broader changed legacy files retain existing lint findings. Final whole-suite result supersedes earlier counts.
+- `src/test/editorInkColors.test.tsx`: inherited preview recoloring, undo, desktop/mobile swatch selection, a 44px mobile tap target, and CSS regression checks.
+- `src/test/workspaceEditorPersistence.test.tsx`: interactive `NotionEditor` table header/cell/row/column edits and chart source/style edits are saved to the owner-scoped local-note cache, then reloaded; separate owner-isolation assertions remain.
+- `src/test/nikaiWorkspaceAbort.test.tsx`: prompt-to-answer flow, owner-scoped thread persistence/isolation, empty AbortError status, and preservation/labeling of partial streamed output.
+- `src/hooks/useNotebooks.test.tsx`: owner-scoped local-first hydration, same-owner cloud-row retention, draft merging, and stale-response handling.
+- `src/hooks/useNotebookPages.test.tsx`: bounded direct page selection and functional next/previous updates.
+- `src/hooks/useDarkMode.test.tsx`: synchronous theme application and guarded storage behavior.
+- Focused guest/quota/document/OCR verification passed earlier: **7 files / 31 tests**. The final full-suite result above supersedes that earlier count.
 
 ## Observed test/build noise
 
-The full test run passed with existing noisy diagnostics, including zero-size chart containers, a React state-update-during-render warning, mocked payment-activation failure logging, malformed PDF fixture warnings, and stale Browserslist data. The mobile app tests now stub anonymous auth rather than attempting a real Supabase call; the latest full run showed no `ECONNRESET` guest-auth request. These are test/build cleanup signals, not proof of a production incident.
+The full test run passed with existing noisy diagnostics, including zero-size chart containers, React state-update-during-render warnings, mocked payment-activation failure logging, malformed PDF fixture warnings, stale Browserslist data, and `ECONNRESET` logs from subscription fetches in mobile tests. Those tests stub anonymous auth, so the network log is separate from guest authentication. These are test/build cleanup signals, not proof of a production incident.
 
 The build reports:
 
@@ -46,9 +55,9 @@ The build reports:
 4. **AI/provider:** no session, invalid session, quota available/denied/unavailable, malformed or oversized request, timeout/cancellation, provider fallback, BYOK handling, and safe non-leakage of errors/secrets.
 5. **Storage/OCR:** each allowed image type, malformed and oversized images, private object read path, owner boundary, MIME/size policy, retention, and quota failure.
 6. **Payments/premium/admin:** signature and webhook verification, duplicate activation/idempotency, expiry/refund states, entitlement denial, admin role denial, and RLS.
-7. **PDF/editor/mobile:** large and malformed PDFs, OCR first-use/offline model behavior, export fidelity, Android/iOS share/save behavior, 360/375/390/430 px layout, keyboard and touch interaction, screen-reader names, dark mode, and reduced motion.
-8. **Operational:** production-like smoke test from a release candidate and comparison of local migrations/functions/RPCs to the intended Supabase project before any deployment.
+7. **PDF/editor/mobile:** large and malformed PDFs, OCR first-use/offline model behavior, export fidelity, Android/iOS share/save behavior, 360/375/390/430 px layout, keyboard and touch interaction, screen-reader names, dark mode, and reduced motion. The table/chart and ink tests use jsdom/cache harnesses; still verify the full `/editor` route, touch targets, and cloud save on a real browser/device. NikAI chat uses mocked providers here; verify live provider failure/cancel/retry separately.
+8. **Operational:** production-like user-flow smoke testing and comparison of local migrations/functions/RPCs to the intended Supabase project remain required before Supabase deployment or broader production acceptance. The current Vercel build does not exercise backend migrations or functions.
 
 ## Interpretation
 
-Green tests/typecheck/build establish a good local baseline, not completion of user acceptance, cross-browser compatibility, accessibility conformance, security penetration testing, or production health. The full lint failure remains visible. The audit's source edits are uncommitted and undeployed; do not describe them as live fixes.
+Green tests/typecheck/build establish a good local baseline, not completion of user acceptance, cross-browser compatibility, accessibility conformance, security penetration testing, or full production health. The full lint failure remains visible. Implementation commit `0d22a8c` was pushed to the named feature branch and is now deployed and promoted to the production aliases by Vercel. The aliases are live on this deployment; no Supabase changes or live user flows were performed, so production acceptance remains incomplete.
