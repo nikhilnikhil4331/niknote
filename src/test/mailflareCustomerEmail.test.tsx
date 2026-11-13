@@ -25,6 +25,8 @@ import {
 import { AdminMailflareStudio } from '@/components/admin/AdminMailflareStudio';
 
 type EdgeHandler = (req: Request) => Promise<Response>;
+type MockCustomerEmailOptions = { body: { action: string; payload?: Record<string, unknown> } };
+type MockCustomerEmailCall = [functionName: string, options: MockCustomerEmailOptions];
 
 const jsonResponse = (body: unknown, status = 200) => Response.json(body, { status });
 
@@ -34,10 +36,10 @@ function setupCustomerEmailFunction(options: {
   savedConfig?: Record<string, unknown> | null;
   mailflareSendOk?: boolean;
 } = {}) {
-  const sentMailflareBodies: any[] = [];
-  const loggedRows: any[] = [];
-  const webmailMessages: any[] = [];
-  const customMailboxes: any[] = [
+  const sentMailflareBodies: Array<Record<string, unknown>> = [];
+  const loggedRows: Array<Record<string, unknown>> = [];
+  const webmailMessages: Array<Record<string, unknown>> = [];
+  const customMailboxes: Array<Record<string, unknown>> = [
     {
       id: 'mbx_support',
       domain_id: 'dom_niknote_online',
@@ -58,7 +60,7 @@ function setupCustomerEmailFunction(options: {
       created_at: new Date().toISOString(),
     },
   ];
-  const customDomains: any[] = [
+  const customDomains: Array<Record<string, unknown>> = [
     {
       id: 'dom_niknote_online',
       hostname: 'niknote.online',
@@ -526,7 +528,7 @@ describe('AdminMailflareStudio component', () => {
   });
 
   it('refreshes webhook messages without trying to sync an unconfigured Mailflare server', async () => {
-    invoke.mockImplementation(async (_fn: string, opts: any) => {
+    invoke.mockImplementation(async (_fn: string, opts: MockCustomerEmailOptions) => {
       if (opts.body.action === 'get_workspace') return { data: { config: { provider: 'resend', fromName: 'NikNote', fromEmail: 'support@niknote.online', configured: true, mailflareUrl: '', hasMailflareKey: false }, domains: [{ id: 'domain-1', hostname: 'niknote.online', receiving_provider: 'webhook' }], mailboxes: [] }, error: null };
       if (opts.body.action === 'list_messages') return { data: { messages: [] }, error: null };
       return { data: {}, error: null };
@@ -537,11 +539,12 @@ describe('AdminMailflareStudio component', () => {
     invoke.mockClear();
     fireEvent.click(screen.getByRole('button', { name: 'Refresh saved messages' }));
     await waitFor(() => expect(invoke).toHaveBeenCalledWith('customer-email', expect.objectContaining({ body: expect.objectContaining({ action: 'list_messages' }) })));
-    expect(invoke.mock.calls.some((call: any[]) => call[1].body.action === 'sync_mailflare_inbox')).toBe(false);
+    const invokeCalls = invoke.mock.calls as MockCustomerEmailCall[];
+    expect(invokeCalls.some(([, options]) => options.body.action === 'sync_mailflare_inbox')).toBe(false);
   });
 
   it('offers Resend sync for a configured Resend key', async () => {
-    invoke.mockImplementation(async (fn: string, opts: any) => {
+    invoke.mockImplementation(async (fn: string, opts: MockCustomerEmailOptions) => {
       if (opts.body.action === 'get_workspace') return { data: { config: { provider: 'resend', fromName: 'NikNote', fromEmail: 'support@niknote.online', configured: true, hasResendKey: true, mailflareUrl: '', hasMailflareKey: false }, domains: [], mailboxes: [] }, error: null };
       if (fn === 'resend-inbox-sync') return { data: { success: true, checked: 1, matched: 1, saved: 1, hasMore: false }, error: null };
       return { data: { messages: [] }, error: null };
@@ -552,7 +555,7 @@ describe('AdminMailflareStudio component', () => {
   });
 
   it('retains Mailflare sync when a server and key are configured', async () => {
-    invoke.mockImplementation(async (_fn: string, opts: any) => {
+    invoke.mockImplementation(async (_fn: string, opts: MockCustomerEmailOptions) => {
       if (opts.body.action === 'get_workspace') return { data: { config: { provider: 'mailflare', fromName: 'NikNote', fromEmail: 'support@niknote.online', configured: true, mailflareUrl: 'https://mail.example.com', hasMailflareKey: true }, domains: [], mailboxes: [] }, error: null };
       return { data: {}, error: null };
     });
@@ -561,7 +564,7 @@ describe('AdminMailflareStudio component', () => {
   });
 
   it('selects the retro template, previews it, and sends the same design', async () => {
-    invoke.mockImplementation(async (_fn: string, opts: any) => {
+    invoke.mockImplementation(async (_fn: string, opts: MockCustomerEmailOptions) => {
       if (opts?.body?.action === 'get_config') return { data: { config: { provider: 'resend', fromName: 'NikNote', fromEmail: 'hello@niknote.online', configured: true, source: 'database' } }, error: null };
       if (opts?.body?.action === 'send_email') return { data: { success: true, provider: 'resend' }, error: null };
       return { data: {}, error: null };
@@ -578,7 +581,7 @@ describe('AdminMailflareStudio component', () => {
   });
 
   it('loads Mailflare status, applies prefill, and dispatches custom customer email', async () => {
-    invoke.mockImplementation(async (_fn: string, opts: any) => {
+    invoke.mockImplementation(async (_fn: string, opts: MockCustomerEmailOptions) => {
       const action = opts?.body?.action;
       if (action === 'get_config') {
         return {

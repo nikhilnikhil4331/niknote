@@ -7,7 +7,7 @@ type Handler = (request: Request) => Promise<Response>;
 const json = (body: unknown, status = 200) => Response.json(body, { status });
 function setup({ authorized = true, forbidden = false }: { authorized?: boolean; forbidden?: boolean } = {}) {
   let handler!: Handler;
-  const stored: any[] = [];
+  const stored: Array<Record<string, unknown>> = [];
   const fetcher = vi.fn(async (input: string, init: RequestInit = {}) => {
     const url = new URL(input);
     if (url.pathname === '/rest/v1/admin_sessions') return json(authorized ? [{ id: 'session' }] : []);

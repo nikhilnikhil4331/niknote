@@ -786,7 +786,7 @@ export async function fileToAttachmentBase64(file: File): Promise<EmailAttachmen
   };
 }
 
-export async function invokeCustomerEmail<T = any>(
+export async function invokeCustomerEmail<T = unknown>(
   action: string,
   payload: Record<string, unknown> = {},
   functionName = 'customer-email',
