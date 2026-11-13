@@ -411,7 +411,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
   }, [hydrateConfigFields]);
 
   const loadMessages = useCallback(
-    async (folderOverride?: WebmailFolder, mailboxOverride?: string, queryOverride?: string) => {
+    async (folderOverride?: WebmailFolder, mailboxOverride?: string, queryOverride?: string, reportError = false) => {
       setLoadingMessages(true);
       try {
         const res = await listWebmailMessages({
@@ -428,8 +428,8 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
           );
         }
         if (res?.counts) setCounts(res.counts);
-      } catch {
-        // Non-fatal in preview/test
+      } catch (err) {
+        if (reportError) toast.error(err instanceof Error ? err.message : 'Could not refresh messages');
       } finally {
         setLoadingMessages(false);
       }
@@ -977,7 +977,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
     setSyncingMailflare(true);
     try {
       const res = await syncMailflareToWebmail();
-      toast.success(`Synced ${res.fetched} message(s) from Mailflare server`);
+      toast.success(`Fetched ${res.fetched} message(s) from Mailflare; ${res.synced} saved`);
       void loadMessages();
       void loadWorkspace();
     } catch (err) {
@@ -1463,28 +1463,36 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                     size="sm"
                     variant="outline"
                     className="h-8 px-2.5"
-                    onClick={() => void loadMessages()}
+                    onClick={() => void loadMessages(undefined, undefined, undefined, true)}
                     disabled={loadingMessages}
-                    title="Refresh folder"
+                    title="Refresh saved messages"
+                    aria-label="Refresh saved messages"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${loadingMessages ? 'animate-spin' : ''}`} />
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 px-2.5 text-xs gap-1"
-                    onClick={handleSyncMailflareInbox}
-                    disabled={syncingMailflare}
-                    title="Pull latest inbound/outbound emails from Mailflare server"
-                  >
-                    {syncingMailflare ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Server className="w-3.5 h-3.5" />
-                    )}
-                    Sync
-                  </Button>
+                  {config?.mailflareUrl && config.hasMailflareKey && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 px-2.5 text-xs gap-1"
+                      onClick={handleSyncMailflareInbox}
+                      disabled={syncingMailflare}
+                      title="Pull latest inbound/outbound emails from Mailflare server"
+                    >
+                      {syncingMailflare ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Server className="w-3.5 h-3.5" />
+                      )}
+                      Sync Mailflare
+                    </Button>
+                  )}
                 </div>
+                {config && !(config.mailflareUrl && config.hasMailflareKey) && (
+                  <p className="text-xs text-muted-foreground">
+                    Refresh shows saved messages only. Receiving new mail requires an inbound provider connected to the webhook; sending via Resend alone does not receive mail.
+                  </p>
+                )}
 
                 {/* Bulk Actions Bar */}
                 {selectedMessageIds.length > 0 ? (
@@ -1554,7 +1562,7 @@ export const AdminMailflareStudio: React.FC<AdminMailflareStudioProps> = ({
                     <p className="text-sm font-medium capitalize">No emails in {activeFolder}</p>
                     <p className="text-xs text-muted-foreground">
                       {activeFolder === 'inbox'
-                        ? 'Incoming customer emails via Mailflare Sync or your Inbound Webhook appear right here.'
+                        ? 'Refresh shows messages already received. Incoming mail requires a working inbound provider connected to the webhook, or a configured Mailflare server.'
                         : activeFolder === 'drafts'
                           ? 'Saved drafts from the Composer appear here.'
                           : 'Messages in this folder will show up here.'}

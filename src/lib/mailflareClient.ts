@@ -800,7 +800,17 @@ export async function invokeCustomerEmail<T = any>(
     headers,
   });
   if (error) {
-    throw new Error(data?.error || error.message || 'Customer email request failed');
+    // Supabase returns non-2xx JSON in the error response, not in `data`.
+    let detail = data?.error;
+    if (!detail && error.context && typeof error.context.json === 'function') {
+      try {
+        const body = await error.context.json();
+        if (typeof body?.error === 'string') detail = body.error;
+      } catch {
+        // Keep the SDK's error message when the response is not JSON.
+      }
+    }
+    throw new Error(detail || error.message || 'Customer email request failed');
   }
   if (data?.error) {
     throw new Error(String(data.error));

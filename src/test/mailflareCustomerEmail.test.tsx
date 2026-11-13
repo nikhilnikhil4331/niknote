@@ -18,6 +18,7 @@ import {
   buildNikNoteEmailHtml,
   buildNikNotePlainText,
   interpolateEmailTemplate,
+  invokeCustomerEmail,
   parseRecipientInput,
   sanitizeBrandSenderName,
 } from '@/lib/mailflareClient';
@@ -518,6 +519,35 @@ describe('AdminMailflareStudio component', () => {
   });
 
   afterEach(cleanup);
+
+  it('shows the Edge Function error body rather than the generic non-2xx message', async () => {
+    invoke.mockResolvedValue({ data: null, error: { message: 'Edge Function returned a non-2xx status code', context: Response.json({ error: 'Mailflare URL is required' }, { status: 400 }) } });
+    await expect(invokeCustomerEmail('sync_mailflare_inbox')).rejects.toThrow('Mailflare URL is required');
+  });
+
+  it('refreshes webhook messages without trying to sync an unconfigured Mailflare server', async () => {
+    invoke.mockImplementation(async (_fn: string, opts: any) => {
+      if (opts.body.action === 'get_workspace') return { data: { config: { provider: 'resend', fromName: 'NikNote', fromEmail: 'support@niknote.online', configured: true, mailflareUrl: '', hasMailflareKey: false }, domains: [{ id: 'domain-1', hostname: 'niknote.online', receiving_provider: 'webhook' }], mailboxes: [] }, error: null };
+      if (opts.body.action === 'list_messages') return { data: { messages: [] }, error: null };
+      return { data: {}, error: null };
+    });
+    render(<AdminMailflareStudio />);
+    expect(await screen.findByText(/Refresh shows saved messages only/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Sync Mailflare/i })).not.toBeInTheDocument();
+    invoke.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh saved messages' }));
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith('customer-email', expect.objectContaining({ body: expect.objectContaining({ action: 'list_messages' }) })));
+    expect(invoke.mock.calls.some((call: any[]) => call[1].body.action === 'sync_mailflare_inbox')).toBe(false);
+  });
+
+  it('retains Mailflare sync when a server and key are configured', async () => {
+    invoke.mockImplementation(async (_fn: string, opts: any) => {
+      if (opts.body.action === 'get_workspace') return { data: { config: { provider: 'mailflare', fromName: 'NikNote', fromEmail: 'support@niknote.online', configured: true, mailflareUrl: 'https://mail.example.com', hasMailflareKey: true }, domains: [], mailboxes: [] }, error: null };
+      return { data: {}, error: null };
+    });
+    render(<AdminMailflareStudio />);
+    expect(await screen.findByRole('button', { name: 'Sync Mailflare' })).toBeInTheDocument();
+  });
 
   it('selects the retro template, previews it, and sends the same design', async () => {
     invoke.mockImplementation(async (_fn: string, opts: any) => {
