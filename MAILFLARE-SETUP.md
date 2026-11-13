@@ -16,4 +16,8 @@ Use **Email Manager → Setup & Connection** to inspect the saved configuration 
 
 Resend and Namecheap credentials and settings cannot be configured by this repository alone. This does not automatically enable receiving or prove the existing sending key has the required permissions.
 
+## Production release protection
+
+Vercel's project build command runs `node scripts/check-email-manager.mjs` for production before `npm run build`. A production checkout missing the guard, admin routes, manager, retro template, or Resend sync fails instead of replacing the live site. `npm run build` and CI also run the guard from this branch. If a release fails, merge the current production features into the release branch and rerun the build. The guard is a structural check, not an end-to-end mail test. Project build-command changes, repository-level build overrides, rollbacks or promotion of an already-built older deployment can bypass it. Keep production changes integrated in the release branch and review deployments before promoting them; update the guard deliberately if these integrations are refactored.
+
 The migrations in `supabase/migrations` describe the original schema. Review them before applying to an existing database, and do not overwrite existing settings. The Mailflare server itself is not included in this repository; see [Mailflare](https://github.com/hieunc229/mailflare) if a separate instance is needed.
