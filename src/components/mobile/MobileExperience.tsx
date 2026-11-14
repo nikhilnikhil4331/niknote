@@ -25,7 +25,7 @@ import { IconButton, MobileHeader, MobileNavigation, ThemeSelector } from './Mob
 import { useMobileAppearance } from './useMobileAppearance';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useAccountName } from '@/hooks/useAccountName';
-import { useNoteMeta } from '@/components/desktop/store';
+import { greeting as getDesktopGreeting, useNoteMeta } from '@/components/desktop/store';
 import { CLOUD_SYNC_EVENT, notifyLocalDataChanged } from '@/lib/cloudSyncEngine';
 import { findLocalNoteForOwner, readLocalNotesForOwner, removeLocalNoteForOwner, upsertLocalNoteForOwner, type LocalNoteRecord } from '@/lib/localNoteStore';
 
@@ -181,6 +181,10 @@ export function MobileExperience() {
   }));
 
   const allNotes = Array.from(new Map([...cloudItems, ...localNoteItems].map((note) => [note.id, note])).values());
+  const activeNotes = allNotes.filter((note) => !note.isTrashed);
+  const homeGreeting = getDesktopGreeting();
+  const homeDate = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+  const heroName = guest ? 'Guest' : firstName || 'there';
   const trashView = pathname === '/trash' || category === 'Trash';
   const visibleNotes = allNotes
     .filter((note) => note.title.toLowerCase().includes(query.toLowerCase()))
@@ -329,7 +333,10 @@ export function MobileExperience() {
       {page === 'home' ? (
         <header className="nn-header">
           <IconButton icon={Menu} label="Open menu" onClick={() => setDrawer(true)} />
-          <div className="nn-logo"><img src="/niknote-logo.png" alt="NikNote" /></div>
+          <div className="nn-logo" aria-label="NikNote">
+            <img className="nn-logo-mark" src="/images/brand/niknote-primary-mark.png" alt="" aria-hidden="true" />
+            <img className="nn-logo-wordmark" src="/images/brand/niknote-primary-wordmark.png" alt="NikNote" />
+          </div>
           <IconButton icon={Search} label="Search notes" onClick={() => navigate('/notebooks?search=1')} />
         </header>
       ) : (
@@ -352,18 +359,34 @@ export function MobileExperience() {
       >
         {page === 'home' && (
           <>
-            <ThemeSelector theme={appearance.theme} onChange={(theme) => update({ theme })} />
+            <div className="nn-home-toolbar">
+              <span className="nn-home-date">{homeDate}</span>
+              <ThemeSelector theme={appearance.theme} onChange={(theme) => update({ theme })} />
+            </div>
             {welcome && (
-              <section className="nn-welcome">
+              <section className="nn-dashboard-hero" data-testid="mobile-dashboard-hero">
                 <IconButton icon={X} label="Dismiss welcome" className="nn-welcome-close" onClick={() => setWelcome(false)} />
-                <h2>
-                  {user ? `Welcome back${firstName ? `, ${firstName}` : ''}` : <>Welcome to <img src="/niknote-logo.png" alt="Niknote" className="nn-welcome-logo" /></>}
-                </h2>
-                <p>Turn your ideas into beautiful notes + NikAI</p>
-                <div className="nn-book-visual" aria-hidden="true"><BookOpen /><PenLine /><span>✦</span><span>✧</span></div>
+                <div className="nn-hero-copy">
+                  <span className="nn-hero-eyebrow">YOUR PERSONAL WORKSPACE</span>
+                  <h1>
+                    {homeGreeting.text},<br />
+                    <span>{heroName}</span>{' '}
+                    <span className="nn-hero-emoji" aria-hidden="true">{homeGreeting.emoji}</span>
+                  </h1>
+                  <p className="nn-hero-quote">“A small step everyday leads to big results.”</p>
+                  <div className="nn-hero-chips">
+                    <span className="nn-hero-chip"><BookOpen /> {activeNotes.length} note{activeNotes.length === 1 ? '' : 's'}</span>
+                    <span className="nn-hero-chip"><Sparkles /> Ideas start here</span>
+                  </div>
+                </div>
+                <img
+                  className="nn-hero-art"
+                  src="/images/brand/niknote-write-it-down.png"
+                  alt=""
+                  aria-hidden="true"
+                />
               </section>
             )}
-            <MobileTrackerCards />
             <div className="nn-quick-actions">
               {[
                 { label: 'NikAI', icon: Sparkles, customImg: '/nikai-mark.png', tone: 'blue', action: () => navigate('/ai') },
@@ -374,24 +397,27 @@ export function MobileExperience() {
                 { label: 'PDF Edit', icon: FileText, customImg: '', tone: 'gold', action: () => navigate('/pdf-editor') },
               ].map(({ label, icon: Icon, customImg, tone, action }) => (
                 <Button variant="ghost" className="nn-quick" key={label} onClick={action}>
-                  {customImg ? (
-                    <img src={customImg} alt="" aria-hidden="true" className="h-6 w-auto object-contain" />
-                  ) : (
-                    <Icon className={cn('h-6 w-6', `nn-ink-${tone}`)} />
-                  )}
+                  <span className={cn('nn-quick-icon', `nn-quick-icon-${tone}`)}>
+                    {customImg ? (
+                      <img src={customImg} alt="" aria-hidden="true" />
+                    ) : (
+                      <Icon className={cn('h-5 w-5', `nn-ink-${tone}`)} />
+                    )}
+                  </span>
                   <span>{label}</span>
                 </Button>
               ))}
             </div>
+            <MobileTrackerCards />
             <div className="nn-section-heading">
               <h2>Recent Notes</h2>
               <Button variant="ghost" className="nn-see-all" onClick={() => navigate('/notebooks')}>
                 See all <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>
-            {allNotes.length > 0 ? (
+            {activeNotes.length > 0 ? (
               <div className="nn-note-list">
-                {allNotes.slice(0, 3).map((n) => noteCard(n, true))}
+                {activeNotes.slice(0, 3).map((n) => noteCard(n, true))}
               </div>
             ) : (
               <div className="nn-empty">

@@ -402,6 +402,9 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     wrap(<MobileExperience />, '/');
     expect(screen.getAllByText('NikAI').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Write Note')).toBeTruthy();
+    expect(screen.getByTestId('mobile-dashboard-hero')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /Good (Morning|Afternoon|Evening),/ })).toBeTruthy();
+    expect(document.querySelector('.nn-logo-wordmark')?.getAttribute('src')).toBe('/images/brand/niknote-primary-wordmark.png');
     expect(screen.getAllByRole('button', { name: 'Light' })).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Dark' })).toHaveLength(1);
     expect(screen.queryByRole('button', { name: /Compass/i })).toBeNull();
