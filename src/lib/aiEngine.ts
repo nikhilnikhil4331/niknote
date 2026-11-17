@@ -7,6 +7,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { buildNikAIMemoryPrompt } from '@/lib/nikaiMemory';
+import { evaluateSafeExpression } from '@/lib/safeExpression';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 
 export type AstaMode =
   | 'auto'
@@ -98,6 +100,7 @@ export interface AstaStreamOptions {
   messages: AstaChatTurn[];
   mode?: AstaMode;
   model?: AstaModelChoice;
+  userId?: string;
   threadId?: string;
   noteContext?: string;
   memoryContext?: string;
@@ -130,9 +133,9 @@ export function cleanClientApiKey(raw?: string | null): string {
     .trim();
 }
 
-export function readCustomAIKeys(): AstaCustomKeys {
+export function readCustomAIKeys(ownerId?: string): AstaCustomKeys {
   try {
-    const raw = localStorage.getItem(KEYS_STORAGE_KEY);
+    const raw = localStorage.getItem(ownerScopedStorageKey(KEYS_STORAGE_KEY, ownerId));
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     return {
@@ -146,10 +149,10 @@ export function readCustomAIKeys(): AstaCustomKeys {
   }
 }
 
-export function saveCustomAIKeys(keys: AstaCustomKeys): void {
+export function saveCustomAIKeys(keys: AstaCustomKeys, ownerId?: string): void {
   try {
     localStorage.setItem(
-      KEYS_STORAGE_KEY,
+      ownerScopedStorageKey(KEYS_STORAGE_KEY, ownerId),
       JSON.stringify({
         larprouterKey: cleanClientApiKey(keys.larprouterKey),
         groqKey: cleanClientApiKey(keys.groqKey),
@@ -162,8 +165,8 @@ export function saveCustomAIKeys(keys: AstaCustomKeys): void {
   }
 }
 
-function getEffectiveClientKeys(): { larprouter: string; groq: string; gemini: string; openai: string } {
-  const custom = readCustomAIKeys();
+function getEffectiveClientKeys(ownerId?: string): { larprouter: string; groq: string; gemini: string; openai: string } {
+  const custom = readCustomAIKeys(ownerId);
   // Provider credentials configured on the server must never be bundled into
   // browser JavaScript. Only keys explicitly supplied by this user live here.
   let larprouter = cleanClientApiKey(custom.larprouterKey);
@@ -188,8 +191,8 @@ function getEffectiveClientKeys(): { larprouter: string; groq: string; gemini: s
   return { larprouter, groq, gemini, openai };
 }
 
-export async function probeAstaProviders(): Promise<{ cloudReady: boolean; providers: string[] }> {
-  const localKeys = getEffectiveClientKeys();
+export async function probeAstaProviders(ownerId?: string): Promise<{ cloudReady: boolean; providers: string[] }> {
+  const localKeys = getEffectiveClientKeys(ownerId);
   const active = new Set<string>();
   if (localKeys.larprouter) active.add('NikAI Astra LarpRouter 1M');
   if (localKeys.openai) active.add('NikAI Astra OpenAI Core');
@@ -223,12 +226,12 @@ export async function probeAstaProviders(): Promise<{ cloudReady: boolean; provi
 }
 
 const CLIENT_SYSTEM_PROMPTS: Record<AstaMode, string> = {
-  auto: `You are **NikAI** (powered by **Astra Neural Core**), NikNote's single unified AI intelligence. Match user language (English / Hinglish / Hindi). Give complete, crystal-clear structured Markdown answers with headings, **bold terms**, tables, code/formula blocks, and \`> 💡 Pro-Tips\` ready for 1-tap Handwriting conversion.`,
+  auto: `You are **NikAI** (powered by **Astra Neural Core**), NikNote's single unified AI intelligence. Match user language (English / Hinglish / Hindi). Give complete, crystal-clear structured Markdown answers with headings, **bold terms**, tables, code/formula blocks, and \`> 💡 Pro-Tips\` ready for 1-tap Handwriting conversion. When a chart genuinely clarifies the answer, emit a \`chart\` code fence containing valid JSON: {"type":"bar|line|area|pie","title":"...","headers":["Category","Value"],"rows":[["A",10],["B",20]]}. Keep chart data concise; never invent image URLs.`,
   deep: `You are **NikAI Astra Pro** — reason step by step from first principles, verify every equation and edge case, and highlight the final answer clearly.`,
   teacher: `You are **NikAI Master Guru** — explain with: 1) Intuition & real-life analogy, 2) Step-by-Step Breakdown, 3) Formulas/Rules, 4) Worked Example, 5) > 💡 Exam Pro-Tip.`,
   solver: `You are **NikAI Step-by-Step Solver** — present Given → Formula/Concept → Step-by-Step Working → Verification → ✅ Final Answer → ⚡ Shortcut Trick.`,
   code: `You are **NikAI Astra Coder** — write clean, complete, production-ready fenced code blocks with explanations, edge cases, and Time/Space Complexity.`,
-  notes: `You are **NikAI Smart Notes Architect** — build complete exam-ready notebook pages with \`# Chapter Title\`, \`## Subheadings\`, bullet definitions (\`- **Term:** Meaning\`), callout tips (\`> 💡\`), comparison tables, and 3 self-check questions.`,
+  notes: `You are **NikAI Smart Notes Architect** — build complete exam-ready notebook pages with \`# Chapter Title\`, \`## Subheadings\`, bullet definitions (\`- **Term:** Meaning\`), callout tips (\`> 💡\`), comparison tables, and 3 self-check questions. Use standard Markdown tables for comparisons. When a chart adds real value, use a \`chart\` code fence with valid JSON: {"type":"bar|line|area|pie","title":"...","headers":["Category","Value"],"rows":[["A",10],["B",20]]}. Keep data concise and do not invent image URLs.`,
   quiz: `You are **NikAI Live Quiz Master** — generate 5 high-yield MCQs (Easy to Tough). Format strictly:\n### Q1. [Question]\n- A) [Option]\n- B) [Option]\n- C) [Option]\n- D) [Option]\n**Answer:** [A/B/C/D]\n**Explanation:** [Why correct]`,
   write: `You are **NikAI Writing Studio** — craft compelling, natural prose, summaries, grammar fixes, or translations matching the requested language.`,
 };
@@ -264,9 +267,16 @@ export function generateFollowUpSuggestions(query: string, mode: AstaMode): stri
 }
 
 // ── Shared NikAI gateway request builder ──
-function buildGatewayRequest(opts: AstaStreamOptions, memoryContext: string): RequestInit {
-  const custom = readCustomAIKeys();
+async function buildGatewayRequest(opts: AstaStreamOptions, memoryContext: string): Promise<RequestInit> {
+  const custom = readCustomAIKeys(opts.userId);
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.access_token) headers.Authorization = `Bearer ${data.session.access_token}`;
+  } catch {
+    // Offline/local-only sessions have no cloud JWT; the server gateway rejects
+    // them while the direct BYOK/offline fallbacks remain available.
+  }
   let larpKey = custom.larprouterKey || '';
   let groqKey = custom.groqKey || '';
   let openaiKey = custom.openaiKey || '';
@@ -359,7 +369,7 @@ async function tryServerlessStream(
   opts: AstaStreamOptions,
   memoryContext: string
 ): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
-  const res = await fetch('/api/ai', buildGatewayRequest(opts, memoryContext));
+  const res = await fetch('/api/ai', await buildGatewayRequest(opts, memoryContext));
   if (!res.ok || !res.body) return null;
   const ct = res.headers.get('content-type') || '';
   if (!ct.includes('text/event-stream')) return null;
@@ -372,11 +382,15 @@ const SANDBOX_HOST_PATTERN =
 
 export function getRemoteAstraGatewayUrl(): string | null {
   try {
-    if (typeof (globalThis as any).vi !== 'undefined') return null;
+    const runtime = globalThis as typeof globalThis & {
+      vi?: unknown;
+      Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
+    };
+    if (typeof runtime.vi !== 'undefined') return null;
     const explicit = String(import.meta.env.VITE_NIKAI_REMOTE_AI_URL || '').trim();
     if (explicit) return explicit;
 
-    const cap = (globalThis as any)?.Capacitor;
+    const cap = runtime.Capacitor;
     const native = Boolean(
       cap && (typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : cap.getPlatform?.() !== 'web')
     );
@@ -397,7 +411,7 @@ async function tryRemoteGatewayStream(
   const gateway = getRemoteAstraGatewayUrl();
   if (!gateway) return null;
 
-  const res = await fetch(gateway, buildGatewayRequest(opts, memoryContext));
+  const res = await fetch(gateway, await buildGatewayRequest(opts, memoryContext));
   if (!res.ok || !res.body) return null;
   const ct = res.headers.get('content-type') || '';
   if (!ct.includes('text/event-stream')) return null;
@@ -411,7 +425,7 @@ async function tryDirectCloudStream(
   opts: AstaStreamOptions,
   memoryContext: string
 ): Promise<{ content: string; thinking: string; model: string; provider: string } | null> {
-  const keys = getEffectiveClientKeys();
+  const keys = getEffectiveClientKeys(opts.userId);
   if (!keys.larprouter && !keys.groq && !keys.gemini && !keys.openai) return null;
 
   const mode = opts.mode || 'auto';
@@ -702,7 +716,7 @@ async function trySupabaseEdge(
       quiz: 'quiz',
       write: 'notes',
     };
-    const custom = readCustomAIKeys();
+    const custom = readCustomAIKeys(opts.userId);
     const extraHeaders: Record<string, string> = {};
     if (custom.larprouterKey) extraHeaders['x-larprouter-key'] = custom.larprouterKey;
     if (custom.groqKey) extraHeaders['x-groq-key'] = custom.groqKey;
@@ -776,7 +790,7 @@ function solveMathExpression(input: string): string | null {
 
   if (/^[0-9+\-*/().%\s*]+$/.test(cleaned) && /[+\-*/%]/.test(cleaned) && /\d/.test(cleaned)) {
     try {
-      const value = Function(`"use strict"; return (${cleaned});`)();
+      const value = evaluateSafeExpression(cleaned);
       if (typeof value === 'number' && Number.isFinite(value)) {
         const formatted = Number.isInteger(value) ? String(value) : Number(value.toFixed(8)).toString();
         return `## Instant Calculation Result\n\n- **Expression:** \`${cleaned}\`\n- **Result:** **${formatted}**`;
@@ -829,7 +843,7 @@ export async function streamAstaAI(opts: AstaStreamOptions): Promise<AstaResult>
   const t0 = performance.now();
   const lastUser = [...opts.messages].reverse().find((m) => m.role === 'user')?.content || '';
   const mode = resolveAstaMode(opts.mode);
-  const memoryContext = opts.memoryContext ?? buildNikAIMemoryPrompt(opts.threadId);
+  const memoryContext = opts.memoryContext ?? buildNikAIMemoryPrompt(opts.threadId, opts.userId);
 
   const request: AstaStreamOptions = { ...opts, mode, model: resolveAstaModel(opts.model) };
 

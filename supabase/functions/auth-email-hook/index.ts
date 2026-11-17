@@ -7,6 +7,8 @@ import { MagicLinkEmail } from '../_shared/email-templates/magic-link.tsx'
 import { RecoveryEmail } from '../_shared/email-templates/recovery.tsx'
 import { EmailChangeEmail } from '../_shared/email-templates/email-change.tsx'
 import { ReauthenticationEmail } from '../_shared/email-templates/reauthentication.tsx'
+import { ShareInviteEmail } from '../_shared/email-templates/share-invite.tsx'
+import { ReferralInviteEmail } from '../_shared/email-templates/referral-invite.tsx'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,13 +24,17 @@ const FROM_DOMAIN = "notify.niknote.online"
 const SITE_URL = `https://${ROOT_DOMAIN}`
 
 // Template mapping for preview mode
-const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
+const EMAIL_TEMPLATES: Record<string, React.ElementType> = {
   signup: SignupEmail,
   invite: InviteEmail,
   magiclink: MagicLinkEmail,
   recovery: RecoveryEmail,
   email_change: EmailChangeEmail,
   reauthentication: ReauthenticationEmail,
+  // Previewable templates only. Sending these requires a server-side feature
+  // that authorizes the shared note or referral before dispatch.
+  share_invite: ShareInviteEmail,
+  referral_invite: ReferralInviteEmail,
 }
 
 // Sample data for preview mode ONLY (not used in actual email sending).
@@ -67,6 +73,19 @@ const SAMPLE_DATA: Record<string, object> = {
   },
   reauthentication: {
     token: '123456',
+  },
+  share_invite: {
+    siteName: SITE_NAME,
+    inviterName: 'A NikNote creator',
+    noteTitle: 'Ideas for our next project',
+    permission: 'comment',
+    shareUrl: `${SITE_URL}/shared/example`,
+  },
+  referral_invite: {
+    siteName: SITE_NAME,
+    inviterName: 'A NikNote creator',
+    referralCode: 'NIK7ABC',
+    referralUrl: `${SITE_URL}/?ref=NIK7ABC`,
   },
 }
 

@@ -39,7 +39,7 @@ const NotFound = () => {
 
         <div className="flex gap-3 justify-center">
           <Button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/home")}
             className="gap-2 rounded-xl"
           >
             <Home className="w-4 h-4" />

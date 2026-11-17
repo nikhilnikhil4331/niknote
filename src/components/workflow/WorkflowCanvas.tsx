@@ -222,7 +222,7 @@ export const WorkflowCanvas: React.FC<{
           <Button variant="outline" size="sm" onClick={() => setShowNodePicker(true)} className="gap-1 text-xs rounded-lg">
             <Plus className="w-3.5 h-3.5" /> Add Node
           </Button>
-          <Button size="sm" onClick={handleRun} className="gap-1 text-xs rounded-lg bg-gradient-to-r from-primary to-indigo-600">
+          <Button size="sm" onClick={handleRun} className="gap-1 text-xs rounded-lg bg-gradient-to-r from-[#347ff0] to-[#245dcc]">
             <Play className="w-3.5 h-3.5" /> Run
           </Button>
           {onClose && (

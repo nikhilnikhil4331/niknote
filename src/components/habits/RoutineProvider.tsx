@@ -1,4 +1,4 @@
-import { ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, SetStateAction, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
@@ -6,7 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { haptic } from '@/hooks/useHaptics';
 import { toDay, entryKey, unlockedAchievements, ACHIEVEMENTS, type FocusModeId } from '@/lib/trackers';
-import { hasSavedState, loadState, saveState, uid, type Entry, type Habit, type RoutineState, type Todo } from '@/lib/routineStore';
+import { hasSavedState, loadState, saveState, stateKey, uid, type Entry, type Habit, type RoutineState, type Todo } from '@/lib/routineStore';
+import { readGuestPromotionIntent } from '@/lib/ownerScopedStorage';
 
 type Routine = {
   state: RoutineState;
@@ -54,8 +55,8 @@ async function restoreFromSupabase(userId: string, now = new Date()): Promise<Ro
     const timeout = new Promise<null>(res => setTimeout(() => res(null), 12000));
     const fetched = await Promise.race([
       Promise.all([
-        supabase.from('habits').select('id,name,emoji,days,archived,created_at').order('created_at'),
-        supabase.from('habit_checks').select('habit_id,day').gte('day', toDay(from)),
+        supabase.from('habits').select('id,name,emoji,days,archived,created_at').eq('user_id', userId).order('created_at'),
+        supabase.from('habit_checks').select('habit_id,day').eq('user_id', userId).gte('day', toDay(from)),
       ]),
       timeout,
     ]);
@@ -96,11 +97,26 @@ async function restoreFromSupabase(userId: string, now = new Date()): Promise<Ro
 }
 
 export function RoutineProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
   const isOfflineGuest = Boolean(user?.id && String(user.id).startsWith('local-guest-'));
   const userId: string = user?.id && !isOfflineGuest ? user.id : 'anon';
   const reduced = useReducedMotion();
-  const [state, setState] = useState<RoutineState>(() => loadState(userId));
+  const [storedState, setStoredState] = useState<{ ownerId: string; value: RoutineState }>(() => ({
+    ownerId: userId,
+    value: loadState(userId),
+  }));
+  // Resolve the new owner's cache during render so account switches never show
+  // the previous user's habits, even for the frame before effects run.
+  const state = storedState.ownerId === userId ? storedState.value : loadState(userId);
+  const setState = useCallback((next: SetStateAction<RoutineState>) => {
+    setStoredState((current) => {
+      const previous = current.ownerId === userId ? current.value : loadState(userId);
+      const value = typeof next === 'function'
+        ? (next as (state: RoutineState) => RoutineState)(previous)
+        : next;
+      return { ownerId: userId, value };
+    });
+  }, [userId]);
   const [restored, setRestored] = useState(false);
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
@@ -122,44 +138,67 @@ export function RoutineProvider({ children }: { children: ReactNode }) {
   // the user already made while the (slow) fetch was in flight.
   const dirtyRef = useRef(0);
 
-  // Migrate anon data to authenticated user on first sign-in
+  // Anonymous habit data moves only during a marked offline-guest promotion.
+  // A normal sign-in from the anonymous/device screen must not adopt that cache.
   const prevUserIdRef = useRef(userId);
+  const prevAuthUserIdRef = useRef(user?.id || null);
   useEffect(() => {
-    const prev = prevUserIdRef.current;
-    if (prev === 'anon' && userId !== 'anon' && !hasSavedState(userId)) {
+    const prevAuthUserId = prevAuthUserIdRef.current;
+    const promotion = readGuestPromotionIntent();
+    if (
+      prevUserIdRef.current === 'anon' &&
+      userId !== 'anon' &&
+      Boolean(isGuest) &&
+      prevAuthUserId?.startsWith('local-guest-') &&
+      promotion?.fromOwnerId === prevAuthUserId &&
+      !hasSavedState(userId)
+    ) {
       try {
-        const anonRaw = localStorage.getItem(`niknote.habits.v1.anon`);
+        const anonRaw = localStorage.getItem(stateKey('anon'));
         if (anonRaw) {
           const parsed = JSON.parse(anonRaw) as RoutineState;
-          if (parsed && parsed.version === 1 && Array.isArray(parsed.habits) && parsed.habits.length) {
-            localStorage.setItem(`niknote.habits.v1.${userId}`, anonRaw);
+          if (parsed && parsed.version === 1 && Array.isArray(parsed.habits)) {
+            localStorage.setItem(stateKey(userId), anonRaw);
           }
         }
-      } catch {}
+      } catch {
+        // Preserve the source anon key if validation or storage fails.
+      }
     }
     prevUserIdRef.current = userId;
-  }, [userId]);
+    prevAuthUserIdRef.current = user?.id || null;
+  }, [userId, user?.id, isGuest]);
 
   // Load on account change. On a true first visit (no local data yet), offer to restore
   // legacy /routine cloud history in place of the sample seed.
   useEffect(() => {
+    let active = true;
     const hadSaved = hasSavedState(userId);
     dirtyRef.current = 0;
     setState(loadState(userId));
     setRestored(false);
+    setSyncBusy(false);
+    setSyncMsg(null);
     if (user && !isOfflineGuest && !hadSaved) {
       restoreFromSupabase(userId).then(s => {
+        if (!active) return;
         if (s && s.habits.length && dirtyRef.current === 0) { setState(s); toast.success('Restored your habits from the cloud ☁️'); }
         setRestored(true);
       });
     } else {
       setRestored(true);
     }
+    return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, user?.id]);
 
-  // Persist on every change.
-  useEffect(() => { if (restored || state.habits.length) saveState(userId, state); }, [state, userId, restored]);
+  // Persist only state that is tagged with the currently active owner. The
+  // guard prevents a previous account's in-memory state being saved during a
+  // switch, before the load effect commits the destination state.
+  useEffect(() => {
+    if (storedState.ownerId !== userId) return;
+    if (restored || state.habits.length) saveState(userId, state);
+  }, [state, userId, restored, storedState.ownerId]);
 
   // Achievement unlock detection -> celebrate new ones once.
   const unlockedIds = useMemo(() => {

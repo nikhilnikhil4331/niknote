@@ -23,7 +23,7 @@ const institutionPlans = [
     period: "",
     seats: "For individual teachers and students",
     icon: School,
-    color: "from-blue-500 to-indigo-600",
+    color: "from-[#347ff0] to-[#1f56b4]",
     action: "editor",
     features: [
       "Create handwritten worksheets and notes",
@@ -38,7 +38,7 @@ const institutionPlans = [
     seats: "For one account; ₹99 for 30 days is also available",
     icon: GraduationCap,
     highlighted: true,
-    color: "from-purple-500 to-pink-600",
+    color: "from-[#ff858f] to-[#c83f58]",
     action: "premium",
     features: [
       "AI writing assistant and voice dictation",
@@ -151,14 +151,14 @@ const B2BPage = () => {
       {/* Nav */}
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
-          <button onClick={() => navigate('/')} className="flex items-center gap-2">
+          <button onClick={() => navigate('/home')} className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
               <GraduationCap className="h-4 w-4 text-primary-foreground" />
             </div>
             <span className="font-bold text-base">NikNote</span>
           </button>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="text-xs">Home</Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/home')} className="text-xs">Home</Button>
             <Button variant="ghost" size="sm" onClick={() => navigate('/upgrade')} className="text-xs">Pricing</Button>
             <Button size="sm" className="rounded-xl text-xs" onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}>
               Get Started
@@ -169,7 +169,7 @@ const B2BPage = () => {
 
       {/* Hero */}
       <section className="relative overflow-hidden py-16 sm:py-24 px-4">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-pink-500/5" />
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -186,7 +186,7 @@ const B2BPage = () => {
             className="text-3xl sm:text-5xl font-extrabold leading-tight mb-4"
           >
             Handwritten worksheets,
-            <span className="block bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-primary to-[#c83f58] bg-clip-text text-transparent">
               without the hand-copying
             </span>
           </motion.h1>
@@ -291,7 +291,7 @@ const B2BPage = () => {
                 }`}
               >
                 {plan.highlighted && (
-                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-purple-600" />
+                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-[#c83f58]" />
                 )}
                 <div className="p-6">
                   <div className="flex items-center gap-3 mb-4">
@@ -323,7 +323,7 @@ const B2BPage = () => {
                   <Button
                     className={`w-full rounded-xl ${plan.highlighted ? 'bg-gradient-to-r from-primary to-primary/80' : ''}`}
                     variant={plan.highlighted ? 'default' : 'outline'}
-                    onClick={() => plan.action === 'editor' ? navigate('/studio') : plan.action === 'premium' ? navigate('/payment?plan=weekly') : document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => plan.action === 'editor' ? navigate('/editor/new') : plan.action === 'premium' ? navigate('/payment?plan=weekly') : document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
                   >
                     {plan.action === 'editor' ? 'Open free editor' : plan.action === 'premium' ? 'Choose Premium' : 'Contact us'}
                   </Button>
@@ -410,7 +410,7 @@ const B2BPage = () => {
       </section>
 
       {/* Contact Form */}
-      <section id="contact" className="py-16 px-4 bg-gradient-to-br from-primary/5 to-purple-500/5">
+      <section id="contact" className="py-16 px-4 bg-gradient-to-br from-primary/5 to-pink-500/5">
         <div className="max-w-xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-3">Get Started Today</h2>
           <p className="text-center text-muted-foreground mb-8">Tell us what your teachers or students need. The free editor is available now.</p>

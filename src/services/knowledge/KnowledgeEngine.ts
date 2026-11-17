@@ -5,6 +5,16 @@
 // Inspired by Dify's knowledge base + vector search
 // ============================================================
 
+import type { Database, Json } from '@/integrations/supabase/types';
+
+type StoredKnowledgeDocument = Pick<
+  Database['public']['Tables']['knowledge_documents']['Row'],
+  'id' | 'title' | 'content' | 'document_type' | 'source' | 'metadata' | 'embeddings' | 'created_at' | 'updated_at'
+>;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DOCUMENT_ID_METADATA_KEY = '__niknote_document_id';
+
 export interface KnowledgeDocument {
   id: string;
   title: string;
@@ -86,6 +96,78 @@ export interface Backlink {
   context: string;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function normalizeMetadata(value: unknown): KnowledgeMetadata {
+  const metadata = isRecord(value) ? value : {};
+  const stringList = (candidate: unknown): string[] =>
+    Array.isArray(candidate) ? candidate.filter((item): item is string => typeof item === 'string') : [];
+  const entities = Array.isArray(metadata.entities)
+    ? metadata.entities.flatMap((entity): Entity[] => {
+      if (!isRecord(entity) || typeof entity.name !== 'string') return [];
+      const types: Entity['type'][] = ['person', 'concept', 'formula', 'date', 'place', 'organization', 'term'];
+      return [{
+        name: entity.name,
+        type: types.includes(entity.type as Entity['type']) ? entity.type as Entity['type'] : 'term',
+        ...(typeof entity.description === 'string' ? { description: entity.description } : {}),
+        frequency: typeof entity.frequency === 'number' && Number.isFinite(entity.frequency) ? entity.frequency : 1,
+      }];
+    })
+    : [];
+  const difficulty = metadata.difficulty === 'intermediate' || metadata.difficulty === 'advanced'
+    ? metadata.difficulty
+    : 'beginner';
+
+  return {
+    tags: stringList(metadata.tags),
+    keywords: stringList(metadata.keywords),
+    summary: typeof metadata.summary === 'string' ? metadata.summary : '',
+    entities,
+    topics: stringList(metadata.topics),
+    category: typeof metadata.category === 'string' ? metadata.category : 'general',
+    subCategories: stringList(metadata.subCategories),
+    readingTime: typeof metadata.readingTime === 'number' ? metadata.readingTime : 0,
+    wordCount: typeof metadata.wordCount === 'number' ? metadata.wordCount : 0,
+    language: typeof metadata.language === 'string' ? metadata.language : 'unknown',
+    difficulty,
+    relatedDocuments: stringList(metadata.relatedDocuments),
+    flashcards: Array.isArray(metadata.flashcards) ? metadata.flashcards as Flashcard[] : [],
+    quizQuestions: Array.isArray(metadata.quizQuestions) ? metadata.quizQuestions as QuizQuestion[] : [],
+    actionItems: Array.isArray(metadata.actionItems) ? metadata.actionItems as ActionItem[] : [],
+    keyTakeaways: stringList(metadata.keyTakeaways),
+    citations: Array.isArray(metadata.citations) ? metadata.citations as Citation[] : [],
+    backlinks: Array.isArray(metadata.backlinks) ? metadata.backlinks as Backlink[] : [],
+  };
+}
+
+function cloudDocumentId(userId: string, documentId: string) {
+  return `${userId}::${encodeURIComponent(documentId)}`;
+}
+
+function localDocumentId(userId: string, cloudId: string, metadata: Record<string, unknown>) {
+  const metadataId = metadata[DOCUMENT_ID_METADATA_KEY];
+  if (typeof metadataId === 'string') return metadataId;
+
+  const prefix = `${userId}::`;
+  if (!cloudId.startsWith(prefix)) return cloudId;
+  try {
+    return decodeURIComponent(cloudId.slice(prefix.length));
+  } catch {
+    return cloudId.slice(prefix.length);
+  }
+}
+
+function toTimestamp(value: string) {
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : Date.now();
+}
+
+function toIsoTimestamp(value: number) {
+  return new Date(Number.isFinite(value) ? value : Date.now()).toISOString();
+}
+
 // ============================================================
 // Knowledge Graph — Entity-Relationship Map
 // ============================================================
@@ -95,7 +177,7 @@ export interface KnowledgeGraphNode {
   label: string;
   type: Entity['type'];
   connections: { targetId: string; relationship: string; strength: number }[];
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export interface KnowledgeGraph {
@@ -314,7 +396,7 @@ export class KnowledgeEngine {
     // Simple entity extraction
     const entities: Entity[] = [];
     const patterns: [RegExp, Entity['type']][] = [
-      [/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/g, 'date'],
+      [/(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/g, 'date'],
       [/₹\s*[\d,]+(?:\.\d{2})?/g, 'term'],
     ];
 
@@ -402,24 +484,31 @@ export class KnowledgeEngine {
   // ============================================================
 
   /**
-   * Save current documents to Supabase
+   * Save current documents through the owner-scoped knowledge_documents table.
    */
   async saveToSupabase(userId: string): Promise<void> {
+    if (!UUID_RE.test(userId)) return;
+
     try {
       const { supabase } = await import('@/integrations/supabase/client');
       const docs = Array.from(this.documents.values());
-      
+
       for (const doc of docs) {
         const { error } = await supabase
-          .from('notebook_pages')
+          .from('knowledge_documents')
           .upsert({
-            id: doc.id,
-            notebook_id: `knowledge-${userId}`,
-            page_number: 0,
-            content: JSON.stringify(doc),
-            updated_at: new Date().toISOString(),
+            id: cloudDocumentId(userId, doc.id),
+            user_id: userId,
+            title: doc.title,
+            content: doc.content,
+            document_type: doc.type,
+            source: doc.source,
+            metadata: { ...doc.metadata, [DOCUMENT_ID_METADATA_KEY]: doc.id } as unknown as Json,
+            embeddings: doc.embeddings ?? null,
+            created_at: toIsoTimestamp(doc.createdAt),
+            updated_at: toIsoTimestamp(doc.updatedAt),
           }, { onConflict: 'id' });
-        
+
         if (error) console.warn('Knowledge save error:', error.message);
       }
     } catch (err) {
@@ -428,30 +517,69 @@ export class KnowledgeEngine {
   }
 
   /**
-   * Load documents from Supabase
+   * Load this account's documents from the schema-supported knowledge_documents table.
    */
   async loadFromSupabase(userId: string): Promise<void> {
+    if (!UUID_RE.test(userId)) return;
+
     try {
       const { supabase } = await import('@/integrations/supabase/client');
-      const { data, error } = await supabase
-        .from('notebook_pages')
-        .select('content')
-        .eq('notebook_id', `knowledge-${userId}`);
-      
-      if (error || !data) return;
-      
-      for (const row of data) {
-        try {
-          const doc = JSON.parse(row.content) as KnowledgeDocument;
-          if (doc.id && doc.content) {
-            this.documents.set(doc.id, doc);
-          }
-        } catch { /* skip invalid */ }
+      const loadedRows: StoredKnowledgeDocument[] = [];
+      const batchSize = 500;
+      const maximumRows = 10000;
+
+      for (let offset = 0; offset < maximumRows; offset += batchSize) {
+        const { data, error } = await supabase
+          .from('knowledge_documents')
+          .select('id,title,content,document_type,source,metadata,embeddings,created_at,updated_at')
+          .eq('user_id', userId)
+          .order('updated_at', { ascending: false })
+          .range(offset, offset + batchSize - 1);
+
+        if (error) {
+          console.warn('Knowledge Supabase load failed:', error.message);
+          return;
+        }
+        const rows = data || [];
+        loadedRows.push(...rows);
+        if (rows.length < batchSize) break;
+        if (offset + batchSize >= maximumRows) {
+          console.warn('Knowledge load reached the safe 10,000-document limit.');
+        }
       }
-      
-      // Rebuild graph from loaded documents
-      for (const doc of this.documents.values()) {
-        this.updateKnowledgeGraph(doc);
+
+      const documentTypes: KnowledgeDocument['type'][] = ['note', 'pdf', 'image', 'web', 'ai_generated'];
+      for (const row of loadedRows) {
+        const storedMetadata = isRecord(row.metadata) ? { ...row.metadata } : {};
+        const id = localDocumentId(userId, row.id, storedMetadata);
+        delete storedMetadata[DOCUMENT_ID_METADATA_KEY];
+        if (!id || typeof row.content !== 'string') continue;
+
+        const createdAt = toTimestamp(row.created_at);
+        const updatedAt = toTimestamp(row.updated_at);
+        const embeddings = Array.isArray(row.embeddings) && row.embeddings.every((value) => typeof value === 'number')
+          ? row.embeddings
+          : undefined;
+        const document: KnowledgeDocument = {
+          id,
+          title: row.title,
+          content: row.content,
+          type: documentTypes.includes(row.document_type as KnowledgeDocument['type'])
+            ? row.document_type as KnowledgeDocument['type']
+            : 'note',
+          source: row.source,
+          createdAt,
+          updatedAt,
+          metadata: normalizeMetadata(storedMetadata),
+          ...(embeddings ? { embeddings } : {}),
+        };
+        this.documents.set(document.id, document);
+      }
+
+      // Rebuild instead of appending duplicate graph nodes on repeated loads.
+      this.graph = { nodes: [], edges: [] };
+      for (const document of this.documents.values()) {
+        this.updateKnowledgeGraph(document);
       }
     } catch (err) {
       console.warn('Knowledge Supabase load failed:', err);

@@ -98,7 +98,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-indigo-500" />
+          <Calendar className="w-4 h-4 text-[#347ff0]" />
           <h3 className="text-sm font-bold text-gray-900">Timeline</h3>
           <span className="text-[10px] text-gray-400">{items.length} items</span>
         </div>
@@ -115,7 +115,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
           <button onClick={nextRange} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
             <ChevronRight className="w-4 h-4" />
           </button>
-          <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium text-purple-600 bg-purple-50 hover:bg-purple-100">
+          <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium text-[#245dcc] bg-[#eaf2ff] hover:bg-[#dceaff]">
             <Sparkles className="w-3 h-3" /> AI Schedule
           </button>
         </div>
@@ -162,7 +162,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               <p className="text-sm text-gray-400">No timeline items</p>
               <button
                 onClick={onAddItem}
-                className="mt-2 px-3 py-1.5 rounded-lg text-[10px] font-medium text-indigo-500 bg-indigo-50 hover:bg-indigo-100"
+                className="mt-2 px-3 py-1.5 rounded-lg text-[10px] font-medium text-[#2869d5] bg-[#eaf2ff] hover:bg-[#dceaff]"
               >
                 <Plus className="w-3 h-3 inline mr-1" /> Add item
               </button>

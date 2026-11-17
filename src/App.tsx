@@ -7,14 +7,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
+import { Capacitor } from '@capacitor/core';
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { InstallBanner } from "@/components/InstallBanner";
 import { PricingPopup } from "@/components/premium/PricingPopup";
-import { ShareButtons } from "@/components/promotion/ShareButtons";
 import { HandwritingDNAProvider } from "@/contexts/HandwritingDNAContext";
 import { TouchHealthGuard } from "@/components/mobile/TouchHealthGuard";
 import Index from "./pages/Index";
@@ -28,6 +28,7 @@ import { SeoHead } from "@/components/seo/SeoHead";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileExperience } from '@/components/mobile/MobileExperience';
 import '@/components/mobile/mobile.css';
+import '@/components/mobile/mobile-brand.css';
 import { NiknoteLoader } from '@/components/motion/NiknoteLoader';
 import { initNativeShell } from '@/lib/nativeNav';
 import { initTracking, trackRouteView } from '@/lib/tracking';
@@ -83,6 +84,7 @@ const MoneyTrackerPage = lazy(() => import("@/pages/MoneyTracker"));
 const BoardPageRoute = lazy(() => import("@/pages/Board"));
 const RoutineTrackerPage = lazy(() => import("@/pages/RoutineTracker"));
 const NikHabitPage = lazy(() => import("@/pages/RoutineApp"));
+const PlaygroundPage = lazy(() => import("@/pages/Playground"));
 // Desktop workspace (Notion-style enhanced UI) — desktop routes only;
 // mobile keeps rendering MobileExperience exactly as before.
 const DesktopHome = lazy(() => import("@/pages/DesktopHome"));
@@ -114,30 +116,44 @@ function ResponsivePage({ children }: { children: React.ReactNode }) {
   const mobile = useIsMobile();
   return mobile ? <MobileExperience /> : <>{children}</>;
 }
-function WorkspaceEntry() {
-  const mobile = useIsMobile();
+function EditorRoute() {
+  const { documentId = 'new' } = useParams();
+  return <Index routeDocumentId={documentId} />;
+}
+export function legacyEditorTarget(search: string) {
+  const params = new URLSearchParams(search);
+  const noteId = params.get('notebook');
+  if (noteId) return `/editor/${encodeURIComponent(noteId)}`;
+  const panel = params.get('panel');
+  return `/editor/new${panel ? `?panel=${encodeURIComponent(panel)}` : ''}`;
+}
+export function legacyWorkspaceTarget(search: string) {
+  const params = new URLSearchParams(search);
+  return params.has('notebook') || params.has('editor') || params.get('new') === '1' || params.has('panel')
+    ? legacyEditorTarget(search)
+    : '/home';
+}
+function LegacyWorkspaceRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={legacyWorkspaceTarget(search)} replace />;
+}
+function RootRoute() {
   const { search } = useLocation();
   const params = new URLSearchParams(search);
-  const wantsEditor = params.has('editor') || params.has('notebook');
-  // Desktop lands on the new Notion-style Home; the editor (Index) opens
-  // when a note is being written. Mobile flow is unchanged.
-  if (!mobile && !wantsEditor) return <DesktopHome />;
-  return mobile && !wantsEditor ? <MobileExperience /> : <Index />;
+  const hasLegacyWorkspaceIntent =
+    params.has('notebook') || params.has('editor') || params.get('new') === '1' || params.has('panel');
+
+  // Public web visits get the marketing homepage. Preserve legacy deep links
+  // and keep the native shell on its workspace; PWAs start at /home via manifest.
+  return Capacitor.isNativePlatform() || hasLegacyWorkspaceIntent
+    ? <Navigate to={legacyWorkspaceTarget(search)} replace />
+    : <Welcome />;
 }
 function LegacyEditorRedirect() {
   const { search } = useLocation();
-  return <Navigate to={`/${search || '?editor=1'}`} replace />;
+  return <Navigate to={legacyEditorTarget(search)} replace />;
 }
 const NIKAI_FULLSCREEN_ROUTES = ['/ai', '/nikai', '/ai-workspace', '/agents'];
-
-function DesktopFloatingShare() {
-  const mobile = useIsMobile();
-  const { pathname } = useLocation();
-  if (mobile || NIKAI_FULLSCREEN_ROUTES.includes(pathname) || pathname.startsWith('/habit')) {
-    return null;
-  }
-  return <ShareButtons variant="floating" />;
-}
 
 function GlobalCookieConsent() {
   const { pathname } = useLocation();
@@ -158,27 +174,14 @@ const App = () => {
     // Android hardware Back (no-op on web)
     void initNativeShell();
     initTracking();
-    document.documentElement.classList.remove("dark");
-    localStorage.setItem("theme", "light");
 
     if (import.meta.env.PROD) {
-      try {
-        if ('caches' in window) {
-          caches.keys().then(names => {
-            names.forEach(name => {
-              if (!name.includes('v8.0.0')) {
-                console.log('[App] Purging stale cache:', name);
-                caches.delete(name);
-              }
-            });
-          });
-        }
-      } catch {}
-
       registerServiceWorker();
     }
 
-    try { checkReferral(); } catch {}
+    try { checkReferral(); } catch {
+      // Referral attribution must never block application startup.
+    }
   }, []);
 
   return (
@@ -197,9 +200,11 @@ const App = () => {
                   <Suspense fallback={<PageLoader />}>
                     <RouteErrorBoundary>
                       <Routes>
-                        <Route path="/" element={<WorkspaceEntry />} />
-                        <Route path="/home" element={<WorkspaceEntry />} />
-                        <Route path="/studio" element={<Index />} />
+                        <Route path="/" element={<RootRoute />} />
+                        <Route path="/home" element={<ResponsivePage><DesktopHome /></ResponsivePage>} />
+                        <Route path="/editor" element={<LegacyEditorRedirect />} />
+                        <Route path="/editor/:documentId" element={<EditorRoute />} />
+                        <Route path="/studio" element={<LegacyEditorRedirect />} />
                         <Route path="/app" element={<LegacyEditorRedirect />} />
                         <Route path="/account-details" element={<Account />} />
                         <Route path="/ai" element={<AstaAIWorkspace />} />
@@ -225,6 +230,7 @@ const App = () => {
                         <Route path="/admin" element={<Admin />} />
                         <Route path="/admin-login" element={<AdminLogin />} />
                         <Route path="/admin-panel-nikhil" element={<AdminPanelNikhil />} />
+                        <Route path="/admin-email" element={<Navigate to="/admin-panel-nikhil?tab=email" replace />} />
                         <Route path="/ai-solver" element={<AISolverPage />} />
                         <Route path="/documents" element={<DocumentIntelligence />} />
                         <Route path="/pdf-editor" element={<PdfStudioPage />} />
@@ -250,6 +256,7 @@ const App = () => {
                         <Route path="/audit" element={<AuditReportsPage />} />
                         <Route path="/flashcards" element={<FlashcardsPage />} />
                         <Route path="/hub" element={<ResponsivePage><HubPage /></ResponsivePage>} />
+                        <Route path="/playground" element={<PlaygroundPage />} />
                         <Route path="/board" element={<Suspense fallback={<PageLoader />}><BoardPageRoute /></Suspense>} />
                         <Route path="/money" element={<MoneyTrackerPage />} />
                         <Route path="/routine" element={<RoutineTrackerPage />} />
@@ -274,7 +281,6 @@ const App = () => {
                         It suppresses itself on checkout, auth and B2B routes and
                         remembers a dismissal for a week. */}
                     <PricingPopup />
-                    <DesktopFloatingShare />
                   </Suspense>
                 </BrowserRouter>
               </TooltipProvider>

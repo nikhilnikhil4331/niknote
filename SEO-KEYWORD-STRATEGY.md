@@ -51,9 +51,8 @@ Each indexable URL owns a distinct primary keyword cluster and search intent so 
 
 | Canonical URL | Page Type | Primary Target Keyword | Secondary / Supporting Terms | Search Intent | Primary CTA |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `/` | Core Workspace | `handwriting notes maker online` | `text to handwriting converter`, `300 dpi handwritten pdf`, `custom handwriting dna` | Transactional (Use Tool) | Start typing / Export PDF |
-| `/welcome` | Product Overview & FAQ | `ai handwriting & study app for students` | `how niknote works`, `handwritten notes faq`, `hindi english study app` | Commercial / Informational | Start Free (`/`) |
-| `/landing` | Feature Showcase | `realistic handwriting & ai study platform` | `handwriting studio`, `pdf studio`, `asta ai workspace` | Commercial Investigation | Launch Workspace (`/`) |
+| `/` | Public Homepage + Product Overview | `text to handwriting converter` | `handwriting notes maker online`, `handwritten notes PDF`, `Hindi English study tools` | Transactional / Commercial | Start Free (`/editor/new`) |
+| `/landing` | Feature Showcase | `realistic handwriting & ai study platform` | `handwriting studio`, `pdf studio`, `asta ai workspace` | Commercial Investigation | Start Free (`/editor/new`) |
 | `/ai` | Feature Tool | `ai study assistant hindi english` | `nikai tutor`, `ai quiz generator`, `study notes generator` | Transactional (Use AI) | Ask NikAI |
 | `/ai-solver` | Feature Tool | `ai doubt solver for students` | `step by step maths physics chemistry solver`, `homework doubt solver` | Transactional (Solve Problem) | Solve a Doubt |
 | `/pdf-editor` | Feature Tool | `online pdf editor free` | `annotate pdf in browser`, `edit pdf text online`, `sign pdf` | Transactional (Edit PDF) | Open PDF File |
@@ -66,6 +65,8 @@ Each indexable URL owns a distinct primary keyword cluster and search intent so 
 | `/schools` | B2B Landing | `ai study platform for schools & coaching` | `institutional edtech india`, `coaching center test & notes software` | Commercial / Lead Gen | Submit School Inquiry |
 | `/handbook` | Documentation | `niknote user guide & feature handbook` | `how to use handwriting dna`, `niknote shortcuts` | Informational | Open Workspace |
 | `/blog` | Content Hub | `handwritten notes tutorials & exam study guides` | `cbse jee neet upsc study tips`, `handwriting conversion guides` | Informational | Read Guide / Try Tool |
+
+`/welcome` is a legacy alias that permanently redirects to `/`. The private workspace remains available at `/home` and is `noindex`; installed PWAs start there so existing app navigation stays direct.
 
 ---
 

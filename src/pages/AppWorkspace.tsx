@@ -39,7 +39,7 @@ const AppWorkspace = () => {
   const {
     pages, currentPageIndex, currentPage, totalPages,
     goToPage, addNewPage, updateCurrentPageLines, flowOverflowFrom,
-  } = useNotebookPages();
+  } = useNotebookPages(user?.id);
 
   const [currentColor, setCurrentColor] = useState<LineInkColor>('black');
   const lines = currentPage.lines;

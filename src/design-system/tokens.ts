@@ -5,65 +5,65 @@
 // ============================================================
 
 export const niknoteColors = {
-  // Primary brand colors
+  // Blue-led NikNote colors; the accessible action shade is used for smaller text and controls.
   primary: {
-    50: '#eef2ff',
-    100: '#e0e7ff',
-    200: '#c7d2fe',
-    300: '#a5b4fc',
-    400: '#818cf8',
-    500: '#6366f1', // Main brand color (indigo)
-    600: '#4f46e5',
-    700: '#4338ca',
-    800: '#3730a3',
-    900: '#312e81',
+    50: '#f4f8ff',
+    100: '#eaf2ff',
+    200: '#dceaff',
+    300: '#b9d2f6',
+    400: '#6ea1ef',
+    500: '#347ff0',
+    600: '#2869d5',
+    700: '#245dcc',
+    800: '#173a71',
+    900: '#10294e',
   },
-  // Accent — NikNote's signature purple-blue gradient
+  // Accent — NikNote's signature blue, supported by a restrained coral finish.
   accent: {
-    gradient: 'linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa)',
-    gradientHover: 'linear-gradient(135deg, #4f46e5, #7c3aed, #8b5cf6)',
-    glow: '0 0 20px rgba(99, 102, 241, 0.4)',
-    glowHover: '0 0 30px rgba(99, 102, 241, 0.6)',
+    gradient: 'linear-gradient(135deg, #347ff0, #2869d5, #c83f58)',
+    gradientHover: 'linear-gradient(135deg, #2869d5, #245dcc, #b92d48)',
+    glow: '0 0 20px rgba(52, 127, 240, 0.3)',
+    glowHover: '0 0 30px rgba(52, 127, 240, 0.45)',
   },
   // Semantic colors
   success: '#10b981',
   warning: '#f59e0b',
   error: '#ef4444',
-  info: '#3b82f6',
+  info: '#2869d5',
   // Surface colors
   surface: {
     primary: '#ffffff',
-    secondary: '#f8fafc',
-    tertiary: '#f1f5f9',
+    secondary: '#fffdf5',
+    tertiary: '#f4f8ff',
     elevated: '#ffffff',
     overlay: 'rgba(0, 0, 0, 0.5)',
-    blur: 'rgba(255, 255, 255, 0.7)',
+    blur: 'rgba(255, 253, 245, 0.82)',
   },
   // Text colors
   text: {
-    primary: '#0f172a',
-    secondary: '#475569',
-    tertiary: '#94a3b8',
+    primary: '#171313',
+    secondary: '#68636c',
+    tertiary: '#89838c',
     inverse: '#ffffff',
-    link: '#6366f1',
+    link: '#2869d5',
   },
   // Border
   border: {
-    default: '#e2e8f0',
-    hover: '#cbd5e1',
-    active: '#6366f1',
-    subtle: '#f1f5f9',
+    default: '#e0e6f0',
+    hover: '#c9d8ec',
+    active: '#347ff0',
+    subtle: '#f4f8ff',
   },
   // Feature-specific gradients
   gradients: {
-    ai: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-    aiGlow: '0 0 20px rgba(139, 92, 246, 0.4)',
+    ai: 'linear-gradient(135deg, #347ff0, #2869d5)',
+    aiGlow: '0 0 20px rgba(52, 127, 240, 0.3)',
     dna: 'linear-gradient(135deg, #10b981, #14b8a6)',
     dnaGlow: '0 0 16px rgba(16, 185, 129, 0.3)',
-    premium: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-    premiumGlow: '0 0 16px rgba(245, 158, 11, 0.3)',
-    workspace: 'linear-gradient(135deg, #6366f1, #3b82f6)',
-    workspaceGlow: '0 0 20px rgba(99, 102, 241, 0.3)',
+    premium: 'linear-gradient(135deg, #ffe45c, #c83f58)',
+    premiumGlow: '0 0 16px rgba(255, 133, 143, 0.3)',
+    workspace: 'linear-gradient(135deg, #347ff0, #2869d5)',
+    workspaceGlow: '0 0 20px rgba(52, 127, 240, 0.3)',
   },
 } as const;
 
@@ -90,7 +90,7 @@ export const niknoteShadows = {
   md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
   lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
   xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-  glow: '0 0 20px rgba(99, 102, 241, 0.15)',
+  glow: '0 0 20px rgba(52, 127, 240, 0.16)',
   glass: '0 8px 32px rgba(0, 0, 0, 0.06)',
 } as const;
 

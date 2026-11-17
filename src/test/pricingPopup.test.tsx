@@ -195,4 +195,38 @@ describe('PricingPopup', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(window.localStorage.getItem('niknote:pricing-popup:last-shown')).toBeTruthy();
   });
+
+  it('uses the real NikNote mark and a scrollable warm-paper card for small screens', async () => {
+    const { container } = renderAt('/');
+    await waitForPopup();
+
+    expect(container.querySelector('img[src="/images/brand/niknote-primary-mark.png"]')).toBeTruthy();
+    expect(container.querySelector('img[src="/images/brand/niknote-primary-wordmark.png"]')).toBeTruthy();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.className).toContain('bg-[#FFFDF5]');
+    expect(dialog.className).toContain('max-h-[calc(100dvh-8px)]');
+    expect(dialog.querySelector('.overflow-y-auto')).toBeTruthy();
+    expect(screen.getByText('Best value')).toBeTruthy();
+  });
+
+  it('traps keyboard focus inside the open offer and closes on Escape', async () => {
+    renderAt('/');
+    await waitForPopup();
+
+    const dialog = screen.getByRole('dialog');
+    const close = screen.getByRole('button', { name: /close pricing popup/i });
+    const dismiss = screen.getByRole('button', { name: /not now/i });
+
+    dismiss.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(close).toHaveFocus();
+
+    close.focus();
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(dismiss).toHaveFocus();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(dialog).not.toBeInTheDocument();
+  });
 });

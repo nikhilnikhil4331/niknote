@@ -1,3 +1,5 @@
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
+
 // ============================================================
 // NikAI Persistent Cross-Session Memory Engine
 // Remembers user identity, exam/course goals, language preference,
@@ -29,17 +31,18 @@ export interface NikAIMemoryStore {
 }
 
 const MEMORY_STORAGE_KEY = 'niknote.nikai.memory.v1';
+const memoryStorageKey = (ownerId?: string) => ownerScopedStorageKey(MEMORY_STORAGE_KEY, ownerId);
 
-const DEFAULT_STORE: NikAIMemoryStore = {
+const createEmptyMemoryStore = (): NikAIMemoryStore => ({
   facts: [],
   recentTopics: [],
   sessionDigests: [],
-};
+});
 
-export function loadNikAIMemory(): NikAIMemoryStore {
+export function loadNikAIMemory(ownerId?: string): NikAIMemoryStore {
   try {
-    const raw = localStorage.getItem(MEMORY_STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_STORE };
+    const raw = localStorage.getItem(memoryStorageKey(ownerId));
+    if (!raw) return createEmptyMemoryStore();
     const parsed = JSON.parse(raw);
     return {
       userName: typeof parsed.userName === 'string' ? parsed.userName : undefined,
@@ -50,13 +53,13 @@ export function loadNikAIMemory(): NikAIMemoryStore {
       sessionDigests: Array.isArray(parsed.sessionDigests) ? parsed.sessionDigests : [],
     };
   } catch {
-    return { ...DEFAULT_STORE };
+    return createEmptyMemoryStore();
   }
 }
 
-export function saveNikAIMemory(store: NikAIMemoryStore): void {
+export function saveNikAIMemory(store: NikAIMemoryStore, ownerId?: string): void {
   try {
-    localStorage.setItem(MEMORY_STORAGE_KEY, JSON.stringify({
+    localStorage.setItem(memoryStorageKey(ownerId), JSON.stringify({
       ...store,
       facts: store.facts.slice(0, 40),
       recentTopics: store.recentTopics.slice(0, 18),
@@ -67,9 +70,13 @@ export function saveNikAIMemory(store: NikAIMemoryStore): void {
   }
 }
 
-export function addManualMemoryFact(text: string, category: NikAIMemoryFact['category'] = 'custom'): NikAIMemoryStore {
+export function addManualMemoryFact(
+  text: string,
+  category: NikAIMemoryFact['category'] = 'custom',
+  ownerId?: string,
+): NikAIMemoryStore {
   const clean = text.trim();
-  const store = loadNikAIMemory();
+  const store = loadNikAIMemory(ownerId);
   if (!clean) return store;
 
   const exists = store.facts.find((f) => f.text.toLowerCase() === clean.toLowerCase());
@@ -85,20 +92,20 @@ export function addManualMemoryFact(text: string, category: NikAIMemoryFact['cat
       updatedAt: Date.now(),
     });
   }
-  saveNikAIMemory(store);
+  saveNikAIMemory(store, ownerId);
   return store;
 }
 
-export function deleteMemoryFact(id: string): NikAIMemoryStore {
-  const store = loadNikAIMemory();
+export function deleteMemoryFact(id: string, ownerId?: string): NikAIMemoryStore {
+  const store = loadNikAIMemory(ownerId);
   store.facts = store.facts.filter((f) => f.id !== id);
-  saveNikAIMemory(store);
+  saveNikAIMemory(store, ownerId);
   return store;
 }
 
-export function clearAllNikAIMemory(): NikAIMemoryStore {
+export function clearAllNikAIMemory(ownerId?: string): NikAIMemoryStore {
   const fresh: NikAIMemoryStore = { facts: [], recentTopics: [], sessionDigests: [] };
-  saveNikAIMemory(fresh);
+  saveNikAIMemory(fresh, ownerId);
   return fresh;
 }
 
@@ -110,9 +117,10 @@ export function learnFromConversationTurn(
   userPrompt: string,
   assistantReply: string,
   threadId: string,
-  threadTitle: string
+  threadTitle: string,
+  ownerId?: string,
 ): NikAIMemoryStore {
-  const store = loadNikAIMemory();
+  const store = loadNikAIMemory(ownerId);
   const text = userPrompt.trim();
   if (!text) return store;
 
@@ -195,7 +203,7 @@ export function learnFromConversationTurn(
     ...store.sessionDigests.filter((d) => d.threadId !== threadId),
   ].slice(0, 12);
 
-  saveNikAIMemory(store);
+  saveNikAIMemory(store, ownerId);
   return store;
 }
 
@@ -203,8 +211,8 @@ export function learnFromConversationTurn(
  * Formats the complete persistent memory + cross-session history string injected
  * into every NikAI cloud & local prompt so NikAI remembers across sessions!
  */
-export function buildNikAIMemoryPrompt(currentThreadId?: string): string {
-  const store = loadNikAIMemory();
+export function buildNikAIMemoryPrompt(currentThreadId?: string, ownerId?: string): string {
+  const store = loadNikAIMemory(ownerId);
   const lines: string[] = [];
 
   if (store.userName) lines.push(`- Student / User Name: ${store.userName}`);

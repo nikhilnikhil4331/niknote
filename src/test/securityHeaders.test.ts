@@ -32,10 +32,10 @@ describe('vercel.json security headers', () => {
     const csp = header('Content-Security-Policy') ?? '';
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("object-src 'none'");
-    // Inline <script> and on* handlers must NOT be allowed. 'unsafe-eval' is
-    // present only because FormulaEngine/WorkflowEngine use new Function().
+    // Inline scripts, event handlers, and arbitrary eval are not enabled.
     expect(csp).toMatch(/script-src [^;]*'self'/);
     expect(csp).not.toMatch(/script-src [^;]*'unsafe-inline'/);
+    expect(csp).not.toMatch(/script-src [^;]*'unsafe-eval'/);
     expect(csp).not.toMatch(/script-src [^;]*\*/);
   });
 

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 // counter could not actually grant premium access.
 export const ReferralWidget: React.FC<{ variant?: 'banner' | 'card' | 'compact' }> = ({ variant = 'card' }) => {
   const [copied, setCopied] = useState(false);
-  const url = 'https://www.niknote.online/welcome';
+  const url = 'https://www.niknote.online/';
   const text = 'Try NikNote for handwriting-style notes and study tools: ' + url;
   const copy = async () => {
     try {

@@ -183,7 +183,7 @@ export const BlockCommentsThread: React.FC<Props> = ({ open, onClose, blockId, n
               ) : (
                 formattedComments.map(c => (
                   <div key={c.id} className="group flex gap-2">
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-[11px] font-semibold flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold flex items-center justify-center flex-shrink-0">
                       {(c.author_name || "U").charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -224,12 +224,12 @@ export const BlockCommentsThread: React.FC<Props> = ({ open, onClose, blockId, n
                   rows={1}
                   placeholder="Reply… (use @ to mention)"
                   style={{ fontSize: "16px" }}
-                  className="flex-1 min-h-11 max-h-32 rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 resize-none text-[14px]"
+                  className="flex-1 min-h-11 max-h-32 rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-none text-[14px]"
                 />
                 <button
                   onClick={submit}
                   disabled={!body.trim() || sending}
-                  className="h-11 w-11 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white flex items-center justify-center disabled:opacity-40"
+                  className="h-11 w-11 rounded-xl bg-gradient-to-r from-primary to-accent text-white flex items-center justify-center disabled:opacity-40"
                   aria-label="Send"
                 >
                   {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -262,7 +262,7 @@ function renderBodyWithMentions(body: string): React.ReactNode {
   while ((m = re.exec(body)) !== null) {
     if (m.index > last) parts.push(<span key={`t-${key++}`}>{body.slice(last, m.index)}</span>);
     parts.push(
-      <span key={`m-${key++}`} className="inline-block px-1.5 py-0.5 mx-0.5 rounded bg-indigo-50 text-indigo-700 text-[12px] font-medium">
+      <span key={`m-${key++}`} className="inline-block px-1.5 py-0.5 mx-0.5 rounded bg-blue-50 text-blue-700 text-[12px] font-medium">
         @{m[1]}
       </span>
     );

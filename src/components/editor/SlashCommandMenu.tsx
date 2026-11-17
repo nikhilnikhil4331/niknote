@@ -99,7 +99,7 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
     >
       {/* Header */}
       <div className="sticky top-0 bg-white px-3 py-2 border-b border-gray-100 flex items-center gap-2 z-10">
-        <Slash className="w-3.5 h-3.5 text-indigo-500" />
+        <Slash className="w-3.5 h-3.5 text-blue-500" />
         <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Block Types</span>
         <kbd className="ml-auto text-[9px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">ESC</kbd>
       </div>
@@ -125,14 +125,14 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
                     className={cn(
                       "w-full flex items-center gap-3 px-3 py-1.5 text-left transition-colors",
                       idx === selectedIndex
-                        ? "bg-indigo-50 text-indigo-900"
+                        ? "bg-blue-50 text-blue-900"
                         : "text-gray-700 hover:bg-gray-50"
                     )}
                     style={{ touchAction: 'manipulation', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}
                   >
                     <div className={cn(
                       "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-sm",
-                      idx === selectedIndex ? "bg-indigo-100" : "bg-gray-100"
+                      idx === selectedIndex ? "bg-blue-100" : "bg-gray-100"
                     )}>
                       {cmd.icon}
                     </div>

@@ -135,6 +135,15 @@ export const HandwrittenText: React.FC<HandwrittenTextProps> = ({
           backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, hsl(210 40% 70%) 31px, hsl(210 40% 70%) 32px)',
           backgroundPosition: '0 0',
         };
+      case 'niknote-paper':
+        return {
+          backgroundColor: '#fff9eb',
+          backgroundImage: [
+            'linear-gradient(90deg, transparent 0 48px, rgba(200,63,88,.32) 48px 50px, transparent 50px)',
+            'repeating-linear-gradient(transparent, transparent 31px, rgba(40,105,213,.2) 31px, rgba(40,105,213,.2) 32px)',
+          ].join(', '),
+          backgroundPosition: '0 0',
+        };
       case 'plain':
       default:
         return { backgroundColor: 'hsl(var(--paper))' };

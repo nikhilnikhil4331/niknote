@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Crown, X, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePremium } from '@/hooks/usePremium';
 
 export const MobilePremiumBar: React.FC = () => {
+  const reducedMotion = useReducedMotion();
   const { isPremium } = usePremium();
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
@@ -34,13 +35,13 @@ export const MobilePremiumBar: React.FC = () => {
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ y: 80, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 80, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          initial={reducedMotion ? false : { y: 80, opacity: 0 }}
+          animate={reducedMotion ? { opacity: 1 } : { y: 0, opacity: 1 }}
+          exit={reducedMotion ? { opacity: 0 } : { y: 80, opacity: 0 }}
+          transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 30 }}
           className="fixed bottom-0 inset-x-0 z-50 md:hidden"
         >
-          <div className="bg-gradient-to-r from-primary/95 to-purple-600/95 backdrop-blur-xl border-t border-white/10 px-4 py-2.5 flex items-center gap-3">
+          <div className="bg-gradient-to-r from-[#2869d5]/95 to-[#1f56b4]/95 backdrop-blur-xl border-t border-white/10 px-4 py-2.5 flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <Crown className="h-3.5 w-3.5 text-amber-300 flex-shrink-0" />

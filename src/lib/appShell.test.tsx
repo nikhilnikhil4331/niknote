@@ -57,4 +57,10 @@ describe('App shell router boundaries', () => {
     // The original outage: banner was mounted after this index.
     expect(bannerMount).toBeLessThan(routerClose);
   });
+
+  it('does not overwrite the saved dark-mode preference during app startup', () => {
+    expect(appSource).not.toContain('localStorage.setItem("theme"');
+    expect(appSource).not.toContain("localStorage.setItem('theme'");
+    expect(appSource).not.toContain('document.documentElement.classList.remove("dark")');
+  });
 });

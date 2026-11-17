@@ -71,7 +71,7 @@ export const NotificationSystem: React.FC<NotificationSystemProps> = ({
       <div className="p-3 border-b border-gray-100">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-indigo-500" />
+            <Bell className="w-4 h-4 text-[#2869d5]" />
             <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
             {unreadCount > 0 && (
               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white">
@@ -82,7 +82,7 @@ export const NotificationSystem: React.FC<NotificationSystemProps> = ({
           {unreadCount > 0 && (
             <button
               onClick={onMarkAllRead}
-              className="text-[10px] text-indigo-500 hover:text-indigo-600 font-medium flex items-center gap-1"
+              className="text-[10px] text-[#2869d5] hover:text-[#245dcc] font-medium flex items-center gap-1"
             >
               <CheckCheck className="w-3 h-3" /> Mark all read
             </button>
@@ -127,12 +127,12 @@ export const NotificationSystem: React.FC<NotificationSystemProps> = ({
                   transition={{ delay: i * 0.02 }}
                   className={cn(
                     "relative px-3 py-3 hover:bg-gray-50 transition-colors group",
-                    !notification.read && "bg-indigo-50/30"
+                    !notification.read && "bg-[#eaf2ff]/45"
                   )}
                 >
                   {/* Unread dot */}
                   {!notification.read && (
-                    <div className="absolute left-1.5 top-4 w-1.5 h-1.5 rounded-full bg-indigo-500" />
+                    <div className="absolute left-1.5 top-4 w-1.5 h-1.5 rounded-full bg-[#2869d5]" />
                   )}
 
                   <div className="flex items-start gap-2.5 ml-2">
@@ -153,7 +153,7 @@ export const NotificationSystem: React.FC<NotificationSystemProps> = ({
                       {notification.actionLabel && (
                         <button
                           onClick={() => onAction(notification)}
-                          className="mt-1.5 text-[10px] font-medium text-indigo-500 hover:text-indigo-600 flex items-center gap-0.5"
+                          className="mt-1.5 text-[10px] font-medium text-[#2869d5] hover:text-[#245dcc] flex items-center gap-0.5"
                         >
                           {notification.actionLabel} →
                         </button>

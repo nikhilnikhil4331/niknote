@@ -46,20 +46,32 @@ export function NiknoteLoader({ label = 'Loading your notes', fullScreen = true 
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: ease.out }}
       >
-        <motion.img
-          src="/niknote-logo.png"
-          alt=""
-          draggable={false}
-          initial={reduced ? false : { clipPath: 'inset(0 100% 0 0)' }}
-          animate={{ clipPath: 'inset(0 0% 0 0)' }}
-          transition={{ duration: 0.7, ease: ease.inOut }}
-        />
+        <div className="nn-loader-lockup">
+          <motion.img
+            className="nn-loader-mark"
+            src="/images/brand/niknote-primary-mark.png"
+            alt=""
+            draggable={false}
+            initial={reduced ? false : { opacity: 0, scale: 0.58, rotate: -14, y: 7 }}
+            animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
+            transition={{ type: 'spring', stiffness: 190, damping: 16, delay: 0.04 }}
+          />
+          <motion.img
+            className="nn-loader-wordmark"
+            src="/images/brand/niknote-primary-wordmark.png"
+            alt=""
+            draggable={false}
+            initial={reduced ? false : { opacity: 0, clipPath: 'inset(0 100% 0 0)', x: -8 }}
+            animate={{ opacity: 1, clipPath: 'inset(0 0% 0 0)', x: 0 }}
+            transition={{ duration: 0.46, ease: ease.out, delay: 0.28 }}
+          />
+        </div>
         {lens && (
           <span
             className="nn-lens"
             style={{
               left: lens.x, top: lens.y,
-              backgroundImage: 'url(/niknote-logo.png)',
+              backgroundImage: `url(${document.documentElement.classList.contains('dark') ? '/images/brand/niknote-primary-lockup-dark.png' : '/niknote-logo.png'})`,
               backgroundSize: `${(stage.current?.clientWidth ?? 200) * 2.2}px auto`,
               backgroundPosition: `${-lens.x * 2.2 + 45}px ${-lens.y * 2.2 + 45}px`,
             }}

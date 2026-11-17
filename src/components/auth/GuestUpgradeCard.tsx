@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
  * stays 100% intact and opens across all phones & laptops.
  */
 export function GuestUpgradeCard() {
-  const { user, isGuest, signOut, signInAsGuest, upgradeGuestAccount } = useAuth();
+  const { user, isGuest, pendingGuestEmail, signOut, signInAsGuest, upgradeGuestAccount } = useAuth();
   const sync = useCloudSyncStatus(user?.id);
   const [confirmNew, setConfirmNew] = useState(false);
   const [email, setEmail] = useState('');
@@ -25,16 +25,20 @@ export function GuestUpgradeCard() {
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return toast.error('Enter a valid email address');
     if (password.length < 8) return toast.error('Password must be at least 8 characters');
     setBusy(true);
-    const { error } = await upgradeGuestAccount(
+    const result = await upgradeGuestAccount(
       email.trim(),
       password,
       user.user_metadata?.full_name
     );
     setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success('Account upgraded & synced! Sign in from any device anytime ☁️');
+    if (result.error) return toast.error(result.error.message);
     setEmail('');
     setPassword('');
+    if (result.confirmationRequired) {
+      toast.success('Confirmation email sent. Your workspace remains a guest until you confirm.');
+    } else {
+      toast.success('Account email updated and workspace synced ☁️');
+    }
   };
 
   const handleManualSync = async () => {
@@ -109,6 +113,13 @@ export function GuestUpgradeCard() {
         {busy ? 'Saving & syncing…' : 'Save Permanent Account & Sync'}
       </Button>
 
+      {pendingGuestEmail && (
+        <p role="status" className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-foreground">
+          Confirmation is pending for <strong>{pendingGuestEmail}</strong>. This workspace and its cloud data remain on the current guest account until Supabase finishes verification.
+          {user.email?.endsWith('@guest.niknote.online') && ' The current address is system-generated; if verification is also required there and you cannot access it, keep this session open and do not clear this browser’s saved site data.'}
+        </p>
+      )}
+
       {confirmNew ? (
         <div
           role="alertdialog"
@@ -116,7 +127,9 @@ export function GuestUpgradeCard() {
           className="rounded-xl border border-destructive/40 p-3 space-y-2"
         >
           <p className="text-sm text-foreground">
-            Starting a new workspace clears this browser session. Add an email above first if you want to keep your notes.
+            {pendingGuestEmail
+              ? 'Email confirmation is still pending. Signing out keeps the saved guest credentials on this browser; return and choose guest sign-in to resume this same workspace.'
+              : 'Starting a new workspace clears this browser session. Add an email above first if you want to keep your notes.'}
           </p>
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" onClick={() => setConfirmNew(false)}>
@@ -130,13 +143,13 @@ export function GuestUpgradeCard() {
                 window.location.assign('/login');
               }}
             >
-              Start new
+              {pendingGuestEmail ? 'Sign out & resume later' : 'Start new'}
             </Button>
           </div>
         </div>
       ) : (
         <Button variant="ghost" className="w-full" onClick={() => setConfirmNew(true)}>
-          Sign out / start a new guest workspace
+          {pendingGuestEmail ? 'Sign out (keep pending guest workspace)' : 'Sign out / start a new guest workspace'}
         </Button>
       )}
     </section>

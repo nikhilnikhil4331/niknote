@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { X, Crown, Zap, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const ExitIntentPopup: React.FC = () => {
+  const reducedMotion = useReducedMotion();
   const [show, setShow] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const navigate = useNavigate();
@@ -77,19 +78,20 @@ export const ExitIntentPopup: React.FC = () => {
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={reducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: reducedMotion ? 0 : 0.18 }}
             onClick={handleDismiss}
             className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm"
           />
 
           {/* Popup */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 40 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 40 }}
-            transition={{ type: 'spring', duration: 0.5 }}
+            initial={reducedMotion ? false : { opacity: 0, scale: 0.8, y: 40 }}
+            animate={reducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.8, y: 40 }}
+            transition={reducedMotion ? { duration: 0 } : { type: 'spring', duration: 0.5 }}
             className="fixed inset-0 z-[61] flex items-center justify-center p-4"
           >
             <div className="relative bg-card rounded-3xl border border-border/50 shadow-2xl max-w-sm w-full overflow-hidden">
@@ -102,9 +104,9 @@ export const ExitIntentPopup: React.FC = () => {
               </button>
 
               {/* Header gradient */}
-              <div className="bg-gradient-to-br from-primary/10 via-orange-500/10 to-pink-500/10 p-6 pb-4">
+              <div className="bg-gradient-to-br from-[#eaf2ff] via-[#fff8dc] to-[#fff0f0] p-6 pb-4">
                 <div className="flex items-center justify-center gap-3 mb-4">
-                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-orange-500 via-pink-500 to-purple-600 flex items-center justify-center shadow-lg">
+                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#347ff0] via-[#2869d5] to-[#c83f58] flex items-center justify-center shadow-lg">
                     <Crown className="h-7 w-7 text-white" />
                   </div>
                 </div>
@@ -141,7 +143,7 @@ export const ExitIntentPopup: React.FC = () => {
                     setShow(false);
                     navigate('/payment?plan=weekly');
                   }}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 text-white font-semibold text-sm hover:from-orange-400 hover:via-pink-400 hover:to-purple-500 transition-all shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#347ff0] via-[#2869d5] to-[#c83f58] text-white font-semibold text-sm hover:from-[#2869d5] hover:via-[#245dcc] hover:to-[#a92f47] transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
                 >
                   <Zap className="h-4 w-4" />
                   Unlock Premium — ₹49 for 7 days

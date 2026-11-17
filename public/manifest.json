@@ -1,11 +1,11 @@
 {
-  "name": "NikNote \u2014 AI Study App for Indian Students",
+  "name": "NikNote \u2014 Handwriting & Study Tools",
   "short_name": "NikNote",
-  "description": "India's #1 AI Study App! Convert text to handwriting, AI Teacher in Hindi & English, Quiz Generator, Flashcards. CBSE/ICSE/JEE/NEET focused. Founded by Nikhil Jatav.",
-  "start_url": "/",
+  "description": "Create handwritten-style notes from typed text, use Hindi and English AI study tools, review flashcards, and work with PDFs.",
+  "start_url": "/home",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#6366f1",
+  "background_color": "#FFFDF5",
+  "theme_color": "#347FF0",
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "en",
@@ -73,7 +73,7 @@
     {
       "name": "New Note",
       "short_name": "New",
-      "url": "/?action=new",
+      "url": "/editor/new",
       "icons": [
         {
           "src": "/icons/icon-96x96.png",

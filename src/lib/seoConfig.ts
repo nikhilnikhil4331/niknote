@@ -43,9 +43,9 @@ export interface RouteSeoEntry {
 export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   {
     path: '/',
-    title: 'NikNote — Create Realistic Handwritten Notes Online | AI Study & PDF Tools',
+    title: 'Text to Handwriting Converter & Notes Maker | NikNote',
     description:
-      'Create, customize, organize, and export realistic handwritten-style notes online with NikNote. Includes 16+ handwriting styles, Hindi & English AI study assistant, PDF editor, OCR scanner, quizzes, and flashcards.',
+      'Turn typed text into handwritten-style notes online. Choose a style, paper and ink, preview pages, and export a PDF. Explore Hindi-English study tools too.',
     canonicalPath: '/',
     robots: 'index, follow',
     pageType: 'home',
@@ -53,21 +53,10 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
     trackViewContent: true,
   },
   {
-    path: '/welcome',
-    title: 'How NikNote Works — Realistic Handwriting Editor, AI Tutor & PDF Export',
-    description:
-      'See how NikNote converts typed text into realistic handwritten pages on ruled, graph, or dotted paper, explains study topics in Hindi & English, and exports 300 DPI PDFs.',
-    canonicalPath: '/welcome',
-    robots: 'index, follow',
-    pageType: 'landing',
-    inSitemap: true,
-    trackViewContent: true,
-  },
-  {
     path: '/landing',
-    title: 'NikNote Features — Handwriting Studio, AI Solver & Study Workspace',
+    title: 'NikNote Features: Handwriting, AI Study & PDF Tools',
     description:
-      'Explore NikNote features for students: 16+ handwriting styles, custom Handwriting DNA, an AI doubt solver, flashcards, and print-ready PDF export.',
+      'Explore NikNote’s handwriting studio, Hindi-English AI study tools, flashcards, OCR and PDF editing in one browser-based workspace.',
     canonicalPath: '/landing',
     robots: 'index, follow',
     pageType: 'landing',
@@ -76,9 +65,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/ai',
-    title: 'NikAI Study Assistant — Hindi & English AI Tutor, Quizzes & Smart Notes',
+    title: 'AI Study Assistant in Hindi & English | NikNote',
     description:
-      'Learn concepts in Hindi or English with NikAI. Generate structured study notes, practice interactive MCQs, and save notes directly to your NikNote notebook.',
+      'Ask study questions in Hindi, English or Hinglish. Get explanations and create notes, quizzes and flashcards with NikAI.',
     canonicalPath: '/ai',
     robots: 'index, follow',
     pageType: 'feature',
@@ -87,9 +76,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/ai-solver',
-    title: 'AI Doubt & Homework Solver Online — Step-by-Step Study Help | NikNote',
+    title: 'Step-by-Step AI Study Solver | Maths & Science | NikNote',
     description:
-      'Solve Physics, Chemistry, Mathematics, Biology, and exam questions step-by-step in Hindi and English with the NikNote AI Solver.',
+      'Work through maths, physics, chemistry, biology and other study questions with step-by-step explanations in Hindi or English.',
     canonicalPath: '/ai-solver',
     robots: 'index, follow',
     pageType: 'feature',
@@ -98,9 +87,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/pdf-editor',
-    title: 'Free Online PDF Editor — Edit Text, Annotate, Highlight & Export | NikNote',
+    title: 'Free Online PDF Editor & Annotator | NikNote',
     description:
-      'Read, search, highlight, draw, edit existing PDF text lines in place, reorder or delete pages safely, and export sharp PDFs directly in your browser.',
+      'Open PDFs in your browser to annotate, highlight, draw, add notes and export. Edit supported text and organize pages with NikNote.',
     canonicalPath: '/pdf-editor',
     robots: 'index, follow',
     pageType: 'feature',
@@ -109,9 +98,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/pdf-tools',
-    title: 'Free PDF Tools Online — Merge, Split, Compress, PDF to Word/Excel & OCR | NikNote',
+    title: 'Free PDF Tools: Merge, Split & Compress | NikNote',
     description:
-      'Fast browser-based PDF tools: merge, split, compress, add watermarks or page numbers, convert PDFs to Word or Excel, run searchable OCR, and lock or unlock PDFs.',
+      'Merge or split PDFs, compress files, add page numbers, run OCR and use other PDF utilities in your browser with NikNote.',
     canonicalPath: '/pdf-tools',
     robots: 'index, follow',
     pageType: 'feature',
@@ -120,9 +109,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/scan-notes',
-    title: 'Scan Handwritten Notes to Text (OCR) — English & Hindi | NikNote',
+    title: 'Scan Handwritten Notes to Text | OCR | NikNote',
     description:
-      'Turn photos or screenshots of handwritten and printed notes into editable digital notebook pages using on-device English/Hindi OCR or NikAI cursive recognition.',
+      'Upload or capture a note image and use OCR to turn readable printed or handwritten text into editable notes. English and Hindi support.',
     canonicalPath: '/scan-notes',
     robots: 'index, follow',
     pageType: 'feature',
@@ -131,9 +120,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/documents',
-    title: 'Document Intelligence — Summarize Study PDFs & Extract Key Notes | NikNote',
+    title: 'AI PDF Summarizer for Study Notes | NikNote',
     description:
-      'Upload study PDFs and class handouts to extract structured summaries, key concepts, and revision notes with NikNote Document Intelligence.',
+      'Review study PDFs and class handouts with NikNote Document Intelligence to extract summaries and key ideas for revision.',
     canonicalPath: '/documents',
     robots: 'index, follow',
     pageType: 'feature',
@@ -142,9 +131,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/flashcards',
-    title: 'Online Study Flashcards — Active Recall & Exam Revision | NikNote',
+    title: 'Online Study Flashcards for Exam Revision | NikNote',
     description:
-      'Create, organize, and practice revision flashcards for school boards, JEE, NEET, UPSC, and college exams with NikNote Flashcards.',
+      'Create and review flashcards for school, college and exam topics. Use active recall to revisit key facts and concepts in NikNote.',
     canonicalPath: '/flashcards',
     robots: 'index, follow',
     pageType: 'feature',
@@ -153,9 +142,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/habit',
-    title: 'NikNote Habit & Focus Timer — Study Routine, Pomodoro & Streak Tracker',
+    title: 'Study Habit Tracker & Pomodoro Timer | NikNote',
     description:
-      'Stay consistent with an offline-capable Pomodoro focus timer, daily study habit tracker, streak analytics, hydration, and sleep logs.',
+      'Plan study routines, track habits and focus sessions, and review your streaks with NikNote’s habit tracker.',
     canonicalPath: '/habit',
     robots: 'index, follow',
     pageType: 'feature',
@@ -164,9 +153,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/schools',
-    title: 'NikNote for Teachers & Tuition Centres — Handwritten Worksheet Maker',
+    title: 'Handwritten Worksheet Maker for Teachers | NikNote',
     description:
-      'Create handwritten worksheets and PDFs with the free editor. Ask about NikNote for your school or coaching centre.',
+      'Prepare handwritten-style worksheets and export them to PDF. Try the editor free, then contact NikNote about your institution’s needs.',
     canonicalPath: '/schools',
     robots: 'index, follow',
     pageType: 'b2b',
@@ -175,9 +164,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/upgrade',
-    title: 'NikNote Pricing & Plans — Free Tier, Student Pro (₹49/wk) & Premium (₹99/mo)',
+    title: 'NikNote Pricing: Free & Student Pro Plans',
     description:
-      'Compare NikNote Free, Student Pro (₹49/week) and Premium (₹99/month). Premium adds the AI writing assistant, voice dictation, handwriting import and AI style matching. UPI, cards and wallets.',
+      'Compare NikNote’s free features with one-time Student Pro and Premium passes: ₹49 for 7 days or ₹99 for 30 days, with no auto-renewal.',
     canonicalPath: '/upgrade',
     robots: 'index, follow',
     pageType: 'pricing',
@@ -186,9 +175,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/handbook',
-    title: 'NikNote Handbook — Product Philosophy, Study Workflows & Guide',
+    title: 'NikNote User Guide & Feature Handbook',
     description:
-      'Read the official NikNote handbook covering product principles, handwriting note workflows, offline support, and student study tools.',
+      'Find practical instructions for NikNote’s handwriting editor, notebooks, AI study tools, PDF utilities and settings.',
     canonicalPath: '/handbook',
     robots: 'index, follow',
     pageType: 'docs',
@@ -196,9 +185,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/blog',
-    title: 'NikNote Blog — Handwritten Notes Tutorials, AI Study Tips & Exam Guides',
+    title: 'Study & Handwriting Guides | NikNote Blog',
     description:
-      'Step-by-step guides on converting text to handwriting, making CBSE, JEE, NEET & UPSC notes, using flashcards, and studying effectively in Hindi and English.',
+      'Read practical guides to turning text into handwriting, organizing notes, using OCR and studying with digital flashcards.',
     canonicalPath: '/blog',
     robots: 'index, follow',
     pageType: 'blog_index',
@@ -207,9 +196,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/privacy',
-    title: 'Privacy Policy — NikNote',
+    title: 'Privacy Policy | NikNote',
     description:
-      'Read how NikNote processes account data, notes, AI prompts, payments, analytics, advertising cookies, and your privacy choices.',
+      'Read how NikNote handles account data, notes, AI prompts, payments, analytics and your privacy choices.',
     canonicalPath: '/privacy',
     robots: 'index, follow',
     pageType: 'legal',
@@ -217,9 +206,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/terms',
-    title: 'Terms & Conditions — NikNote',
+    title: 'Terms of Use | NikNote',
     description:
-      'Terms governing your use of NikNote handwriting notes, AI study features, uploaded content ownership, and paid plans.',
+      'Review the terms for using NikNote’s note editor, study tools, uploaded content and paid plans.',
     canonicalPath: '/terms',
     robots: 'index, follow',
     pageType: 'legal',
@@ -227,9 +216,9 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
   },
   {
     path: '/refunds',
-    title: 'Refund Policy — NikNote',
+    title: 'Refund Policy | NikNote',
     description:
-      'Details on NikNote subscription billing, duplicate charge review, and how to contact support@niknote.online regarding payment issues.',
+      'Review NikNote’s payment and refund information, including how to contact support about a duplicate or failed charge.',
     canonicalPath: '/refunds',
     robots: 'index, follow',
     pageType: 'legal',
@@ -238,6 +227,14 @@ export const PUBLIC_INDEXABLE_ROUTES: RouteSeoEntry[] = [
 ];
 
 const NON_INDEXABLE_ROUTES: Record<string, Omit<RouteSeoEntry, 'path' | 'inSitemap'>> = {
+  // The old marketing URL now resolves to the canonical public homepage.
+  '/welcome': {
+    title: 'How NikNote Works — Handwriting Notes & Study Tools',
+    description: 'Explore NikNote’s handwriting editor, study features and PDF tools from the homepage.',
+    canonicalPath: '/',
+    robots: 'noindex, follow',
+    pageType: 'landing',
+  },
   // Duplicate aliases — point canonical to primary route and prevent duplicate indexing
   '/home': {
     title: 'NikNote — Handwritten Notes Workspace',
@@ -430,6 +427,13 @@ const NON_INDEXABLE_ROUTES: Record<string, Omit<RouteSeoEntry, 'path' | 'inSitem
     robots: 'noindex, nofollow',
     pageType: 'workspace',
   },
+  '/playground': {
+    title: 'Creative Playground — NikNote',
+    description: 'Arrange sticky notes, checklists and ideas on a private, locally saved creative canvas.',
+    canonicalPath: '/playground',
+    robots: 'noindex, nofollow',
+    pageType: 'workspace',
+  },
   '/board': {
     title: 'Study Board — NikNote',
     description: 'Kanban-style study boards for planning tasks, deadlines and revision.',
@@ -562,6 +566,18 @@ export function resolveRouteSeo(pathname: string): RouteSeoEntry & { blogPost?: 
       canonicalPath: '/blog',
       robots: 'noindex, follow',
       pageType: 'not_found',
+      inSitemap: false,
+    };
+  }
+
+  if (clean === '/editor' || clean.startsWith('/editor/')) {
+    return {
+      path: clean,
+      title: 'Notes Editor — NikNote',
+      description: 'Write, format, and organize notes in your private NikNote workspace.',
+      canonicalPath: '/home',
+      robots: 'noindex, nofollow',
+      pageType: 'workspace',
       inSitemap: false,
     };
   }

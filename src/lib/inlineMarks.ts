@@ -23,24 +23,71 @@ export interface StyledWord { text: string; bold: boolean; italic: boolean }
 
 /** Split a visual line into words carrying bold/italic state; markers are removed. */
 export function styledWords(line: string): StyledWord[] {
-  let bold = false, italic = false;
-  return line.split(' ').map(raw => {
-    let w = raw;
-    let b = bold, i = italic;
-    // opening markers
+  let bold = false;
+  let italic = false;
+
+  return line.split(' ').map((raw) => {
+    let word = raw;
+
+    // Opening markers are kept in the note's editable text and interpreted
+    // here for the handwritten preview. Triple emphasis means bold + italic.
     for (;;) {
-      if (w.startsWith('**')) { bold = !bold; b = bold || b; w = w.slice(2); continue; }
-      if (w.startsWith('_') && w.length > 1) { italic = !italic; i = italic || i; w = w.slice(1); continue; }
+      if ((word.startsWith('***') || word.startsWith('___')) && word.length > 3) {
+        bold = !bold;
+        italic = !italic;
+        word = word.slice(3);
+        continue;
+      }
+      if (word.startsWith('**') && word.length > 2) {
+        bold = !bold;
+        word = word.slice(2);
+        continue;
+      }
+      if (word.startsWith('__') && word.length > 2) {
+        bold = !bold;
+        word = word.slice(2);
+        continue;
+      }
+      if ((word.startsWith('_') || word.startsWith('*')) && word.length > 1) {
+        italic = !italic;
+        word = word.slice(1);
+        continue;
+      }
       break;
     }
-    b = bold; i = italic;
-    // closing markers
+
+    const styled = { bold, italic };
+    const punctuation = word.match(/[.,!?;:]+$/)?.[0] || '';
+    let core = punctuation ? word.slice(0, -punctuation.length) : word;
+
+    // Closing markers can sit just before punctuation (for example
+    // **Term:**), so remove them from the core rather than the full token.
     for (;;) {
-      if (w.endsWith('**') && bold) { bold = false; w = w.slice(0, -2); continue; }
-      if (w.endsWith('_') && italic) { italic = false; w = w.slice(0, -1); continue; }
+      if ((core.endsWith('***') || core.endsWith('___')) && (bold || italic)) {
+        bold = false;
+        italic = false;
+        core = core.slice(0, -3);
+        continue;
+      }
+      if (core.endsWith('**') && bold) {
+        bold = false;
+        core = core.slice(0, -2);
+        continue;
+      }
+      if (core.endsWith('__') && bold) {
+        bold = false;
+        core = core.slice(0, -2);
+        continue;
+      }
+      if ((core.endsWith('_') || core.endsWith('*')) && italic) {
+        italic = false;
+        core = core.slice(0, -1);
+        continue;
+      }
       break;
     }
-    return { text: w, bold: b, italic: i };
+
+    return { text: `${core}${punctuation}`, ...styled };
   });
 }
 

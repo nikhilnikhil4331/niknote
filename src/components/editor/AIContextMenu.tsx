@@ -24,8 +24,8 @@ interface AIAction {
 
 const AI_ACTIONS: AIAction[] = [
   // Writing
-  { id: 'improve', label: 'Improve Writing', description: 'Make text clearer and more professional', icon: <Wand2 className="w-4 h-4" />, color: 'text-purple-600 bg-purple-50', category: 'write' },
-  { id: 'expand', label: 'Expand', description: 'Add more detail and depth', icon: <Sparkles className="w-4 h-4" />, color: 'text-indigo-600 bg-indigo-50', category: 'write' },
+  { id: 'improve', label: 'Improve Writing', description: 'Make text clearer and more professional', icon: <Wand2 className="w-4 h-4" />, color: 'text-pink-600 bg-pink-50', category: 'write' },
+  { id: 'expand', label: 'Expand', description: 'Add more detail and depth', icon: <Sparkles className="w-4 h-4" />, color: 'text-blue-600 bg-blue-50', category: 'write' },
   { id: 'shorten', label: 'Shorten', description: 'Make concise and to the point', icon: <Zap className="w-4 h-4" />, color: 'text-yellow-600 bg-yellow-50', category: 'write' },
   { id: 'rewrite', label: 'Rewrite', description: 'Rewrite in a different tone', icon: <PenTool className="w-4 h-4" />, color: 'text-pink-600 bg-pink-50', category: 'write' },
 
@@ -39,7 +39,7 @@ const AI_ACTIONS: AIAction[] = [
   { id: 'translate-hindi', label: '→ Hindi', description: 'Translate to Hindi', icon: <Languages className="w-4 h-4" />, color: 'text-orange-600 bg-orange-50', category: 'transform' },
   { id: 'translate-english', label: '→ English', description: 'Translate to English', icon: <Languages className="w-4 h-4" />, color: 'text-blue-600 bg-blue-50', category: 'transform' },
   { id: 'bullet-points', label: '→ Bullet Points', description: 'Convert to bullet list', icon: <Hash className="w-4 h-4" />, color: 'text-gray-600 bg-gray-50', category: 'transform' },
-  { id: 'study-notes', label: '→ Study Notes', description: 'Format as study notes', icon: <BookOpen className="w-4 h-4" />, color: 'text-indigo-600 bg-indigo-50', category: 'transform' },
+  { id: 'study-notes', label: '→ Study Notes', description: 'Format as study notes', icon: <BookOpen className="w-4 h-4" />, color: 'text-blue-600 bg-blue-50', category: 'transform' },
 ];
 
 interface AIContextMenuProps {
@@ -73,7 +73,7 @@ export const AIContextMenu: React.FC<AIContextMenuProps> = ({
         style={{ top: adjustedTop, left: adjustedLeft }}
       >
         {/* Header */}
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gradient-to-r from-indigo-500 to-purple-600">
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gradient-to-r from-primary to-primary/90">
           <Sparkles className="w-3.5 h-3.5 text-white" />
           <span className="text-[11px] font-semibold text-white">AI Actions</span>
           <span className="text-[10px] text-white/60 ml-auto truncate max-w-[120px]">
@@ -94,7 +94,7 @@ export const AIContextMenu: React.FC<AIContextMenuProps> = ({
               className={cn(
                 "flex-1 px-2 py-1.5 text-[10px] font-medium transition-colors",
                 activeCategory === cat.id
-                  ? "text-indigo-600 border-b-2 border-indigo-500 bg-indigo-50/50"
+                  ? "text-blue-600 border-b-2 border-blue-500 bg-blue-50/50"
                   : "text-gray-400 hover:text-gray-600"
               )}
             >

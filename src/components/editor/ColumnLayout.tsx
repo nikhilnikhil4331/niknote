@@ -78,7 +78,7 @@ export const ColumnLayout: React.FC<ColumnLayoutProps> = ({
               onMouseMove={(e) => { if (dragging === column.id) handleDrag(e, column.id); }}
               onMouseUp={() => setDragging(null)}
               onMouseLeave={() => setDragging(null)}
-              className="w-1 flex-shrink-0 cursor-col-resize hover:bg-indigo-300 transition-colors rounded-full group-hover/column:opacity-100 opacity-0 self-stretch my-2"
+              className="w-1 flex-shrink-0 cursor-col-resize hover:bg-blue-300 transition-colors rounded-full group-hover/column:opacity-100 opacity-0 self-stretch my-2"
             />
           )}
         </React.Fragment>
@@ -88,7 +88,7 @@ export const ColumnLayout: React.FC<ColumnLayoutProps> = ({
       {columns.length < 4 && (
         <button
           onClick={onAddColumn}
-          className="w-8 flex-shrink-0 rounded-lg border border-dashed border-gray-200 hover:border-indigo-300 flex items-center justify-center text-gray-300 hover:text-indigo-500 transition-colors"
+          className="w-8 flex-shrink-0 rounded-lg border border-dashed border-gray-200 hover:border-blue-300 flex items-center justify-center text-gray-300 hover:text-blue-500 transition-colors"
         >
           <Plus className="w-3 h-3" />
         </button>

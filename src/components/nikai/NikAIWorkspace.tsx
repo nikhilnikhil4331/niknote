@@ -51,6 +51,10 @@ import {
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
+import { useOptionalAuth } from '@/contexts/AuthContext';
+import { isCloudUserId } from '@/lib/cloudSyncEngine';
+import { readLocalNotesForOwner } from '@/lib/localNoteStore';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 import { AstaMarkdown } from '@/components/asta/AstaMarkdown';
 import {
   streamAstaAI,
@@ -87,6 +91,7 @@ export interface NikAIMessage {
   latencyMs?: number;
   followUps?: string[];
   savedNoteId?: string;
+  cancelled?: boolean;
   createdAt: number;
 }
 
@@ -103,6 +108,29 @@ interface AttachedNoteContext {
   title: string;
   preview: string;
 }
+
+interface SpeechRecognitionAlternativeLike {
+  transcript: string;
+}
+
+type SpeechRecognitionResultLike = ArrayLike<SpeechRecognitionAlternativeLike>;
+
+interface SpeechRecognitionEventLike {
+  results: ArrayLike<SpeechRecognitionResultLike>;
+}
+
+interface SpeechRecognitionLike {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
 export interface NikAIWorkspaceProps {
   embedded?: boolean;
@@ -223,8 +251,8 @@ const HERO_CARDS: Array<{
       'Create complete exam-ready Smart Notes on Rotational Motion & Moment of Inertia with key formulas, memory tricks, and quick revision summary.',
     mode: 'notes',
     icon: NotebookPen,
-    tintBg: 'linear-gradient(165deg, rgba(250,248,255,0.92) 0%, rgba(244,240,255,0.86) 100%)',
-    borderTint: 'rgba(221, 214, 254, 0.75)',
+    tintBg: 'linear-gradient(165deg, rgba(255,253,245,0.92) 0%, rgba(238,244,255,0.86) 100%)',
+    borderTint: 'rgba(199, 217, 245, 0.75)',
   },
   {
     title: 'Learn a concept',
@@ -262,8 +290,8 @@ const SingleFourPointSparkle: React.FC<{ size?: number }> = ({ size = 15 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
     <defs>
       <linearGradient id="nikai-pill-sparkle" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#7C3AED" />
-        <stop offset="100%" stopColor="#EC4899" />
+        <stop offset="0%" stopColor="#2869D5" />
+        <stop offset="100%" stopColor="#FF858F" />
       </linearGradient>
     </defs>
     <path
@@ -289,14 +317,14 @@ function formatRelativeTime(timestamp: number): string {
   return `${days} days ago`;
 }
 
-function loadSavedThreads(): NikAIThread[] {
+function loadSavedThreads(ownerId?: string): NikAIThread[] {
   try {
-    const primary = localStorage.getItem(THREADS_KEY);
+    const primary = localStorage.getItem(ownerScopedStorageKey(THREADS_KEY, ownerId));
     if (primary) {
       const parsed = JSON.parse(primary);
       if (Array.isArray(parsed)) return parsed;
     }
-    const legacy = localStorage.getItem(LEGACY_THREADS_KEY);
+    const legacy = localStorage.getItem(ownerScopedStorageKey(LEGACY_THREADS_KEY, ownerId));
     if (legacy) {
       const parsed = JSON.parse(legacy);
       if (Array.isArray(parsed)) return parsed;
@@ -307,9 +335,9 @@ function loadSavedThreads(): NikAIThread[] {
   }
 }
 
-function persistThreads(threads: NikAIThread[]) {
+function persistThreads(threads: NikAIThread[], ownerId?: string) {
   try {
-    localStorage.setItem(THREADS_KEY, JSON.stringify(threads.slice(0, 60)));
+    localStorage.setItem(ownerScopedStorageKey(THREADS_KEY, ownerId), JSON.stringify(threads.slice(0, 60)));
   } catch {
     // ignore storage quota overflow
   }
@@ -380,21 +408,21 @@ function fileToAttachment(file: File): Promise<AstaImageAttachment> {
   });
 }
 
-export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
+const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; isGuest: boolean }> = ({
   embedded = false,
   onClose,
   noteTitle,
   noteContent,
   onInsertContent,
+  userId,
+  isGuest,
 }) => {
   const navigate = useNavigate();
-
-  const [userId, setUserId] = useState<string | undefined>(undefined);
   const [userAvatarSrc, setUserAvatarSrc] = useState<string>('/nikai-avatar.jpg');
 
-  const [threads, setThreads] = useState<NikAIThread[]>(() => loadSavedThreads());
+  const [threads, setThreads] = useState<NikAIThread[]>(() => loadSavedThreads(userId));
   const [activeThreadId, setActiveThreadId] = useState<string | null>(() => {
-    const initial = loadSavedThreads();
+    const initial = loadSavedThreads(userId);
     return initial[0]?.id ?? null;
   });
   const [mode, setMode] = useState<AstaMode>('auto');
@@ -419,15 +447,16 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const hiddenSeedsKey = ownerScopedStorageKey(HIDDEN_SEEDS_KEY, userId);
   const [hiddenSeeds, setHiddenSeeds] = useState<string[]>(() => {
     try {
-      return JSON.parse(localStorage.getItem(HIDDEN_SEEDS_KEY) || '[]');
+      return JSON.parse(localStorage.getItem(hiddenSeedsKey) || '[]');
     } catch {
       return [];
     }
   });
 
-  const [memoryState, setMemoryState] = useState<NikAIMemoryStore>(() => loadNikAIMemory());
+  const [memoryState, setMemoryState] = useState<NikAIMemoryStore>(() => loadNikAIMemory(userId));
   const [memoryOpen, setMemoryOpen] = useState(false);
   const [newMemoryFact, setNewMemoryFact] = useState('');
 
@@ -444,7 +473,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   const [listening, setListening] = useState(false);
   const [implementingId, setImplementingId] = useState<string | null>(null);
 
-  const customKeys = readCustomAIKeys();
+  const customKeys = readCustomAIKeys(userId);
   const [larprouterInput, setLarprouterInput] = useState(customKeys.larprouterKey || '');
   const [groqInput, setGroqInput] = useState(customKeys.groqKey || '');
   const [geminiInput, setGeminiInput] = useState(customKeys.geminiKey || '');
@@ -460,7 +489,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -469,9 +498,9 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       .then(({ data }) => {
         if (!active) return;
         const u = data?.session?.user;
-        if (u?.id) setUserId(u.id);
-        const pic = (u?.user_metadata as any)?.avatar_url || (u?.user_metadata as any)?.picture;
-        if (pic) setUserAvatarSrc(pic);
+        const metadata = u?.user_metadata as Record<string, unknown> | undefined;
+        const pic = metadata?.avatar_url ?? metadata?.picture;
+        if (typeof pic === 'string') setUserAvatarSrc(pic);
       })
       .catch(() => {});
     return () => {
@@ -530,8 +559,8 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   );
 
   useEffect(() => {
-    persistThreads(threads);
-  }, [threads]);
+    persistThreads(threads, userId);
+  }, [threads, userId]);
 
   useEffect(() => {
     scrollEndRef.current?.scrollIntoView({ behavior: isGenerating ? 'auto' : 'smooth' });
@@ -545,49 +574,35 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   }, [input]);
 
   const loadNotesForPicker = useCallback(() => {
-    const collected: AttachedNoteContext[] = [];
-    try {
-      const mobileRaw = localStorage.getItem('niknote.mobile.notebooks.v1');
-      if (mobileRaw) {
-        const list = JSON.parse(mobileRaw);
-        if (Array.isArray(list)) {
-          for (const item of list) {
-            const text = Array.isArray(item.blocks)
-              ? item.blocks.map((b: any) => b.content || '').join('\n')
-              : item.content || '';
-            if (item.title || text) {
-              collected.push({
-                id: String(item.id || Math.random()),
-                title: String(item.title || 'Untitled Note'),
-                preview: String(text).slice(0, 24000),
-              });
-            }
-          }
-        }
-      }
-      const wsRaw = localStorage.getItem('niknote.notes.v1');
-      if (wsRaw) {
-        const list = JSON.parse(wsRaw);
-        if (Array.isArray(list)) {
-          for (const item of list) {
-            if (!item.trashedAt && (item.title || item.content)) {
-              collected.push({
-                id: String(item.id || Math.random()),
-                title: String(item.title || 'Workspace Note'),
-                preview: String(item.content || '').slice(0, 24000),
-              });
-            }
-          }
-        }
-      }
-    } catch {
-      // ignore parse errors
+    if (!userId) {
+      setAvailableNotes([]);
+      return;
     }
+    const ownedNotes = readLocalNotesForOwner(userId, { allowLegacyClaim: isGuest });
+    const collected: AttachedNoteContext[] = ownedNotes
+      .filter((item) => !item.trashedAt)
+      .map((item) => {
+        const text = Array.isArray(item.blocks)
+          ? item.blocks.map((block) => {
+              if (!block || typeof block !== 'object' || !('content' in block)) return '';
+              const content = block.content;
+              return typeof content === 'string' || typeof content === 'number' ? String(content) : '';
+            }).join('\n')
+          : String(item.content || '');
+        return {
+          id: String(item.id),
+          title: String(item.title || 'Untitled Note'),
+          preview: text.slice(0, 24000),
+        };
+      })
+      .filter((item) => item.title || item.preview);
     setAvailableNotes(collected.slice(0, 30));
-  }, []);
+  }, [userId, isGuest]);
 
   const startNewChat = useCallback((nextMode?: AstaMode) => {
-    abortRef.current?.abort();
+    const controller = abortRef.current;
+    abortRef.current = null;
+    controller?.abort();
     setIsGenerating(false);
     setLiveThinkingText('');
     setActiveThreadId(null);
@@ -617,13 +632,13 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
     setHiddenSeeds((prev) => {
       const next = [...prev, id];
       try {
-        localStorage.setItem(HIDDEN_SEEDS_KEY, JSON.stringify(next));
+        localStorage.setItem(hiddenSeedsKey, JSON.stringify(next));
       } catch {
         // ignore
       }
       return next;
     });
-  }, []);
+  }, [hiddenSeedsKey]);
 
   const handleFilesSelected = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -646,8 +661,11 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   }, []);
 
   const toggleVoiceInput = useCallback(() => {
-    const SpeechRec =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const speechWindow = window as Window & {
+      SpeechRecognition?: SpeechRecognitionConstructor;
+      webkitSpeechRecognition?: SpeechRecognitionConstructor;
+    };
+    const SpeechRec = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
     if (!SpeechRec) {
       toast.info('Voice dictation is not supported in this browser');
       return;
@@ -662,9 +680,9 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       rec.continuous = false;
       rec.interimResults = true;
       rec.lang = 'en-IN';
-      rec.onresult = (ev: any) => {
-        const transcript = Array.from(ev.results)
-          .map((r: any) => r[0]?.transcript || '')
+      rec.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map((result) => result[0]?.transcript || '')
           .join('');
         setInput(transcript);
       };
@@ -705,8 +723,11 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
   );
 
   const stopGeneration = useCallback(() => {
-    abortRef.current?.abort();
+    const controller = abortRef.current;
+    abortRef.current = null;
+    controller?.abort();
     setIsGenerating(false);
+    setLiveThinkingText('');
   }, []);
 
   const handleImplementNote = useCallback(
@@ -739,7 +760,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
 
         if (openInHandwritingEditor) {
           toast.success(`Opening "${res.title}" inside NikNote Handwriting Studio!${cardSuffix}`);
-          navigate(`/?editor=1&notebook=${encodeURIComponent(res.notebookId)}`);
+          navigate(`/editor/${encodeURIComponent(res.notebookId)}`);
         } else {
           toast.success(`Saved "${res.title}" (${res.blockCount} blocks)${cardSuffix}`);
         }
@@ -756,7 +777,8 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
     (msg: NikAIMessage) => {
       const count = extractAndSaveFlashcardsFromMarkdown(
         activeThread?.title || 'NikAI Flashcard Deck',
-        msg.content
+        msg.content,
+        userId
       );
       if (count > 0) {
         toast.success(`Extracted ${count} study flashcards! Opening Flashcard Arena…`);
@@ -765,7 +787,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
         toast.info('Ask NikAI for notes with bold key terms or an MCQ quiz first!');
       }
     },
-    [activeThread?.title, navigate]
+    [activeThread?.title, navigate, userId]
   );
 
   const sendPrompt = useCallback(
@@ -842,7 +864,22 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
 
       const controller = new AbortController();
       abortRef.current = controller;
-      const freshMemoryPrompt = buildNikAIMemoryPrompt(targetThreadId);
+      const markAssistantCancelled = () => {
+        setThreads((prev) =>
+          prev.map((thread) =>
+            thread.id !== targetThreadId
+              ? thread
+              : {
+                  ...thread,
+                  updatedAt: Date.now(),
+                  messages: thread.messages.map((message) =>
+                    message.id === assistantMsgId ? { ...message, cancelled: true } : message
+                  ),
+                }
+          )
+        );
+      };
+      const freshMemoryPrompt = buildNikAIMemoryPrompt(targetThreadId, userId);
 
       try {
         const noteCtx = attachedNote
@@ -857,11 +894,13 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
           })),
           mode: effectiveMode,
           model: effectiveModel,
+          userId,
           threadId: targetThreadId,
           noteContext: noteCtx,
           memoryContext: freshMemoryPrompt,
           signal: controller.signal,
           onMeta: (meta) => {
+            if (controller.signal.aborted) return;
             setLiveModelName(meta.model);
             setThreads((prev) =>
               prev.map((t) =>
@@ -879,6 +918,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             );
           },
           onThinking: (_delta, fullThinking) => {
+            if (controller.signal.aborted) return;
             setLiveThinkingText(fullThinking);
             setThreads((prev) =>
               prev.map((t) =>
@@ -894,6 +934,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             );
           },
           onToken: (_delta, fullText) => {
+            if (controller.signal.aborted) return;
             setThreads((prev) =>
               prev.map((t) =>
                 t.id === targetThreadId
@@ -909,6 +950,10 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
           },
         });
 
+        if (controller.signal.aborted) {
+          markAssistantCancelled();
+          return;
+        }
         const finalText = result.content;
         const followUps = buildFollowUps(finalText, effectiveMode);
 
@@ -939,7 +984,8 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
           userMsg.content,
           finalText,
           targetThreadId,
-          titleSource.slice(0, 56) || 'Study Session'
+          titleSource.slice(0, 56) || 'Study Session',
+          userId
         );
         setMemoryState(updatedMemory);
 
@@ -951,8 +997,12 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             action: { label: 'Add key', onClick: () => setKeysModalOpen(true) },
           });
         }
-      } catch (err: any) {
-        if (err?.name === 'AbortError') return;
+      } catch (err: unknown) {
+        const errorName = err && typeof err === 'object' && 'name' in err ? err.name : undefined;
+        if (errorName === 'AbortError' || controller.signal.aborted) {
+          markAssistantCancelled();
+          return;
+        }
         const fallbackError =
           'NikAI hit a brief network snag — tap Regenerate to retry immediately.';
         setThreads((prev) =>
@@ -968,8 +1018,11 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
           )
         );
       } finally {
-        setIsGenerating(false);
-        setLiveThinkingText('');
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+          setIsGenerating(false);
+          setLiveThinkingText('');
+        }
       }
     },
     [
@@ -982,6 +1035,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       threads,
       attachedNote,
       selectedModelDef.label,
+      userId,
     ]
   );
 
@@ -1025,7 +1079,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
               else setSidebarCollapsed(true);
             }}
             aria-label="Collapse sidebar"
-            className="w-8 h-8 rounded-full bg-white hover:bg-[#F6F4FC] border border-[#ECEAF6] text-[#6E698A] flex items-center justify-center transition-colors shrink-0"
+            className="w-8 h-8 rounded-full bg-white hover:bg-[#F6F9FF] border border-[#E2E7F0] text-[#5E5961] flex items-center justify-center transition-colors shrink-0"
           >
             <ChevronsLeft className="w-4 h-4" />
           </button>
@@ -1035,10 +1089,10 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
         <button
           type="button"
           onClick={() => startNewChat('auto')}
-          className="w-full h-11 rounded-full text-white font-semibold text-[14.5px] flex items-center justify-center gap-2 shadow-[0_8px_22px_rgba(147,51,234,0.26)] hover:shadow-[0_10px_28px_rgba(236,72,153,0.34)] active:scale-[0.985] transition-all shrink-0 mb-4"
+          className="w-full h-11 rounded-full text-white font-semibold text-[14.5px] flex items-center justify-center gap-2 shadow-[0_8px_22px_rgba(40,105,213,0.26)] hover:shadow-[0_10px_28px_rgba(255,133,143,0.34)] active:scale-[0.985] transition-all shrink-0 mb-4"
           style={{
             background:
-              'linear-gradient(90deg, #8B3DFF 0%, #B845F5 42%, #F266B6 74%, #FF965A 100%)',
+              'linear-gradient(90deg, #2869D5 0%, #1F56B4 55%, #C83F58 100%)',
           }}
         >
           <Plus className="w-4 h-4 stroke-[2.4]" />
@@ -1061,13 +1115,13 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 }}
                 className={`w-full px-3.5 py-2.5 rounded-2xl text-[14px] flex items-center gap-3 transition-all ${
                   isActive
-                    ? 'bg-[#F2ECFF] text-[#6A28D9] font-semibold'
-                    : 'text-[#44405B] hover:bg-[#F8F6FE] font-medium'
+                    ? 'bg-[#EAF2FF] text-[#1F56B4] font-semibold'
+                    : 'text-[#5E5961] hover:bg-[#F6F9FF] font-medium'
                 }`}
               >
                 <Icon
                   className={`w-[18px] h-[18px] shrink-0 ${
-                    isActive ? 'text-[#7C3AED]' : 'text-[#827C9F]'
+                    isActive ? 'text-[#2869D5]' : 'text-[#89838C]'
                   }`}
                 />
                 <span>{item.label}</span>
@@ -1077,16 +1131,16 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
         </nav>
 
         {/* Subtle Divider */}
-        <div className="my-4 border-t border-[#F0EEF8] shrink-0" />
+        <div className="my-4 border-t border-[#E2E7F0] shrink-0" />
 
         {/* Recent Chats Header + Lens Trigger */}
         <div className="flex items-center justify-between px-2 mb-2 shrink-0">
-          <span className="text-[12.5px] font-semibold text-[#6F6A8A]">Recent Chats</span>
+          <span className="text-[12.5px] font-semibold text-[#5E5961]">Recent Chats</span>
           <button
             type="button"
             onClick={() => searchInputRef.current?.focus()}
             aria-label="Search recent chats"
-            className="p-1 rounded-lg text-[#8D88A8] hover:text-[#5B21B6] hover:bg-[#F5F2FC] transition-colors"
+            className="p-1 rounded-lg text-[#89838C] hover:text-[#1F56B4] hover:bg-[#F6F9FF] transition-colors"
           >
             <Search className="w-3.5 h-3.5" />
           </button>
@@ -1105,26 +1159,26 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                   setMobileSidebarOpen(false);
                 }}
                 className={`group flex items-start justify-between gap-2 px-2.5 py-2 rounded-xl cursor-pointer transition-colors ${
-                  isSelected ? 'bg-[#F4EEFF]' : 'hover:bg-[#F8F6FD]'
+                  isSelected ? 'bg-[#EEF4FF]' : 'hover:bg-[#F6F9FF]'
                 }`}
               >
                 <div className="flex items-start gap-2.5 min-w-0">
                   <MessageSquare
                     className={`w-4 h-4 mt-0.5 shrink-0 ${
-                      isSelected ? 'text-[#7C3AED]' : 'text-[#9A95B5]'
+                      isSelected ? 'text-[#2869D5]' : 'text-[#89838C]'
                     }`}
                   />
                   <div className="min-w-0">
                     <div
                       className={`text-[13.5px] truncate leading-snug ${
                         isSelected
-                          ? 'font-semibold text-[#4C1D95]'
-                          : 'font-medium text-[#242039]'
+                          ? 'font-semibold text-[#1F56B4]'
+                          : 'font-medium text-[#171313]'
                       }`}
                     >
                       {t.title}
                     </div>
-                    <div className="text-[11.5px] text-[#9A95B2] mt-0.5">
+                    <div className="text-[11.5px] text-[#89838C] mt-0.5">
                       {formatRelativeTime(t.updatedAt)}
                     </div>
                   </div>
@@ -1134,7 +1188,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                   type="button"
                   onClick={(e) => deleteThread(t.id, e)}
                   aria-label="Delete thread"
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-[#9A95B5] hover:text-rose-500 transition-opacity shrink-0"
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-[#89838C] hover:text-rose-500 transition-opacity shrink-0"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -1150,22 +1204,22 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                   setMobileSidebarOpen(false);
                   void sendPrompt(seed.prompt, seed.mode);
                 }}
-                className="group flex items-start justify-between gap-2 px-2.5 py-2 rounded-xl cursor-pointer hover:bg-[#F8F6FD] transition-colors"
+                className="group flex items-start justify-between gap-2 px-2.5 py-2 rounded-xl cursor-pointer hover:bg-[#F6F9FF] transition-colors"
               >
                 <div className="flex items-start gap-2.5 min-w-0">
-                  <MessageSquare className="w-4 h-4 mt-0.5 shrink-0 text-[#9A95B5] group-hover:text-[#7C3AED] transition-colors" />
+                  <MessageSquare className="w-4 h-4 mt-0.5 shrink-0 text-[#89838C] group-hover:text-[#2869D5] transition-colors" />
                   <div className="min-w-0">
-                    <div className="text-[13.5px] font-medium text-[#242039] truncate leading-snug">
+                    <div className="text-[13.5px] font-medium text-[#171313] truncate leading-snug">
                       {seed.title}
                     </div>
-                    <div className="text-[11.5px] text-[#9A95B2] mt-0.5">{seed.relTime}</div>
+                    <div className="text-[11.5px] text-[#89838C] mt-0.5">{seed.relTime}</div>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={(e) => deleteSeedChat(seed.id, e)}
                   aria-label={`Remove ${seed.title}`}
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-[#9A95B5] hover:text-rose-500 transition-opacity shrink-0"
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-[#89838C] hover:text-rose-500 transition-opacity shrink-0"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1178,24 +1232,24 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       <button
         type="button"
         onClick={() => navigate('/upgrade')}
-        className="mt-3 w-full rounded-2xl px-3.5 py-3 border border-[#F5E4DC] flex items-center justify-between gap-2.5 text-left hover:shadow-md hover:border-[#EFCBBF] transition-all shrink-0"
+        className="mt-3 w-full rounded-2xl px-3.5 py-3 border border-[#FFF0F0] flex items-center justify-between gap-2.5 text-left hover:shadow-md hover:border-[#FFC0C5] transition-all shrink-0"
         style={{
           background:
-            'linear-gradient(135deg, #FFF8F4 0%, #FFF4F7 55%, #FDF3FF 100%)',
+            'linear-gradient(135deg, #FFFDF5 0%, #FFF0F0 55%, #EEF4FF 100%)',
         }}
       >
         <div className="flex items-center gap-3 min-w-0">
           <Crown className="w-5 h-5 text-[#F59E0B] fill-[#FBBF24] shrink-0" />
           <div className="min-w-0">
-            <div className="text-[13px] font-bold bg-gradient-to-r from-[#A21CAF] via-[#DB2777] to-[#E11D48] bg-clip-text text-transparent truncate">
+            <div className="text-[13px] font-bold bg-gradient-to-r from-[#2869D5] via-[#C83F58] to-[#C83F58] bg-clip-text text-transparent truncate">
               Upgrade to NikAI Pro
             </div>
-            <div className="text-[11.5px] text-[#7D7896] truncate">
+            <div className="text-[11.5px] text-[#89838C] truncate">
               More power, higher limits
             </div>
           </div>
         </div>
-        <ChevronRight className="w-4 h-4 text-[#E07A5F] shrink-0" />
+        <ChevronRight className="w-4 h-4 text-[#C83F58] shrink-0" />
       </button>
     </div>
   );
@@ -1205,8 +1259,8 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       data-nikai-root="true"
       className={
         embedded
-          ? 'flex flex-col h-full w-full bg-[#FCFAFF] text-[#171429] overflow-hidden select-text'
-          : 'fixed inset-0 z-30 flex bg-[#FCFAFF] text-[#171429] overflow-hidden select-text'
+          ? 'flex flex-col h-full w-full bg-[#FFFDF5] text-[#171313] overflow-hidden select-text'
+          : 'fixed inset-0 z-30 flex bg-[#FFFDF5] text-[#171313] overflow-hidden select-text'
       }
       style={{
         fontFamily:
@@ -1215,7 +1269,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
     >
       {/* Desktop Left Sidebar */}
       {!embedded && !sidebarCollapsed && (
-        <aside className="hidden lg:flex lg:w-[266px] shrink-0 flex-col bg-white border-r border-[#EEECF7] z-20">
+        <aside className="hidden lg:flex lg:w-[266px] shrink-0 flex-col bg-white border-r border-[#E2E7F0] z-20">
           {SidebarContent}
         </aside>
       )}
@@ -1223,11 +1277,11 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       {/* Mobile Slide-Over Sidebar Drawer */}
       {!embedded && mobileSidebarOpen && (
         <div
-          className="fixed inset-0 z-50 lg:hidden bg-[#191233]/35 backdrop-blur-xs flex"
+          className="fixed inset-0 z-50 lg:hidden bg-[#101C34]/35 backdrop-blur-xs flex"
           onClick={() => setMobileSidebarOpen(false)}
         >
           <aside
-            className="w-[278px] max-w-[85vw] h-full bg-white border-r border-[#EEECF7] shadow-2xl"
+            className="w-[278px] max-w-[85vw] h-full bg-white border-r border-[#E2E7F0] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {SidebarContent}
@@ -1239,7 +1293,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       <div
         className="flex-1 flex flex-col min-w-0 relative overflow-hidden"
         style={{
-          backgroundColor: '#FCFAFF',
+          backgroundColor: '#FFFDF5',
           backgroundImage: `url('/nikai-horizon-bg.jpg')`,
           backgroundPosition: 'center bottom',
           backgroundSize: 'cover',
@@ -1259,7 +1313,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 aria-label="Open NikAI sidebar"
                 className={`${
                   sidebarCollapsed ? 'inline-flex' : 'inline-flex lg:hidden'
-                } w-10 h-10 rounded-full bg-white/95 border border-[#ECEAF6] shadow-[0_2px_12px_rgba(30,20,70,0.04)] items-center justify-center text-[#565074] hover:text-[#6D28D9] transition-colors shrink-0`}
+                } w-10 h-10 rounded-full bg-white/95 border border-[#E2E7F0] shadow-[0_2px_12px_rgba(23,19,19,0.05)] items-center justify-center text-[#5E5961] hover:text-[#1F56B4] transition-colors shrink-0`}
               >
                 {sidebarCollapsed ? (
                   <ChevronsRight className="w-4 h-4" />
@@ -1272,27 +1326,27 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             {embedded ? (
               <NikAIBrand size="sm" badge="ASTRA" />
             ) : (
-              <div className="w-48 sm:w-[272px] h-10 rounded-full bg-white/95 border border-[#ECEAF6] shadow-[0_2px_12px_rgba(30,20,70,0.04)] px-3.5 flex items-center gap-2.5 focus-within:border-[#C4B5FD] transition-colors">
-                <Search className="w-4 h-4 text-[#9490AD] shrink-0" />
+              <div className="w-48 sm:w-[272px] h-10 rounded-full bg-white/95 border border-[#E2E7F0] shadow-[0_2px_12px_rgba(23,19,19,0.05)] px-3.5 flex items-center gap-2.5 focus-within:border-[#AFC8F1] transition-colors">
+                <Search className="w-4 h-4 text-[#89838C] shrink-0" />
                 <input
                   ref={searchInputRef}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search chats..."
-                  className="w-full bg-transparent text-[13.5px] text-[#221F36] placeholder:text-[#9893B0] focus:outline-none min-w-0"
+                  className="w-full bg-transparent text-[13.5px] text-[#171313] placeholder:text-[#89838C] focus:outline-none min-w-0"
                 />
                 {searchQuery ? (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
                     aria-label="Clear search"
-                    className="text-[#9490AD] hover:text-[#4C1D95]"
+                    className="text-[#89838C] hover:text-[#1F56B4]"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 ) : (
-                  <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md bg-[#F4F3FA] border border-[#E6E4F2] text-[11px] font-medium text-[#7B7696] shrink-0">
+                  <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md bg-[#F6F9FF] border border-[#E2E7F0] text-[11px] font-medium text-[#89838C] shrink-0">
                     Ctrl K
                   </span>
                 )}
@@ -1306,11 +1360,11 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
               type="button"
               onClick={() => setMemoryOpen(true)}
               data-testid="nikai-memory-btn"
-              className="h-10 px-3.5 rounded-full bg-white/95 hover:bg-white border border-[#ECEAF6] shadow-[0_2px_12px_rgba(30,20,70,0.04)] flex items-center gap-2 transition-all"
+              className="h-10 px-3.5 rounded-full bg-white/95 hover:bg-white border border-[#E2E7F0] shadow-[0_2px_12px_rgba(23,19,19,0.05)] flex items-center gap-2 transition-all"
             >
-              <Brain className="w-4 h-4 text-[#7C3AED]" />
-              <span className="text-[13.5px] font-semibold text-[#231F39]">Memory</span>
-              <span className="min-w-[21px] h-[21px] px-1.5 rounded-full bg-[#7C3AED] text-white text-[11.5px] font-bold flex items-center justify-center shadow-2xs">
+              <Brain className="w-4 h-4 text-[#2869D5]" />
+              <span className="text-[13.5px] font-semibold text-[#171313]">Memory</span>
+              <span className="min-w-[21px] h-[21px] px-1.5 rounded-full bg-[#2869D5] text-white text-[11.5px] font-bold flex items-center justify-center shadow-2xs">
                 {memoryCount}
               </span>
             </button>
@@ -1323,18 +1377,18 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     setModelMenuOpen((v) => !v);
                     setProfileMenuOpen(false);
                   }}
-                  className="h-10 px-4 rounded-full bg-white/95 hover:bg-white border border-[#ECEAF6] shadow-[0_2px_12px_rgba(30,20,70,0.04)] flex items-center gap-2 transition-all"
+                  className="h-10 px-4 rounded-full bg-white/95 hover:bg-white border border-[#E2E7F0] shadow-[0_2px_12px_rgba(23,19,19,0.05)] flex items-center gap-2 transition-all"
                 >
                   <SingleFourPointSparkle size={15} />
-                  <span className="text-[13.5px] font-semibold text-[#231F39]">
+                  <span className="text-[13.5px] font-semibold text-[#171313]">
                     {selectedModelDef.label}
                   </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-[#7A7495]" />
+                  <ChevronDown className="w-3.5 h-3.5 text-[#5E5961]" />
                 </button>
 
                 {modelMenuOpen && (
                   <div
-                    className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[#EAE6F7] shadow-xl p-1.5 z-50"
+                    className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-[#E2E7F0] shadow-xl p-1.5 z-50"
                     onMouseLeave={() => setModelMenuOpen(false)}
                   >
                     {MODEL_OPTIONS.map((opt) => (
@@ -1347,22 +1401,22 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                         }}
                         className={`w-full px-3 py-2 rounded-xl text-left flex items-center justify-between text-xs transition-colors ${
                           modelChoice === opt.id
-                            ? 'bg-[#F3ECFF] text-[#5B21B6] font-bold'
-                            : 'text-[#312D4B] hover:bg-[#F8F6FE] font-medium'
+                            ? 'bg-[#EAF2FF] text-[#1F56B4] font-bold'
+                            : 'text-[#171313] hover:bg-[#F6F9FF] font-medium'
                         }`}
                       >
                         <div>
                           <div>{opt.label}</div>
-                          <div className="text-[10.5px] text-[#8A84A6] font-normal">
+                          <div className="text-[10.5px] text-[#89838C] font-normal">
                             {opt.badge}
                           </div>
                         </div>
                         {modelChoice === opt.id && (
-                          <Check className="w-4 h-4 text-[#7C3AED]" />
+                          <Check className="w-4 h-4 text-[#2869D5]" />
                         )}
                       </button>
                     ))}
-                    <div className="my-1 border-t border-[#F1EFF9]" />
+                    <div className="my-1 border-t border-[#E2E7F0]" />
                     <button
                       type="button"
                       onClick={() => {
@@ -1370,9 +1424,9 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                         setKeyTestStatus(null);
                         setKeysModalOpen(true);
                       }}
-                      className="w-full px-3 py-2 rounded-xl text-left text-xs font-medium text-[#5B4E89] hover:bg-[#F8F6FE] flex items-center gap-2"
+                      className="w-full px-3 py-2 rounded-xl text-left text-xs font-medium text-[#1F56B4] hover:bg-[#F6F9FF] flex items-center gap-2"
                     >
-                      <KeyRound className="w-3.5 h-3.5 text-[#7C3AED]" />
+                      <KeyRound className="w-3.5 h-3.5 text-[#2869D5]" />
                       <span>LarpRouter / Cloud API Keys…</span>
                     </button>
                   </div>
@@ -1385,7 +1439,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 type="button"
                 onClick={onClose}
                 aria-label="Close NikAI panel"
-                className="w-9 h-9 rounded-full bg-white border border-[#ECEAF6] flex items-center justify-center text-[#5E587D] hover:text-[#171429]"
+                className="w-9 h-9 rounded-full bg-white border border-[#E2E7F0] flex items-center justify-center text-[#5E5961] hover:text-[#171313]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1398,7 +1452,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     setModelMenuOpen(false);
                   }}
                   aria-label="NikAI quick menu"
-                  className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-[0_2px_12px_rgba(30,20,70,0.12)] hover:scale-[1.03] transition-transform focus:outline-none"
+                  className="w-10 h-10 rounded-full overflow-hidden border-2 border-white shadow-[0_2px_12px_rgba(40,105,213,0.12)] hover:scale-[1.03] transition-transform focus:outline-none"
                 >
                   <img
                     src={userAvatarSrc}
@@ -1409,18 +1463,18 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
 
                 {profileMenuOpen && (
                   <div
-                    className="absolute right-0 mt-2 w-56 rounded-2xl bg-white border border-[#EAE6F7] shadow-xl p-1.5 z-50 text-xs"
+                    className="absolute right-0 mt-2 w-56 rounded-2xl bg-white border border-[#E2E7F0] shadow-xl p-1.5 z-50 text-xs"
                     onMouseLeave={() => setProfileMenuOpen(false)}
                   >
                     <button
                       type="button"
                       onClick={() => {
                         setProfileMenuOpen(false);
-                        navigate('/');
+                        navigate('/home');
                       }}
-                      className="w-full px-3 py-2.5 rounded-xl text-left font-semibold text-[#241F3D] hover:bg-[#F5F1FF] flex items-center gap-2.5"
+                      className="w-full px-3 py-2.5 rounded-xl text-left font-semibold text-[#171313] hover:bg-[#EEF4FF] flex items-center gap-2.5"
                     >
-                      <ArrowLeft className="w-3.5 h-3.5 text-[#7C3AED]" />
+                      <ArrowLeft className="w-3.5 h-3.5 text-[#2869D5]" />
                       <span>Back to NikNote Studio</span>
                     </button>
                     <button
@@ -1429,9 +1483,9 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                         setProfileMenuOpen(false);
                         setArcadeModalOpen(true);
                       }}
-                      className="w-full px-3 py-2.5 rounded-xl text-left font-medium text-[#373254] hover:bg-[#F8F6FE] flex items-center gap-2.5"
+                      className="w-full px-3 py-2.5 rounded-xl text-left font-medium text-[#5E5961] hover:bg-[#F6F9FF] flex items-center gap-2.5"
                     >
-                      <Gamepad2 className="w-3.5 h-3.5 text-[#EC4899]" />
+                      <Gamepad2 className="w-3.5 h-3.5 text-[#FF858F]" />
                       <span>Thinking Mini-Game</span>
                     </button>
                     <button
@@ -1440,9 +1494,9 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                         setProfileMenuOpen(false);
                         setKeysModalOpen(true);
                       }}
-                      className="w-full px-3 py-2.5 rounded-xl text-left font-medium text-[#373254] hover:bg-[#F8F6FE] flex items-center gap-2.5"
+                      className="w-full px-3 py-2.5 rounded-xl text-left font-medium text-[#5E5961] hover:bg-[#F6F9FF] flex items-center gap-2.5"
                     >
-                      <KeyRound className="w-3.5 h-3.5 text-[#7C3AED]" />
+                      <KeyRound className="w-3.5 h-3.5 text-[#2869D5]" />
                       <span>Cloud & API Keys</span>
                     </button>
                     <button
@@ -1451,9 +1505,9 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                         setProfileMenuOpen(false);
                         navigate('/notebooks');
                       }}
-                      className="w-full px-3 py-2.5 rounded-xl text-left font-medium text-[#373254] hover:bg-[#F8F6FE] flex items-center gap-2.5"
+                      className="w-full px-3 py-2.5 rounded-xl text-left font-medium text-[#5E5961] hover:bg-[#F6F9FF] flex items-center gap-2.5"
                     >
-                      <FileText className="w-3.5 h-3.5 text-[#6366F1]" />
+                      <FileText className="w-3.5 h-3.5 text-[#2869D5]" />
                       <span>My Saved Notebooks</span>
                     </button>
                   </div>
@@ -1478,7 +1532,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 initial={{ opacity: 0, scale: 0.92, y: 6 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 transition={{ duration: 0.35, ease: 'easeOut' }}
-                className="h-14 sm:h-16 w-auto object-contain mb-3 select-none pointer-events-none drop-shadow-[0_6px_18px_rgba(139,61,255,0.16)]"
+                className="h-14 sm:h-16 w-auto object-contain mb-3 select-none pointer-events-none drop-shadow-[0_6px_18px_rgba(40,105,213,0.16)]"
               />
 
               {/* Headline */}
@@ -1487,13 +1541,13 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                   embedded
                     ? 'text-2xl sm:text-3xl'
                     : 'text-[28px] sm:text-[42px]'
-                } font-extrabold tracking-[-0.025em] text-[#171429] text-center leading-[1.15]`}
+                } font-extrabold tracking-[-0.025em] text-[#171313] text-center leading-[1.15]`}
               >
                 What can I help you{' '}
                 <span
                   style={{
                     background:
-                      'linear-gradient(90deg, #8B3DFF 0%, #EA4A9E 58%, #FF934F 100%)',
+                      'linear-gradient(90deg, #2869D5 0%, #FF858F 58%, #FFE45C 100%)',
                     WebkitBackgroundClip: 'text',
                     backgroundClip: 'text',
                     color: 'transparent',
@@ -1504,7 +1558,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
               </h1>
 
               {/* Subtitle */}
-              <p className="text-[14.5px] sm:text-[16px] text-[#5B5675] text-center mt-2.5 mb-8 max-w-xl">
+              <p className="text-[14.5px] sm:text-[16px] text-[#5E5961] text-center mt-2.5 mb-8 max-w-xl">
                 Your AI companion for learning, notes, quizzes, writing and coding.
               </p>
 
@@ -1520,9 +1574,9 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 <svg width="0" height="0" className="absolute pointer-events-none" aria-hidden="true">
                   <defs>
                     <linearGradient id="nikai-card-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#7C3AED" />
-                      <stop offset="65%" stopColor="#D946EF" />
-                      <stop offset="100%" stopColor="#EC4899" />
+                      <stop offset="0%" stopColor="#2869D5" />
+                      <stop offset="65%" stopColor="#FF858F" />
+                      <stop offset="100%" stopColor="#FF858F" />
                     </linearGradient>
                   </defs>
                 </svg>
@@ -1541,7 +1595,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                         background: card.tintBg,
                         borderColor: card.borderTint,
                       }}
-                      className="group relative text-left rounded-[22px] border backdrop-blur-md px-5 pt-5 pb-4 min-h-[178px] flex flex-col justify-between shadow-[0_8px_28px_rgba(45,26,95,0.04)] hover:shadow-[0_14px_34px_rgba(124,58,237,0.12)] hover:-translate-y-0.5 active:scale-[0.99] transition-all"
+                      className="group relative text-left rounded-[22px] border backdrop-blur-md px-5 pt-5 pb-4 min-h-[178px] flex flex-col justify-between shadow-[0_8px_28px_rgba(23,19,19,0.05)] hover:shadow-[0_14px_34px_rgba(40,105,213,0.12)] hover:-translate-y-0.5 active:scale-[0.99] transition-all"
                     >
                       <div>
                         <div className="mb-3.5">
@@ -1551,17 +1605,17 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                           />
                         </div>
 
-                        <div className="text-[15.5px] font-bold text-[#19162D] leading-snug mb-1.5">
+                        <div className="text-[15.5px] font-bold text-[#171313] leading-snug mb-1.5">
                           {card.title}
                         </div>
 
-                        <p className="text-[13px] leading-relaxed text-[#645E7D] pr-5">
+                        <p className="text-[13px] leading-relaxed text-[#5E5961] pr-5">
                           {card.description}
                         </p>
                       </div>
 
                       <div className="mt-3 flex justify-end">
-                        <span className="w-8 h-8 rounded-full bg-white/95 border border-[#ECEAF6] text-[#5B4E8A] group-hover:text-[#7C3AED] group-hover:translate-x-0.5 flex items-center justify-center shadow-2xs transition-all">
+                        <span className="w-8 h-8 rounded-full bg-white/95 border border-[#E2E7F0] text-[#1F56B4] group-hover:text-[#2869D5] group-hover:translate-x-0.5 flex items-center justify-center shadow-2xs transition-all">
                           <ArrowRight className="w-4 h-4" />
                         </span>
                       </div>
@@ -1581,10 +1635,10 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                   return (
                     <div key={msg.id} className="flex justify-end">
                       <div
-                        className="max-w-[88%] sm:max-w-[78%] rounded-2xl rounded-tr-md px-4 py-3 text-white shadow-md shadow-purple-700/15"
+                        className="max-w-[88%] sm:max-w-[78%] rounded-2xl rounded-tr-md px-4 py-3 text-white shadow-md shadow-blue-700/15"
                         style={{
                           background:
-                            'linear-gradient(115deg, #5B21B6 0%, #7C3AED 52%, #DB2777 100%)',
+                            'linear-gradient(115deg, #1F56B4 0%, #2869D5 52%, #C83F58 100%)',
                         }}
                       >
                         {msg.images && msg.images.length > 0 && (
@@ -1610,7 +1664,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 return (
                   <div key={msg.id} className="flex flex-col gap-2.5">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-white border border-[#EAE6F7] shadow-2xs flex items-center justify-center shrink-0 p-1">
+                      <div className="w-8 h-8 rounded-xl bg-white border border-[#E2E7F0] shadow-2xs flex items-center justify-center shrink-0 p-1">
                         <img
                           src="/nikai-mark.png"
                           alt=""
@@ -1618,9 +1672,9 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                           className="w-full h-full object-contain"
                         />
                       </div>
-                      <span className="font-bold text-[15px] text-[#1D1936]">NikAI</span>
+                      <span className="font-bold text-[15px] text-[#171313]">NikAI</span>
                       {msg.model && (
-                        <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white/90 border border-[#EAE6F7] text-[#6D28D9]">
+                        <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-white/90 border border-[#E2E7F0] text-[#1F56B4]">
                           {msg.model}
                           {msg.latencyMs
                             ? ` · ${(msg.latencyMs / 1000).toFixed(1)}s`
@@ -1631,6 +1685,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
 
                     {isCurrentlyStreaming && (
                       <NikAIThinkingArena
+                        userId={userId}
                         isStreaming
                         modelName={liveModelName}
                         thinkingText={liveThinkingText || msg.thinking}
@@ -1638,26 +1693,33 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     )}
 
                     {!isCurrentlyStreaming && msg.thinking && (
-                      <details className="rounded-xl bg-white/85 border border-[#E7E2F7] px-3.5 py-2 text-xs text-[#4C1D95]">
+                      <details className="rounded-xl bg-white/85 border border-[#C7D9F5] px-3.5 py-2 text-xs text-[#1F56B4]">
                         <summary className="cursor-pointer font-semibold select-none flex items-center gap-1.5">
-                          <Brain className="w-3.5 h-3.5 text-[#7C3AED]" />
+                          <Brain className="w-3.5 h-3.5 text-[#2869D5]" />
                           View Astra Thought Process
                         </summary>
-                        <p className="mt-2 whitespace-pre-wrap text-[#5B5675] leading-relaxed">
+                        <p className="mt-2 whitespace-pre-wrap text-[#5E5961] leading-relaxed">
                           {msg.thinking}
                         </p>
                       </details>
                     )}
 
                     {(msg.content || !isCurrentlyStreaming) && (
-                      <div className="rounded-2xl bg-white/95 backdrop-blur-md border border-[#EAE6F7] px-4 sm:px-5 py-4 shadow-[0_8px_28px_rgba(40,22,90,0.06)]">
+                      <div className="rounded-2xl bg-white/95 backdrop-blur-md border border-[#E2E7F0] px-4 sm:px-5 py-4 shadow-[0_8px_28px_rgba(23,19,19,0.06)]">
                         <AstaMarkdown
                           content={msg.content}
                           isStreaming={isCurrentlyStreaming}
                         />
+                        {msg.cancelled && (
+                          <p role="status" className="mt-2 text-xs font-medium text-rose-600">
+                            {msg.content.trim()
+                              ? 'Generation stopped. This response may be incomplete.'
+                              : 'Generation stopped before a response was received.'}
+                          </p>
+                        )}
 
                         {!isCurrentlyStreaming && msg.content && (
-                          <div className="mt-4 pt-3 border-t border-[#F1EFF9] flex flex-wrap items-center gap-1.5">
+                          <div className="mt-4 pt-3 border-t border-[#E2E7F0] flex flex-wrap items-center gap-1.5">
                             {onInsertContent && (
                               <button
                                 type="button"
@@ -1668,7 +1730,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                                 className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-white flex items-center gap-1 shadow-xs transition-all active:scale-95"
                                 style={{
                                   background:
-                                    'linear-gradient(90deg, #8B3DFF 0%, #EC4899 100%)',
+                                    'linear-gradient(90deg, #2869D5 0%, #1F56B4 58%, #C83F58 100%)',
                                 }}
                               >
                                 <PlusCircle className="w-3.5 h-3.5" />
@@ -1684,7 +1746,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                               className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
                                 msg.savedNoteId
                                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                  : 'bg-[#F5F0FF] text-[#6D28D9] hover:bg-[#EDE4FF] border border-[#E2D4FC]'
+                                  : 'bg-[#EEF4FF] text-[#1F56B4] hover:bg-[#EAF2FF] border border-[#C7D9F5]'
                               }`}
                             >
                               <BookmarkPlus className="w-3.5 h-3.5" />
@@ -1717,7 +1779,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                                 setCopiedId(msg.id);
                                 setTimeout(() => setCopiedId(null), 1800);
                               }}
-                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5E587D] hover:text-[#19162D] hover:bg-[#F5F3FB] flex items-center gap-1 transition-colors"
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5E5961] hover:text-[#171313] hover:bg-[#F6F9FF] flex items-center gap-1 transition-colors"
                             >
                               {copiedId === msg.id ? (
                                 <>
@@ -1735,7 +1797,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                             <button
                               type="button"
                               onClick={() => toggleSpeakMessage(msg)}
-                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5E587D] hover:text-[#19162D] hover:bg-[#F5F3FB] flex items-center gap-1 transition-colors"
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5E5961] hover:text-[#171313] hover:bg-[#F6F9FF] flex items-center gap-1 transition-colors"
                             >
                               {speakingId === msg.id ? (
                                 <>
@@ -1754,7 +1816,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                               <button
                                 type="button"
                                 onClick={regenerateLast}
-                                className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5E587D] hover:text-[#19162D] hover:bg-[#F5F3FB] flex items-center gap-1 transition-colors"
+                                className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#5E5961] hover:text-[#171313] hover:bg-[#F6F9FF] flex items-center gap-1 transition-colors"
                               >
                                 <RotateCcw className="w-3.5 h-3.5" />
                                 Regenerate
@@ -1775,7 +1837,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                               key={fIdx}
                               type="button"
                               onClick={() => sendPrompt(f)}
-                              className="text-left text-xs px-3.5 py-1.5 rounded-full bg-white/90 hover:bg-white text-[#4C1D95] border border-[#E5DDFB] hover:border-[#C084FC] font-medium transition-all active:scale-95"
+                              className="text-left text-xs px-3.5 py-1.5 rounded-full bg-white/90 hover:bg-white text-[#1F56B4] border border-[#C7D9F5] hover:border-[#FFE45C] font-medium transition-all active:scale-95"
                             >
                               {f} →
                             </button>
@@ -1796,14 +1858,14 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             {(attachedNote || pendingImages.length > 0) && (
               <div className="flex flex-wrap items-center gap-2 mb-2 px-1">
                 {attachedNote && (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 border border-[#DFD7FA] text-xs font-semibold text-[#5B21B6] shadow-2xs">
-                    <FileText className="w-3.5 h-3.5 text-[#7C3AED]" />
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 border border-[#C7D9F5] text-xs font-semibold text-[#1F56B4] shadow-2xs">
+                    <FileText className="w-3.5 h-3.5 text-[#2869D5]" />
                     <span className="max-w-[220px] truncate">{attachedNote.title}</span>
                     <button
                       type="button"
                       onClick={() => setAttachedNote(null)}
                       aria-label="Detach note"
-                      className="ml-0.5 text-[#8B5CF6] hover:text-[#3B0764]"
+                      className="ml-0.5 text-[#347FF0] hover:text-[#1F56B4]"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -1815,7 +1877,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     <img
                       src={img.dataUrl}
                       alt={img.name || 'Preview'}
-                      className="w-12 h-12 rounded-xl object-cover border border-[#D8B4FE] shadow-xs"
+                      className="w-12 h-12 rounded-xl object-cover border border-[#C7D9F5] shadow-xs"
                     />
                     <button
                       type="button"
@@ -1823,7 +1885,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                         setPendingImages((prev) => prev.filter((_, idx) => idx !== i))
                       }
                       aria-label="Remove image"
-                      className="w-5 h-5 rounded-full bg-[#19162D] text-white flex items-center justify-center absolute -top-1.5 -right-1.5"
+                      className="w-5 h-5 rounded-full bg-[#171313] text-white flex items-center justify-center absolute -top-1.5 -right-1.5"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -1832,7 +1894,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
               </div>
             )}
 
-            <div className="rounded-[26px] bg-white/95 backdrop-blur-md border border-[#EAE6F6] shadow-[0_14px_40px_rgba(49,28,99,0.10)] focus-within:border-[#C4B5FD] transition-all px-5 pt-3.5 pb-3">
+            <div className="rounded-[26px] bg-white/95 backdrop-blur-md border border-[#E2E7F0] shadow-[0_14px_40px_rgba(23,19,19,0.10)] focus-within:border-[#AFC8F1] transition-all px-5 pt-3.5 pb-3">
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -1849,7 +1911,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                   }
                 }}
                 placeholder="Ask NikAI anything..."
-                className="w-full resize-none border-0 bg-transparent px-0.5 py-1.5 text-[15px] text-[#19162D] placeholder:text-[#9893B0] focus:outline-none max-h-44"
+                className="w-full resize-none border-0 bg-transparent px-0.5 py-1.5 text-[15px] text-[#171313] placeholder:text-[#89838C] focus:outline-none max-h-44"
               />
 
               <div className="flex items-center justify-between gap-2 pt-2">
@@ -1870,15 +1932,15 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     <button
                       type="button"
                       onClick={() => setAttachMenuOpen((v) => !v)}
-                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13.5px] font-medium text-[#585275] hover:text-[#6D28D9] hover:bg-[#F6F3FD] transition-colors"
+                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13.5px] font-medium text-[#5E5961] hover:text-[#1F56B4] hover:bg-[#F6F9FF] transition-colors"
                     >
-                      <Paperclip className="w-4 h-4 text-[#7C7699]" />
+                      <Paperclip className="w-4 h-4 text-[#5E5961]" />
                       <span>Attach</span>
                     </button>
 
                     {attachMenuOpen && (
                       <div
-                        className="absolute bottom-10 left-0 w-52 rounded-2xl bg-white border border-[#EAE6F7] shadow-xl p-1.5 z-50 text-xs"
+                        className="absolute bottom-10 left-0 w-52 rounded-2xl bg-white border border-[#E2E7F0] shadow-xl p-1.5 z-50 text-xs"
                         onMouseLeave={() => setAttachMenuOpen(false)}
                       >
                         <button
@@ -1887,9 +1949,9 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                             setAttachMenuOpen(false);
                             fileInputRef.current?.click();
                           }}
-                          className="w-full px-3 py-2 rounded-xl text-left font-medium text-[#2A2545] hover:bg-[#F6F3FD] flex items-center gap-2"
+                          className="w-full px-3 py-2 rounded-xl text-left font-medium text-[#171313] hover:bg-[#F6F9FF] flex items-center gap-2"
                         >
-                          <ImageIcon className="w-4 h-4 text-[#8B3DFF]" />
+                          <ImageIcon className="w-4 h-4 text-[#2869D5]" />
                           <span>Upload Image / Diagram</span>
                         </button>
                         <button
@@ -1899,16 +1961,16 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                             loadNotesForPicker();
                             setNotePickerOpen(true);
                           }}
-                          className="w-full px-3 py-2 rounded-xl text-left font-medium text-[#2A2545] hover:bg-[#F6F3FD] flex items-center gap-2"
+                          className="w-full px-3 py-2 rounded-xl text-left font-medium text-[#171313] hover:bg-[#F6F9FF] flex items-center gap-2"
                         >
-                          <FileText className="w-4 h-4 text-[#EC4899]" />
+                          <FileText className="w-4 h-4 text-[#FF858F]" />
                           <span>Attach NikNote Page</span>
                         </button>
                       </div>
                     )}
                   </div>
 
-                  <span className="h-4 w-px bg-[#E8E5F3]" aria-hidden="true" />
+                  <span className="h-4 w-px bg-[#E2E7F0]" aria-hidden="true" />
 
                   <button
                     type="button"
@@ -1916,33 +1978,33 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[13.5px] font-medium transition-colors ${
                       listening
                         ? 'bg-rose-50 text-rose-600 animate-pulse'
-                        : 'text-[#585275] hover:text-[#6D28D9] hover:bg-[#F6F3FD]'
+                        : 'text-[#5E5961] hover:text-[#1F56B4] hover:bg-[#F6F9FF]'
                     }`}
                   >
                     {listening ? (
                       <MicOff className="w-4 h-4 text-rose-600" />
                     ) : (
-                      <Mic className="w-4 h-4 text-[#7C7699]" />
+                      <Mic className="w-4 h-4 text-[#5E5961]" />
                     )}
                     <span>{listening ? 'Listening…' : 'Voice'}</span>
                   </button>
 
-                  <span className="hidden sm:inline-block h-4 w-px bg-[#E8E5F3]" aria-hidden="true" />
+                  <span className="hidden sm:inline-block h-4 w-px bg-[#E2E7F0]" aria-hidden="true" />
 
                   <div className="relative">
                     <button
                       type="button"
                       onClick={() => setComposerModelMenuOpen((v) => !v)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F6F4FC] hover:bg-[#EFEAFB] border border-[#E7E2F6] text-[12.5px] font-semibold text-[#312C4D] transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F6F9FF] hover:bg-[#EAF2FF] border border-[#C7D9F5] text-[12.5px] font-semibold text-[#171313] transition-colors"
                     >
                       <SingleFourPointSparkle size={13} />
                       <span>{selectedModelDef.label}</span>
-                      <ChevronDown className="w-3.5 h-3.5 text-[#7A7495]" />
+                      <ChevronDown className="w-3.5 h-3.5 text-[#5E5961]" />
                     </button>
 
                     {composerModelMenuOpen && (
                       <div
-                        className="absolute bottom-10 left-0 w-60 rounded-2xl bg-white border border-[#EAE6F7] shadow-xl p-1.5 z-50 text-xs"
+                        className="absolute bottom-10 left-0 w-60 rounded-2xl bg-white border border-[#E2E7F0] shadow-xl p-1.5 z-50 text-xs"
                         onMouseLeave={() => setComposerModelMenuOpen(false)}
                       >
                         {MODEL_OPTIONS.map((opt) => (
@@ -1955,22 +2017,22 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                             }}
                             className={`w-full px-3 py-2 rounded-xl text-left flex items-center justify-between ${
                               modelChoice === opt.id
-                                ? 'bg-[#F3ECFF] text-[#5B21B6] font-bold'
-                                : 'text-[#312D4B] hover:bg-[#F8F6FE] font-medium'
+                                ? 'bg-[#EAF2FF] text-[#1F56B4] font-bold'
+                                : 'text-[#171313] hover:bg-[#F6F9FF] font-medium'
                             }`}
                           >
                             <div>
                               <div>{opt.label}</div>
-                              <div className="text-[10px] text-[#8A84A6] font-normal">
+                              <div className="text-[10px] text-[#89838C] font-normal">
                                 {opt.badge}
                               </div>
                             </div>
                             {modelChoice === opt.id && (
-                              <Check className="w-3.5 h-3.5 text-[#7C3AED]" />
+                              <Check className="w-3.5 h-3.5 text-[#2869D5]" />
                             )}
                           </button>
                         ))}
-                        <div className="my-1 border-t border-[#F1EFF9]" />
+                        <div className="my-1 border-t border-[#E2E7F0]" />
                         <button
                           type="button"
                           onClick={() => {
@@ -1978,9 +2040,9 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                             setKeyTestStatus(null);
                             setKeysModalOpen(true);
                           }}
-                          className="w-full px-3 py-2 rounded-xl text-left text-xs font-medium text-[#5B4E89] hover:bg-[#F8F6FE] flex items-center gap-2"
+                          className="w-full px-3 py-2 rounded-xl text-left text-xs font-medium text-[#1F56B4] hover:bg-[#F6F9FF] flex items-center gap-2"
                         >
-                          <KeyRound className="w-3.5 h-3.5 text-[#7C3AED]" />
+                          <KeyRound className="w-3.5 h-3.5 text-[#2869D5]" />
                           <span>LarpRouter / Cloud API Keys…</span>
                         </button>
                       </div>
@@ -2003,10 +2065,10 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     onClick={() => sendPrompt()}
                     disabled={!input.trim() && pendingImages.length === 0}
                     aria-label="Send message to NikAI"
-                    className="w-11 h-11 rounded-full text-white flex items-center justify-center disabled:opacity-55 hover:scale-[1.03] active:scale-95 transition-all shrink-0 shadow-[0_8px_20px_rgba(147,51,234,0.34)]"
+                    className="w-11 h-11 rounded-full text-white flex items-center justify-center disabled:opacity-55 hover:scale-[1.03] active:scale-95 transition-all shrink-0 shadow-[0_8px_20px_rgba(40,105,213,0.34)]"
                     style={{
                       background:
-                        'linear-gradient(135deg, #8B3DFF 0%, #CE4CE2 52%, #FF9356 100%)',
+                        'linear-gradient(135deg, #2869D5 0%, #1F56B4 55%, #C83F58 100%)',
                     }}
                   >
                     <ArrowUp className="w-5 h-5 stroke-[2.4]" />
@@ -2021,18 +2083,18 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       {/* Persistent Cross-Session Memory Vault Modal */}
       {memoryOpen && (
         <div
-          className="fixed inset-0 z-50 bg-[#1E103C]/45 backdrop-blur-xs flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-[#101C34]/45 backdrop-blur-xs flex items-center justify-center p-4"
           onClick={() => setMemoryOpen(false)}
         >
           <div
-            className="w-full max-w-lg max-h-[82vh] flex flex-col rounded-3xl bg-white border border-purple-200 shadow-2xl overflow-hidden"
+            className="w-full max-w-lg max-h-[82vh] flex flex-col rounded-3xl bg-white border border-blue-200 shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div
               className="p-4 text-white flex items-center justify-between"
               style={{
                 background:
-                  'linear-gradient(95deg, #6D28D9 0%, #B845F5 48%, #EC4899 84%, #FF965A 100%)',
+                  'linear-gradient(95deg, #1F56B4 0%, #2869D5 52%, #C83F58 100%)',
               }}
             >
               <div className="flex items-center gap-2.5">
@@ -2058,7 +2120,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (!newMemoryFact.trim()) return;
-                  const next = addManualMemoryFact(newMemoryFact);
+                  const next = addManualMemoryFact(newMemoryFact, 'custom', userId);
                   setMemoryState(next);
                   setNewMemoryFact('');
                   toast.success('Pinned to NikAI Session Memory!');
@@ -2070,13 +2132,13 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                   value={newMemoryFact}
                   onChange={(e) => setNewMemoryFact(e.target.value)}
                   placeholder="Pin anything (e.g. Preparing for JEE 2027 · Explain in Hinglish)…"
-                  className="flex-1 px-3 py-2 rounded-xl border border-purple-200 text-xs focus:outline-none focus:border-purple-500"
+                  className="flex-1 px-3 py-2 rounded-xl border border-blue-200 text-xs focus:outline-none focus:border-blue-500"
                 />
                 <button
                   type="submit"
                   className="px-3.5 py-2 rounded-xl text-white font-bold text-xs shrink-0"
                   style={{
-                    background: 'linear-gradient(95deg, #7C3AED, #EC4899)',
+                    background: 'linear-gradient(95deg, #2869D5, #C83F58)',
                   }}
                 >
                   Remember
@@ -2084,9 +2146,9 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
               </form>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div className="p-2.5 rounded-xl bg-purple-50/80 border border-purple-200/70">
-                  <div className="text-[10px] font-bold uppercase text-purple-500">Name</div>
-                  <div className="font-bold text-purple-950 mt-0.5">
+                <div className="p-2.5 rounded-xl bg-blue-50/80 border border-blue-200/70">
+                  <div className="text-[10px] font-bold uppercase text-blue-500">Name</div>
+                  <div className="font-bold text-blue-950 mt-0.5">
                     {memoryState.userName || 'Auto-detects from chat'}
                   </div>
                 </div>
@@ -2122,7 +2184,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                         <span className="text-slate-800 font-medium">{f.text}</span>
                         <button
                           type="button"
-                          onClick={() => setMemoryState(deleteMemoryFact(f.id))}
+                          onClick={() => setMemoryState(deleteMemoryFact(f.id, userId))}
                           className="text-slate-400 hover:text-rose-600"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -2142,9 +2204,9 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     {memoryState.sessionDigests.slice(0, 6).map((s) => (
                       <div
                         key={s.threadId}
-                        className="px-3 py-2 rounded-xl bg-purple-50/40 border border-purple-100"
+                        className="px-3 py-2 rounded-xl bg-blue-50/40 border border-blue-100"
                       >
-                        <div className="font-bold text-purple-950">{s.title}</div>
+                        <div className="font-bold text-blue-950">{s.title}</div>
                         <div className="text-[11px] text-slate-500 line-clamp-1">{s.summary}</div>
                       </div>
                     ))}
@@ -2157,7 +2219,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      setMemoryState(clearAllNikAIMemory());
+                      setMemoryState(clearAllNikAIMemory(userId));
                       toast.info('Cleared NikAI memory vault');
                     }}
                     className="text-xs font-bold text-rose-600 hover:underline"
@@ -2174,15 +2236,15 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       {/* Optional Thinking Mini-Game Modal */}
       {arcadeModalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-[#1E103C]/45 backdrop-blur-xs flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-[#101C34]/45 backdrop-blur-xs flex items-center justify-center p-4"
           onClick={() => setArcadeModalOpen(false)}
         >
           <div
-            className="w-full max-w-lg rounded-3xl bg-white p-4 shadow-2xl border border-purple-200"
+            className="w-full max-w-lg rounded-3xl bg-white p-4 shadow-2xl border border-blue-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-2 px-1">
-              <span className="text-xs font-bold text-[#4C1D95]">NikAI Focus Arcade</span>
+              <span className="text-xs font-bold text-[#1F56B4]">NikAI Focus Arcade</span>
               <button
                 type="button"
                 onClick={() => setArcadeModalOpen(false)}
@@ -2192,6 +2254,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
               </button>
             </div>
             <NikAIThinkingArena
+              userId={userId}
               isStreaming={isGenerating}
               forceOpen
               modelName={liveModelName}
@@ -2203,15 +2266,15 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       {/* Attach Note Modal */}
       {notePickerOpen && (
         <div
-          className="fixed inset-0 z-50 bg-[#1E103C]/45 backdrop-blur-xs flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-[#101C34]/45 backdrop-blur-xs flex items-center justify-center p-4"
           onClick={() => setNotePickerOpen(false)}
         >
           <div
-            className="w-full max-w-md max-h-[75vh] flex flex-col rounded-2xl bg-white border border-purple-200 shadow-xl overflow-hidden"
+            className="w-full max-w-md max-h-[75vh] flex flex-col rounded-2xl bg-white border border-blue-200 shadow-xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-4 border-b border-purple-100 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-purple-950">Attach Note to NikAI</h3>
+            <div className="p-4 border-b border-blue-100 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-blue-950">Attach Note to NikAI</h3>
               <button
                 type="button"
                 onClick={() => setNotePickerOpen(false)}
@@ -2235,7 +2298,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                       setNotePickerOpen(false);
                       toast.success(`Attached "${n.title}" to NikAI`);
                     }}
-                    className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-purple-50/70 transition-colors"
+                    className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-blue-50/70 transition-colors"
                   >
                     <div className="text-xs font-bold text-slate-900 truncate">{n.title}</div>
                     <div className="text-[11px] text-slate-400 line-clamp-1">{n.preview}</div>
@@ -2250,16 +2313,16 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       {/* Cloud Provider & Custom API Keys Modal */}
       {keysModalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-[#1E103C]/45 backdrop-blur-xs flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-[#101C34]/45 backdrop-blur-xs flex items-center justify-center p-4"
           onClick={() => setKeysModalOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-2xl bg-white border border-purple-200 p-5 shadow-xl space-y-4"
+            className="w-full max-w-md rounded-2xl bg-white border border-blue-200 p-5 shadow-xl space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-purple-950">NikAI Astra Cloud Engine</h3>
+                <h3 className="text-sm font-bold text-blue-950">NikAI Astra Cloud Engine</h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Powered by Astra Multi-Model Cloud + optional personal API keys
                 </p>
@@ -2274,12 +2337,12 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
             </div>
 
             <div className="space-y-3">
-              <div className="rounded-xl border border-purple-200 bg-purple-50/55 p-3">
+              <div className="rounded-xl border border-blue-200 bg-blue-50/55 p-3">
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <label className="block text-xs font-bold text-purple-950">
+                  <label className="block text-xs font-bold text-blue-950">
                     LarpRouter API Key (Recommended · 1M Context)
                   </label>
-                  <span className="rounded-full bg-purple-600/10 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+                  <span className="rounded-full bg-blue-600/10 px-2 py-0.5 text-[10px] font-bold text-blue-700">
                     larprouter.com/v1
                   </span>
                 </div>
@@ -2294,7 +2357,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     setKeyTestStatus(null);
                   }}
                   placeholder="lrsk-..."
-                  className="w-full px-3 py-2 rounded-xl border border-purple-300 bg-white text-xs focus:outline-none focus:border-purple-600"
+                  className="w-full px-3 py-2 rounded-xl border border-blue-300 bg-white text-xs focus:outline-none focus:border-blue-600"
                 />
               </div>
 
@@ -2310,7 +2373,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     setKeyTestStatus(null);
                   }}
                   placeholder="gsk_..."
-                  className="w-full px-3 py-2 rounded-xl border border-purple-200 text-xs focus:outline-none focus:border-purple-500"
+                  className="w-full px-3 py-2 rounded-xl border border-blue-200 text-xs focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -2326,7 +2389,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     setKeyTestStatus(null);
                   }}
                   placeholder="AIza..."
-                  className="w-full px-3 py-2 rounded-xl border border-purple-200 text-xs focus:outline-none focus:border-purple-500"
+                  className="w-full px-3 py-2 rounded-xl border border-blue-200 text-xs focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -2342,7 +2405,7 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     setKeyTestStatus(null);
                   }}
                   placeholder="sk-..."
-                  className="w-full px-3 py-2 rounded-xl border border-purple-200 text-xs focus:outline-none focus:border-purple-500"
+                  className="w-full px-3 py-2 rounded-xl border border-blue-200 text-xs focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -2374,7 +2437,18 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                     if (groqInput.trim()) headers['X-Groq-Key'] = groqInput.trim();
                     if (geminiInput.trim()) headers['X-Gemini-Key'] = geminiInput.trim();
                     if (openaiInput.trim()) headers['X-OpenAI-Key'] = openaiInput.trim();
+                    const { data: authData } = await supabase.auth.getSession();
+                    if (authData.session?.access_token) {
+                      headers.Authorization = `Bearer ${authData.session.access_token}`;
+                    }
                     const res = await fetch('/api/ai?probe=1', { method: 'GET', headers });
+                    if (res.status === 401) {
+                      setKeyTestStatus({
+                        tone: 'warn',
+                        message: 'Connect to a NikNote cloud session before testing the shared AI gateway.',
+                      });
+                      return;
+                    }
                     const data = await res.json();
                     const probe = data?.probe;
                     if (probe?.ok) {
@@ -2402,16 +2476,17 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                         });
                       }
                     }
-                  } catch (err: any) {
+                  } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : 'network error';
                     setKeyTestStatus({
                       tone: 'err',
-                      message: `Could not reach /api/ai: ${String(err?.message || 'network error')}`,
+                      message: `Could not reach /api/ai: ${message}`,
                     });
                   } finally {
                     setTestingKeys(false);
                   }
                 }}
-                className="px-3 py-2 rounded-xl border border-purple-200 text-xs font-semibold text-purple-700 hover:bg-purple-50 disabled:opacity-50"
+                className="px-3 py-2 rounded-xl border border-blue-200 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50"
               >
                 {testingKeys ? 'Testing…' : 'Test Connection'}
               </button>
@@ -2432,13 +2507,13 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
                       groqKey: groqInput,
                       geminiKey: geminiInput,
                       openaiKey: openaiInput,
-                    });
+                    }, userId);
                     setKeysModalOpen(false);
                     toast.success('NikAI Cloud keys saved');
                   }}
                   className="px-4 py-2 rounded-xl text-white text-xs font-bold"
                   style={{
-                    background: 'linear-gradient(95deg, #7C3AED, #EC4899)',
+                    background: 'linear-gradient(95deg, #2869D5, #C83F58)',
                   }}
                 >
                   Save Keys
@@ -2450,6 +2525,19 @@ export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = ({
       )}
     </div>
   );
+};
+
+export const NikAIWorkspace: React.FC<NikAIWorkspaceProps> = (props) => {
+  const auth = useOptionalAuth();
+  const user = auth?.user;
+  const loading = auth?.loading ?? false;
+  const isGuest = auth?.isGuest ?? true;
+  if (loading) {
+    return <div className="grid min-h-[40vh] place-items-center text-sm text-slate-500">Opening NikAI…</div>;
+  }
+  const userId = user?.id;
+  const ownerKey = isCloudUserId(userId) ? userId : 'device-guest';
+  return <NikAIWorkspaceContent key={ownerKey} {...props} userId={userId} isGuest={isGuest} />;
 };
 
 export default NikAIWorkspace;

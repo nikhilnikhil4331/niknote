@@ -171,7 +171,7 @@ export const AdminFeatureHeatmap: React.FC<AdminFeatureHeatmapProps> = ({
         <Card className="rounded-xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-purple-500" />
+              <TrendingUp className="w-4 h-4 text-[#2869d5]" />
               Top Exporting Users
             </CardTitle>
           </CardHeader>

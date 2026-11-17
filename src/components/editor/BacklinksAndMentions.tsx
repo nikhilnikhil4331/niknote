@@ -60,7 +60,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
           className="w-full flex items-center gap-2"
         >
           {expanded ? <ChevronDown className="w-3 h-3 text-gray-400" /> : <ChevronRight className="w-3 h-3 text-gray-400" />}
-          <Link2 className="w-3.5 h-3.5 text-indigo-500" />
+          <Link2 className="w-3.5 h-3.5 text-blue-500" />
           <span className="text-[11px] font-semibold text-gray-700">Backlinks</span>
           <span className="text-[9px] text-gray-400 tabular-nums">{backlinks.length}</span>
         </button>
@@ -82,7 +82,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filter backlinks..."
-                  className="w-full text-[10px] bg-gray-50 rounded-lg pl-7 pr-3 py-1.5 border border-gray-200 focus:border-indigo-300 outline-none"
+                  className="w-full text-[10px] bg-gray-50 rounded-lg pl-7 pr-3 py-1.5 border border-gray-200 focus:border-blue-300 outline-none"
                 />
               </div>
             </div>
@@ -121,7 +121,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
 
             {/* AI suggest */}
             <div className="px-3 pb-3">
-              <button className="w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[9px] font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors">
+              <button className="w-full flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[9px] font-medium text-pink-600 bg-pink-50 hover:bg-pink-100 transition-colors">
                 <Sparkles className="w-3 h-3" /> AI find related pages
               </button>
             </div>
@@ -184,7 +184,7 @@ export const MentionDropdown: React.FC<MentionDropdownProps> = ({
         <button
           key={item.id}
           onClick={() => { onSelect(item); onClose(); }}
-          className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-indigo-50 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-blue-50 transition-colors"
         >
           <span className="text-sm">{item.icon}</span>
           <div className="flex-1 min-w-0">

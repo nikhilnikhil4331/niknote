@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { streamAstaAI } from "@/lib/aiEngine";
+import { useOptionalAuth } from "@/contexts/AuthContext";
 
 export type AIAction =
   | "improve"
@@ -23,6 +24,7 @@ export interface AIStreamRequest {
 export type AIStreamStatus = "idle" | "streaming" | "done" | "error";
 
 export function useAIStream() {
+  const userId = useOptionalAuth()?.user?.id;
   const [status, setStatus] = useState<AIStreamStatus>("idle");
   const [output, setOutput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +72,7 @@ export function useAIStream() {
       const result = await streamAstaAI({
         messages: [{ role: "user", content: request.text }],
         mode,
+        userId,
         noteContext: request.context,
         action: request.action,
         targetLanguage: request.targetLanguage,
@@ -99,7 +102,7 @@ export function useAIStream() {
         controllerRef.current = null;
       }
     }
-  }, [cancel, flush]);
+  }, [cancel, flush, userId]);
 
   return { status, output, error, run, cancel, reset };
 }
