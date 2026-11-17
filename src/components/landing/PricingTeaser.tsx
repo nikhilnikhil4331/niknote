@@ -25,7 +25,7 @@ const plans = [
     ],
     cta: 'Start Free ✨',
     highlighted: false,
-    link: '/',
+    link: '/editor/new',
   },
   {
     name: 'Student Pro',

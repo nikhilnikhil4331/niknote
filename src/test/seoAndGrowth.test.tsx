@@ -76,6 +76,30 @@ describe('NikNote SEO, Sitemap, Consent & Tracking Verification', () => {
     }
   });
 
+  it('uses the root as the canonical marketing page and keeps workspace aliases out of the sitemap', () => {
+    expect(resolveRouteSeo('/')).toMatchObject({
+      title: 'Text to Handwriting Converter & Notes Maker | NikNote',
+      canonicalPath: '/',
+      robots: 'index, follow',
+      inSitemap: true,
+    });
+    expect(resolveRouteSeo('/welcome')).toMatchObject({
+      canonicalPath: '/',
+      robots: 'noindex, follow',
+      inSitemap: false,
+    });
+    expect(resolveRouteSeo('/home').robots).toBe('noindex, follow');
+    expect(getAllSitemapEntries().map((entry) => new URL(entry.loc).pathname)).not.toContain('/welcome');
+    expect(getAllSitemapEntries().map((entry) => new URL(entry.loc).pathname)).not.toContain('/home');
+
+    const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'public/manifest.json'), 'utf8'));
+    expect(manifest.start_url).toBe('/home');
+    expect(manifest.shortcuts.find((shortcut: { name: string }) => shortcut.name === 'New Note')?.url).toBe('/editor/new');
+
+    const vercel = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
+    expect(vercel.redirects).toContainEqual({ source: '/welcome', destination: '/', permanent: true });
+  });
+
   it('ships a valid robots.txt allowing assets & search/AI bots while blocking private/admin routes', () => {
     const robots = fs.readFileSync(path.join(ROOT, 'public/robots.txt'), 'utf8');
     expect(robots).toContain('Sitemap: https://www.niknote.online/sitemap.xml');
@@ -106,12 +130,25 @@ describe('NikNote SEO, Sitemap, Consent & Tracking Verification', () => {
     expect(html).not.toContain('REPLACE_WITH_YOUR_VERIFICATION_CODE');
     expect(html).not.toContain('AggregateRating');
     expect(html).not.toContain('ratingValue');
+    expect(html).toContain('https://www.niknote.online/og-image.jpg');
+    expect(html).not.toContain('https://www.niknote.online/og-image.png');
+    expect(fs.existsSync(path.join(ROOT, 'public/og-image.jpg'))).toBe(true);
 
     const jsonLdMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
     expect(jsonLdMatch).not.toBeNull();
     const parsed = JSON.parse(jsonLdMatch![1]);
     const types = parsed['@graph'].map((node: { '@type': string }) => node['@type']);
     expect(types).toEqual(['Organization', 'WebSite', 'SoftwareApplication']);
+
+    const application = parsed['@graph'].find((node: { '@type': string }) => node['@type'] === 'SoftwareApplication');
+    expect(application.description).toContain('handwritten-style notes');
+    expect(application.description).not.toContain('300 DPI');
+    expect(application.offers.map((offer: { name: string }) => offer.name)).toEqual([
+      'Free Plan',
+      'Student Pro (7-day pass)',
+      'Premium (30-day pass)',
+    ]);
+    expect(application.offers[1].description).toContain('no auto-renewal');
   });
 
   it('updates canonical, robots, and JSON-LD accurately across public, alias, blog, and private routes', () => {
@@ -139,6 +176,14 @@ describe('NikNote SEO, Sitemap, Consent & Tracking Verification', () => {
     expect(document.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe(
       'index, follow',
     );
+    expect(document.querySelector('meta[property="og:type"]')?.getAttribute('content')).toBe('article');
+    expect(document.querySelector('meta[property="og:image"]')?.getAttribute('content')).toBe(
+      'https://www.niknote.online/og-image.jpg',
+    );
+    expect(document.querySelector('meta[name="twitter:image"]')?.getAttribute('content')).toBe(
+      'https://www.niknote.online/og-image.jpg',
+    );
+    expect(document.querySelector('meta[property="article:published_time"]')?.getAttribute('content')).toBe('2026-06-29');
     const ldJson = Array.from(
       document.head.querySelectorAll('script[data-niknote-route-schema="true"]'),
     )
@@ -189,20 +234,25 @@ describe('NikNote SEO, Sitemap, Consent & Tracking Verification', () => {
 
     const gaEvents = () =>
       (window.dataLayer || []).filter(
-        (entry: unknown) => Array.isArray(entry) && entry[0] === 'event',
+        (entry): entry is unknown[] => Array.isArray(entry) && entry[0] === 'event',
       );
     trackRouteView('/upgrade');
-    const countAfterFirst = gaEvents().filter((e: any) => e[1] === 'page_view').length;
+    const countAfterFirst = gaEvents().filter((event) => event[1] === 'page_view').length;
     // Duplicate navigation to identical URL must NOT double-fire page_view
     trackRouteView('/upgrade');
-    const countAfterDuplicate = gaEvents().filter((e: any) => e[1] === 'page_view').length;
+    const countAfterDuplicate = gaEvents().filter((event) => event[1] === 'page_view').length;
     expect(countAfterDuplicate).toBe(countAfterFirst);
 
     // 3. Grant Marketing consent too: Meta Pixel activates & deduplicates Purchase by transactionId
     saveConsentPreferences({ analytics: true, marketing: true });
     expect(document.head.querySelector('script[data-niknote-fbq="true"]')).not.toBeNull();
 
-    const fbQueue = () => ((window.fbq as any)?.queue || []) as any[][];
+    const fbQueue = () => {
+      const queue = window.fbq?.queue;
+      return Array.isArray(queue)
+        ? queue.filter((entry): entry is unknown[] => Array.isArray(entry))
+        : [];
+    };
     trackSignUpCompleted('email', 'auth_page');
     trackGenerateLead({ planName: 'school_pro', conversionSource: 'schools_form' });
     trackVerifiedPurchase({
@@ -221,7 +271,7 @@ describe('NikNote SEO, Sitemap, Consent & Tracking Verification', () => {
       currency: 'INR',
     });
 
-    const gaPurchases = gaEvents().filter((e: any) => e[1] === 'purchase');
+    const gaPurchases = gaEvents().filter((event) => event[1] === 'purchase');
     expect(gaPurchases).toHaveLength(1);
 
     const fbPurchases = fbQueue().filter((args) => args[0] === 'track' && args[1] === 'Purchase');

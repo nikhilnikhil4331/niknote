@@ -12,9 +12,9 @@ interface PageMeta {
 }
 
 const DEFAULT_META: PageMeta = {
-  title: 'NikNote — Create Realistic Handwritten Notes Online | AI Study & PDF Tools',
+  title: 'Text to Handwriting Converter & Notes Maker | NikNote',
   description:
-    'Create, customize, organize, and export realistic handwritten-style notes online with NikNote. Includes 16+ handwriting styles, Hindi & English AI study assistant, PDF editor, OCR scanner, quizzes, and flashcards.',
+    'Turn typed text into handwritten-style notes online. Choose a style, paper and ink, preview pages, and export a PDF. Explore Hindi-English study tools too.',
 };
 
 export function useDocumentTitle(meta: PageMeta) {

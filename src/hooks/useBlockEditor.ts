@@ -14,6 +14,27 @@ interface HistoryEntry {
 }
 
 const MAX_HISTORY = 100;
+
+function consecutiveNumberedIndex(blocks: Block[], index: number): number {
+  const indent = blocks[index]?.indent || 0;
+  let number = 1;
+
+  for (let previous = index - 1; previous >= 0; previous -= 1) {
+    const candidate = blocks[previous];
+    const candidateIndent = candidate.indent || 0;
+    // A nested list belongs to the surrounding ordered list; skip past it
+    // when numbering the parent level, but do not count it as a sibling.
+    if (candidateIndent > indent) continue;
+    if (candidateIndent === indent && candidate.type === 'numbered') {
+      number += 1;
+      continue;
+    }
+    break;
+  }
+
+  return number;
+}
+
 export const useBlockEditor = (autoSaveKey?: string) => {
   // The editor is intentionally born empty. The caller owns hydration and
   // chooses an account-scoped draft key; a global localStorage key can leak a
@@ -206,8 +227,20 @@ export const useBlockEditor = (autoSaveKey?: string) => {
   // Convert blocks to NoteLine[] for preview — WITH block type info for styling
   const lines: NoteLine[] = useMemo(() => {
     return blocks
-      .filter(b => b.type !== 'divider')
-      .map((block, i) => {
+      .map<NoteLine | null>((block, i) => {
+        if (block.type === 'divider') return null;
+        if (block.type === 'image' || block.type === 'table' || block.type === 'chart') {
+          return {
+            id: `line-${block.id}`,
+            text: '',
+            color: (block.color || currentColor) as LineInkColor,
+            timestamp: Date.now(),
+            blockType: block.type,
+            indent: block.indent,
+            richBlockId: block.id,
+          };
+        }
+
         let text = block.content;
         let fontSize: number | undefined;
         let fontWeight: string | undefined;
@@ -218,7 +251,7 @@ export const useBlockEditor = (autoSaveKey?: string) => {
           case 'heading2': fontSize = 22; fontWeight = 'bold'; break;
           case 'heading3': fontSize = 18; fontWeight = '600'; break;
           case 'bullet': text = `•  ${text}`; break;
-          case 'numbered': text = `${i + 1}.  ${text}`; break;
+          case 'numbered': text = `${consecutiveNumberedIndex(blocks, i)}.  ${text}`; break;
           case 'todo': text = block.checked ? `☑  ${text}` : `☐  ${text}`; break;
           case 'quote': text = `"${text}"`; break;
           case 'callout': text = `${block.emoji || '💡'}  ${text}`; break;
@@ -234,11 +267,21 @@ export const useBlockEditor = (autoSaveKey?: string) => {
           fontWeight,
           indent: block.indent,
         };
-      });
+      })
+      .filter((line): line is NoteLine => line !== null);
   }, [blocks, currentColor]);
 
   const getPlainText = useCallback(() => {
-    return blocks.map(b => b.content).join('\n');
+    return blocks.map((block) => {
+      if ((block.type === 'table' || block.type === 'chart') && block.tableData) {
+        const rows = block.tableData.rows.map((row) =>
+          block.tableData!.headers.map((_, index) => row[index]?.content || '').join(' | ')
+        );
+        return [block.content, block.tableData.headers.join(' | '), ...rows].filter(Boolean).join('\n');
+      }
+      if (block.type === 'image') return block.caption || block.content || '[Image]';
+      return block.content;
+    }).join('\n');
   }, [blocks]);
 
   const importText = useCallback((text: string) => {

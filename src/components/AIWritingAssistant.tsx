@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'framer-motion';
 import { NikAIMark } from './nikai/NikAIBrand';
 import { useOptionalAuth } from '@/contexts/AuthContext';
+import { AstaMarkdown } from '@/components/asta/AstaMarkdown';
 import { markdownToStructuredLines, stripMarkdownNoise, type StructuredLine } from '@/lib/noteStructure';
 import { GRAPH_PRESETS, encodeGraphSpec, graphLabel, type GraphSpec } from '@/lib/noteGraphs';
 
@@ -21,7 +22,7 @@ interface AIWritingAssistantProps {
 
 type AssistMode = 'expand' | 'summarize' | 'improve' | 'generate' | 'graph';
 
-const GRAPH_COLORS = ['#7c3aed', '#2563eb', '#059669', '#e11d48', '#d97706'];
+const GRAPH_COLORS = ['#2869D5', '#C83F58', '#2E7D32', '#D4A900', '#171313'];
 
 export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
   onInsertText,
@@ -64,7 +65,7 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
       case 'improve':
         return 'You are a writing assistant. Improve the given text by fixing grammar, enhancing clarity, and making it flow better. Keep it natural and suitable for handwritten notes.';
       case 'generate':
-        return "You are a creative writing assistant. Generate content based on the user's prompt. Write naturally, as if creating handwritten notes. Keep paragraphs short and scannable. Format with clean markdown: # headings, - bullets, 1. steps, and $...$ for equations.";
+        return "You are a creative writing assistant. Generate content based on the user's prompt. Write naturally, as if creating handwritten notes. Keep paragraphs short and scannable. Format with clean markdown: # headings, - bullets, 1. steps, Markdown tables and $...$ for equations. When a chart genuinely helps, use a chart code fence with valid JSON: {\"type\":\"bar|line|area|pie\",\"title\":\"...\",\"headers\":[\"Category\",\"Value\"],\"rows\":[[\"A\",10],[\"B\",20]]}. Do not invent image URLs.";
       default:
         return '';
     }
@@ -132,7 +133,7 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
     insertIntoNote(result);
     setResult('');
     setPrompt('');
-    toast.success('Text inserted into notes!');
+    toast.success('AI content inserted into your note.');
     setIsOpen(false);
   };
 
@@ -187,11 +188,11 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] overflow-y-auto border-[#E2E7F0] bg-[#FFFDF5] text-[#171313] sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <motion.span
-              className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-[#F4F1FC]"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#C7D9F5] bg-[#EEF4FF]"
               animate={isLoading ? { scale: [1, 1.12, 1] } : { scale: 1 }}
               transition={isLoading ? { duration: 1.1, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.2 }}
             >
@@ -207,7 +208,7 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
         </DialogHeader>
 
         {/* Mode Selection */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {modes.map((mode) => (
             <button
               key={mode.id}
@@ -215,13 +216,13 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
               onClick={() => setSelectedMode(mode.id)}
               className={
                 `
-                flex items-start gap-3 rounded-xl border p-3 text-left transition-all
-                ${selectedMode === mode.id ? 'border-primary bg-primary/5' : 'border-border/60 hover:bg-muted/40'}
+                flex min-h-[72px] items-start gap-3 rounded-xl border p-3 text-left transition-colors
+                ${selectedMode === mode.id ? 'border-[#2869D5] bg-[#EAF2FF] shadow-sm' : 'border-[#E2E7F0] bg-white hover:border-[#AFC8F1] hover:bg-[#F6F9FF]'}
               `
               }
             >
-              <span className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-muted">
-                <mode.icon className="h-4 w-4 text-foreground" />
+              <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#E2E7F0] bg-[#FFFDF5]">
+                <mode.icon className="h-4 w-4 text-[#1F56B4]" />
               </span>
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-foreground">{mode.label}</span>
@@ -242,7 +243,7 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
                     key={p.id}
                     type="button"
                     onClick={() => pickPreset(p)}
-                    className={`rounded-lg border px-2 py-1.5 text-left transition-colors ${graphPreset.id === p.id ? 'border-primary bg-primary/5' : 'border-border/60 hover:bg-muted/40'}`}
+                    className={`min-h-12 rounded-lg border px-2 py-1.5 text-left transition-colors ${graphPreset.id === p.id ? 'border-[#2869D5] bg-[#EAF2FF]' : 'border-[#E2E7F0] bg-white hover:bg-[#F6F9FF]'}`}
                   >
                     <span className="block text-xs font-semibold">{p.label}</span>
                     <span className="block text-[10px] text-muted-foreground font-mono">{p.formula}</span>
@@ -262,7 +263,7 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
                     inputMode="decimal"
                     value={f.value}
                     onChange={e => f.set(e.target.value)}
-                    className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-sm"
+                    className="mt-1 h-10 w-full rounded-lg border border-[#E2E7F0] bg-white px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2869D5]"
                   />
                 </label>
               ))}
@@ -291,14 +292,14 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Example: Explain photosynthesis in simple bullet points"
-                  className="min-h-[90px] text-sm resize-none"
+                  className="min-h-[110px] resize-none border-[#E2E7F0] bg-white text-sm placeholder:text-[#89838C] focus-visible:ring-[#2869D5]"
                 />
               </>
             ) : (
               <>
                 <p className="text-xs font-medium text-foreground">Working with</p>
-                <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
-                  <p className="text-xs whitespace-pre-wrap text-foreground line-clamp-5">{currentText || 'No text yet — write something first.'}</p>
+                <div className="rounded-xl border border-[#E2E7F0] bg-white p-3">
+                  <p className="line-clamp-5 whitespace-pre-wrap text-xs text-[#171313]">{currentText || 'No text yet — write something first.'}</p>
                 </div>
               </>
             )}
@@ -321,8 +322,8 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
                 exit={{ opacity: 0, y: -8 }}
                 className="space-y-2"
               >
-                <div className="rounded-xl border border-border/60 bg-background p-3 max-h-[200px] overflow-y-auto">
-                  <p className="text-sm whitespace-pre-wrap text-foreground">{result}</p>
+                <div className="max-h-[min(44vh,360px)] overflow-y-auto rounded-xl border border-[#E2E7F0] bg-white p-3.5">
+                  <AstaMarkdown content={result} isStreaming={isLoading} />
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={handleInsert} className="flex-1">Insert into notes</Button>

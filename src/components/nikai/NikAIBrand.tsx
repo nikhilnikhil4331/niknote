@@ -176,7 +176,7 @@ export const NikAIBrand: React.FC<NikAIBrandProps> = ({
         />
         <span className="sr-only">NikAI</span>
         {badge && (
-          <span className="mt-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[#EEF4FF] text-[#5C4E8E] border border-[#C7D9F5]">
+          <span className="mt-1.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[#EEF4FF] text-[#1F56B4] border border-[#C7D9F5]">
             {badge}
           </span>
         )}
@@ -207,7 +207,7 @@ export const NikAIBrand: React.FC<NikAIBrandProps> = ({
         />
         <span className="sr-only">NikAI</span>
         {badge && (
-          <span className="ml-0.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[#EEF4FF] text-[#5C4E8E] border border-[#C7D9F5]">
+          <span className="ml-0.5 px-2.5 py-0.5 rounded-full text-[10.5px] font-bold uppercase tracking-wider bg-[#EEF4FF] text-[#1F56B4] border border-[#C7D9F5]">
             {badge}
           </span>
         )}

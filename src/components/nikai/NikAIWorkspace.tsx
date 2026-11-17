@@ -109,6 +109,29 @@ interface AttachedNoteContext {
   preview: string;
 }
 
+interface SpeechRecognitionAlternativeLike {
+  transcript: string;
+}
+
+type SpeechRecognitionResultLike = ArrayLike<SpeechRecognitionAlternativeLike>;
+
+interface SpeechRecognitionEventLike {
+  results: ArrayLike<SpeechRecognitionResultLike>;
+}
+
+interface SpeechRecognitionLike {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
 export interface NikAIWorkspaceProps {
   embedded?: boolean;
   onClose?: () => void;
@@ -466,7 +489,7 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -475,8 +498,9 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
       .then(({ data }) => {
         if (!active) return;
         const u = data?.session?.user;
-        const pic = (u?.user_metadata as any)?.avatar_url || (u?.user_metadata as any)?.picture;
-        if (pic) setUserAvatarSrc(pic);
+        const metadata = u?.user_metadata as Record<string, unknown> | undefined;
+        const pic = metadata?.avatar_url ?? metadata?.picture;
+        if (typeof pic === 'string') setUserAvatarSrc(pic);
       })
       .catch(() => {});
     return () => {
@@ -559,7 +583,11 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
       .filter((item) => !item.trashedAt)
       .map((item) => {
         const text = Array.isArray(item.blocks)
-          ? item.blocks.map((block: any) => String(block?.content || '')).join('\n')
+          ? item.blocks.map((block) => {
+              if (!block || typeof block !== 'object' || !('content' in block)) return '';
+              const content = block.content;
+              return typeof content === 'string' || typeof content === 'number' ? String(content) : '';
+            }).join('\n')
           : String(item.content || '');
         return {
           id: String(item.id),
@@ -633,8 +661,11 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
   }, []);
 
   const toggleVoiceInput = useCallback(() => {
-    const SpeechRec =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const speechWindow = window as Window & {
+      SpeechRecognition?: SpeechRecognitionConstructor;
+      webkitSpeechRecognition?: SpeechRecognitionConstructor;
+    };
+    const SpeechRec = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
     if (!SpeechRec) {
       toast.info('Voice dictation is not supported in this browser');
       return;
@@ -649,9 +680,9 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
       rec.continuous = false;
       rec.interimResults = true;
       rec.lang = 'en-IN';
-      rec.onresult = (ev: any) => {
-        const transcript = Array.from(ev.results)
-          .map((r: any) => r[0]?.transcript || '')
+      rec.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map((result) => result[0]?.transcript || '')
           .join('');
         setInput(transcript);
       };
@@ -966,8 +997,9 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
             action: { label: 'Add key', onClick: () => setKeysModalOpen(true) },
           });
         }
-      } catch (err: any) {
-        if (err?.name === 'AbortError' || controller.signal.aborted) {
+      } catch (err: unknown) {
+        const errorName = err && typeof err === 'object' && 'name' in err ? err.name : undefined;
+        if (errorName === 'AbortError' || controller.signal.aborted) {
           markAssistantCancelled();
           return;
         }
@@ -1003,6 +1035,7 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
       threads,
       attachedNote,
       selectedModelDef.label,
+      userId,
     ]
   );
 
@@ -1301,7 +1334,7 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search chats..."
-                  className="w-full bg-transparent text-[13.5px] text-[#171313] placeholder:text-[#9893B0] focus:outline-none min-w-0"
+                  className="w-full bg-transparent text-[13.5px] text-[#171313] placeholder:text-[#89838C] focus:outline-none min-w-0"
                 />
                 {searchQuery ? (
                   <button
@@ -1878,7 +1911,7 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
                   }
                 }}
                 placeholder="Ask NikAI anything..."
-                className="w-full resize-none border-0 bg-transparent px-0.5 py-1.5 text-[15px] text-[#171313] placeholder:text-[#9893B0] focus:outline-none max-h-44"
+                className="w-full resize-none border-0 bg-transparent px-0.5 py-1.5 text-[15px] text-[#171313] placeholder:text-[#89838C] focus:outline-none max-h-44"
               />
 
               <div className="flex items-center justify-between gap-2 pt-2">
@@ -2443,10 +2476,11 @@ const NikAIWorkspaceContent: React.FC<NikAIWorkspaceProps & { userId?: string; i
                         });
                       }
                     }
-                  } catch (err: any) {
+                  } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : 'network error';
                     setKeyTestStatus({
                       tone: 'err',
-                      message: `Could not reach /api/ai: ${String(err?.message || 'network error')}`,
+                      message: `Could not reach /api/ai: ${message}`,
                     });
                   } finally {
                     setTestingKeys(false);

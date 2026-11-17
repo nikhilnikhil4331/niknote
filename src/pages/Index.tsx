@@ -278,6 +278,8 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
   const blockEditor = useBlockEditor();
   const {
     blocks: editorBlocks,
+    lines: editorLines,
+    getPlainText: getEditorPlainText,
     replaceBlocks: replaceEditorBlocks,
     setCurrentColor: setEditorCurrentColor,
     updateBlock: updateEditorBlock,
@@ -755,7 +757,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
       saveInFlightRef.current = false;
       if (latestSignatureRef.current !== documentSignature) setSaveRevision((value) => value + 1);
     }
-  }, [safeReady, documentId, blockEditor.blocks, pagesForStorage, title, settings, isFavorite, realPenMode, ownerId, isGuest, notebooks, documentSignature, refetchNotebooks, navigate]);
+  }, [safeReady, documentId, blockEditor.blocks, pagesForStorage, title, settings, isFavorite, realPenMode, ownerId, isGuest, notebooks, documentSignature, refetchNotebooks, navigate, findOwnedLocalNote]);
 
   const toggleFavorite = useCallback(async () => {
     if (!documentId) return;
@@ -904,12 +906,12 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
   }, [editorBlocks, updateEditorBlock, focusedBlockId, onColorChange]);
 
   const handleExportPDF = useCallback(async () => {
-    const hasBlockText = hasNoteContent(blockEditor.blocks);
+    const hasBlockText = hasNoteContent(editorBlocks);
     const lines = hasBlockText
-      ? blockEditor.lines
+      ? editorLines
       : pages.flatMap((page) => page.lines).filter((line) => line.text.trim());
     const plainText = hasBlockText
-      ? blockEditor.blocks.map((block) => block.content).filter(Boolean).join('\n')
+      ? getEditorPlainText()
       : lines.map((line) => line.text).join('\n');
     if (!plainText.trim()) { toast.info('Write something before exporting a PDF.'); return; }
 
@@ -943,11 +945,11 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
       setExportMount(false);
       setExportLines([]);
     }
-  }, [blockEditor.blocks, blockEditor.lines, pages, title, settings.pageSize, playSuccess, triggerHaptic]);
+  }, [editorBlocks, editorLines, getEditorPlainText, pages, title, settings.pageSize, playSuccess, triggerHaptic]);
 
   const handleShare = useCallback(async () => {
-    const text = blockEditor.blocks.map((block) => block.content).filter(Boolean).join('\n\n');
-    if (!text.trim()) { toast.info('Write something to share first.'); return; }
+    const text = getEditorPlainText().trim();
+    if (!text) { toast.info('Write something before sharing.'); return; }
     try {
       if (navigator.share) await navigator.share({ title: title || DEFAULT_NOTE_TITLE, text });
       else {
@@ -957,7 +959,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
     } catch (error) {
       if ((error as DOMException)?.name !== 'AbortError') toast.error('Could not share this note.');
     }
-  }, [blockEditor.blocks, title]);
+  }, [getEditorPlainText, title]);
 
   const importText = useCallback((lines: string[]) => {
     const text = lines.join('\n');
@@ -1060,6 +1062,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
     <div key={currentPageIndex} className="nn-page-preview-enter">
       <NotebookPreview
         lines={previewLines}
+        richBlocks={blockEditor.blocks}
         settings={settings}
         realPenMode={realPenMode}
         pageNumber={currentPageIndex + 1}
@@ -1183,6 +1186,7 @@ const OwnerWritingWorkspace: React.FC<{ ownerId: string; isGuest: boolean; route
         <div ref={exportContainerRef} className="nn-writing-export-mount" aria-hidden="true">
           <NotebookPreview
             lines={exportLines}
+            richBlocks={blockEditor.blocks}
             settings={settings}
             realPenMode={realPenMode}
             pageNumber={1}

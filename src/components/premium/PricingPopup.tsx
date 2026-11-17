@@ -72,10 +72,10 @@ const isSuppressed = (pathname: string) =>
  * listed here.
  */
 const GATED_FEATURES = [
-  { icon: Wand2, label: 'AI writing assistant', detail: 'Rewrite, summarise, expand' },
-  { icon: Mic, label: 'Voice dictation', detail: 'Speak instead of typing' },
-  { icon: Sparkles, label: 'AI style matcher', detail: 'Match your real handwriting' },
-  { icon: ScanLine, label: 'Handwriting import', detail: 'Photo of notes → editable text' },
+  { icon: Wand2, label: 'AI writing assistant', detail: 'Rewrite, summarise, expand', color: '#1F56B4', surface: '#EAF2FF' },
+  { icon: Mic, label: 'Voice dictation', detail: 'Speak instead of typing', color: '#A92F47', surface: '#FFF0F1' },
+  { icon: Sparkles, label: 'AI style matcher', detail: 'Match your real handwriting', color: '#1F56B4', surface: '#EAF2FF' },
+  { icon: ScanLine, label: 'Handwriting import', detail: 'Photo of notes → editable text', color: '#8A6500', surface: '#FFF8D6' },
 ];
 
 const PLANS = [
@@ -146,6 +146,8 @@ export const PricingPopup: React.FC = () => {
   const location = useLocation();
   const reduceMotion = useReducedMotion();
   const primaryRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const rememberAndClose = useCallback(() => {
     writeLastShown();
@@ -181,12 +183,34 @@ export const PricingPopup: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [loading, consentDecided, isPremium, location.pathname]);
 
-  // Escape closes, body does not scroll behind the sheet.
+  // Keep keyboard focus inside the modal, restore it on close and prevent the
+  // page behind the mobile sheet from scrolling.
   useEffect(() => {
     if (!open) return;
 
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') rememberAndClose();
+      if (event.key === 'Escape') {
+        rememberAndClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusable = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) || []
+      );
+      if (!focusable.length) {
+        event.preventDefault();
+        dialogRef.current?.focus();
+      } else if (event.shiftKey && document.activeElement === focusable[0]) {
+        event.preventDefault();
+        focusable[focusable.length - 1].focus();
+      } else if (!event.shiftKey && document.activeElement === focusable[focusable.length - 1]) {
+        event.preventDefault();
+        focusable[0].focus();
+      }
     };
 
     document.addEventListener('keydown', onKeyDown);
@@ -197,6 +221,8 @@ export const PricingPopup: React.FC = () => {
     return () => {
       document.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = previousOverflow;
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
     };
   }, [open, rememberAndClose]);
 
@@ -209,7 +235,7 @@ export const PricingPopup: React.FC = () => {
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          className="fixed inset-0 z-[90] flex items-end justify-center bg-[#101C34]/55 p-2 pb-0 backdrop-blur-sm sm:items-center sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -217,59 +243,41 @@ export const PricingPopup: React.FC = () => {
           onClick={rememberAndClose}
         >
           <motion.div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="nn-pricing-popup-title"
             aria-describedby="nn-pricing-popup-desc"
-            className="relative w-full max-w-lg overflow-hidden rounded-t-[26px] border border-white/10 bg-card shadow-[0_30px_90px_-20px_rgba(15,23,42,0.65)] sm:max-w-2xl sm:rounded-[26px]"
+            tabIndex={-1}
+            className="relative flex max-h-[calc(100dvh-8px)] w-full max-w-[720px] flex-col overflow-hidden rounded-t-[26px] border-2 border-[#171313] bg-[#FFFDF5] text-[#171313] shadow-[7px_8px_0_#171313,0_28px_70px_rgba(15,23,42,0.38)] outline-none sm:max-h-[min(820px,calc(100dvh-32px))] sm:rounded-[26px]"
             initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 40, scale: 0.98 }}
             animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.99 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
             onClick={(event) => event.stopPropagation()}
           >
-            {/* ── Header ───────────────────────────────────────────── */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-primary via-accent to-[hsl(var(--ink-pink))] px-5 pb-6 pt-5 text-white sm:px-7 sm:pb-7 sm:pt-6">
-              {/* Dark scrim: in dark mode --primary and --accent are bright, and
-                  the theme's own --primary-foreground flips to near-black, which
-                  would leave this header mixing dark text with the white/20
-                  chips below. A fixed scrim plus fixed white text is legible in
-                  both themes. */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-slate-950/25"
-              />
-              {/* ruled-paper texture, the app's own visual language */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 opacity-[0.13]"
-                style={{
-                  backgroundImage:
-                    'repeating-linear-gradient(180deg, transparent 0 21px, #ffffff 21px 22px)',
-                }}
-              />
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full bg-white/20 blur-2xl"
-              />
+            {/* ── Header: NikNote mark, coral paper and ink outline ── */}
+            <div className="relative shrink-0 overflow-hidden border-b-2 border-[#171313] bg-[#FF858F] px-5 pb-5 pt-4 sm:px-7 sm:pb-6 sm:pt-5">
+              <div aria-hidden="true" className="pointer-events-none absolute -right-8 -top-10 h-32 w-32 rounded-full bg-[#FFE45C]/55 blur-2xl" />
+              <div aria-hidden="true" className="pointer-events-none absolute bottom-3 right-28 h-2 w-14 rotate-[-12deg] rounded-full bg-[#2869D5]/85" />
 
               <div className="relative flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] backdrop-blur-sm">
-                    <Crown className="h-3 w-3" />
-                    NikNote Premium
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <img src="/images/brand/niknote-primary-mark.png" alt="" aria-hidden="true" className="h-9 w-9 shrink-0 object-contain" />
+                    <img src="/images/brand/niknote-primary-wordmark.png" alt="NikNote" className="h-[18px] w-auto max-w-[92px] object-contain sm:h-5" />
+                    <span className="inline-flex items-center gap-1 rounded-lg border-2 border-[#171313] bg-[#FFE45C] px-2 py-1 text-[9px] font-extrabold uppercase tracking-[0.11em]">
+                      <Crown className="h-3 w-3" /> Premium
+                    </span>
+                  </div>
                   <h2
                     id="nn-pricing-popup-title"
-                    className="mt-2.5 text-[22px] font-bold leading-[1.15] tracking-tight sm:text-[26px]"
+                    className="mt-3 text-[24px] font-extrabold leading-[1.08] tracking-[-0.035em] sm:text-[31px]"
                   >
                     Four tools that
                     <br className="hidden sm:block" /> change how fast you write
                   </h2>
-                  <p
-                    id="nn-pricing-popup-desc"
-                    className="mt-1.5 max-w-md text-[13px] leading-relaxed text-white/85"
-                  >
+                  <p id="nn-pricing-popup-desc" className="mt-1.5 max-w-md text-[13px] font-medium leading-relaxed text-[#312124] sm:text-sm">
                     Everything you already use stays free. These are the extras.
                   </p>
                 </div>
@@ -278,7 +286,7 @@ export const PricingPopup: React.FC = () => {
                   type="button"
                   onClick={rememberAndClose}
                   aria-label="Close pricing popup"
-                  className="-mr-1 -mt-1 shrink-0 rounded-full p-2 text-white/80 transition hover:bg-white/15 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-[#171313] bg-[#FFFDF5] text-[#171313] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2869D5] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FF858F]"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -286,18 +294,18 @@ export const PricingPopup: React.FC = () => {
             </div>
 
             {/* ── Body ─────────────────────────────────────────────── */}
-            <div className="px-5 pb-4 pt-5 sm:px-7">
-              <ul className="grid gap-2.5 sm:grid-cols-2">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(1rem_+_env(safe-area-inset-bottom))] pt-4 sm:px-7 sm:pb-5 sm:pt-5">
+              <ul className="grid gap-2 sm:grid-cols-2">
                 {GATED_FEATURES.map((feature) => (
-                  <li key={feature.label} className="flex items-start gap-2.5">
-                    <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                      <feature.icon className="h-3.5 w-3.5" />
+                  <li key={feature.label} className="flex min-h-[62px] items-center gap-2.5 rounded-xl border border-[#E2E7F0] bg-white/85 p-2.5">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-black/5" style={{ backgroundColor: feature.surface, color: feature.color }}>
+                      <feature.icon className="h-4 w-4" />
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-[13px] font-semibold leading-tight text-foreground">
+                      <span className="block text-[13px] font-bold leading-tight text-[#171313]">
                         {feature.label}
                       </span>
-                      <span className="block text-[11.5px] leading-snug text-muted-foreground">
+                      <span className="mt-0.5 block text-[11.5px] leading-snug text-[#5E5961]">
                         {feature.detail}
                       </span>
                     </span>
@@ -305,10 +313,10 @@ export const PricingPopup: React.FC = () => {
                 ))}
               </ul>
 
-              <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.07] px-3 py-2">
-                <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
-                <p className="text-[11.5px] leading-snug text-muted-foreground">
-                  <span className="font-semibold text-foreground">
+              <div className="mt-3 flex items-center gap-2 rounded-xl border border-[#8FC79C] bg-[#EAF7EC] px-3 py-2.5">
+                <Check className="h-4 w-4 shrink-0 text-[#2E7D32]" />
+                <p className="text-[11.5px] leading-snug text-[#38433A]">
+                  <span className="font-bold text-[#171313]">
                     16+ handwriting styles, AI notes, PDF tools and exports stay free
                   </span>{' '}
                   — no card needed.
@@ -322,30 +330,30 @@ export const PricingPopup: React.FC = () => {
                     key={plan.code}
                     className={
                       plan.featured
-                        ? 'relative rounded-2xl border-2 border-primary bg-primary/[0.06] p-3.5'
-                        : 'relative rounded-2xl border border-border/70 p-3.5'
+                        ? 'relative min-h-[112px] rounded-2xl border-2 border-[#2869D5] bg-[#EAF2FF] p-3.5 shadow-[3px_4px_0_#171313]'
+                        : 'relative min-h-[112px] rounded-2xl border-2 border-[#171313] bg-white p-3.5 shadow-[3px_4px_0_#171313]'
                     }
                   >
                     {plan.featured && (
-                      <span className="absolute -top-2 right-3 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary-foreground">
+                      <span className="absolute -top-2 right-3 rounded-md border-2 border-[#171313] bg-[#FFE45C] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-[#171313]">
                         Best value
                       </span>
                     )}
                     <div className="flex items-center gap-1.5">
-                      <plan.icon className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-[11.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      <plan.icon className="h-3.5 w-3.5" style={{ color: plan.featured ? '#C83F58' : '#2869D5' }} />
+                      <span className="text-[11.5px] font-extrabold uppercase tracking-wide text-[#5E5961]">
                         {plan.label}
                       </span>
                     </div>
                     <div className="mt-1 flex items-baseline gap-0.5">
-                      <span className="text-2xl font-bold tracking-tight text-foreground">
+                      <span className="text-2xl font-extrabold tracking-tight text-[#171313]">
                         {plan.price}
                       </span>
-                      <span className="text-xs font-medium text-muted-foreground">
+                      <span className="text-xs font-semibold text-[#5E5961]">
                         {plan.period}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">{plan.note}</p>
+                    <p className="mt-0.5 text-[11px] text-[#5E5961]">{plan.note}</p>
                   </div>
                 ))}
               </div>
@@ -355,7 +363,7 @@ export const PricingPopup: React.FC = () => {
                 ref={primaryRef}
                 type="button"
                 onClick={goToPlans}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+                className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-[#171313] bg-[#2869D5] px-4 py-3 text-sm font-extrabold text-white shadow-[3px_4px_0_#171313] transition hover:bg-[#1F56B4] active:translate-y-0.5 active:shadow-[1px_2px_0_#171313] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C83F58] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FFFDF5]"
               >
                 See the plans
                 <ArrowRight className="h-4 w-4" />
@@ -364,12 +372,12 @@ export const PricingPopup: React.FC = () => {
               <button
                 type="button"
                 onClick={rememberAndClose}
-                className="mt-2 w-full rounded-xl px-4 py-2 text-[12.5px] font-medium text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="mt-2 min-h-10 w-full rounded-xl px-4 py-2 text-[12.5px] font-semibold text-[#5E5961] underline decoration-[#C83F58]/70 underline-offset-4 transition hover:text-[#171313] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2869D5]/50"
               >
                 Not now
               </button>
 
-              <p className="mt-1 pb-1 text-center text-[10.5px] leading-relaxed text-muted-foreground">
+              <p className="mt-1 pb-1 text-center text-[10.5px] leading-relaxed text-[#5E5961]">
                 Razorpay checkout · No automatic renewal
                 <br />
                 No countdown, no fake discount.

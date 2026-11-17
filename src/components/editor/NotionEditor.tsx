@@ -22,6 +22,8 @@ import { BlockContextMenu } from './BlockContextMenu';
 import { Button } from '@/components/ui/button';
 import { EditableBlockTable } from './blocks/EditableBlockTable';
 import { DataChartBlock } from './blocks/DataChartBlock';
+import type { AgentType } from '@/agents/orchestrator';
+import type { NoteSettings } from '@/types/notes';
 
 interface NotionEditorProps {
   blocks: Block[];
@@ -31,7 +33,7 @@ interface NotionEditorProps {
   onAIAction?: (action: string) => void;
   onOCRAction?: () => void;
   onExport?: () => void;
-  settings?: any;
+  settings?: Partial<NoteSettings>;
   textPlaceholder?: string;
 }
 
@@ -138,6 +140,12 @@ const blockEditorFontFamily = (font?: string, customFont?: string): string | und
   return `"${family}", cursive`;
 };
 
+function consecutiveNumberedIndex(blocks: Block[], index: number): number {
+  let number = 1;
+  for (let previous = index - 1; previous >= 0 && blocks[previous].type === 'numbered'; previous -= 1) number += 1;
+  return number;
+}
+
 // ============================================================
 // COMPONENT
 // ============================================================
@@ -190,8 +198,9 @@ const NotionEditorView: React.FC<NotionEditorProps> = ({
 
   // Close menus on outside click/touch — but NOT on menu item clicks
   useEffect(() => {
-    const handleDocClick = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as HTMLElement;
+    const handleDocClick = (e: Event) => {
+      const target = e.target instanceof Element ? e.target : null;
+      if (!target) return;
       // Don't close if clicking inside a popup menu
       if (target.closest('[data-menu-popup]')) return;
       if (target.closest('[data-inline-color]')) return;
@@ -200,10 +209,10 @@ const NotionEditorView: React.FC<NotionEditorProps> = ({
       }
     };
     document.addEventListener('mousedown', handleDocClick);
-    document.addEventListener('touchstart', handleDocClick as any, { passive: true });
+    document.addEventListener('touchstart', handleDocClick, { passive: true });
     return () => {
       document.removeEventListener('mousedown', handleDocClick);
-      document.removeEventListener('touchstart', handleDocClick as any);
+      document.removeEventListener('touchstart', handleDocClick);
     };
   }, []);
 
@@ -387,7 +396,7 @@ const NotionEditorView: React.FC<NotionEditorProps> = ({
     try {
       const { aiOrchestrator } = await import('@/agents/orchestrator');
 
-      const agentMap: Record<string, string> = {
+      const agentMap: Record<string, AgentType> = {
         'ai-teacher': 'teacher', 'ai-notes': 'notes', 'ai-quiz': 'quiz',
         'ai-flashcards': 'quiz', 'ai-revision': 'revision',
         'ai-summarize': 'notes', 'ai-translate': 'teacher', 'ai-explain': 'teacher',
@@ -407,7 +416,7 @@ const NotionEditorView: React.FC<NotionEditorProps> = ({
       };
 
       const prompt = promptMap[actionId] || `Explain in Hinglish: ${userQuestion}`;
-      const response = await aiOrchestrator.chat(prompt, agentType as any);
+      const response = await aiOrchestrator.chat(prompt, agentType);
 
       if (response?.content) {
         const formattedContent = response.content.replace(/^##\s/gm, '').replace(/^###\s/gm, '').trim();
@@ -463,7 +472,7 @@ const NotionEditorView: React.FC<NotionEditorProps> = ({
       updateBlock(blockId, { content: '## 📋 Note Template\n\n### Topic\n\n### Key Points\n- \n- \n- \n\n### Formulas\n\n### Summary', type: 'callout', emoji: '📋' });
       focusBlock(blockId);
     }
-  }, [mentionMenu, updateBlock, focusBlock]);
+  }, [mentionMenu, updateBlock, focusBlock, isMobile]);
 
   // ============================================================
   // # HASHTAG SELECT — CRITICAL FIX: was referencing mentionMenu!
@@ -664,6 +673,7 @@ const NotionEditorView: React.FC<NotionEditorProps> = ({
           const indentPx = (block.indent || 0) * 24;
           const blockColor = (block.color || currentColor) as LineInkColor;
           const inkData = LINE_INK_COLORS.find(c => c.value === blockColor);
+          const numberedIndex = block.type === 'numbered' ? consecutiveNumberedIndex(blocks, idx) : 0;
           const isFocused = focusedBlockId === block.id;
           const isTyping = typingBlockId === block.id;
 
@@ -713,7 +723,7 @@ const NotionEditorView: React.FC<NotionEditorProps> = ({
                       <div style={{ transform: block.collapsed ? 'rotate(0deg)' : 'rotate(90deg)', transition: 'transform 0.15s' }}><ChevronRight className="w-3.5 h-3.5 text-gray-400" /></div>
                     </button>
                   ) : block.type === 'bullet' ? <span className="w-1.5 h-1.5 rounded-full bg-gray-500" />
-                  : block.type === 'numbered' ? <span className="text-[11px] text-gray-400 font-medium">{idx + 1}.</span>
+                  : block.type === 'numbered' ? <span className="text-[11px] text-gray-400 font-medium">{numberedIndex}.</span>
                   : block.type === 'quote' ? <div className="flex items-stretch h-5 mr-1"><div className="w-[3px] rounded-full bg-blue-400" /></div>
                   : block.type === 'callout' ? <span className="text-sm">{block.emoji || '💡'}</span>
                   : block.type === 'ai-generated' ? <span className="text-sm">✨</span>
@@ -747,7 +757,12 @@ const NotionEditorView: React.FC<NotionEditorProps> = ({
                   {block.type === 'bookmark' && (block.url || block.content) && <div className="mt-1 p-2.5 rounded-xl border border-gray-200 bg-gray-50 max-w-sm"><div className="text-[12px] font-medium text-blue-600 truncate">{block.content || 'Bookmark'}</div>{block.url && <div className="text-[10px] text-gray-400 truncate">🔗 {block.url}</div>}</div>}
                   {block.type === 'table' && <EditableBlockTable data={block.tableData || { headers: ['Column 1', 'Column 2'], rows: [], colCount: 2 }} onChange={(tableData) => updateBlock(block.id, { tableData })} />}
                   {block.type === 'chart' && <DataChartBlock block={block} onChange={(patch) => updateBlock(block.id, patch)} />}
-                  {block.type === 'image' && block.url && <div className="mt-1 rounded-xl overflow-hidden border border-gray-200 max-w-sm"><img src={block.url} alt="" className="w-full object-cover max-h-36" /></div>}
+                  {block.type === 'image' && block.url && (
+                    <figure className="nn-editor-image mt-1 max-w-sm overflow-hidden rounded-xl border border-gray-200 bg-white">
+                      <img src={block.url} alt={block.content || block.caption || 'Note image'} className="max-h-64 w-full object-contain" loading="lazy" />
+                      {block.caption && <figcaption className="px-3 py-2 text-xs text-gray-500">{block.caption}</figcaption>}
+                    </figure>
+                  )}
                   
                   {/* AI Generated block — PREMIUM styled */}
                   {block.type === 'ai-generated' && block.content && block.content.startsWith('⏳') && (

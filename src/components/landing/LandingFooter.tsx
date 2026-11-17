@@ -110,7 +110,7 @@ export const LandingFooter: React.FC = () => {
           <div>
             <h4 className="font-semibold text-foreground mb-3 text-sm">Resources</h4>
             <ul className="space-y-2">
-              <li><Link to="/welcome" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How NikNote Works</Link></li>
+              <li><Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How NikNote Works</Link></li>
               <li><Link to="/upgrade" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing &amp; Plans</Link></li>
               <li><Link to="/schools" className="text-sm text-muted-foreground hover:text-foreground transition-colors">For Schools &amp; Coaching</Link></li>
               <li><Link to="/blog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Study &amp; Handwriting Blog</Link></li>

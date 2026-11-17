@@ -51,6 +51,8 @@ export interface BlockCell {
   type: 'text' | 'number' | 'checkbox' | 'select' | 'date';
 }
 
+export type ChartType = 'bar' | 'line' | 'pie' | 'area';
+
 export interface Block {
   id: string;
   type: BlockType;
@@ -70,7 +72,7 @@ export interface Block {
     headers: string[];
     colCount: number;
   };
-  chartType?: 'bar' | 'line' | 'pie';
+  chartType?: ChartType;
   // AI properties
   aiPrompt?: string;        // original AI prompt
   aiModel?: string;         // which model generated it

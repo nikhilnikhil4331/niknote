@@ -61,7 +61,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               AI-Powered Learning
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-200 text-xs font-bold text-green-600">
-              ✅ 100% Free to Start
+              ✅ Free to Start
             </span>
           </motion.div>
 
@@ -72,14 +72,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             transition={{ duration: 0.6, delay: 0.1 }}
             className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6"
           >
-            <span className="text-foreground">AI Notes + Handwriting</span>
+            <span className="text-foreground">Turn Typed Text into</span>
             <br />
             <span className="bg-gradient-to-r from-primary via-blue-500 to-accent bg-clip-text text-transparent">
-              Made for Bharat
+              Handwritten Notes
             </span>
             <br />
             <span className="text-foreground text-3xl sm:text-4xl md:text-5xl lg:text-5xl">
-              Ke Students 🎓
+              with NikNote
             </span>
           </motion.h1>
 
@@ -90,10 +90,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed"
           >
-            <span className="text-foreground font-medium">AI Teacher</span> jo Hindi mein samjhata hai,{' '}
-            <span className="text-foreground font-medium">Handwriting Notes</span> jo real lagti hai,{' '}
-            <span className="text-foreground font-medium">Quiz & Flashcards</span> jo exam ready karte hain.
-            CBSE, ICSE, JEE, NEET — sab ke liye!
+            Create handwritten-style study pages online, choose a paper and ink, then export a PDF.
+            Use <span className="text-foreground font-medium">NikAI</span> for explanations, notes, quizzes
+            and flashcards in Hindi or English.
           </motion.p>
 
           {/* Exam Board Badges */}

@@ -69,10 +69,6 @@
       "destination": "/upgrade/index.html"
     },
     {
-      "source": "/welcome",
-      "destination": "/welcome/index.html"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
@@ -306,15 +302,6 @@
     },
     {
       "source": "/upgrade",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, s-maxage=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/welcome",
       "headers": [
         {
           "key": "Cache-Control",
@@ -681,6 +668,13 @@
           "value": "public, max-age=0, s-maxage=0, must-revalidate"
         }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/welcome",
+      "destination": "/",
+      "permanent": true
     }
   ]
 }

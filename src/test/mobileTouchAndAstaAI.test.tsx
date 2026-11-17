@@ -314,7 +314,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     Element.prototype.scrollIntoView = vi.fn();
   });
 
-  it('redirects root to the dashboard, opens notes at /editor/new, and keeps NikAI navigation', async () => {
+  it('serves the public landing page at root and preserves dashboard, editor and NikAI navigation', async () => {
     window.history.pushState({}, '', '/');
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1440 });
     window.dispatchEvent(new Event('resize'));
@@ -322,10 +322,20 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     render(<App />);
 
     await waitFor(() => {
+      expect(window.location.pathname).toBe('/');
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Turn Typed Text into\s*Handwritten Notes/);
+    });
+    expect(document.querySelector('.nik-desktop')).toBeNull();
+    expect(document.querySelector('.nn-writing-workspace')).toBeNull();
+
+    act(() => {
+      window.history.pushState({}, '', '/home');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await waitFor(() => {
       expect(window.location.pathname).toBe('/home');
       expect(document.querySelector('.nik-desktop')).not.toBeNull();
     });
-    expect(document.querySelector('.nn-writing-workspace')).toBeNull();
     expect(document.querySelector('[data-nikai-root="true"]')).toBeNull();
 
     act(() => {
@@ -353,13 +363,24 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     window.history.pushState({}, '', '/');
   });
 
-  it('routes mobile root to the dashboard and /editor/new to a blank writing workspace', async () => {
+  it('keeps a public mobile landing page while /home and /editor/new open the mobile workspace', async () => {
     window.history.pushState({}, '', '/');
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 390 });
     window.dispatchEvent(new Event('resize'));
 
     render(<App />);
 
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/');
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Turn Typed Text into\s*Handwritten Notes/);
+    });
+    expect(document.querySelector('.nn-mobile')).toBeNull();
+    expect(document.querySelector('.nn-writing-workspace')).toBeNull();
+
+    act(() => {
+      window.history.pushState({}, '', '/home');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
     await waitFor(() => {
       expect(window.location.pathname).toBe('/home');
       expect(document.querySelector('.nn-mobile')).not.toBeNull();

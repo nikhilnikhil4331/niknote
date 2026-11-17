@@ -356,7 +356,7 @@ const BlogPage: React.FC = () => {
         <footer className="mt-14 pt-6 border-t border-border/50 flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
           <span>© {new Date().getFullYear()} NikNote</span>
           <div className="flex flex-wrap gap-4">
-            <Link to="/welcome" className="hover:text-foreground">How It Works</Link>
+            <Link to="/" className="hover:text-foreground">How It Works</Link>
             <Link to="/upgrade" className="hover:text-foreground">Pricing</Link>
             <Link to="/schools" className="hover:text-foreground">For Schools</Link>
             <Link to="/privacy" className="hover:text-foreground">Privacy</Link>

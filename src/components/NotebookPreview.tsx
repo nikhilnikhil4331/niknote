@@ -8,6 +8,8 @@ import { HandwritingLine } from './HandwritingLine';
 import { InlineContent } from '@/types/noteLine';
 import { InlineContentRenderer } from './InlineContentRenderer';
 import { HandwritingDNA } from '@/components/handwriting-dna/HandwritingDNAEngine';
+import type { Block } from '@/types/block';
+import { RichBlockPreview } from '@/components/editor/blocks/RichBlockPreview';
 
 interface NotebookPreviewProps {
   lines: NoteLine[];
@@ -17,6 +19,7 @@ interface NotebookPreviewProps {
   totalPages?: number;
   forExport?: boolean; // When true, renders at full size without scaling
   inlineContent?: InlineContent[];
+  richBlocks?: Block[];
   onUpdateContent?: (id: string, updates: Partial<InlineContent>) => void;
   onDeleteContent?: (id: string) => void;
   dna?: HandwritingDNA;
@@ -26,9 +29,31 @@ export interface NotebookPreviewHandle {
   getPageElements: () => HTMLElement[];
 }
 
+function estimateRichBlockLines(block: Block | undefined, lineSpacing: number, forExport: boolean): number {
+  if (!block) return 1;
+  const safeLineSpacing = Number.isFinite(lineSpacing) && lineSpacing > 0 ? lineSpacing : 32;
+  let estimatedHeight = safeLineSpacing;
+
+  if (block.type === 'image') {
+    // Account for the image cap, caption, figure padding and vertical margins.
+    estimatedHeight = forExport ? 280 : 310;
+  } else if (block.type === 'chart') {
+    // Read-only chart includes a title, 200px plot, status line and card chrome.
+    estimatedHeight = 336;
+  } else if (block.type === 'table') {
+    // Header + footer, outer preview wrapper, and one ~38px row per source row.
+    const rowCount = block.tableData?.rows.length || 0;
+    estimatedHeight = 130 + rowCount * 38;
+  }
+
+  return Math.max(1, Math.ceil(estimatedHeight / safeLineSpacing));
+}
+
 // Page component - memoized for performance
 const NotebookPage = memo<{
   pageLines: NoteLine[];
+  richBlocks: Block[];
+  pageLineOffset: number;
   pageIndex: number;
   totalPageCount: number;
   linesPerPage: number;
@@ -50,6 +75,8 @@ const NotebookPage = memo<{
   dna?: HandwritingDNA;
 }>(({
   pageLines,
+  richBlocks,
+  pageLineOffset,
   pageIndex,
   totalPageCount,
   linesPerPage,
@@ -184,18 +211,26 @@ const NotebookPage = memo<{
           }}
         >
           {pageLines.map((line, lineIndex) => {
-            const globalLineIndex = pageIndex * linesPerPage + lineIndex;
+            const globalLineIndex = pageLineOffset + lineIndex;
+            const richBlock = line.richBlockId
+              ? richBlocks.find((block) => block.id === line.richBlockId)
+              : undefined;
             return (
-              <HandwritingLine
-                key={line.id}
-                line={line}
-                lineIndex={globalLineIndex}
-                settings={settings}
-                realPenMode={realPenMode}
-                fontClass={fontClass}
-                isNewText={false}
-                dna={dna}
-              />
+              <React.Fragment key={line.id}>
+                {richBlock ? (
+                  <RichBlockPreview block={richBlock} forExport={forExport} />
+                ) : (
+                  <HandwritingLine
+                    line={line}
+                    lineIndex={globalLineIndex}
+                    settings={settings}
+                    realPenMode={realPenMode}
+                    fontClass={fontClass}
+                    isNewText={false}
+                    dna={dna}
+                  />
+                )}
+              </React.Fragment>
             );
           })}
         </div>
@@ -223,7 +258,7 @@ const NotebookPage = memo<{
 NotebookPage.displayName = 'NotebookPage';
 
 export const NotebookPreview = forwardRef<NotebookPreviewHandle, NotebookPreviewProps>(
-  ({ lines, settings, realPenMode, forExport = false, inlineContent, onUpdateContent, onDeleteContent, dna }, ref) => {
+  ({ lines, settings, realPenMode, forExport = false, inlineContent, richBlocks = [], onUpdateContent, onDeleteContent, dna }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
     const isMobile = useIsMobile();
@@ -280,18 +315,44 @@ export const NotebookPreview = forwardRef<NotebookPreviewHandle, NotebookPreview
       return 1;
     }, [containerWidth, sizeConfig.width, isMobile, forExport]);
 
-    // Split lines into pages based on calculated lines per page
+    // Rich media take more space than a handwritten text line. Estimate their
+    // height while paginating so charts, tables and images do not silently
+    // overlap the page number or get cut at the bottom of a paper sheet.
     const pages = useMemo(() => {
       const result: NoteLine[][] = [];
       const effectiveLinesPerPage = Math.max(1, linesPerPage);
-      
-      for (let i = 0; i < lines.length; i += effectiveLinesPerPage) {
-        result.push(lines.slice(i, i + effectiveLinesPerPage));
+      const blocksById = new Map(richBlocks.map((block) => [block.id, block]));
+      let page: NoteLine[] = [];
+      let usedLines = 0;
+
+      for (const line of lines) {
+        const weight = estimateRichBlockLines(
+          line.richBlockId ? blocksById.get(line.richBlockId) : undefined,
+          settings.lineSpacing,
+          forExport,
+        );
+        if (page.length > 0 && usedLines + weight > effectiveLinesPerPage) {
+          result.push(page);
+          page = [];
+          usedLines = 0;
+        }
+        page.push(line);
+        usedLines += weight;
       }
-      
+      if (page.length) result.push(page);
+
       // Always have at least one page
       return result.length > 0 ? result : [[]];
-    }, [lines, linesPerPage]);
+    }, [lines, linesPerPage, richBlocks, settings.lineSpacing, forExport]);
+
+    const pageLineOffsets = useMemo(() => {
+      let offset = 0;
+      return pages.map((page) => {
+        const pageOffset = offset;
+        offset += page.length;
+        return pageOffset;
+      });
+    }, [pages]);
 
     useImperativeHandle(ref, () => ({
       getPageElements: () => {
@@ -411,6 +472,8 @@ export const NotebookPreview = forwardRef<NotebookPreviewHandle, NotebookPreview
             <NotebookPage
               key={pageIndex}
               pageLines={pageLines}
+              richBlocks={richBlocks}
+              pageLineOffset={pageLineOffsets[pageIndex] || 0}
               pageIndex={pageIndex}
               totalPageCount={pages.length}
               linesPerPage={linesPerPage}
@@ -449,7 +512,7 @@ export const NotebookPreview = forwardRef<NotebookPreviewHandle, NotebookPreview
           )}
 
           {/* Empty state */}
-          {!forExport && (lines.length === 0 || (lines.length === 1 && lines[0].text === '')) && (
+          {!forExport && (lines.length === 0 || lines.every((line) => !line.text && !line.richBlockId)) && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none animate-fade-in">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: 'rgba(107, 114, 128, 0.1)' }}>
                 <svg className="w-8 h-8" style={{ color: 'rgba(107, 114, 128, 0.5)' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

@@ -142,7 +142,7 @@ export default function LegalPage({ policy }: { policy: keyof typeof policies })
           <Link to="/privacy">Privacy Policy</Link>
           <Link to="/terms">Terms &amp; Conditions</Link>
           <Link to="/refunds">Refund Policy</Link>
-          <Link to="/welcome">How NikNote Works</Link>
+          <Link to="/">How NikNote Works</Link>
           <a href="mailto:support@niknote.online">Contact support</a>
         </nav>
       </main>

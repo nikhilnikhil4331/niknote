@@ -8,6 +8,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
+import { Capacitor } from '@capacitor/core';
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PremiumProvider } from "@/contexts/PremiumContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -136,6 +137,18 @@ function LegacyWorkspaceRedirect() {
   const { search } = useLocation();
   return <Navigate to={legacyWorkspaceTarget(search)} replace />;
 }
+function RootRoute() {
+  const { search } = useLocation();
+  const params = new URLSearchParams(search);
+  const hasLegacyWorkspaceIntent =
+    params.has('notebook') || params.has('editor') || params.get('new') === '1' || params.has('panel');
+
+  // Public web visits get the marketing homepage. Preserve legacy deep links
+  // and keep the native shell on its workspace; PWAs start at /home via manifest.
+  return Capacitor.isNativePlatform() || hasLegacyWorkspaceIntent
+    ? <Navigate to={legacyWorkspaceTarget(search)} replace />
+    : <Welcome />;
+}
 function LegacyEditorRedirect() {
   const { search } = useLocation();
   return <Navigate to={legacyEditorTarget(search)} replace />;
@@ -187,7 +200,7 @@ const App = () => {
                   <Suspense fallback={<PageLoader />}>
                     <RouteErrorBoundary>
                       <Routes>
-                        <Route path="/" element={<LegacyWorkspaceRedirect />} />
+                        <Route path="/" element={<RootRoute />} />
                         <Route path="/home" element={<ResponsivePage><DesktopHome /></ResponsivePage>} />
                         <Route path="/editor" element={<LegacyEditorRedirect />} />
                         <Route path="/editor/:documentId" element={<EditorRoute />} />

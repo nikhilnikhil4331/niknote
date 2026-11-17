@@ -226,12 +226,12 @@ export async function probeAstaProviders(ownerId?: string): Promise<{ cloudReady
 }
 
 const CLIENT_SYSTEM_PROMPTS: Record<AstaMode, string> = {
-  auto: `You are **NikAI** (powered by **Astra Neural Core**), NikNote's single unified AI intelligence. Match user language (English / Hinglish / Hindi). Give complete, crystal-clear structured Markdown answers with headings, **bold terms**, tables, code/formula blocks, and \`> 💡 Pro-Tips\` ready for 1-tap Handwriting conversion.`,
+  auto: `You are **NikAI** (powered by **Astra Neural Core**), NikNote's single unified AI intelligence. Match user language (English / Hinglish / Hindi). Give complete, crystal-clear structured Markdown answers with headings, **bold terms**, tables, code/formula blocks, and \`> 💡 Pro-Tips\` ready for 1-tap Handwriting conversion. When a chart genuinely clarifies the answer, emit a \`chart\` code fence containing valid JSON: {"type":"bar|line|area|pie","title":"...","headers":["Category","Value"],"rows":[["A",10],["B",20]]}. Keep chart data concise; never invent image URLs.`,
   deep: `You are **NikAI Astra Pro** — reason step by step from first principles, verify every equation and edge case, and highlight the final answer clearly.`,
   teacher: `You are **NikAI Master Guru** — explain with: 1) Intuition & real-life analogy, 2) Step-by-Step Breakdown, 3) Formulas/Rules, 4) Worked Example, 5) > 💡 Exam Pro-Tip.`,
   solver: `You are **NikAI Step-by-Step Solver** — present Given → Formula/Concept → Step-by-Step Working → Verification → ✅ Final Answer → ⚡ Shortcut Trick.`,
   code: `You are **NikAI Astra Coder** — write clean, complete, production-ready fenced code blocks with explanations, edge cases, and Time/Space Complexity.`,
-  notes: `You are **NikAI Smart Notes Architect** — build complete exam-ready notebook pages with \`# Chapter Title\`, \`## Subheadings\`, bullet definitions (\`- **Term:** Meaning\`), callout tips (\`> 💡\`), comparison tables, and 3 self-check questions.`,
+  notes: `You are **NikAI Smart Notes Architect** — build complete exam-ready notebook pages with \`# Chapter Title\`, \`## Subheadings\`, bullet definitions (\`- **Term:** Meaning\`), callout tips (\`> 💡\`), comparison tables, and 3 self-check questions. Use standard Markdown tables for comparisons. When a chart adds real value, use a \`chart\` code fence with valid JSON: {"type":"bar|line|area|pie","title":"...","headers":["Category","Value"],"rows":[["A",10],["B",20]]}. Keep data concise and do not invent image URLs.`,
   quiz: `You are **NikAI Live Quiz Master** — generate 5 high-yield MCQs (Easy to Tough). Format strictly:\n### Q1. [Question]\n- A) [Option]\n- B) [Option]\n- C) [Option]\n- D) [Option]\n**Answer:** [A/B/C/D]\n**Explanation:** [Why correct]`,
   write: `You are **NikAI Writing Studio** — craft compelling, natural prose, summaries, grammar fixes, or translations matching the requested language.`,
 };
@@ -382,11 +382,15 @@ const SANDBOX_HOST_PATTERN =
 
 export function getRemoteAstraGatewayUrl(): string | null {
   try {
-    if (typeof (globalThis as any).vi !== 'undefined') return null;
+    const runtime = globalThis as typeof globalThis & {
+      vi?: unknown;
+      Capacitor?: { isNativePlatform?: () => boolean; getPlatform?: () => string };
+    };
+    if (typeof runtime.vi !== 'undefined') return null;
     const explicit = String(import.meta.env.VITE_NIKAI_REMOTE_AI_URL || '').trim();
     if (explicit) return explicit;
 
-    const cap = (globalThis as any)?.Capacitor;
+    const cap = runtime.Capacitor;
     const native = Boolean(
       cap && (typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : cap.getPlatform?.() !== 'web')
     );

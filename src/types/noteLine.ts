@@ -10,6 +10,7 @@ export interface NoteLine {
   fontSize?: number;   // Override font size for headings
   fontWeight?: string; // Override font weight for headings
   indent?: number;     // Indentation level
+  richBlockId?: string; // Rich media/data block rendered alongside handwriting
 }
 
 export interface LineHistory {
