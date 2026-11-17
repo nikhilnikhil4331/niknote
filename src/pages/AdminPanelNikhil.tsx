@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, ShieldCheck, LogOut, RefreshCw, Lock, Menu, X,
   LayoutDashboard, Users, Activity, Bug, Settings,
-  BarChart3, Download, Radio, MessageCircle
+  BarChart3, Download, Radio, MessageCircle, Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +24,9 @@ import { AdminFeatureHeatmap } from '@/components/admin/AdminFeatureHeatmap';
 import { AdminUserDrawer } from '@/components/admin/AdminUserDrawer';
 import { AdminCommandCenter } from '@/components/admin/AdminCommandCenter';
 import { AdminSalesOverview } from '@/components/admin/AdminSalesOverview';
+import { AdminMailflareStudio } from '@/components/admin/AdminMailflareStudio';
+import type { ComposePrefill } from '@/lib/mailflareClient';
+import { AdminEmailStudio } from '@/components/admin/AdminEmailStudio';
 
 interface UserData {
   id: string;
@@ -147,7 +150,19 @@ const AdminPanelNikhil: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('sales');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const qTab = new URLSearchParams(window.location.search).get('tab');
+      if (qTab) return qTab;
+    }
+    return 'email';
+  });
+  const [emailPrefill, setEmailPrefill] = useState<ComposePrefill | null>(null);
+
+  const openEmailComposer = useCallback((draft: ComposePrefill) => {
+    setEmailPrefill(draft);
+    setActiveTab('email');
+  }, []);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [userDrawerOpen, setUserDrawerOpen] = useState(false);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
@@ -786,7 +801,7 @@ const AdminPanelNikhil: React.FC = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/');
+    navigate('/home');
   };
 
   if (loading) {
@@ -822,7 +837,7 @@ const AdminPanelNikhil: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AdminGateForm onSuccess={() => setIsAdmin(true)} onBack={() => navigate('/')} />
+              <AdminGateForm onSuccess={() => setIsAdmin(true)} onBack={() => navigate('/home')} />
             </CardContent>
           </Card>
         </motion.div>
@@ -832,7 +847,9 @@ const AdminPanelNikhil: React.FC = () => {
 
 
   const tabs = [
+    { id: 'email', label: 'Email Manager', icon: Mail },
     { id: 'sales', label: 'Sales & Leads', icon: BarChart3 },
+    { id: 'emails', label: 'Email Studio', icon: Mail },
     { id: 'command', label: 'Command Center', icon: ShieldCheck },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
@@ -867,6 +884,15 @@ const AdminPanelNikhil: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant={activeTab === 'email' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('email')}
+              className="rounded-xl gap-1.5 h-9 px-3 text-xs font-semibold"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>Email Manager</span>
+            </Button>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -965,11 +991,28 @@ const AdminPanelNikhil: React.FC = () => {
             </Button>
           </div>
 
-          <TabsContent value="sales" className="mt-4"><AdminSalesOverview /></TabsContent>
+          <TabsContent value="sales" className="mt-4"><AdminSalesOverview onComposeEmail={openEmailComposer} /></TabsContent>
+
+          {/* Customer Email Studio (Mailflare) */}
+          <TabsContent value="email" className="mt-4">
+            <AdminMailflareStudio
+              prefill={emailPrefill}
+              onClearPrefill={() => setEmailPrefill(null)}
+              knownCustomers={users
+                .filter((u) => Boolean(u.email && u.email.includes('@')))
+                .map((u) => ({
+                  email: u.email!,
+                  name: u.display_name,
+                  plan: u.is_premium ? 'premium' : 'free',
+                  userId: u.id,
+                }))}
+            />
+          </TabsContent>
+          <TabsContent value="emails" className="mt-4"><AdminEmailStudio /></TabsContent>
 
           {/* Command Center Tab — full per-user control */}
           <TabsContent value="command" className="mt-4">
-            <AdminCommandCenter />
+            <AdminCommandCenter onComposeEmail={openEmailComposer} />
           </TabsContent>
 
           {/* Dashboard Tab */}
@@ -1033,6 +1076,7 @@ const AdminPanelNikhil: React.FC = () => {
               onUpdateSetting={handleUpdateSetting}
               onClearLogs={handleClearLogs}
               onRunSystemCheck={handleRunSystemCheck}
+              onOpenEmailManager={() => setActiveTab('email')}
             />
           </TabsContent>
         </Tabs>
@@ -1046,6 +1090,10 @@ const AdminPanelNikhil: React.FC = () => {
         onTogglePremium={handleTogglePremium}
         onBanUser={handleBanUser}
         onDeleteUser={handleDeleteUser}
+        onComposeEmail={(draft) => {
+          setUserDrawerOpen(false);
+          openEmailComposer(draft);
+        }}
       />
 
       {/* Admin Chat Widget */}
@@ -1105,7 +1153,7 @@ const AdminChatWidget: React.FC = () => {
       <motion.button
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow"
+        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-gradient-to-r from-[#347ff0] to-[#245dcc] text-white shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow"
       >
         {isOpen ? <X className="w-5 h-5" /> : <MessageCircle className="w-5 h-5" />}
       </motion.button>
@@ -1120,7 +1168,7 @@ const AdminChatWidget: React.FC = () => {
             className="fixed bottom-20 right-6 z-50 w-80 max-h-[420px] bg-white/95 backdrop-blur-2xl rounded-2xl border border-white/30 shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
+            <div className="px-4 py-3 bg-gradient-to-r from-[#347ff0] to-[#245dcc] text-white">
               <div className="flex items-center gap-2">
                 <MessageCircle className="w-4 h-4" />
                 <span className="text-sm font-bold">Admin Chat</span>
@@ -1157,7 +1205,7 @@ const AdminChatWidget: React.FC = () => {
               <button
                 onClick={handleSend}
                 disabled={!input.trim()}
-                className="px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-xs font-medium disabled:opacity-50"
+                className="px-3 py-2 rounded-lg bg-gradient-to-r from-[#347ff0] to-[#245dcc] text-white text-xs font-medium disabled:opacity-50"
               >
                 Send
               </button>

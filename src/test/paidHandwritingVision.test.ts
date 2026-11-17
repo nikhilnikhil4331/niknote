@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { describe, expect, it, vi } from 'vitest';
+import { readLimitedJson } from '../../supabase/functions/_shared/aiSecurity';
 
 type Handler = (request: Request) => Promise<Response>;
 const image = 'data:image/png;base64,aGVsbG8=';
@@ -25,6 +26,7 @@ function world(options: { entitled?: boolean; rateAllowed?: boolean; content?: s
     }
     if (url.hostname === 'www.niknote.online' && url.pathname === '/api/ai') {
       const body = JSON.parse(String(init.body));
+      if (headers.get('Authorization') !== 'Bearer valid') throw new Error('missing gateway user token');
       if (body.model !== 'astra-vision' || body.stream !== false || body.messages[1].images[0].dataUrl !== image) throw new Error('wrong gateway payload');
       return json({ content: options.content ?? JSON.stringify({ extractedText: 'Hello\nworld', lines: ['Hello', 'world'], confidence: 0.9, warnings: [], success: true }) });
     }
@@ -33,12 +35,12 @@ function world(options: { entitled?: boolean; rateAllowed?: boolean; content?: s
   return { fetcher };
 }
 function handler(fetcher: typeof fetch): Handler {
-  const source = readFileSync('supabase/functions/handwriting-vision/index.ts', 'utf8');
+  const source = readFileSync('supabase/functions/handwriting-vision/index.ts', 'utf8').replace(/^import .*;\s*$/gm, '');
   const code = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
   let result: Handler | undefined;
   const values: Record<string, string> = { SUPABASE_URL: 'https://project.example', SUPABASE_ANON_KEY: 'anon', SUPABASE_SERVICE_ROLE_KEY: 'service' };
   const deno = { env: { get: (name: string) => values[name] }, serve: (fn: Handler) => { result = fn; } };
-  new Function('Deno', 'fetch', 'Response', code)(deno, fetcher, Response);
+  new Function('Deno', 'fetch', 'Response', 'readLimitedJson', code)(deno, fetcher, Response, readLimitedJson);
   if (!result) throw new Error('missing edge handler');
   return result;
 }
@@ -52,13 +54,13 @@ describe('paid handwriting vision edge function (mock provider)', () => {
     expect((await handler(unauth.fetcher)(request({ kind: 'ocr', imageBase64: image }, 'invalid'))).status).toBe(401);
     const unpaid = world({ entitled: false });
     expect((await handler(unpaid.fetcher)(request({ kind: 'ocr', imageBase64: image }))).status).toBe(403);
-    expect(unpaid.fetcher.mock.calls.some((call: any[]) => String(call[0]).includes('niknote.online'))).toBe(false);
+    expect(unpaid.fetcher.mock.calls.some((call) => String(call[0]).includes('niknote.online'))).toBe(false);
   });
 
   it('fails closed at the rate limit and does not send the image', async () => {
     const w = world({ rateAllowed: false });
     expect((await handler(w.fetcher)(request({ kind: 'ocr', imageBase64: image }))).status).toBe(429);
-    expect(w.fetcher.mock.calls.some((call: any[]) => String(call[0]).includes('niknote.online'))).toBe(false);
+    expect(w.fetcher.mock.calls.some((call) => String(call[0]).includes('niknote.online'))).toBe(false);
   });
 
   it('calls the vision gateway and returns OCR lines', async () => {
@@ -76,9 +78,16 @@ describe('paid handwriting vision edge function (mock provider)', () => {
     expect((await handler(bad.fetcher)(request({ kind: 'style', imageBase64: image }))).status).toBe(502);
   });
 
-  it('rejects invalid images and malformed AI responses without inventing a result', async () => {
+  it('rejects invalid and oversized images before calling the AI gateway', async () => {
     const invalid = world();
     expect((await handler(invalid.fetcher)(request({ kind: 'ocr', imageBase64: 'not-an-image' }))).status).toBe(400);
+    expect(invalid.fetcher.mock.calls.some((call) => String(call[0]).includes('niknote.online'))).toBe(false);
+
+    const oversized = world();
+    const largeRequest = request({ kind: 'ocr', imageBase64: 'x'.repeat(4 * 1024 * 1024) });
+    expect((await handler(oversized.fetcher)(largeRequest)).status).toBe(413);
+    expect(oversized.fetcher.mock.calls.some((call) => String(call[0]).includes('niknote.online'))).toBe(false);
+
     const bad = world({ content: 'not JSON' });
     expect((await handler(bad.fetcher)(request({ kind: 'ocr', imageBase64: image }))).status).toBe(502);
   });

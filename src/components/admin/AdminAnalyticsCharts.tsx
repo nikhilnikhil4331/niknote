@@ -142,7 +142,7 @@ export const AdminAnalyticsCharts: React.FC<AdminAnalyticsChartsProps> = ({ data
           <Card className="rounded-xl">
             <CardHeader className="pb-2">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-indigo-500" />
+                <BarChart3 className="w-4 h-4 text-[#2869d5]" />
                 Page Creations
               </CardTitle>
             </CardHeader>
@@ -184,7 +184,7 @@ export const AdminAnalyticsCharts: React.FC<AdminAnalyticsChartsProps> = ({ data
           <Card className="rounded-xl">
             <CardHeader className="pb-2">
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-purple-500" />
+                <TrendingUp className="w-4 h-4 text-[#2869d5]" />
                 PDF Exports
               </CardTitle>
             </CardHeader>

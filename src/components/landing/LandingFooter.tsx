@@ -96,7 +96,7 @@ export const LandingFooter: React.FC = () => {
           <div>
             <h4 className="font-semibold text-foreground mb-3 text-sm">Features</h4>
             <ul className="space-y-2">
-              <li><Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Handwriting Notes Editor</Link></li>
+              <li><Link to="/editor/new" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Handwriting Notes Editor</Link></li>
               <li><Link to="/ai" className="text-sm text-muted-foreground hover:text-foreground transition-colors">NikAI Study Assistant</Link></li>
               <li><Link to="/pdf-editor" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Online PDF Editor</Link></li>
               <li><Link to="/pdf-tools" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Free PDF Tools</Link></li>
@@ -110,7 +110,7 @@ export const LandingFooter: React.FC = () => {
           <div>
             <h4 className="font-semibold text-foreground mb-3 text-sm">Resources</h4>
             <ul className="space-y-2">
-              <li><Link to="/welcome" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How NikNote Works</Link></li>
+              <li><Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How NikNote Works</Link></li>
               <li><Link to="/upgrade" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing &amp; Plans</Link></li>
               <li><Link to="/schools" className="text-sm text-muted-foreground hover:text-foreground transition-colors">For Schools &amp; Coaching</Link></li>
               <li><Link to="/blog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Study &amp; Handwriting Blog</Link></li>

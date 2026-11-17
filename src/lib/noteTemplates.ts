@@ -1,5 +1,5 @@
 import { createBlock, detectBlockPrefix } from '@/types/block';
-import type { PageStyle } from '@/types/notes';
+import type { HandwritingFont, InkColor, PageStyle } from '@/types/notes';
 
 export interface NoteTemplate {
   title: string;
@@ -7,11 +7,23 @@ export interface NoteTemplate {
   text: string;
   desc: string;
   style: PageStyle;
-  layout: 'blank' | 'lecture' | 'cornell' | 'planner' | 'checklist' | 'revision' | 'ideas' | 'journal';
+  layout: 'blank' | 'lecture' | 'cornell' | 'planner' | 'checklist' | 'revision' | 'ideas' | 'journal' | 'niknote';
+  font?: HandwritingFont;
+  inkColor?: InkColor;
 }
 
 export const noteTemplates: NoteTemplate[] = [
   { title: 'Blank Note', category: 'Notes', text: '', desc: 'A little room for anything', style: 'plain', layout: 'blank' },
+  {
+    title: 'NikNote Compass Journal',
+    category: 'Notes',
+    text: '# Compass Journal\n## Today’s north star\n\n## Ideas to keep\n• A bright idea\n• A small discovery\n## One small step\n[] Make it happen\n',
+    desc: 'Warm paper, playful handwriting and a little direction',
+    style: 'niknote-paper',
+    layout: 'niknote',
+    font: 'caveat',
+    inkColor: 'blue',
+  },
   { title: 'Lecture Notes', category: 'Study', text: '# Lecture Notes\n## Topic\n\n## Key concepts\n\n## Questions\n', desc: 'Keep the important parts', style: 'ruled', layout: 'lecture' },
   { title: 'Cornell Notes', category: 'Study', text: '# Cornell Notes\n## Cues\n\n## Notes\n\n## Summary\n', desc: 'Capture. Recall. Remember.', style: 'cornell', layout: 'cornell' },
   { title: 'Daily Planner', category: 'Planner', text: '# Daily Planner\n## Top three\n[] First priority\n[] Second priority\n[] Third priority\n## Schedule\n\n## Reflection\n', desc: 'A day with a little direction', style: 'ruled', layout: 'planner' },

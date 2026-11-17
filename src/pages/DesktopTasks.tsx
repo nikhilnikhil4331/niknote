@@ -12,7 +12,7 @@ import { useTasks, TASK_COLUMNS, TASK_TAGS, todayKey, type TaskStatus, type NikT
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-const tagColorOf = (name?: string) => TASK_TAGS.find((x) => x.name === name)?.color ?? '#766A86';
+const tagColorOf = (name?: string) => TASK_TAGS.find((x) => x.name === name)?.color ?? '#68636c';
 
 const DesktopTasks: React.FC = () => {
   const { tasks, addTask, updateTask, removeTask, restoreTask, toggleDone } = useTasks();
@@ -65,17 +65,19 @@ const DesktopTasks: React.FC = () => {
   return (
     <DesktopShell counts={{ notes: active.length, trash: trashed.length }} folders={folders}>
       <div className="mx-auto w-full max-w-[1160px] px-8 py-7">
-        <div className="flex items-center gap-3 nd-anim">
-          <div>
-            <h1 className="text-[24px] font-extrabold tracking-[-0.02em]" style={{ color: 'var(--nd-text)' }}>Tasks</h1>
-            <p className="text-[12.5px]" style={{ color: 'var(--nd-text-3)' }}>
+        <section className="nd-page-hero nd-page-hero--tasks nd-anim" aria-labelledby="desktop-tasks-title">
+          <div className="nd-page-hero-copy">
+            <span className="nd-page-hero-kicker">One small win at a time</span>
+            <h1 id="desktop-tasks-title" className="font-display text-[25px] font-extrabold tracking-[-0.02em]" style={{ color: 'var(--nd-ink)' }}>Tasks</h1>
+            <p className="text-[12.5px] mt-0.5" style={{ color: 'var(--nd-ink-2)' }}>
               {openCount} open · {doneToday} completed today
             </p>
+            <span className="nd-chip mt-2" style={{ background: 'var(--nd-primary-soft)', color: 'var(--nd-ink)' }}>
+              <ListChecks size={12} /> Drag cards between columns
+            </span>
           </div>
-          <span className="ml-auto nd-chip" style={{ background: '#ECE7FF', color: '#6C5CE7' }}>
-            <ListChecks size={12} /> Drag cards between columns
-          </span>
-        </div>
+          <img className="nd-page-hero-art" src="/images/brand/niknote-task-list.png" alt="NikNote illustrated checklist" />
+        </section>
 
         <div className="grid grid-cols-3 gap-4 mt-6 items-start nd-anim nd-anim-1 pb-10">
           {TASK_COLUMNS.map((col) => {
@@ -162,7 +164,7 @@ const DesktopTasks: React.FC = () => {
                         {!t.tag && !editingId && (
                           <label
                             className="relative inline-flex items-center gap-1 cursor-pointer text-[10.5px] font-semibold rounded-full px-2 py-[2px] opacity-0 group-hover:opacity-100 transition-opacity"
-                            style={{ background: '#F4F3FA', color: 'var(--nd-text-3)' }}
+                            style={{ background: '#f7f2e6', color: 'var(--nd-text-3)' }}
                             title="Add category"
                           >
                             <Tag size={10} /> tag
@@ -181,8 +183,8 @@ const DesktopTasks: React.FC = () => {
                           className="relative inline-flex items-center gap-1 cursor-pointer text-[11px] font-semibold rounded-full px-2 py-[2px] transition-colors"
                           style={
                             due
-                              ? { background: due.hot ? '#FFE1E6' : '#F1EFFF', color: due.hot ? '#D93A5C' : '#6C5CE7' }
-                              : { background: '#F4F3FA', color: 'var(--nd-text-3)' }
+                              ? { background: due.hot ? '#fff0f0' : '#fff8dc', color: due.hot ? '#b92d48' : '#765700' }
+                              : { background: '#eef4ff', color: '#245dcc' }
                           }
                           title="Set due date"
                         >

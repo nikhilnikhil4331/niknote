@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { readLimitedJson } from "../_shared/aiSecurity.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,12 +10,15 @@ const corsHeaders = {
 // Rate limiting configuration - OCR is expensive, stricter limits
 const RATE_LIMIT_WINDOW = 3600; // 1 hour in seconds
 const MAX_REQUESTS_PER_WINDOW = 60; // per hour; PDFs send one request per scanned page
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+// Enough for a 10 MiB image encoded as base64 plus its data URL and JSON wrapper.
+const MAX_OCR_REQUEST_BYTES = 14_000_000;
 
 async function checkRateLimit(
   supabase: any,
   userId: string,
   endpoint: string
-): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
+): Promise<{ allowed: boolean; remaining: number; resetAt: Date; unavailable?: boolean }> {
   const now = new Date();
   const windowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW * 1000);
   
@@ -27,7 +31,7 @@ async function checkRateLimit(
 
   if (error) {
     console.error('Rate limit check error:', error);
-    return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW, resetAt: new Date(now.getTime() + RATE_LIMIT_WINDOW * 1000) };
+    return { allowed: false, remaining: 0, resetAt: new Date(now.getTime() + RATE_LIMIT_WINDOW * 1000), unavailable: true };
   }
 
   const currentCount = count || 0;
@@ -38,11 +42,15 @@ async function checkRateLimit(
     return { allowed: false, remaining: 0, resetAt };
   }
 
-  await supabase.from('rate_limits').insert({
+  const { error: insertError } = await supabase.from('rate_limits').insert({
     user_id: userId,
     endpoint,
     window_start: now.toISOString(),
   });
+  if (insertError) {
+    console.error('Rate limit reservation error:', insertError);
+    return { allowed: false, remaining: 0, resetAt, unavailable: true };
+  }
 
   return { allowed: true, remaining, resetAt };
 }
@@ -95,7 +103,13 @@ serve(async (req) => {
 
     // Check rate limit using service role client
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-    const { allowed, remaining, resetAt } = await checkRateLimit(adminClient, userId, 'extract-handwriting-text');
+    const { allowed, remaining, resetAt, unavailable } = await checkRateLimit(adminClient, userId, 'extract-handwriting-text');
+    if (unavailable) {
+      return new Response(JSON.stringify({ error: 'OCR rate limit is temporarily unavailable' }), {
+        status: 503,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     if (!allowed) {
       console.log(`Rate limit exceeded for user: ${userId}`);
@@ -116,8 +130,25 @@ serve(async (req) => {
       );
     }
 
-    const { imageBase64, retryAttempt = 0 } = await req.json();
-    
+    const parsedBody = await readLimitedJson(req, MAX_OCR_REQUEST_BYTES);
+    if (!parsedBody.ok) {
+      return new Response(
+        JSON.stringify({ error: parsedBody.reason === 'too_large' ? 'Request body too large' : 'Invalid JSON body' }),
+        {
+          status: parsedBody.reason === 'too_large' ? 413 : 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    const body = parsedBody.value && typeof parsedBody.value === 'object' && !Array.isArray(parsedBody.value)
+      ? parsedBody.value as Record<string, unknown>
+      : {};
+    const imageBase64 = typeof body.imageBase64 === 'string' ? body.imageBase64 : '';
+    const rawRetryAttempt = typeof body.retryAttempt === 'number' && Number.isFinite(body.retryAttempt)
+      ? Math.floor(body.retryAttempt)
+      : 0;
+    const retryAttempt = Math.max(0, Math.min(1, rawRetryAttempt));
+
     if (!imageBase64) {
       return new Response(
         JSON.stringify({ error: "No image provided" }),
@@ -125,18 +156,17 @@ serve(async (req) => {
       );
     }
 
-    // Server-side image size validation (10MB limit for OCR)
-    const maxSizeBytes = 10 * 1024 * 1024;
     const estimatedSize = (imageBase64.length * 3) / 4;
-    if (estimatedSize > maxSizeBytes) {
+    if (estimatedSize > MAX_IMAGE_SIZE_BYTES) {
       return new Response(
         JSON.stringify({ error: "Image too large. Maximum 10MB allowed." }),
         { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Validate base64 image format
-    if (!imageBase64.startsWith('data:image/')) {
+    // Accept only raster data URLs supported by the app's photo/PDF OCR flows.
+    const supportedImageDataUrl = new RegExp('^data:image/(?:png|jpe?g|webp|gif);base64,', 'i');
+    if (!supportedImageDataUrl.test(imageBase64)) {
       return new Response(
         JSON.stringify({ error: "Invalid image format" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }

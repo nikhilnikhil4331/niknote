@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, User, Calendar, Clock, Smartphone, Monitor, Globe,
   FileText, Download, Crown, Ban, Trash2, Activity,
-  ChevronRight, CheckCircle, XCircle
+  ChevronRight, CheckCircle, XCircle, Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { ComposePrefill } from '@/lib/mailflareClient';
 
 interface UserActivity {
   id: string;
@@ -40,6 +41,7 @@ interface AdminUserDrawerProps {
   onTogglePremium: (userId: string, currentStatus: boolean) => void;
   onBanUser: (userId: string) => void;
   onDeleteUser: (userId: string) => void;
+  onComposeEmail?: (draft: ComposePrefill) => void;
 }
 
 export const AdminUserDrawer: React.FC<AdminUserDrawerProps> = ({
@@ -49,6 +51,7 @@ export const AdminUserDrawer: React.FC<AdminUserDrawerProps> = ({
   onTogglePremium,
   onBanUser,
   onDeleteUser,
+  onComposeEmail,
 }) => {
   const [activities, setActivities] = useState<UserActivity[]>([]);
   const [loading, setLoading] = useState(false);
@@ -239,6 +242,25 @@ export const AdminUserDrawer: React.FC<AdminUserDrawerProps> = ({
                     <Activity className="w-4 h-4" />
                     Actions
                   </h3>
+                  {onComposeEmail && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2"
+                      onClick={() =>
+                        onComposeEmail({
+                          to: user.email || '',
+                          recipientName: user.display_name || undefined,
+                          plan: user.is_premium ? 'premium' : 'free',
+                          userId: user.id,
+                          templateId: user.is_premium ? 'premium_activated' : 'welcome',
+                        })
+                      }
+                    >
+                      <Mail className="w-4 h-4" />
+                      Send Custom Email (Mailflare)
+                    </Button>
+                  )}
                   <div className="grid grid-cols-3 gap-2">
                     <Button
                       variant={user.is_premium ? 'destructive' : 'default'}

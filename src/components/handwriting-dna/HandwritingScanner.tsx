@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Upload, Camera, Scan, Check, X, Sparkles, RotateCcw, Download, Sliders, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HandwritingDNA, DNA_PRESETS, analyzeHandwritingImage, findClosestPreset, dnaToCSS } from './HandwritingDNAEngine';
@@ -10,6 +10,7 @@ interface HandwritingScannerProps {
 }
 
 export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExtracted, onClose }) => {
+  const reducedMotion = useReducedMotion();
   const [step, setStep] = useState<'upload' | 'scanning' | 'results' | 'adjust'>('upload');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [dna, setDNA] = useState<HandwritingDNA | null>(null);
@@ -121,12 +122,12 @@ export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExt
         {step === 'upload' && (
           <motion.div
             key="upload"
-            initial={{ opacity: 0, y: 20 }}
+            initial={reducedMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -20 }}
             className="text-center space-y-6"
           >
-            <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center shadow-lg">
+            <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-[#347ff0] to-[#245dcc] flex items-center justify-center shadow-lg">
               <Scan className="w-10 h-10 text-white" />
             </div>
             <div>
@@ -139,15 +140,15 @@ export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExt
             {/* Upload area */}
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-purple-300 rounded-2xl p-8 cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 transition-all"
+              className="border-2 border-dashed border-[#9dbcf0] rounded-2xl p-8 cursor-pointer hover:border-[#347ff0] hover:bg-[#eaf2ff]/50 transition-all"
             >
-              <Upload className="w-10 h-10 text-purple-400 mx-auto mb-3" />
+              <Upload className="w-10 h-10 text-[#245dcc] mx-auto mb-3" />
               <p className="text-sm font-medium text-foreground">Click to upload handwriting image</p>
               <p className="text-xs text-muted-foreground mt-1">PNG, JPG, HEIC — phone photo bhi chalega!</p>
             </div>
 
             <div className="flex gap-3 justify-center">
-              <Button onClick={() => fileInputRef.current?.click()} className="gap-2 bg-gradient-to-r from-purple-500 to-blue-600">
+              <Button onClick={() => fileInputRef.current?.click()} className="gap-2 bg-gradient-to-r from-[#347ff0] to-[#245dcc]">
                 <Upload className="w-4 h-4" />
                 Upload Photo
               </Button>
@@ -184,34 +185,34 @@ export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExt
         {step === 'scanning' && (
           <motion.div
             key="scanning"
-            initial={{ opacity: 0 }}
+            initial={reducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="text-center space-y-6"
           >
             {imagePreview && (
-              <div className="relative rounded-2xl overflow-hidden border-2 border-purple-300">
+              <div className="relative rounded-2xl overflow-hidden border-2 border-[#9dbcf0]">
                 <img src={imagePreview} alt="Handwriting sample" className="w-full max-h-80 object-contain" />
                 {/* Scanning overlay */}
                 <motion.div
-                  className="absolute inset-0 bg-purple-500/10"
-                  animate={{ opacity: [0.1, 0.3, 0.1] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="absolute inset-0 bg-[#347ff0]/10"
+                  animate={reducedMotion ? { opacity: 0.15 } : { opacity: [0.1, 0.3, 0.1] }}
+                  transition={reducedMotion ? { duration: 0 } : { duration: 1.5, repeat: Infinity }}
                 />
                 <motion.div
-                  className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent"
-                  animate={{ top: ['0%', '100%', '0%'] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                  className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#347ff0] to-transparent"
+                  animate={reducedMotion ? { top: '50%' } : { top: ['0%', '100%', '0%'] }}
+                  transition={reducedMotion ? { duration: 0 } : { duration: 3, repeat: Infinity, ease: 'linear' }}
                 />
               </div>
             )}
             <div>
               <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                animate={reducedMotion ? { rotate: 0 } : { rotate: 360 }}
+                transition={reducedMotion ? { duration: 0 } : { duration: 2, repeat: Infinity, ease: 'linear' }}
                 className="inline-block"
               >
-                <Sparkles className="w-8 h-8 text-purple-500" />
+                <Sparkles className="w-8 h-8 text-[#245dcc]" />
               </motion.div>
               <p className="text-lg font-semibold mt-3">Scanning handwriting DNA... 🔬</p>
               <p className="text-sm text-muted-foreground">
@@ -225,7 +226,7 @@ export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExt
         {step === 'results' && dna && (
           <motion.div
             key="results"
-            initial={{ opacity: 0, y: 20 }}
+            initial={reducedMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             className="space-y-6"
@@ -264,10 +265,10 @@ export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExt
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <motion.div
-                      className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
-                      initial={{ width: 0 }}
+                      className="h-full bg-gradient-to-r from-[#347ff0] to-[#ff858f] rounded-full"
+                      initial={reducedMotion ? false : { width: 0 }}
                       animate={{ width: `${currentDNA[key as keyof HandwritingDNA] as number}%` }}
-                      transition={{ duration: 0.5, delay: 0.2 }}
+                      transition={reducedMotion ? { duration: 0 } : { duration: 0.5, delay: 0.2 }}
                     />
                   </div>
                 </div>
@@ -276,7 +277,7 @@ export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExt
 
             {/* Actions */}
             <div className="flex gap-3">
-              <Button onClick={useDNA} className="flex-1 gap-2 bg-gradient-to-r from-purple-500 to-blue-600">
+              <Button onClick={useDNA} className="flex-1 gap-2 bg-gradient-to-r from-[#347ff0] to-[#245dcc]">
                 <Sparkles className="w-4 h-4" />
                 Use This Style
               </Button>
@@ -295,7 +296,7 @@ export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExt
         {step === 'adjust' && dna && (
           <motion.div
             key="adjust"
-            initial={{ opacity: 0, y: 20 }}
+            initial={reducedMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             className="space-y-6"
@@ -336,14 +337,14 @@ export const HandwritingScanner: React.FC<HandwritingScannerProps> = ({ onDNAExt
                     max={max}
                     value={currentDNA[key] as number}
                     onChange={(e) => adjustDNA(key, parseInt(e.target.value))}
-                    className="w-full accent-purple-500"
+                    className="w-full accent-[#2869d5]"
                   />
                 </div>
               ))}
             </div>
 
             <div className="flex gap-3">
-              <Button onClick={useDNA} className="flex-1 gap-2 bg-gradient-to-r from-purple-500 to-blue-600">
+              <Button onClick={useDNA} className="flex-1 gap-2 bg-gradient-to-r from-[#347ff0] to-[#245dcc]">
                 <Check className="w-4 h-4" />
                 Apply DNA
               </Button>

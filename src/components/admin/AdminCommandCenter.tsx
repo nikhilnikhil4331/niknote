@@ -8,10 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   RefreshCw, Search, Crown, Ban, ShieldCheck, ShieldOff, Trash2,
-  Coins, BookOpen, FileText, Zap, Activity, Flame, User as UserIcon,
+  Coins, BookOpen, FileText, Zap, Activity, Flame, User as UserIcon, Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
+import type { ComposePrefill } from '@/lib/mailflareClient';
 
 interface AdminUser {
   user_id: string;
@@ -66,7 +67,7 @@ async function callAdmin(action: string, payload: Record<string, unknown> = {}) 
   return data;
 }
 
-export const AdminCommandCenter: React.FC = () => {
+export const AdminCommandCenter: React.FC<{ onComposeEmail?: (prefill: ComposePrefill) => void }> = ({ onComposeEmail }) => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -281,7 +282,27 @@ export const AdminCommandCenter: React.FC = () => {
                     {new Date(u.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-3 py-2 text-right">
-                    <Button size="sm" variant="outline" onClick={() => openDetail(u)}>Manage</Button>
+                    <div className="inline-flex items-center gap-1.5">
+                      {onComposeEmail && u.email && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            onComposeEmail({
+                              to: u.email!,
+                              recipientName: u.display_name || undefined,
+                              plan: u.plan,
+                              userId: u.user_id,
+                              templateId: u.plan !== 'free' ? 'premium_activated' : 'welcome',
+                            })
+                          }
+                          title={`Send email to ${u.email}`}
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={() => openDetail(u)}>Manage</Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -325,6 +346,24 @@ export const AdminCommandCenter: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2">
+                    {onComposeEmail && selected.email && (
+                      <ActionButton
+                        disabled={busy}
+                        icon={Mail}
+                        label="Send custom email (Mailflare)"
+                        onClick={() => {
+                          const u = selected;
+                          setSelected(null);
+                          onComposeEmail({
+                            to: u.email!,
+                            recipientName: u.display_name || undefined,
+                            plan: u.plan,
+                            userId: u.user_id,
+                            templateId: u.plan !== 'free' ? 'premium_activated' : 'welcome',
+                          });
+                        }}
+                      />
+                    )}
                     <ActionButton disabled={busy} icon={Crown} label="Grant 7 days premium"
                       onClick={() => runAction('Granted 7 days premium', 'grant_premium', { user_id: selected.user_id, days: 7 })} />
                     <ActionButton disabled={busy} icon={Crown} label="Grant 30 days premium"

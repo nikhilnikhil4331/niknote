@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { readLimitedJson, requireAIUser } from '../_shared/aiSecurity.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,6 +7,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-larprouter-key, x-groq-key, x-gemini-key, x-openai-key, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+type IncomingMessage = { role: 'system' | 'user' | 'assistant'; content: string };
+
+function isIncomingMessage(value: unknown): value is IncomingMessage {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const message = value as Record<string, unknown>;
+  return ['system', 'user', 'assistant'].includes(String(message.role)) &&
+    typeof message.content === 'string' && message.content.length <= 24000;
+}
 
 const AGENT_PROMPTS: Record<string, string> = {
   teacher: `You are NikNote Asta Master Teacher — explain concepts clearly from intuition to exam mastery with real-life examples, formulas, worked examples, and exam pro-tips. Match user language (English / Hinglish / Hindi).`,
@@ -23,18 +33,44 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+  if (req.method !== "POST") {
+    return Response.json({ error: "Method not allowed" }, { status: 405, headers: corsHeaders });
+  }
+
+  const parsed = await readLimitedJson(req, 128 * 1024);
+  if (!parsed.ok) {
+    return Response.json(
+      { error: parsed.reason === 'too_large' ? 'Request body too large' : 'Invalid JSON body' },
+      { status: parsed.reason === 'too_large' ? 413 : 400, headers: corsHeaders }
+    );
+  }
+  const bodyValue = parsed.value;
+  if (!bodyValue || typeof bodyValue !== 'object' || Array.isArray(bodyValue)) {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400, headers: corsHeaders });
+  }
+  const body = bodyValue as Record<string, unknown>;
+  const messageValue = body.messages;
+  if (messageValue !== undefined && !Array.isArray(messageValue)) {
+    return Response.json({ error: "Invalid message list" }, { status: 400, headers: corsHeaders });
+  }
+  const rawMessages: unknown[] = Array.isArray(messageValue) ? messageValue : [];
+  if (rawMessages.length > 30 || !rawMessages.every(isIncomingMessage)) {
+    return Response.json({ error: "Invalid or oversized message list" }, { status: 400, headers: corsHeaders });
+  }
+  const incomingMessages = rawMessages as IncomingMessage[];
+  const prompt = typeof body.prompt === 'string' ? body.prompt : '';
+  const agentType = typeof body.agentType === 'string' ? body.agentType.slice(0, 40) : 'teacher';
+  const mode = typeof body.mode === 'string' ? body.mode.slice(0, 20) : 'text';
+  const systemPrompt = typeof body.systemPrompt === 'string' ? body.systemPrompt.slice(0, 12000) : '';
+  const noteContext = typeof body.noteContext === 'string' ? body.noteContext.slice(0, 48000) : '';
+  if (prompt.length > 48000) {
+    return Response.json({ error: "Prompt is too large" }, { status: 400, headers: corsHeaders });
+  }
+
+  const authorization = await requireAIUser(req, corsHeaders);
+  if ('response' in authorization) return authorization.response;
 
   try {
-    const body = await req.json();
-    const {
-      messages: incomingMessages,
-      prompt,
-      agentType = "teacher",
-      mode = "text",
-      systemPrompt,
-      noteContext,
-    } = body || {};
-
     const larprouterKey = (req.headers.get("x-larprouter-key") || Deno.env.get("LARPROUTER_API_KEY") || Deno.env.get("VITE_LARPROUTER_KEY") || "").trim();
     const larprouterBaseUrl = (Deno.env.get("LARPROUTER_BASE_URL") || "https://larprouter.com/v1").replace(/\/+$/, "");
     const groqKey = req.headers.get("x-groq-key") || Deno.env.get("GROQ_API_KEY") || Deno.env.get("VITE_GROQ_KEY") || "";

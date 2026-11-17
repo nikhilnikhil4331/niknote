@@ -66,7 +66,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
       <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-indigo-500" />
+            <Clock className="w-4 h-4 text-blue-500" />
             <h3 className="text-sm font-bold text-gray-900">Version History</h3>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
@@ -98,7 +98,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
                 className={cn(
                   "w-full text-left p-3 rounded-xl transition-all",
                   selectedVersion?.id === version.id
-                    ? "bg-indigo-50 border border-indigo-200"
+                    ? "bg-blue-50 border border-blue-200"
                     : "hover:bg-gray-50 border border-transparent"
                 )}
               >
@@ -134,7 +134,7 @@ export const VersionHistory: React.FC<VersionHistoryProps> = ({
                 <span className="text-xs font-semibold text-gray-700">Preview</span>
                 <button
                   onClick={() => onRestore(selectedVersion)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-indigo-500 hover:bg-indigo-600 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white bg-primary hover:bg-primary/90 transition-colors"
                 >
                   <RotateCcw className="w-3 h-3" />
                   Restore

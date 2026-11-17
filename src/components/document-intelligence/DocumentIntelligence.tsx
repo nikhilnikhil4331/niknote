@@ -14,7 +14,11 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { aiOrchestrator } from '@/agents/orchestrator';
+import { readPdf } from '@/lib/pdfText';
+import { extractDocumentText } from '@/lib/documentExtraction';
+import { blocksFromNoteText } from '@/lib/noteTemplates';
+import { useAuth } from '@/contexts/AuthContext';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
 
 interface ExtractedContent {
   text: string;
@@ -25,10 +29,11 @@ interface ExtractedContent {
   topics: string[];
 }
 
-type ProcessingStep = 'idle' | 'uploading' | 'extracting' | 'analyzing' | 'done' | 'error';
+type ProcessingStep = 'idle' | 'extracting' | 'analyzing' | 'done' | 'error';
 
 export const DocumentIntelligence: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<ProcessingStep>('idle');
   const [file, setFile] = useState<File | null>(null);
@@ -68,79 +73,49 @@ export const DocumentIntelligence: React.FC = () => {
     await processDocument(selectedFile);
   }, []);
 
-  // Process the document
+  // Extract locally first, then send a bounded text request to process-document.
   const processDocument = useCallback(async (docFile: File) => {
-    setStep('uploading');
+    setStep('extracting');
     setError(null);
 
     try {
-      // Convert file to base64
-      const base64 = await fileToBase64(docFile);
-      setStep('extracting');
+      const extractedText = await extractDocumentText(docFile, {
+        readPdf,
+        readImageDataUrl: fileToDataUrl,
+        ocrImage: async (imageDataUrl) => {
+          const { data, error: ocrError } = await supabase.functions.invoke('extract-handwriting-text', {
+            body: { imageBase64: imageDataUrl },
+          });
+          if (ocrError) throw ocrError;
+          const text = typeof data?.extractedText === 'string' ? data.extractedText.trim() : '';
+          if (!text) throw new Error(data?.error || 'No readable text was found in the scanned page.');
+          return text;
+        },
+      });
 
-      // Call process-document edge function
+      setStep('analyzing');
       const { data, error: processError } = await supabase.functions.invoke('process-document', {
         body: {
-          fileBase64: base64,
-          fileName: docFile.name,
-          fileType: docFile.type,
+          content: extractedText,
+          processMode: 'summarize',
+          userMode: 'student',
+          title: docFile.name,
+          additionalInstructions: 'Return clear Markdown sections titled SUMMARY, KEY POINTS, FORMULAS, DEFINITIONS, and TOPICS. Use bullet points for lists. If a category has no items, say None found.',
         },
       });
 
       if (processError) throw processError;
+      const analysis = typeof data?.content === 'string' ? data.content.trim() : '';
+      if (!analysis) throw new Error(data?.error || 'The document analysis response was empty.');
 
-      const extractedText = data?.text || data?.content || '';
-      setStep('analyzing');
-
-      // Use AI to analyze the extracted content
-      if (extractedText) {
-        const aiResponse = await aiOrchestrator.chat(
-          `Analyze this document content and provide:
-1. A concise SUMMARY (5-7 lines)
-2. KEY POINTS (5-8 bullet points)
-3. Important FORMULAS (if any)
-4. Key DEFINITIONS (if any)
-5. Main TOPICS covered
-
-Document content:
-${extractedText.substring(0, 4000)}`,
-          'document'
-        );
-
-        const content = aiResponse.content;
-
-        // Parse the AI response into structured data
-        const summary = extractSection(content, 'summary', 'SUMMARY');
-        const keyPoints = extractBulletPoints(content, 'key point', 'KEY POINT');
-        const formulas = extractBulletPoints(content, 'formula', 'FORMULA');
-        const definitions = extractBulletPoints(content, 'definition', 'DEFINITION');
-        const topics = extractBulletPoints(content, 'topic', 'TOPIC');
-
-        setExtracted({
-          text: extractedText,
-          summary,
-          keyPoints,
-          formulas,
-          definitions,
-          topics,
-        });
-      } else {
-        // Fallback: even without extracted text, try AI vision
-        if (docFile.type.startsWith('image/')) {
-          const aiResponse = await aiOrchestrator.chat(
-            `Analyze this document image and extract all readable content. Provide a summary, key points, and important information.`,
-            'document'
-          );
-          setExtracted({
-            text: aiResponse.content,
-            summary: aiResponse.content.substring(0, 500),
-            keyPoints: [],
-            formulas: [],
-            definitions: [],
-            topics: [],
-          });
-        }
-      }
+      setExtracted({
+        text: extractedText,
+        summary: extractSection(analysis, 'summary', 'SUMMARY'),
+        keyPoints: extractBulletPoints(analysis, 'key point', 'KEY POINT'),
+        formulas: extractBulletPoints(analysis, 'formula', 'FORMULA'),
+        definitions: extractBulletPoints(analysis, 'definition', 'DEFINITION'),
+        topics: extractBulletPoints(analysis, 'topic', 'TOPIC'),
+      });
 
       setStep('done');
       toast.success('Document analyzed! 🎉');
@@ -160,7 +135,7 @@ ${extractedText.substring(0, 4000)}`,
     try {
       // Navigate to main editor with the extracted content
       // Store in localStorage for the editor to pick up
-      localStorage.setItem('niknote-imported-content', JSON.stringify({
+      localStorage.setItem(ownerScopedStorageKey('niknote-imported-content', user?.id), JSON.stringify({
         text: extracted.text,
         summary: extracted.summary,
         keyPoints: extracted.keyPoints,
@@ -170,14 +145,19 @@ ${extractedText.substring(0, 4000)}`,
         timestamp: Date.now(),
       }));
 
+      sessionStorage.setItem('niknote-mobile-open', JSON.stringify({
+        ownerId: user?.id,
+        title: 'Imported document notes',
+        blocks: blocksFromNoteText(extracted.text),
+      }));
       toast.success('Notes ready! Editor mein open ho rahe hain... ✍️');
-      navigate('/');
+      navigate('/editor/new');
     } catch (err) {
       toast.error('Notes generate nahi ho paye');
     } finally {
       setIsGeneratingNotes(false);
     }
-  }, [extracted, navigate]);
+  }, [extracted, navigate, user?.id]);
 
   // Copy section to clipboard
   const handleCopy = async (text: string, section: string) => {
@@ -269,13 +249,11 @@ ${extractedText.substring(0, 4000)}`,
         >
           <Loader2 className="w-10 h-10 animate-spin mx-auto text-primary mb-4" />
           <h3 className="text-lg font-semibold mb-1">
-            {step === 'uploading' && 'Upload ho raha hai...'}
             {step === 'extracting' && 'Text extract ho raha hai...'}
             {step === 'analyzing' && 'AI analyze kar raha hai...'}
           </h3>
           <p className="text-muted-foreground text-sm">
-            {step === 'uploading' && 'Document prepare ho raha hai'}
-            {step === 'extracting' && 'OCR se text nikal rahe hain'}
+            {step === 'extracting' && 'PDF text ya OCR content process ho raha hai'}
             {step === 'analyzing' && 'AI document ko samajh raha hai'}
           </p>
           {preview && (
@@ -336,7 +314,7 @@ ${extractedText.substring(0, 4000)}`,
             <Button
               onClick={handleGenerateNotes}
               disabled={isGeneratingNotes}
-              className="flex-1 gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white"
+              className="flex-1 gap-2 bg-gradient-to-r from-[#347ff0] to-[#245dcc] text-white"
             >
               {isGeneratingNotes ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -503,17 +481,16 @@ ${extractedText.substring(0, 4000)}`,
   );
 };
 
-// Helper: File to base64
-function fileToBase64(file: File): Promise<string> {
+// Read the image as a data URL for the existing OCR Edge Function contract.
+function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      const result = reader.result as string;
-      // Remove data URL prefix for clean base64
-      const base64 = result.split(',')[1] || result;
-      resolve(base64);
+      const result = reader.result;
+      if (typeof result === 'string') resolve(result);
+      else reject(new Error('Could not read the selected image.'));
     };
-    reader.onerror = reject;
+    reader.onerror = () => reject(new Error('Could not read the selected image.'));
     reader.readAsDataURL(file);
   });
 }

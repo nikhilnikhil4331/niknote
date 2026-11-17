@@ -46,7 +46,7 @@ export function ProfileScreen({ go }: { go: (s: { name: string; id?: string }) =
   return (
     <div className="pb-2">
       <TopBar title="Profile" icon={<span>👤</span>}
-        right={<Link to="/" aria-label="Back to Niknote" className="grid h-11 w-11 place-items-center rounded-full nnh-card"><Settings size={17} /></Link>} />
+        right={<Link to="/home" aria-label="Back to Niknote" className="grid h-11 w-11 place-items-center rounded-full nnh-card"><Settings size={17} /></Link>} />
       <div className="space-y-4 px-4">
         {/* identity */}
         <section className="nnh-card relative overflow-hidden p-5">
@@ -113,7 +113,7 @@ export function ProfileScreen({ go }: { go: (s: { name: string; id?: string }) =
         <Link to="/account" className="block rounded-2xl py-3 text-center text-[12px] font-bold nnh-chip" style={{ color: 'var(--nnh-violet)' }}>
           Account settings
         </Link>
-        <Link to="/" className="block text-center text-[11px] font-bold" style={{ color: 'var(--nnh-sub)' }}>
+        <Link to="/home" className="block text-center text-[11px] font-bold" style={{ color: 'var(--nnh-sub)' }}>
           ← Back to Niknote
         </Link>
         <p className="pb-2 text-center text-[10px] font-semibold" style={{ color: 'var(--nnh-sub)' }}>

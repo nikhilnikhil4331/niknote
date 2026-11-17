@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Check, Copy, Sparkles, Trophy } from 'lucide-react';
+import { DataChartBlock } from '@/components/editor/blocks/DataChartBlock';
+import { markdownToStructuredLines, structuredToBlocks } from '@/lib/noteStructure';
 
 interface ParsedMCQ {
   number: string;
@@ -9,6 +11,22 @@ interface ParsedMCQ {
   options: { letter: string; text: string }[];
   answer: string;
   explanation: string;
+}
+
+const MarkdownImage: React.FC<React.ComponentProps<'img'>> = ({ src, alt, title }) => (
+  <figure className="my-3 overflow-hidden rounded-xl border border-[#E2E7F0] bg-white">
+    <img src={src || ''} alt={alt || ''} title={title} loading="lazy" className="max-h-[360px] w-full object-contain" />
+    {title && <figcaption className="px-3 py-2 text-center text-xs text-[#5E5961]">{title}</figcaption>}
+  </figure>
+);
+MarkdownImage.displayName = 'MarkdownImage';
+
+function containsMarkdownImage(children: React.ReactNode): boolean {
+  return React.Children.toArray(children).some((child) => {
+    if (!React.isValidElement(child)) return false;
+    if (child.type === MarkdownImage) return true;
+    return containsMarkdownImage((child.props as { children?: React.ReactNode }).children);
+  });
 }
 
 function parseInteractiveQuiz(markdown: string): ParsedMCQ[] {
@@ -96,9 +114,9 @@ const InteractiveQuizDeck: React.FC<{ questions: ParsedMCQ[] }> = ({ questions }
 
   return (
     <div className="my-3 space-y-3.5">
-      <div className="flex items-center justify-between rounded-xl border border-indigo-500/20 bg-indigo-500/[0.06] px-3.5 py-2.5 text-xs font-medium text-foreground">
+      <div className="flex items-center justify-between rounded-xl border border-blue-500/20 bg-blue-500/[0.06] px-3.5 py-2.5 text-xs font-medium text-foreground">
         <span className="inline-flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+          <Sparkles className="h-3.5 w-3.5 text-blue-500" />
           Interactive Practice Quiz ({questions.length} MCQs)
         </span>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-background px-2.5 py-1 font-semibold shadow-2xs">
@@ -115,7 +133,7 @@ const InteractiveQuizDeck: React.FC<{ questions: ParsedMCQ[] }> = ({ questions }
             className="rounded-2xl border border-border/80 bg-card/90 p-4 shadow-2xs transition-colors"
           >
             <p className="mb-3 text-[14.5px] font-semibold leading-snug text-foreground">
-              <span className="mr-1.5 text-indigo-500">Q{q.number}.</span>
+              <span className="mr-1.5 text-blue-500">Q{q.number}.</span>
               {q.question}
             </p>
             <div className="space-y-2">
@@ -203,12 +221,17 @@ export const AstaMarkdown: React.FC<{ content: string; isStreaming?: boolean }> 
           h3: ({ children }) => (
             <h3 className="mt-4 mb-1.5 text-[15.5px] font-semibold text-foreground first:mt-0">{children}</h3>
           ),
-          p: ({ children }) => <p className="mb-3 last:mb-0 leading-[1.72]">{children}</p>,
-          ul: ({ children }) => <ul className="mb-3 ml-5 list-disc space-y-1.5 marker:text-indigo-500">{children}</ul>,
+          p: ({ children }) => {
+            const className = 'mb-3 last:mb-0 leading-[1.72]';
+            return containsMarkdownImage(children)
+              ? <div className={className}>{children}</div>
+              : <p className={className}>{children}</p>;
+          },
+          ul: ({ children }) => <ul className="mb-3 ml-5 list-disc space-y-1.5 marker:text-blue-500">{children}</ul>,
           ol: ({ children }) => <ol className="mb-3 ml-5 list-decimal space-y-1.5 marker:font-semibold">{children}</ol>,
           li: ({ children }) => <li className="pl-0.5 leading-[1.68]">{children}</li>,
           blockquote: ({ children }) => (
-            <blockquote className="my-3 rounded-r-xl border-l-[3px] border-indigo-500 bg-indigo-500/[0.06] px-4 py-2.5 text-[14px] text-foreground/90">
+            <blockquote className="my-3 rounded-r-xl border-l-[3px] border-blue-500 bg-blue-500/[0.06] px-4 py-2.5 text-[14px] text-foreground/90">
               {children}
             </blockquote>
           ),
@@ -221,28 +244,41 @@ export const AstaMarkdown: React.FC<{ content: string; isStreaming?: boolean }> 
           thead: ({ children }) => <thead className="bg-muted/70 text-xs font-semibold uppercase tracking-wide">{children}</thead>,
           th: ({ children }) => <th className="border-b border-border px-3.5 py-2.5 font-semibold text-foreground">{children}</th>,
           td: ({ children }) => <td className="border-b border-border/50 px-3.5 py-2.5 align-top">{children}</td>,
+          pre: ({ children }) => <>{children}</>,
           code: ({ className, children, ...props }) => {
             const match = /language-(\w+)/.exec(className || '');
             const text = String(children).replace(/\n$/, '');
+            if (match?.[1].toLowerCase() === 'chart') {
+              const chart = structuredToBlocks(markdownToStructuredLines(`\`\`\`chart\n${text}\n\`\`\``))
+                .find((block) => block.type === 'chart');
+              if (chart) {
+                return (
+                  <div className="my-3 overflow-hidden rounded-2xl border border-[#E2E7F0] bg-[#FFFDF5] p-2.5 sm:p-3.5">
+                    <DataChartBlock block={chart} readOnly showDataTable={false} />
+                  </div>
+                );
+              }
+            }
             const isBlock = Boolean(match) || text.includes('\n');
             if (isBlock) {
               return <CodeBlockView language={match?.[1] || ''} code={text} />;
             }
             return (
               <code
-                className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[13px] font-medium text-indigo-600 dark:text-indigo-300"
+                className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[13px] font-medium text-blue-600 dark:text-blue-300"
                 {...props}
               >
                 {children}
               </code>
             );
           },
+          img: MarkdownImage,
           a: ({ href, children }) => (
             <a
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-indigo-600 underline underline-offset-2 dark:text-indigo-400"
+              className="font-medium text-blue-600 underline underline-offset-2 dark:text-blue-400"
             >
               {children}
             </a>
@@ -252,7 +288,7 @@ export const AstaMarkdown: React.FC<{ content: string; isStreaming?: boolean }> 
         {content}
       </ReactMarkdown>
       {isStreaming && (
-        <span className="ml-1 inline-block h-4 w-2 animate-pulse rounded-sm bg-indigo-500 align-middle" />
+        <span className="ml-1 inline-block h-4 w-2 animate-pulse rounded-sm bg-blue-500 align-middle" />
       )}
     </div>
   );

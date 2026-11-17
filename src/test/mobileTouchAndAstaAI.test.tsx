@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import App from '@/App';
+import App, { legacyEditorTarget, legacyWorkspaceTarget } from '@/App';
 import { TouchHealthGuard } from '@/components/mobile/TouchHealthGuard';
 import { AstaMarkdown } from '@/components/asta/AstaMarkdown';
 import { NikAIWorkspace } from '@/components/nikai/NikAIWorkspace';
@@ -20,6 +21,9 @@ import BoardPage from '@/pages/Board';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { PremiumProvider } from '@/contexts/PremiumContext';
 import { supabase } from '@/integrations/supabase/client';
+import { readLocalNotesForOwner, upsertLocalNoteForOwner } from '@/lib/localNoteStore';
+import { ownerScopedStorageKey } from '@/lib/ownerScopedStorage';
+import { createBlock } from '@/types/block';
 import { streamAstaAI } from '@/lib/aiEngine';
 import {
   learnFromConversationTurn,
@@ -33,6 +37,15 @@ import {
   extractAndSaveFlashcardsFromMarkdown,
 } from '@/lib/nikaiNotesBridge';
 import apiHandler from '../../api/ai';
+
+// AuthProvider auto-guest is enabled in the app. Keep these UI tests isolated
+// from the configured Supabase project instead of making real anonymous-auth calls.
+beforeEach(() => {
+  vi.spyOn(supabase.auth, 'signInAnonymously').mockResolvedValue({
+    data: { user: null, session: null },
+    error: new Error('Anonymous auth is disabled in this test'),
+  } as unknown as Awaited<ReturnType<typeof supabase.auth.signInAnonymously>>);
+});
 
 describe('Mobile touch & pointer-event invariants', () => {
   it('never disables pointer-events on fixed overlays or locks touch-action on canvases in src/index.css', () => {
@@ -269,6 +282,18 @@ describe('NikAI Brand Identity, Cross-Session Memory, Multi-Ink Smart Notes & Th
   });
 });
 
+describe('Workspace route migration', () => {
+  it('maps legacy note IDs and scanner query links to explicit editor routes', () => {
+    expect(legacyEditorTarget('?notebook=note%2Fwith%20spaces')).toBe('/editor/note%2Fwith%20spaces');
+    expect(legacyEditorTarget('?editor=1&new=1&panel=scan')).toBe('/editor/new?panel=scan');
+    expect(legacyEditorTarget('?panel=scan')).toBe('/editor/new?panel=scan');
+    expect(legacyEditorTarget('')).toBe('/editor/new');
+    expect(legacyWorkspaceTarget('')).toBe('/home');
+    expect(legacyWorkspaceTarget('?panel=scan')).toBe('/editor/new?panel=scan');
+    expect(legacyWorkspaceTarget('?notebook=legacy-id')).toBe('/editor/legacy-id');
+  });
+});
+
 describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Board (390px phone viewport)', () => {
   const wrap = (ui: React.ReactNode, initial = '/') => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -289,25 +314,102 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     Element.prototype.scrollIntoView = vi.fn();
   });
 
-  it('shows the NikNote desktop Home FIRST on desktop (1440px) without opening NikAI until AI Assistant is clicked', async () => {
+  it('serves the public landing page at root and preserves dashboard, editor and NikAI navigation', async () => {
     window.history.pushState({}, '', '/');
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1440 });
     window.dispatchEvent(new Event('resize'));
 
     render(<App />);
 
-    // 1. New desktop Home (sidebar workspace) loads first — NikAI is NOT open automatically!
-    const aiNav = await screen.findByText('AI Assistant', {}, { timeout: 5000 });
-    expect(document.querySelector('.nik-desktop')).not.toBeNull();
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/');
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Turn Typed Text into\s*Handwritten Notes/);
+    });
+    expect(document.querySelector('.nik-desktop')).toBeNull();
+    expect(document.querySelector('.nn-writing-workspace')).toBeNull();
+
+    act(() => {
+      window.history.pushState({}, '', '/home');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/home');
+      expect(document.querySelector('.nik-desktop')).not.toBeNull();
+    });
     expect(document.querySelector('[data-nikai-root="true"]')).toBeNull();
 
-    // 2. Clicking AI Assistant in the sidebar opens full NikAI Studio (/ai)!
+    act(() => {
+      window.history.pushState({}, '', '/editor/new');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/editor/new');
+      expect(document.querySelector('.nn-writing-workspace')).not.toBeNull();
+    });
+    expect(document.querySelector('.nik-desktop')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'NikNote workspace home' }));
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/home');
+      expect(document.querySelector('.nik-desktop')).not.toBeNull();
+    });
+
+    const aiNav = await screen.findByText('AI Assistant', {}, { timeout: 5000 });
     fireEvent.click(aiNav);
     await waitFor(() => {
       expect(window.location.pathname).toBe('/ai');
       expect(document.querySelector('[data-nikai-root="true"]')).not.toBeNull();
     });
     window.history.pushState({}, '', '/');
+  });
+
+  it('keeps a public mobile landing page while /home and /editor/new open the mobile workspace', async () => {
+    window.history.pushState({}, '', '/');
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 390 });
+    window.dispatchEvent(new Event('resize'));
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/');
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Turn Typed Text into\s*Handwritten Notes/);
+    });
+    expect(document.querySelector('.nn-mobile')).toBeNull();
+    expect(document.querySelector('.nn-writing-workspace')).toBeNull();
+
+    act(() => {
+      window.history.pushState({}, '', '/home');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/home');
+      expect(document.querySelector('.nn-mobile')).not.toBeNull();
+    });
+    expect(document.querySelector('.nn-writing-workspace')).toBeNull();
+
+    act(() => {
+      window.history.pushState({}, '', '/editor/new');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+    await waitFor(() => expect(document.querySelector('.nn-writing-workspace.nn-writing-mobile')).not.toBeNull());
+    expect(document.querySelector('.nn-mobile')).toBeNull();
+    expect(screen.queryByText('Operating System')).toBeNull();
+    expect(screen.queryByText('Machine Learning')).toBeNull();
+  });
+
+  it('consumes imported-document session handoff into a new editor draft', async () => {
+    const importedText = 'Imported mechanics notes: velocity is displacement over time.';
+    sessionStorage.setItem('niknote-mobile-open', JSON.stringify({
+      title: 'Imported document notes',
+      blocks: [createBlock('text', importedText)],
+    }));
+    window.history.pushState({}, '', '/editor/new');
+
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByLabelText('Document title')).toHaveValue('Imported document notes'));
+    expect(document.querySelector('.nn-document-canvas textarea')).toHaveValue(importedText);
+    expect(sessionStorage.getItem('niknote-mobile-open')).toBeNull();
   });
 
   it('mounts the entire <App /> tree cleanly at / without router or overlay errors', async () => {
@@ -317,14 +419,75 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     });
   });
 
-  it('renders MobileExperience Home cleanly with unified NikAI button and theme taps', async () => {
+  it('renders MobileExperience Home with real notes and only the globally persisted Light/Dark modes', async () => {
     wrap(<MobileExperience />, '/');
     expect(screen.getAllByText('NikAI').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Write Note')).toBeTruthy();
+    expect(screen.getByTestId('mobile-dashboard-hero')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /Good (Morning|Afternoon|Evening),/ })).toBeTruthy();
+    expect(document.querySelector('.nn-logo-wordmark')?.getAttribute('src')).toBe('/images/brand/niknote-primary-wordmark.png');
+    expect(screen.getAllByRole('button', { name: 'Light' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Dark' })).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: /Compass/i })).toBeNull();
 
-    const focusBtn = screen.getByRole('button', { name: /Focus/i });
-    fireEvent.click(focusBtn);
-    expect(focusBtn.getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Dark' }));
+    await waitFor(() => {
+      expect(document.querySelector('.nn-mobile')?.getAttribute('data-theme')).toBe('dark');
+      expect(localStorage.getItem('theme')).toBe('dark');
+    });
+  });
+
+  it('moves a mobile local note to Trash and restores its original folder', async () => {
+    const ownerId = 'local-guest-mobile-trash-test';
+    localStorage.setItem('niknote.offline.guest.v1', JSON.stringify({
+      id: ownerId,
+      is_anonymous: true,
+      email: '',
+      user_metadata: { is_guest: true, is_local_guest: true, full_name: 'Test Guest' },
+    }));
+    upsertLocalNoteForOwner({
+      id: 'mobile-trash-restore-test',
+      title: 'Mobile folder recovery note',
+      folder: 'Science',
+      tags: ['Study'],
+      content: 'Restore me to Science.',
+    }, ownerId);
+    const RouteProbe = () => <output data-testid="mobile-route">{useLocation().pathname}</output>;
+
+    wrap(<><MobileExperience /><RouteProbe /></>, '/notebooks');
+    const user = userEvent.setup();
+    await screen.findByText('Mobile folder recovery note');
+
+    await user.click(screen.getByRole('button', { name: 'Options for Mobile folder recovery note' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Move to Trash' }));
+    await waitFor(() => {
+      expect(readLocalNotesForOwner(ownerId)[0]).toMatchObject({ folder: '__trash__' });
+      expect(readLocalNotesForOwner(ownerId)[0].trashedAt).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Trash' }));
+    await waitFor(() => expect(screen.getByTestId('mobile-route')).toHaveTextContent('/trash'));
+    await screen.findByText('Mobile folder recovery note');
+    await user.click(screen.getByRole('button', { name: 'Options for Mobile folder recovery note' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Restore note' }));
+
+    await waitFor(() => {
+      const restored = readLocalNotesForOwner(ownerId)[0];
+      expect(restored).toMatchObject({ folder: 'Science', trashedAt: null });
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'All' }));
+    await waitFor(() => expect(screen.getByTestId('mobile-route')).toHaveTextContent('/notebooks'));
+    expect(await screen.findByText('Mobile folder recovery note')).toBeTruthy();
+  });
+
+  it('hands off the Compass Journal template with its branded paper, Caveat font, and blue ink', () => {
+    sessionStorage.removeItem('niknote-mobile-open');
+    wrap(<MobileExperience />, '/templates');
+    fireEvent.click(screen.getByRole('button', { name: 'Use NikNote Compass Journal template' }));
+
+    const pendingNote = JSON.parse(sessionStorage.getItem('niknote-mobile-open') || '{}');
+    expect(pendingNote).toMatchObject({ style: 'niknote-paper', font: 'caveat', inkColor: 'blue' });
+    expect(pendingNote.blocks.length).toBeGreaterThan(0);
   });
 
   it('renders functional device stats without Sign in to start lockout when unauthenticated', () => {
@@ -351,11 +514,11 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     const { NiknoteAuth } = await import('@/components/auth/NiknoteAuth');
     const spyAnon = vi
       .spyOn(supabase.auth, 'signInAnonymously')
-      .mockResolvedValue({ data: null, error: new Error('Anonymous sign-ins are disabled') } as any);
+      .mockResolvedValue({ data: null, error: new Error('Anonymous sign-ins are disabled') } as unknown as Awaited<ReturnType<typeof supabase.auth.signInAnonymously>>);
     const spyEdgeInvoke = vi.fn().mockRejectedValue(new Error('Network offline'));
     const spyFunctionsGetter = vi
       .spyOn(supabase, 'functions', 'get')
-      .mockReturnValue({ invoke: spyEdgeInvoke } as any);
+      .mockReturnValue({ invoke: spyEdgeInvoke } as unknown as typeof supabase.functions);
 
     wrap(<NiknoteAuth mode="login" />, '/login');
     const nameInput = screen.getByPlaceholderText(/Your name/i);
@@ -378,7 +541,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     const fakeCloudUuid = '550e8400-e29b-41d4-a716-446655440000';
     const spyAnon = vi
       .spyOn(supabase.auth, 'signInAnonymously')
-      .mockResolvedValue({ data: null, error: new Error('Anonymous sign-ins are disabled') } as any);
+      .mockResolvedValue({ data: null, error: new Error('Anonymous sign-ins are disabled') } as unknown as Awaited<ReturnType<typeof supabase.auth.signInAnonymously>>);
     const spyEdgeInvoke = vi.fn().mockResolvedValue({
       data: {
         access_token: 'tok_live_access',
@@ -395,7 +558,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     });
     const spyFunctionsGetter = vi
       .spyOn(supabase, 'functions', 'get')
-      .mockReturnValue({ invoke: spyEdgeInvoke } as any);
+      .mockReturnValue({ invoke: spyEdgeInvoke } as unknown as typeof supabase.functions);
     const spySetSession = vi.spyOn(supabase.auth, 'setSession').mockResolvedValue({
       data: {
         session: {
@@ -406,7 +569,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
         user: { id: fakeCloudUuid, user_metadata: { full_name: 'Nikhil', is_guest: true } },
       },
       error: null,
-    } as any);
+    } as unknown as Awaited<ReturnType<typeof supabase.auth.setSession>>);
 
     wrap(<NiknoteAuth mode="login" />, '/login');
     fireEvent.click(screen.getByTestId('guest-continue-btn'));
@@ -446,28 +609,31 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
           data: { id: validUuid, amount: 250, target: 1000, saved: 0 },
           error: null,
         };
-        const builder: any = Promise.resolve(listRes);
-        builder.select = vi.fn().mockImplementation(() => makeBuilder());
-        builder.insert = vi.fn().mockImplementation(() => makeBuilder());
-        builder.update = vi.fn().mockImplementation(() => makeBuilder());
-        builder.upsert = vi.fn().mockImplementation(() => makeBuilder());
-        builder.delete = vi.fn().mockImplementation(() => makeBuilder());
-        builder.eq = vi.fn().mockImplementation(() => makeBuilder());
-        builder.in = vi.fn().mockImplementation(() => makeBuilder());
-        builder.order = vi.fn().mockImplementation(() => makeBuilder());
-        builder.limit = vi.fn().mockImplementation(() => makeBuilder());
-        builder.single = vi.fn().mockResolvedValue(singleRes);
-        builder.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+        const builder = Object.assign(Promise.resolve(listRes), {
+          select: vi.fn().mockImplementation(() => makeBuilder()),
+          insert: vi.fn().mockImplementation(() => makeBuilder()),
+          update: vi.fn().mockImplementation(() => makeBuilder()),
+          upsert: vi.fn().mockImplementation(() => makeBuilder()),
+          delete: vi.fn().mockImplementation(() => makeBuilder()),
+          eq: vi.fn().mockImplementation(() => makeBuilder()),
+          in: vi.fn().mockImplementation(() => makeBuilder()),
+          order: vi.fn().mockImplementation(() => makeBuilder()),
+          limit: vi.fn().mockImplementation(() => makeBuilder()),
+          range: vi.fn().mockImplementation(() => makeBuilder()),
+          single: vi.fn().mockResolvedValue(singleRes),
+          maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        });
         return builder;
       };
       return makeBuilder();
-    }) as any);
+    }) as unknown as typeof supabase.from);
 
     localStorage.setItem(
       'niknote.mobile.notebooks.v1',
       JSON.stringify([
         {
           id: 'local-note-1',
+          _ownerId: cloudUserId,
           title: 'Physics Revision',
           blocks: [{ id: 'b1', type: 'text', content: 'Newton Laws' }],
           updated_at: '2026-10-20T10:00:00.000Z',
@@ -475,7 +641,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
       ])
     );
     localStorage.setItem(
-      'niknote.money.v1.local',
+      ownerScopedStorageKey('niknote.money.v1.local', cloudUserId),
       JSON.stringify({
         txs: [{ id: 'local_tx_1', kind: 'expense', amount: 250, category: 'Food', note: 'Lunch', occurred_on: '2026-10-20', account: 'Cash', to_account: null }],
         goals: [],
@@ -485,7 +651,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
       })
     );
     localStorage.setItem(
-      'niknote.routine.v1.local',
+      ownerScopedStorageKey('niknote.routine.v1.local', cloudUserId),
       JSON.stringify({
         habits: [{ id: 'rt_h1', name: 'Morning Study', emoji: '📚', block: 'morning', days: [0, 1, 2, 3, 4, 5, 6], archived: false }],
         checks: [{ habit_id: 'rt_h1', day: '2026-10-20' }],
@@ -495,7 +661,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
       })
     );
     localStorage.setItem(
-      'niknote.boards.v1.local',
+      ownerScopedStorageKey('niknote.boards.v1.local', cloudUserId),
       JSON.stringify([
         {
           id: 'local-board-1',
@@ -506,9 +672,9 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     );
 
     const res = await syncAllLocalDataToCloud(cloudUserId);
-    expect(res.ok).toBe(true);
+    expect(res.ok, JSON.stringify(res)).toBe(true);
     expect(res.synced).toBeGreaterThanOrEqual(4);
-    expect(getSyncSnapshot().state).toBe('synced');
+    expect(getSyncSnapshot(cloudUserId).state).toBe('synced');
     expect(tablesWritten).toContain('notebooks');
     expect(tablesWritten).toContain('money_transactions');
     expect(tablesWritten).toContain('habits');
@@ -533,7 +699,7 @@ describe('Full Mobile Guest Experience across Home, NikAI, Money, Routine & Boar
     Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1440 });
     wrap(<AstaAIWorkspace />, '/ai');
 
-    expect(screen.getByText('New Chat')).toBeTruthy();
+    expect(await screen.findByText('New Chat')).toBeTruthy();
     expect(screen.getByText('Chat')).toBeTruthy();
     expect(screen.getAllByText('Smart Notes').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('Quiz')).toBeTruthy();

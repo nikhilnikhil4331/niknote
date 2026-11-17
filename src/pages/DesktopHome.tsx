@@ -19,9 +19,9 @@ import { NoteCard, SectionHeader } from '@/components/desktop/widgets';
 import { RightRail } from '@/components/desktop/RightRail';
 import { ProductivityOverview } from '@/components/desktop/analytics/ProductivityOverview';
 import { FocusInsights } from '@/components/desktop/analytics/FocusInsights';
-import { useDesktopNotes, SAMPLE_NOTES, type DNote } from '@/components/desktop/notes';
+import { useDesktopNotes, type DNote } from '@/components/desktop/notes';
 import {
-  useTasks, useNoteMeta, useDesktopHabits, todayKey,
+  useLocalStore, useTasks, useNoteMeta, useDesktopHabits, todayKey,
   greeting, openCommandPalette, TASK_TAGS,
 } from '@/components/desktop/store';
 import { doneTodayCount, overdueCount } from '@/lib/productivity';
@@ -48,7 +48,7 @@ const HERO_QUOTES = [
   'Consistency today creates a better you tomorrow.',
 ];
 
-const FOLDER_COLORS = ['#7028D9', '#2563EB', '#EAA23B', '#D92C9B', '#159B68', '#06B6D4', '#F26D9B', '#8B5CF6'];
+const FOLDER_COLORS = ['#2869d5', '#c83f58', '#836108', '#247957', '#347ff0', '#b92d48', '#8db2ef', '#5e5961'];
 
 const DesktopHome: React.FC = () => {
   const navigate = useNavigate();
@@ -89,9 +89,7 @@ const DesktopHome: React.FC = () => {
   // ---------- notes section state ----------
   const [tab, setTab] = useState<NotesTab>('all');
   const [noteQuery, setNoteQuery] = useState('');
-  const [view, setView] = useState<'grid' | 'list'>(() =>
-    localStorage.getItem('niknote.desktop.homeNotesView') === 'list' ? 'list' : 'grid',
-  );
+  const [view, setView] = useLocalStore<'grid' | 'list'>('niknote.desktop.homeNotesView', 'grid');
 
   const folders = useMemo(
     () => Array.from(new Set(active.map((n) => n.folder).filter(Boolean) as string[])),
@@ -131,7 +129,6 @@ const DesktopHome: React.FC = () => {
   }, [active, tab, noteQuery, isPinned, isFav]);
 
   const shownNotes = filteredNotes.slice(0, view === 'grid' ? 7 : 6);
-  const showSamples = !loading && active.length === 0;
 
   // ---------- new task modal ----------
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -162,23 +159,17 @@ const DesktopHome: React.FC = () => {
     onClick: () => void; cta?: boolean;
   }[] = [
     { label: 'New Note', sub: 'Start writing', icon: PenLine, bg: '', fg: '', onClick: () => openNew(), cta: true },
-    { label: 'Quick Note', sub: 'Instant capture', icon: Zap, bg: '#FFF3CF', fg: '#C77F0A', onClick: quickNote },
-    { label: 'New Task', sub: 'Add to today', icon: CheckSquare, bg: '#E3F7EC', fg: '#159B68', onClick: () => setTaskModalOpen(true) },
-    { label: 'Template', sub: 'From library', icon: LayoutTemplate, bg: '#EAF0FF', fg: '#2563EB', onClick: () => navigate('/templates') },
-    { label: 'Upload PDF', sub: 'Convert to notes', icon: FileUp, bg: '#F5F0FF', fg: '#7028D9', onClick: () => navigate('/pdf-editor') },
-    { label: 'AI Generate', sub: 'Create with AI', icon: Sparkles, bg: '#FDEBF5', fg: '#D92C9B', onClick: () => navigate('/ai') },
-    { label: 'Scan Notes', sub: 'Digitise pages', icon: ScanLine, bg: '#FFF1E3', fg: '#E8740C', onClick: () => navigate('/scan-notes') },
+    { label: 'Quick Note', sub: 'Instant capture', icon: Zap, bg: '#fff0f0', fg: '#b92d48', onClick: quickNote },
+    { label: 'New Task', sub: 'Add to today', icon: CheckSquare, bg: '#eef4ff', fg: '#245dcc', onClick: () => setTaskModalOpen(true) },
+    { label: 'Template', sub: 'From library', icon: LayoutTemplate, bg: '#eaf2ff', fg: '#245dcc', onClick: () => navigate('/templates') },
+    { label: 'Upload PDF', sub: 'Convert to notes', icon: FileUp, bg: '#fff8dc', fg: '#765700', onClick: () => navigate('/pdf-editor') },
+    { label: 'AI Generate', sub: 'Create with AI', icon: Sparkles, bg: '#fff0f0', fg: '#b92d48', onClick: () => navigate('/ai') },
+    { label: 'Scan Notes', sub: 'Digitise pages', icon: ScanLine, bg: '#fff8dc', fg: '#765700', onClick: () => navigate('/scan-notes') },
   ];
 
   // ---------- notifications (derived from real data) ----------
   const [bellOpen, setBellOpen] = useState(false);
   const bellCount = overdue + todayOpenTasks.length;
-
-  const sampleAsNote = (s: (typeof SAMPLE_NOTES)[number]): DNote => ({
-    id: s.id, title: s.title, folder: null, tags: [s.tag], cover: s.cover, style: 'ruled',
-    updatedAt: new Date().toISOString(), createdAt: new Date().toISOString(),
-    isLocal: true, trashed: false, preview: s.text, raw: null,
-  });
 
   const displayName = guest ? 'Guest' : account.fullName || user?.email?.split('@')[0] || 'there';
 
@@ -260,8 +251,8 @@ const DesktopHome: React.FC = () => {
                 )}
               </div>
               <button
-                className="flex-none grid place-items-center rounded-full text-white text-[13px] font-bold w-9 h-9 border-2 border-white"
-                style={{ background: 'linear-gradient(135deg,#ffad45,#d92c9b 55%,#7028d9)', boxShadow: 'var(--nd-shadow)' }}
+                className="flex-none grid place-items-center rounded-full text-[13px] font-extrabold w-9 h-9 border border-[var(--nd-ink)]"
+                style={{ background: 'var(--nd-grad-brand)', color: '#fff', boxShadow: 'var(--nd-shadow)' }}
                 title="Account"
                 onClick={() => navigate('/account-details')}
               >
@@ -271,52 +262,35 @@ const DesktopHome: React.FC = () => {
 
             {/* ---------- hero ---------- */}
             <div className="nd-hero mt-4 nd-anim nd-anim-1">
-              <img src="/images/home-banner.jpg" alt="" className="nd-kenburns" />
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    'linear-gradient(100deg, rgba(255,250,255,0.92) 0%, rgba(255,250,255,0.72) 34%, rgba(255,250,255,0.06) 62%, rgba(77,22,143,0.18) 100%)',
-                }}
-              />
-              <div className="relative z-10 h-full flex flex-col justify-between p-6 md:p-7 min-h-[210px]">
-                <div className="max-w-[520px]">
-                  <h1 className="text-[26px] md:text-[30px] leading-[1.12] font-extrabold tracking-[-0.02em]" style={{ color: 'var(--nd-ink)' }}>
+              <div className="relative z-10 flex min-h-[210px] items-center p-6 md:p-7">
+                <div className="nd-hero-copy">
+                  <h1 className="font-display text-[26px] md:text-[30px] leading-[1.12] font-extrabold tracking-[-0.02em]">
                     {greet.text},<br />
-                    <span style={{ color: 'var(--nd-brand-deep)' }}>{displayName}</span>{' '}
+                    <span>{displayName}</span>{' '}
                     <span aria-hidden>{greet.emoji}</span>
                   </h1>
-                  <p className="mt-2 text-[13.5px] font-semibold italic transition-opacity duration-500" style={{ color: 'var(--nd-ink-2)' }} key={quoteIdx}>
+                  <p className="nd-hero-quote mt-2 text-[13.5px] font-semibold italic transition-opacity duration-500" key={quoteIdx}>
                     “{HERO_QUOTES[quoteIdx]}”
                   </p>
                   <p className="mt-1.5 text-[11.5px] font-semibold md:hidden" style={{ color: 'var(--nd-text-3)' }}>{dateLine}</p>
                   <div className="mt-3.5 flex items-center gap-2 flex-wrap">
-                    <span className="nd-chip !bg-[#FFF3CF]" style={{ color: '#B87908' }} title="Consecutive active days">
+                    <span className="nd-chip" style={{ background: '#fff8dc', color: '#765700' }} title="Consecutive active days">
                       <Flame size={12} /> {streakDays} day streak
                     </span>
-                    <span className="nd-chip !bg-[#F5F0FF]" style={{ color: 'var(--nd-brand)' }}>
+                    <span className="nd-chip" style={{ background: 'var(--nd-primary-soft)', color: 'var(--nd-brand-deep)' }}>
                       <NotebookPen size={12} /> {active.length} note{active.length === 1 ? '' : 's'}
                     </span>
-                    <span className="nd-chip !bg-[#E3F7EC]" style={{ color: 'var(--nd-success)' }}>
+                    <span className="nd-chip" style={{ background: '#e8f0df', color: 'var(--nd-success)' }}>
                       <Check size={12} /> {doneToday} task{doneToday === 1 ? '' : 's'} done today
                     </span>
                   </div>
                 </div>
-                <div className="hidden sm:block absolute right-7 top-7 text-right select-none" aria-hidden>
-                  <div className="nd-hero-script text-[30px] md:text-[36px] leading-[1.05]">
-                    Stay Focused ✦<br />Keep Growing
-                  </div>
-                </div>
-                <div
-                  className="hidden sm:block absolute right-6 bottom-5 px-3.5 py-2 rounded-xl text-[12px] font-bold italic"
-                  style={{
-                    background: 'rgba(255,255,255,0.68)', backdropFilter: 'blur(6px)',
-                    color: 'var(--nd-brand-deep)', border: '1px solid rgba(255,255,255,0.8)',
-                  }}
-                >
-                  “Better Notes. Better You.”
-                </div>
               </div>
+              <img
+                src="/images/brand/niknote-write-it-down.png"
+                alt="NikNote illustration: Write it down"
+                className="nd-hero-art"
+              />
             </div>
 
             {/* ---------- quick actions ---------- */}
@@ -414,10 +388,10 @@ const DesktopHome: React.FC = () => {
                     )}
                   </div>
                   <div className="nd-vtabs !p-[2.5px]">
-                    <button className={cn('!px-2', view === 'grid' && 'nd-on')} onClick={() => { setView('grid'); localStorage.setItem('niknote.desktop.homeNotesView', 'grid'); }} aria-label="Grid view" title="Grid view">
+                    <button className={cn('!px-2', view === 'grid' && 'nd-on')} onClick={() => setView('grid')} aria-label="Grid view" title="Grid view">
                       <LayoutGrid size={13} />
                     </button>
-                    <button className={cn('!px-2', view === 'list' && 'nd-on')} onClick={() => { setView('list'); localStorage.setItem('niknote.desktop.homeNotesView', 'list'); }} aria-label="List view" title="List view">
+                    <button className={cn('!px-2', view === 'list' && 'nd-on')} onClick={() => setView('list')} aria-label="List view" title="List view">
                       <List size={13} />
                     </button>
                   </div>
@@ -433,34 +407,19 @@ const DesktopHome: React.FC = () => {
                     <div key={i} className="nd-card animate-pulse" style={{ height: 200 }} />
                   ))}
                 </div>
-              ) : showSamples ? (
-                <>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5">
-                    <CreateTile onClick={() => openNew()} />
-                    {SAMPLE_NOTES.slice(0, 5).map((s) => (
-                      <NoteCard
-                        key={s.id}
-                        note={sampleAsNote(s)}
-                        onOpen={() => openNew({ title: s.title, text: s.text, style: 'ruled' })}
-                        footerMeta={<>Sample · {s.tag}</>}
-                      />
-                    ))}
-                  </div>
-                  <p className="mt-3 text-[12.5px]" style={{ color: 'var(--nd-text-3)' }}>
-                    ✨ These are starter samples — click any card to turn it into a real, editable note.
-                  </p>
-                </>
               ) : filteredNotes.length === 0 ? (
                 <div className="nd-card p-6 text-center">
-                  <div className="text-[30px]" aria-hidden>🗂️</div>
+                  <img className="nd-empty-art" src="/images/brand/niknote-spark-note.png" alt="" />
                   <p className="text-[13.5px] font-bold mt-1" style={{ color: 'var(--nd-ink)' }}>
-                    {noteQuery ? `No notes match “${noteQuery}”` : `Nothing in ${NOTES_TABS.find((t) => t.id === tab)?.label} yet`}
+                    {noteQuery ? `No notes match “${noteQuery}”` : active.length === 0 && tab === 'all' ? 'Your workspace is ready for its first note.' : `Nothing in ${NOTES_TABS.find((t) => t.id === tab)?.label} yet`}
                   </p>
                   <p className="text-[12px] mt-1" style={{ color: 'var(--nd-text-3)' }}>
-                    {tab === 'pinned' ? 'Pin a note from its ⋯ menu to keep it on top.' :
+                    {active.length === 0 && !noteQuery ? 'Start with a blank page. Your notes are saved to your workspace as you write.' :
+                     tab === 'pinned' ? 'Pin a note from its ⋯ menu to keep it on top.' :
                      tab === 'favorites' ? 'Star notes to find them here instantly.' :
                      tab === 'quick' ? 'Use the Quick Note action for instant captures.' : 'Try another tab or create a note.'}
                   </p>
+                  {active.length === 0 && !noteQuery && <button type="button" className="nd-btn-cta mt-4" onClick={() => openNew()}><PenLine size={14} /> Start writing</button>}
                 </div>
               ) : (
                 <div className={cn(view === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5' : 'flex flex-col gap-2.5')}>
@@ -578,7 +537,8 @@ const CreateTile: React.FC<{ onClick: () => void; compact?: boolean }> = ({ onCl
     onClick={onClick}
     aria-label="Create a new note"
   >
-    <span className="nd-create-plus"><Plus size={20} /></span>
+    {!compact && <img className="nd-create-illustration" src="/images/brand/niknote-spark-note.png" alt="" />}
+    <span className="nd-create-plus"><Plus size={18} /></span>
     <span className="text-[13px] font-bold">Create New Note</span>
   </button>
 );
@@ -618,7 +578,7 @@ const HomeNoteCard: React.FC<{
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
           <div className="nd-menu" style={{ position: 'absolute', right: 6, top: 38, zIndex: 50, minWidth: 168 }}>
             <button onClick={() => { onTogglePin(); setMenuOpen(false); }}><Pin size={14} /> {pinned ? 'Unpin' : 'Pin to top'}</button>
-            <button onClick={() => { onToggleFav(); setMenuOpen(false); }}><Star size={14} color="#EAA23B" /> {fav ? 'Remove favorite' : 'Favorite'}</button>
+            <button onClick={() => { onToggleFav(); setMenuOpen(false); }}><Star size={14} color="var(--nd-brand-deep)" /> {fav ? 'Remove favorite' : 'Favorite'}</button>
             <button className="nd-danger" onClick={() => { onTrash(); setMenuOpen(false); }}><X size={14} /> Move to Trash</button>
           </div>
         </>

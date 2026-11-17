@@ -8,6 +8,9 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { CANONICAL_ORIGIN, getCanonicalUrl, resolveRouteSeo } from '@/lib/seoConfig';
 
+const SOCIAL_IMAGE_URL = `${CANONICAL_ORIGIN}/og-image.jpg`;
+const SOCIAL_IMAGE_ALT = 'NikNote — handwritten-style notes and study tools';
+
 function upsertMeta(attr: 'name' | 'property', key: string, content: string): void {
   let el = document.head.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
   if (!el) {
@@ -16,6 +19,10 @@ function upsertMeta(attr: 'name' | 'property', key: string, content: string): vo
     document.head.appendChild(el);
   }
   el.setAttribute('content', content);
+}
+
+function removeMeta(attr: 'name' | 'property', key: string): void {
+  document.head.querySelector(`meta[${attr}="${key}"]`)?.remove();
 }
 
 function upsertCanonical(href: string): void {
@@ -40,13 +47,29 @@ export function SeoHead() {
     upsertMeta('name', 'robots', seo.robots);
     upsertCanonical(canonicalUrl);
 
+    upsertMeta('property', 'og:site_name', 'NikNote');
+    upsertMeta('property', 'og:locale', 'en_IN');
     upsertMeta('property', 'og:title', seo.title);
     upsertMeta('property', 'og:description', seo.description);
     upsertMeta('property', 'og:url', canonicalUrl);
     upsertMeta('property', 'og:type', seo.pageType === 'blog_post' ? 'article' : 'website');
+    upsertMeta('property', 'og:image', SOCIAL_IMAGE_URL);
+    upsertMeta('property', 'og:image:type', 'image/jpeg');
+    upsertMeta('property', 'og:image:width', '1200');
+    upsertMeta('property', 'og:image:height', '630');
+    upsertMeta('property', 'og:image:alt', SOCIAL_IMAGE_ALT);
 
+    upsertMeta('name', 'twitter:card', 'summary_large_image');
     upsertMeta('name', 'twitter:title', seo.title);
     upsertMeta('name', 'twitter:description', seo.description);
+    upsertMeta('name', 'twitter:image', SOCIAL_IMAGE_URL);
+    upsertMeta('name', 'twitter:image:alt', SOCIAL_IMAGE_ALT);
+
+    if (seo.pageType === 'blog_post' && seo.blogPost?.date) {
+      upsertMeta('property', 'article:published_time', seo.blogPost.date);
+    } else {
+      removeMeta('property', 'article:published_time');
+    }
 
     // Manage route-scoped JSON-LD schemas (never invent ratings/authors/FAQs)
     const existingSchemas = document.head.querySelectorAll('script[data-niknote-route-schema="true"]');
@@ -119,11 +142,10 @@ export function SeoHead() {
             url: `${CANONICAL_ORIGIN}/niknote-logo.png`,
           },
         },
-        image: `${CANONICAL_ORIGIN}/og-image.png`,
+        image: SOCIAL_IMAGE_URL,
       };
       if (seo.blogPost.date) {
         articleSchema.datePublished = seo.blogPost.date;
-        articleSchema.dateModified = seo.blogPost.date;
       }
       schemas.push(articleSchema);
     }

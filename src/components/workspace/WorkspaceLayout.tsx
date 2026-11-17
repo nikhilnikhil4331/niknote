@@ -125,7 +125,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           {/* AI */}
           <button
             onClick={() => navigate('/ai')}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold text-white bg-gradient-to-r from-purple-500 to-indigo-600 shadow-sm hover:shadow-md transition-shadow"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold text-white bg-gradient-to-r from-[#347ff0] to-[#245dcc] shadow-sm hover:shadow-md transition-shadow"
           >
             <span className="flex h-4 w-4 items-center justify-center rounded-full bg-white/95">
               <img src="/nikai-mark.png" alt="" aria-hidden="true" className="h-3 w-auto object-contain select-none" />

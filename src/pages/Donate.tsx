@@ -12,7 +12,7 @@ export default function Donate() {
   return (
     <main className="min-h-screen bg-background px-4 py-6 pb-28">
       <div className="mx-auto max-w-md space-y-6">
-        <Link to="/" className="inline-flex min-h-[44px] items-center gap-2 text-sm text-muted-foreground"><ArrowLeft size={17} /> Home</Link>
+        <Link to="/home" className="inline-flex min-h-[44px] items-center gap-2 text-sm text-muted-foreground"><ArrowLeft size={17} /> Home</Link>
         <header className="text-center space-y-2">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Heart /></div>
           <h1 className="text-2xl font-semibold text-foreground">Support NikNote</h1>

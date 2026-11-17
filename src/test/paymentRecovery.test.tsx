@@ -22,8 +22,30 @@ vi.mock('@/utils/analytics', () => ({ trackCheckoutStarted: vi.fn(), trackPaymen
 vi.mock('sonner', () => ({ toast: mock.toast }));
 import PaymentPage from '@/pages/Payment';
 
-let checkoutOptions: any;
+type CheckoutCallback = {
+  razorpay_order_id?: unknown;
+  razorpay_payment_id?: unknown;
+  razorpay_signature?: unknown;
+};
+type TestCheckoutOptions = {
+  amount: number;
+  order_id: string;
+  handler: (response: CheckoutCallback) => Promise<void>;
+};
+type TestRazorpayFailure = { error?: { metadata?: { payment_id?: unknown } } };
+type TestRazorpayInstance = {
+  on: (event: 'payment.failed', handler: (response: TestRazorpayFailure) => void) => void;
+  open: () => void;
+};
+type TestRazorpayConstructor = new (options: TestCheckoutOptions) => TestRazorpayInstance;
+
+let checkoutOptions: TestCheckoutOptions;
 let opened: ReturnType<typeof vi.fn>;
+function setMockRazorpay(constructor?: TestRazorpayConstructor) {
+  const browser = window as Window & { Razorpay?: TestRazorpayConstructor };
+  if (constructor) browser.Razorpay = constructor;
+  else delete browser.Razorpay;
+}
 function renderPayment(path = '/payment?plan=weekly') {
   return render(<MemoryRouter initialEntries={[path]}><PaymentPage /></MemoryRouter>);
 }
@@ -34,16 +56,17 @@ describe('checkout recovery (Razorpay mocked; no real charge)', () => {
     checkoutOptions = null; opened = vi.fn();
     mock.getSession.mockResolvedValue({ data: { session: { access_token: 'token' } }, error: null });
     mock.refreshHook.mockResolvedValue(undefined); mock.refreshContext.mockResolvedValue(undefined);
-    (window as any).Razorpay = class {
-      constructor(options: any) { checkoutOptions = options; }
-      on = vi.fn(); open = opened;
-    };
+    setMockRazorpay(class {
+      constructor(options: TestCheckoutOptions) { checkoutOptions = options; }
+      on(_event: 'payment.failed', _handler: (response: TestRazorpayFailure) => void) {}
+      open = opened;
+    });
     mock.invoke.mockImplementation(async (name: string) => {
       if (name === 'create-razorpay-order') return { data: { orderId: 'order_Test1', keyId: 'rzp_live_mock', amount: 4900, currency: 'INR' }, error: null };
       return { data: null, error: new Error('pending') };
     });
   });
-  afterEach(() => { cleanup(); delete (window as any).Razorpay; });
+  afterEach(() => { cleanup(); setMockRazorpay(); });
 
   it('states the one-time amount, opens only a matching live order, and remembers it', async () => {
     renderPayment();
@@ -55,16 +78,30 @@ describe('checkout recovery (Razorpay mocked; no real charge)', () => {
     expect(localStorage.getItem('niknote:checkout:pending:test-user')).toBe('order_Test1');
   });
 
+  it('shows the receipt confirmation only after the server verification result', async () => {
+    mock.invoke.mockImplementation(async (name: string) => {
+      if (name === 'create-razorpay-order') return { data: { orderId: 'order_Test1', keyId: 'rzp_live_mock', amount: 4900, currency: 'INR' }, error: null };
+      return { data: { success: true, planCode: 'weekly', paymentId: 'pay_Test1', receiptSent: true }, error: null };
+    });
+    renderPayment();
+    fireEvent.click(screen.getByRole('button', { name: /pay ₹49/i }));
+    await waitFor(() => expect(opened).toHaveBeenCalledOnce());
+    await act(async () => checkoutOptions.handler({ razorpay_order_id: 'order_Test1', razorpay_payment_id: 'pay_Test1', razorpay_signature: 'sig' }));
+    expect(await screen.findByText(/your illustrated receipt is on its way/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /open my niknote/i })).toBeTruthy();
+    expect(mock.trackPaymentSucceeded).toHaveBeenCalledWith('weekly');
+  });
+
   it('keeps an uncertain payment out of failed-sales analytics and recovers without another charge', async () => {
     renderPayment();
     fireEvent.click(screen.getByRole('button', { name: /pay ₹49/i }));
     await waitFor(() => expect(opened).toHaveBeenCalledOnce());
     await act(async () => checkoutOptions.handler({ razorpay_order_id: 'order_Test1', razorpay_payment_id: 'pay_Test1', razorpay_signature: 'sig' }));
-    expect(screen.getByText(/payment confirmation pending/i)).toBeTruthy();
+    expect(screen.getByText(/checking with Razorpay/i)).toBeTruthy();
     expect(screen.getByText(/do not pay again/i)).toBeTruthy();
     expect(mock.trackPaymentFailed).not.toHaveBeenCalled();
     expect(mock.trackVerifiedPurchase).not.toHaveBeenCalled();
-    mock.invoke.mockResolvedValueOnce({ data: { success: true, recovered: [{ paymentId: 'pay_Test1', planCode: 'weekly' }] }, error: null });
+    mock.invoke.mockResolvedValueOnce({ data: { success: true, recovered: [{ paymentId: 'pay_Test1', planCode: 'weekly', receiptSent: true }] }, error: null });
     fireEvent.click(screen.getByRole('button', { name: /already paid\? check payment/i }));
     await screen.findByText('Payment verified');
     expect(mock.invoke.mock.calls.filter(([name]) => name === 'create-razorpay-order')).toHaveLength(1);

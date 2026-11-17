@@ -30,10 +30,10 @@ type Period = 'week' | 'month' | 'year';
 type Metric = 'focus' | 'tasks' | 'notes' | 'habits';
 
 const METRICS: { id: Metric; label: string; color: string; icon: React.ElementType; unit: string }[] = [
-  { id: 'focus', label: 'Focus Time', color: '#7028D9', icon: Timer, unit: 'min' },
-  { id: 'tasks', label: 'Tasks Done', color: '#D92C9B', icon: ListChecks, unit: '' },
-  { id: 'notes', label: 'Notes Created', color: '#FFAD45', icon: NotebookPen, unit: '' },
-  { id: 'habits', label: 'Habit Logs', color: '#159B68', icon: HeartPulse, unit: '' },
+  { id: 'focus', label: 'Focus Time', color: '#2869d5', icon: Timer, unit: 'min' },
+  { id: 'tasks', label: 'Tasks Done', color: '#c83f58', icon: ListChecks, unit: '' },
+  { id: 'notes', label: 'Notes Created', color: '#347ff0', icon: NotebookPen, unit: '' },
+  { id: 'habits', label: 'Habit Logs', color: '#836108', icon: HeartPulse, unit: '' },
 ];
 
 const PERIODS: { id: Period; label: string }[] = [
@@ -138,19 +138,19 @@ export const ProductivityOverview: React.FC<{ notes: DNote[] }> = ({ notes }) =>
     return [
       {
         id: 'focus' as const, label: 'Focus Time', value: formatMinutesAsHours(focusNow),
-        delta: deltaPct(focusNow, focusPrev), color: '#7028D9', bg: '#F5F0FF', icon: Timer,
+        delta: deltaPct(focusNow, focusPrev), color: '#2869d5', bg: '#eaf2ff', icon: Timer,
       },
       {
         id: 'tasks' as const, label: 'Tasks Completed', value: String(tasksNow),
-        delta: deltaPct(tasksNow, tasksPrev), color: '#D92C9B', bg: '#FFF3F8', icon: ListChecks,
+        delta: deltaPct(tasksNow, tasksPrev), color: '#c83f58', bg: '#fff0f0', icon: ListChecks,
       },
       {
         id: 'notes' as const, label: 'Notes Created', value: String(notesNow),
-        delta: deltaPct(notesNow, notesPrev), color: '#E8940A', bg: '#FFF8EA', icon: NotebookPen,
+        delta: deltaPct(notesNow, notesPrev), color: '#347ff0', bg: '#eef4ff', icon: NotebookPen,
       },
       {
         id: 'habits' as const, label: 'Habit Score', value: `${habitNow}%`,
-        delta: deltaPct(habitNow, habitPrev), color: '#159B68', bg: '#E9F9F1', icon: HeartPulse,
+        delta: deltaPct(habitNow, habitPrev), color: '#836108', bg: '#fff8dc', icon: HeartPulse,
         caption: 'last 7 days',
       },
     ];
@@ -258,15 +258,15 @@ export const ProductivityOverview: React.FC<{ notes: DNote[] }> = ({ notes }) =>
       <div style={{ width: '100%', height: 196 }}>
         <ResponsiveContainer>
           <BarChart data={rows} margin={{ top: 6, right: 4, left: -18, bottom: 0 }} barCategoryGap={perDay && keys.length > 10 ? '18%' : '32%'}>
-            <CartesianGrid vertical={false} stroke="#f0ebf9" />
+            <CartesianGrid vertical={false} stroke="#e2e7f0" />
             <XAxis
               dataKey="label" tickLine={false} axisLine={false}
-              tick={{ fontSize: 10.5, fill: '#a39cc0', fontWeight: 600 }}
+              tick={{ fontSize: 10.5, fill: '#89838c', fontWeight: 600 }}
               interval={period === 'month' ? 4 : 0}
             />
             <YAxis
               tickLine={false} axisLine={false}
-              tick={{ fontSize: 10.5, fill: '#a39cc0', fontWeight: 600 }}
+              tick={{ fontSize: 10.5, fill: '#89838c', fontWeight: 600 }}
               tickFormatter={(v: number) => (metric === 'focus' ? (v >= 60 ? `${Math.round(v / 60)}h` : `${v}m`) : String(v))}
             />
             <Tooltip
@@ -281,10 +281,10 @@ export const ProductivityOverview: React.FC<{ notes: DNote[] }> = ({ notes }) =>
                       {perDay ? new Date(`${row.key}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : monthLabel(row.key)}
                     </div>
                     <div className="mt-1 space-y-0.5" style={{ color: 'var(--nd-ink-2)' }}>
-                      <div><b style={{ color: '#7028D9' }}>{formatMinutesAsHours(series.focus[i] ?? 0)}</b> focused</div>
-                      <div><b style={{ color: '#D92C9B' }}>{series.tasks[i] ?? 0}</b> tasks done</div>
-                      <div><b style={{ color: '#E8940A' }}>{series.notes[i] ?? 0}</b> notes created</div>
-                      {perDay && <div><b style={{ color: '#159B68' }}>{series.habits[i] ?? 0}</b> habit logs</div>}
+                      <div><b style={{ color: '#2869d5' }}>{formatMinutesAsHours(series.focus[i] ?? 0)}</b> focused</div>
+                      <div><b style={{ color: '#c83f58' }}>{series.tasks[i] ?? 0}</b> tasks done</div>
+                      <div><b style={{ color: '#347ff0' }}>{series.notes[i] ?? 0}</b> notes created</div>
+                      {perDay && <div><b style={{ color: '#836108' }}>{series.habits[i] ?? 0}</b> habit logs</div>}
                     </div>
                     {perDay && <div className="mt-1 text-[10px] font-semibold" style={{ color: 'var(--nd-text-3)' }}>Click for details</div>}
                   </div>
@@ -304,7 +304,7 @@ export const ProductivityOverview: React.FC<{ notes: DNote[] }> = ({ notes }) =>
               {rows.map((r) => (
                 <Cell
                   key={r.key}
-                  fill={r.key === selectedKey ? '#4D168F' : r.isToday ? '#D92C9B' : activeMetric.color}
+                  fill={r.key === selectedKey ? '#171313' : r.isToday ? '#ffe45c' : activeMetric.color}
                   fillOpacity={selectedKey && r.key !== selectedKey ? 0.35 : r.isToday ? 1 : 0.82}
                   style={{ cursor: perDay ? 'pointer' : 'default' }}
                 />

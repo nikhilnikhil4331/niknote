@@ -14,25 +14,37 @@ interface HistoryEntry {
 }
 
 const MAX_HISTORY = 100;
-const AUTO_SAVE_KEY = 'niknote_autosave';
 
-export const useBlockEditor = () => {
-  const [blocks, setBlocks] = useState<Block[]>(() => {
-    // Try to restore from auto-save
-    try {
-      const saved = localStorage.getItem(AUTO_SAVE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {}
-    return [createBlock('text', '')];
-  });
+function consecutiveNumberedIndex(blocks: Block[], index: number): number {
+  const indent = blocks[index]?.indent || 0;
+  let number = 1;
+
+  for (let previous = index - 1; previous >= 0; previous -= 1) {
+    const candidate = blocks[previous];
+    const candidateIndent = candidate.indent || 0;
+    // A nested list belongs to the surrounding ordered list; skip past it
+    // when numbering the parent level, but do not count it as a sibling.
+    if (candidateIndent > indent) continue;
+    if (candidateIndent === indent && candidate.type === 'numbered') {
+      number += 1;
+      continue;
+    }
+    break;
+  }
+
+  return number;
+}
+
+export const useBlockEditor = (autoSaveKey?: string) => {
+  // The editor is intentionally born empty. The caller owns hydration and
+  // chooses an account-scoped draft key; a global localStorage key can leak a
+  // previous user's draft into a new workspace.
+  const [blocks, setBlocks] = useState<Block[]>(() => [createBlock('text', '')]);
 
   // FIX: Use state for history position so canUndo/canRedo trigger re-renders
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [historyLength, setHistoryLength] = useState(0);
-  const currentColorRef = useRef<LineInkColor>('black');
+  const [currentColor, setCurrentColorState] = useState<LineInkColor>('black');
   const historyRef = useRef<HistoryEntry[]>([]);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -80,13 +92,16 @@ export const useBlockEditor = () => {
 
   // ─── AUTO-SAVE ───
   const triggerAutoSave = useCallback((newBlocks: Block[]) => {
+    if (!autoSaveKey) return;
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => {
       try {
-        localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(newBlocks));
-      } catch {}
+        localStorage.setItem(autoSaveKey, JSON.stringify(newBlocks));
+      } catch {
+        // The editor stays usable if local storage is unavailable.
+      }
     }, 1000);
-  }, []);
+  }, [autoSaveKey]);
 
   // ─── CORE UPDATE ───
   const updateBlocks = useCallback((newBlocks: Block[]) => {
@@ -95,6 +110,16 @@ export const useBlockEditor = () => {
     pushHistory(final);
     triggerAutoSave(final);
   }, [pushHistory, triggerAutoSave]);
+
+  // Hydrate a different document without carrying undo history across notes.
+  const replaceBlocks = useCallback((newBlocks: Block[]) => {
+    const final = newBlocks.length > 0 ? newBlocks : [createBlock('text', '')];
+    historyRef.current = [{ blocks: final, timestamp: Date.now() }];
+    setHistoryIndex(0);
+    setHistoryLength(1);
+    setBlocks(final);
+    triggerAutoSave(final);
+  }, [triggerAutoSave]);
 
   // ─── BLOCK OPERATIONS ───
 
@@ -126,7 +151,7 @@ export const useBlockEditor = () => {
     setBlocks(prev => {
       const next = prev.map(b => b.id === id ? { ...b, ...updates, updatedAt: Date.now() } : b);
       // Don't push history for every keystroke — only structural changes
-      if ('type' in updates || 'checked' in updates || 'collapsed' in updates) {
+      if ('type' in updates || 'checked' in updates || 'collapsed' in updates || 'color' in updates) {
         pushHistory(next);
       }
       triggerAutoSave(next);
@@ -179,11 +204,11 @@ export const useBlockEditor = () => {
   }, [pushHistory, triggerAutoSave]);
 
   const setCurrentColor = useCallback((color: LineInkColor) => {
-    currentColorRef.current = color;
+    setCurrentColorState(color);
   }, []);
 
   const updateAllBlockColors = useCallback((color: LineInkColor) => {
-    currentColorRef.current = color;
+    setCurrentColorState(color);
     setBlocks(prev => {
       const next = prev.map(b => ({ ...b, color }));
       pushHistory(next);
@@ -202,8 +227,20 @@ export const useBlockEditor = () => {
   // Convert blocks to NoteLine[] for preview — WITH block type info for styling
   const lines: NoteLine[] = useMemo(() => {
     return blocks
-      .filter(b => b.type !== 'divider')
-      .map((block, i) => {
+      .map<NoteLine | null>((block, i) => {
+        if (block.type === 'divider') return null;
+        if (block.type === 'image' || block.type === 'table' || block.type === 'chart') {
+          return {
+            id: `line-${block.id}`,
+            text: '',
+            color: (block.color || currentColor) as LineInkColor,
+            timestamp: Date.now(),
+            blockType: block.type,
+            indent: block.indent,
+            richBlockId: block.id,
+          };
+        }
+
         let text = block.content;
         let fontSize: number | undefined;
         let fontWeight: string | undefined;
@@ -214,7 +251,7 @@ export const useBlockEditor = () => {
           case 'heading2': fontSize = 22; fontWeight = 'bold'; break;
           case 'heading3': fontSize = 18; fontWeight = '600'; break;
           case 'bullet': text = `•  ${text}`; break;
-          case 'numbered': text = `${i + 1}.  ${text}`; break;
+          case 'numbered': text = `${consecutiveNumberedIndex(blocks, i)}.  ${text}`; break;
           case 'todo': text = block.checked ? `☑  ${text}` : `☐  ${text}`; break;
           case 'quote': text = `"${text}"`; break;
           case 'callout': text = `${block.emoji || '💡'}  ${text}`; break;
@@ -223,18 +260,28 @@ export const useBlockEditor = () => {
         return {
           id: `line-${block.id}`,
           text,
-          color: (block.color || currentColorRef.current) as LineInkColor,
+          color: (block.color || currentColor) as LineInkColor,
           timestamp: Date.now(),
           blockType,
           fontSize,
           fontWeight,
           indent: block.indent,
         };
-      });
-  }, [blocks]);
+      })
+      .filter((line): line is NoteLine => line !== null);
+  }, [blocks, currentColor]);
 
   const getPlainText = useCallback(() => {
-    return blocks.map(b => b.content).join('\n');
+    return blocks.map((block) => {
+      if ((block.type === 'table' || block.type === 'chart') && block.tableData) {
+        const rows = block.tableData.rows.map((row) =>
+          block.tableData!.headers.map((_, index) => row[index]?.content || '').join(' | ')
+        );
+        return [block.content, block.tableData.headers.join(' | '), ...rows].filter(Boolean).join('\n');
+      }
+      if (block.type === 'image') return block.caption || block.content || '[Image]';
+      return block.content;
+    }).join('\n');
   }, [blocks]);
 
   const importText = useCallback((text: string) => {
@@ -256,6 +303,7 @@ export const useBlockEditor = () => {
   return {
     blocks,
     setBlocks: updateBlocks,
+    replaceBlocks,
     lines,
     getPlainText,
     importText,

@@ -12,13 +12,20 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotebooks, type Notebook } from '@/hooks/useNotebooks';
+import { useNoteMeta } from '@/components/desktop/store';
 import { createBlock, type Block } from '@/types/block';
 import { blocksFromNoteText } from '@/lib/noteTemplates';
+import type { HandwritingFont, InkColor } from '@/types/notes';
 import { notifyLocalDataChanged } from '@/lib/cloudSyncEngine';
+import {
+  findLocalNoteForOwner,
+  readLocalNotesForOwner,
+  removeLocalNoteForOwner,
+  upsertLocalNoteForOwner,
+  type LocalNoteRecord,
+} from '@/lib/localNoteStore';
 
 export const TRASH_FOLDER = '__trash__';
-const LOCAL_KEY_A = 'niknote.mobile.notebooks.v1';
-const LOCAL_KEY_B = 'niknote.notes.v1';
 
 export interface DNote {
   id: string;
@@ -34,9 +41,11 @@ export interface DNote {
   preview: string; // first bit of text for paper previews (local notes)
   raw: Notebook | null;
   localBlocks?: Block[];
+  font?: HandwritingFont;
+  inkColor?: InkColor;
 }
 
-const COVER_PALETTE = ['#7C6CF0', '#3B82F6', '#F59E0B', '#EC4899', '#10B981', '#06B6D4', '#F26D8D', '#8B5CF6'];
+const COVER_PALETTE = ['#d4b128', '#67804e', '#b98237', '#bc6e54', '#8b7950', '#79908a', '#a87555', '#a58b43'];
 
 function colorFor(seed: string): string {
   let h = 0;
@@ -44,59 +53,25 @@ function colorFor(seed: string): string {
   return COVER_PALETTE[h % COVER_PALETTE.length];
 }
 
-interface LocalDeviceNotebook {
-  id: string;
-  title?: string;
+type LocalDeviceNotebook = LocalNoteRecord & {
   blocks?: Block[];
-  content?: string;
-  page_style?: string;
-  folder?: string | null;
-  cover_color?: string;
-  tags?: string[];
-  created_at?: string;
-  updated_at?: string;
-  updatedAt?: string;
-  trashedAt?: string | null;
+  font?: HandwritingFont;
+  ink_color?: InkColor;
+};
+
+function readLocalDeviceNotes(ownerId: string | null | undefined, allowLegacyClaim = false): LocalDeviceNotebook[] {
+  return readLocalNotesForOwner(ownerId, { allowLegacyClaim }) as LocalDeviceNotebook[];
 }
 
-function readLocalList(key: string): LocalDeviceNotebook[] {
-  try {
-    const v = JSON.parse(localStorage.getItem(key) || '[]');
-    return Array.isArray(v) ? v : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeLocalList(key: string, list: LocalDeviceNotebook[]) {
-  try {
-    localStorage.setItem(key, JSON.stringify(list));
-  } catch {
-    /* ignore */
-  }
-}
-
-function readLocalDeviceNotes(): LocalDeviceNotebook[] {
-  const map = new Map<string, LocalDeviceNotebook>();
-  for (const n of readLocalList(LOCAL_KEY_A)) if (n?.id) map.set(n.id, n);
-  for (const n of readLocalList(LOCAL_KEY_B)) if (n?.id && !map.has(n.id)) map.set(n.id, n);
-  return Array.from(map.values());
-}
-
-function patchLocalNote(id: string, patch: Partial<LocalDeviceNotebook>) {
-  for (const key of [LOCAL_KEY_A, LOCAL_KEY_B]) {
-    const list = readLocalList(key);
-    if (list.some((x) => x.id === id)) {
-      writeLocalList(key, list.map((x) => (x.id === id ? { ...x, ...patch } : x)));
-    }
-  }
+function patchLocalNote(id: string, ownerId: string | null | undefined, patch: Partial<LocalDeviceNotebook>) {
+  const current = findLocalNoteForOwner(id, ownerId);
+  if (!current || !ownerId) return;
+  upsertLocalNoteForOwner({ ...current, ...patch }, ownerId);
   notifyLocalDataChanged();
 }
 
-function removeLocalNote(id: string) {
-  for (const key of [LOCAL_KEY_A, LOCAL_KEY_B]) {
-    writeLocalList(key, readLocalList(key).filter((x) => x.id !== id));
-  }
+function removeLocalNote(id: string, ownerId: string | null | undefined) {
+  removeLocalNoteForOwner(id, ownerId);
   notifyLocalDataChanged();
 }
 
@@ -111,6 +86,9 @@ export function isGuestUser(user: { id?: string } | null | undefined): boolean {
 
 export function useDesktopNotes() {
   const { user } = useAuth();
+  const { setPrevFolder } = useNoteMeta();
+  const ownerId = user?.id || null;
+  const localOwnerId = ownerId || 'local-device-guest';
   const guest = isGuestUser(user);
   const navigate = useNavigate();
   const {
@@ -155,9 +133,8 @@ export function useDesktopNotes() {
       });
     }
 
-    // Local device notes not already surfaced by useNotebooks
-    // (cloud users may also have device-only notes created by mobile/AI).
-    for (const ln of readLocalDeviceNotes()) {
+    // Local-first/offline records are always filtered by the active workspace owner.
+    for (const ln of readLocalDeviceNotes(ownerId, guest)) {
       if (!ln.id || seen.has(ln.id)) continue;
       seen.add(ln.id);
       const blocks = Array.isArray(ln.blocks) ? ln.blocks : undefined;
@@ -175,11 +152,13 @@ export function useDesktopNotes() {
         preview: ln.content || (blocks ? blocks.map((b) => b.content).filter(Boolean).join('\n') : ''),
         raw: null,
         localBlocks: blocks,
+        font: ln.font,
+        inkColor: ln.ink_color,
       });
     }
 
     return out.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [notebooks, guest, localTick]);
+  }, [notebooks, guest, ownerId, localTick]);
 
   const active = useMemo(() => notes.filter((n) => !n.trashed), [notes]);
   const trashed = useMemo(() => notes.filter((n) => n.trashed), [notes]);
@@ -192,6 +171,7 @@ export function useDesktopNotes() {
           .from('pages')
           .select('content')
           .eq('notebook_id', note.id)
+          .eq('user_id', user?.id || '')
           .order('page_number')
           .limit(1);
         if (error) {
@@ -202,47 +182,54 @@ export function useDesktopNotes() {
         sessionStorage.setItem(
           'niknote-mobile-open',
           JSON.stringify({
+            ownerId: user?.id,
             title: note.title,
             blocks: Array.isArray(content) && content.length ? content : [createBlock()],
             notebookId: note.id,
             style: note.style,
           }),
         );
-        navigate(`/?editor=1&notebook=${note.id}`);
+        navigate(`/editor/${encodeURIComponent(note.id)}`);
         return;
       }
       sessionStorage.setItem(
         'niknote-mobile-open',
         JSON.stringify({
+          ownerId: user?.id,
           title: note.title,
           blocks: note.localBlocks?.length ? note.localBlocks : blocksFromNoteText(note.preview || ''),
           notebookId: note.id,
           style: note.style,
+          font: note.font,
+          inkColor: note.inkColor,
         }),
       );
-      navigate(`/?editor=1&notebook=${note.id}`);
+      navigate(`/editor/${encodeURIComponent(note.id)}`);
     },
-    [navigate],
+    [navigate, user?.id],
   );
 
   /** Open a brand-new editor draft (optionally seeded with template/sample text). */
   const openNew = useCallback(
-    (opts?: { title?: string; text?: string; style?: string }) => {
+    (opts?: { title?: string; text?: string; style?: string; font?: HandwritingFont; inkColor?: InkColor }) => {
       if (opts?.text !== undefined || opts?.title) {
         sessionStorage.setItem(
           'niknote-mobile-open',
           JSON.stringify({
+            ownerId: user?.id,
             title: opts?.title || 'Untitled Note',
             blocks: blocksFromNoteText(opts?.text || ''),
             style: opts?.style,
+            font: opts?.font,
+            inkColor: opts?.inkColor,
           }),
         );
-        navigate('/?editor=1');
+        navigate('/editor/new');
       } else {
-        navigate('/?editor=1&new=1');
+        navigate('/editor/new');
       }
     },
-    [navigate],
+    [navigate, user?.id],
   );
 
   // ---- Create (persists immediately, then caller may open) ----
@@ -276,8 +263,9 @@ export function useDesktopNotes() {
         tags: input.tags || [],
         created_at: now,
         updated_at: now,
+        _ownerId: localOwnerId,
       };
-      writeLocalList(LOCAL_KEY_A, [entry, ...readLocalList(LOCAL_KEY_A)]);
+      upsertLocalNoteForOwner(entry, localOwnerId);
       notifyLocalDataChanged();
       refreshLocal();
       await refetch();
@@ -288,7 +276,7 @@ export function useDesktopNotes() {
         isLocal: true, trashed: false, preview: '', raw: null, localBlocks: entry.blocks,
       };
     },
-    [guest, createNotebook, refreshLocal, refetch],
+    [guest, localOwnerId, createNotebook, refreshLocal, refetch],
   );
 
   const renameNote = useCallback(
@@ -296,7 +284,7 @@ export function useDesktopNotes() {
       const clean = title.trim();
       if (!clean) return;
       if (note.isLocal) {
-        patchLocalNote(note.id, { title: clean, updated_at: new Date().toISOString() });
+        patchLocalNote(note.id, localOwnerId, { title: clean, updated_at: new Date().toISOString() });
         refreshLocal();
         await refetch();
       } else {
@@ -304,26 +292,28 @@ export function useDesktopNotes() {
       }
       toast.success('Renamed');
     },
-    [updateNotebook, refreshLocal, refetch],
+    [updateNotebook, refreshLocal, refetch, localOwnerId],
   );
 
   const moveToSpace = useCallback(
     async (note: DNote, folder: string | null) => {
       if (note.isLocal) {
-        patchLocalNote(note.id, { folder, updated_at: new Date().toISOString() });
+        patchLocalNote(note.id, localOwnerId, { folder, updated_at: new Date().toISOString() });
         refreshLocal();
         await refetch();
       } else {
         await updateNotebook(note.id, { folder });
       }
     },
-    [updateNotebook, refreshLocal, refetch],
+    [updateNotebook, refreshLocal, refetch, localOwnerId],
   );
 
   const trashNote = useCallback(
     async (note: DNote) => {
+      if (note.trashed) return;
+      setPrevFolder(note.id, note.folder);
       if (note.isLocal) {
-        patchLocalNote(note.id, { trashedAt: new Date().toISOString() });
+        patchLocalNote(note.id, localOwnerId, { trashedAt: new Date().toISOString() });
         refreshLocal();
         await refetch();
       } else {
@@ -331,13 +321,13 @@ export function useDesktopNotes() {
       }
       toast.success('Moved to Trash');
     },
-    [updateNotebook, refreshLocal, refetch],
+    [updateNotebook, refreshLocal, refetch, localOwnerId, setPrevFolder],
   );
 
   const restoreNote = useCallback(
     async (note: DNote, prevFolder: string | null) => {
       if (note.isLocal) {
-        patchLocalNote(note.id, { trashedAt: null, folder: prevFolder });
+        patchLocalNote(note.id, localOwnerId, { trashedAt: null, folder: prevFolder });
         refreshLocal();
         await refetch();
       } else {
@@ -345,13 +335,13 @@ export function useDesktopNotes() {
       }
       toast.success('Restored');
     },
-    [updateNotebook, refreshLocal, refetch],
+    [updateNotebook, refreshLocal, refetch, localOwnerId],
   );
 
   const deleteForever = useCallback(
     async (note: DNote) => {
       if (note.isLocal) {
-        removeLocalNote(note.id);
+        removeLocalNote(note.id, localOwnerId);
         refreshLocal();
         await refetch();
         toast.success('Deleted forever');
@@ -359,7 +349,7 @@ export function useDesktopNotes() {
         await deleteNotebook(note.id);
       }
     },
-    [deleteNotebook, refreshLocal, refetch],
+    [deleteNotebook, refreshLocal, refetch, localOwnerId],
   );
 
   return {
@@ -367,13 +357,3 @@ export function useDesktopNotes() {
     openNote, openNew, createNote, renameNote, moveToSpace, trashNote, restoreNote, deleteForever,
   };
 }
-
-// Starter samples shown when the workspace is empty (click opens the real editor).
-export const SAMPLE_NOTES = [
-  { id: 'sample-bio', title: 'Biology Class Notes', cover: '#10B981', tag: 'Biology', text: '# Photosynthesis\nProcess by which green plants make their own food using sunlight.\n## Equation\n6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂\n## Key Points\n• Requires sunlight\n• Occurs in chloroplasts\n• Produces glucose (food)\n• Releases oxygen' },
-  { id: 'sample-ml', title: 'Machine Learning', cover: '#EC4899', tag: 'AI/ML', text: '# Machine Learning\nML helps computers learn patterns from data.\n• Supervised learning\n• Unsupervised learning\n• Reinforcement learning' },
-  { id: 'sample-project', title: 'Project Plan', cover: '#3B82F6', tag: 'Work', text: '# Project Plan\n## The goal\nShip the first version by the end of the month.\n## Milestones\n[] Design final\n[] Build MVP\n[] Launch' },
-  { id: 'sample-math', title: 'Math Formulas', cover: '#F59E0B', tag: 'Maths', text: '# Math Formulas\n## Algebra\n(a+b)² = a² + 2ab + b²\n(a−b)² = a² − 2ab + b²\n## Trigonometry\nsin²θ + cos²θ = 1' },
-  { id: 'sample-travel', title: 'Travel Plan', cover: '#06B6D4', tag: 'Personal', text: '# Travel Plan\n## Places to visit\n• Mussoorie\n• Rishikesh\n• Haridwar\n## Packing\n[] Camera\n[] Notebook\n[] Snacks' },
-  { id: 'sample-dream', title: 'Dream Ideas', cover: '#8B5CF6', tag: 'Ideas', text: '# Dream Ideas\nSmall ideas can become meaningful projects.\n• Capture one idea every day\n• Review on Sundays\n• Build the best one' },
-];

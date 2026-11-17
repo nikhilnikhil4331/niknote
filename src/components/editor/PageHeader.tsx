@@ -95,7 +95,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                 <button
                   key={i}
                   onClick={() => { onCoverChange?.(gradient); setShowCoverPicker(false); }}
-                  className="h-14 rounded-lg hover:ring-2 ring-indigo-400 transition-all"
+                  className="h-14 rounded-lg hover:ring-2 ring-blue-400 transition-all"
                   style={{ background: gradient }}
                 />
               ))}

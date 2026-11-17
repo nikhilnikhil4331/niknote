@@ -1377,7 +1377,9 @@ async function callAIBrain(
   // 1. Try real streaming Cloud AI first (/api/ai -> Cloud SSE -> Supabase openai-brain)
   try {
     const { streamAstaAI } = await import('@/lib/aiEngine');
+    const { data: sessionData } = await supabase.auth.getSession();
     const cloud = await streamAstaAI({
+      userId: sessionData.session?.user.id,
       messages: [
         { role: 'system', content: systemPrompt },
         ...messages.map((m) => ({ role: m.role, content: m.content })),

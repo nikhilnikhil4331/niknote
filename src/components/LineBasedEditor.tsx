@@ -14,7 +14,7 @@ const BLOCK_PRESENTATION: Record<string, { fontSize?: string; fontWeight?: numbe
   h3: { fontSize: '1.12em', fontWeight: 700 },
   bullet: { marker: '•' },
   callout: { className: 'border-l-4 border-emerald-400/80 bg-emerald-50/60 -ml-1 rounded-r-lg' },
-  equation: { fontFamily: "'Georgia', 'Times New Roman', serif", fontWeight: 500, className: 'bg-indigo-50/70 rounded-lg -ml-1 border border-indigo-100' },
+  equation: { fontFamily: "'Georgia', 'Times New Roman', serif", fontWeight: 500, className: 'bg-[#eaf2ff]/70 rounded-lg -ml-1 border border-[#c7d9f5]' },
   code: { fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: '0.82em', className: 'bg-zinc-900/[0.045] rounded-lg -ml-1 border border-zinc-900/10' },
   divider: { className: '' },
 };

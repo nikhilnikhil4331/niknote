@@ -69,10 +69,6 @@
       "destination": "/upgrade/index.html"
     },
     {
-      "source": "/welcome",
-      "destination": "/welcome/index.html"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
@@ -306,15 +302,6 @@
     },
     {
       "source": "/upgrade",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, s-maxage=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/welcome",
       "headers": [
         {
           "key": "Cache-Control",
@@ -681,6 +668,30 @@
           "value": "public, max-age=0, s-maxage=0, must-revalidate"
         }
       ]
+    },
+    {
+      "source": "/niknote-vc-analysis.md",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/markdown; charset=utf-8"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, s-maxage=300"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/welcome",
+      "destination": "/",
+      "permanent": true
     }
   ]
 }

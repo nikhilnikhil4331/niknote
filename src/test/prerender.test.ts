@@ -81,14 +81,14 @@ describe('prerender output', () => {
       const html = readIfExists(fileForRoute(route));
       if (!html) continue;
 
-      const title = (/<title>([\s\S]*?)<\/title>/i.exec(html) || [, ''])[1].trim();
+      const title = /<title>([\s\S]*?)<\/title>/i.exec(html)?.[1]?.trim() || '';
       expect(title.length, `empty title on ${route}`).toBeGreaterThan(0);
       if (titles.has(title)) {
         throw new Error(`duplicate title "${title}" on ${route} and ${titles.get(title)}`);
       }
       titles.set(title, route);
 
-      const canonical = (/<link\s+rel="canonical"\s+href="([^"]+)"/i.exec(html) || [, ''])[1];
+      const canonical = /<link\s+rel="canonical"\s+href="([^"]+)"/i.exec(html)?.[1] || '';
       expect(canonical, `missing canonical on ${route}`).toMatch(/^https:\/\/www\.niknote\.online/);
       if (canonicals.has(canonical)) {
         throw new Error(`duplicate canonical ${canonical} on ${route} and ${canonicals.get(canonical)}`);
@@ -126,6 +126,20 @@ describe('prerender output', () => {
       const text = body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
       expect(text.length, `too little crawlable text on ${route}`).toBeGreaterThan(80);
     }
+  });
+
+  it('prerenders useful homepage copy and valid route-specific social preview metadata', () => {
+    const home = readIfExists(fileForRoute('/')) || '';
+    expect(home).toContain('<title>Text to Handwriting Converter &amp; Notes Maker | NikNote</title>');
+    expect(home).toContain('<h1>Turn typed text into handwritten notes</h1>');
+    expect(home).toContain('Create a handwritten-style page');
+    expect(home).toContain('https://www.niknote.online/og-image.jpg');
+    expect(home).not.toContain('https://www.niknote.online/og-image.png');
+
+    const blogPost = readIfExists(fileForRoute('/blog/how-to-convert-text-to-handwriting')) || '';
+    expect(blogPost).toContain('<meta property="og:type" content="article" />');
+    expect(blogPost).toContain('<meta property="article:published_time" content="2026-06-29" />');
+    expect(blogPost).toContain('<meta name="twitter:image" content="https://www.niknote.online/og-image.jpg" />');
   });
 
   it('vercel.json routes every prerendered page before the SPA catch-all', () => {

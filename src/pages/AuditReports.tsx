@@ -80,7 +80,7 @@ Format as markdown.`,
   ai: {
     label: "AI Audit",
     icon: ClipboardCheck,
-    color: "from-indigo-500 to-purple-600",
+    color: "from-[#347ff0] to-[#245dcc]",
     instruction: `You are NikNote's AI Reviewer. Produce an AI-quality audit:
 1. Hallucination risks in current agents.
 2. Prompt improvements for the Guru/Teacher agent.
@@ -146,7 +146,7 @@ export default function AuditReports() {
     <div className="min-h-[100dvh] bg-background">
       <header className="sticky top-0 z-20 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
-          <Link to="/" className="p-2 -ml-2 rounded-lg hover:bg-muted"><ArrowLeft className="w-5 h-5" /></Link>
+          <Link to="/home" className="p-2 -ml-2 rounded-lg hover:bg-muted"><ArrowLeft className="w-5 h-5" /></Link>
           <ClipboardCheck className="w-5 h-5 text-primary" />
           <h1 className="font-semibold">Audit Reports</h1>
         </div>

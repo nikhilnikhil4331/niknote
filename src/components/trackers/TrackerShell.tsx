@@ -24,7 +24,7 @@ export function TrackerShell({ title, subtitle, children }: { title: string; sub
     <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-background via-background to-primary/5 pb-28">
       <header className="sticky top-0 z-30 bg-background/95 border-b border-border">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
-          <Link to="/" className="min-w-[40px] min-h-[40px] grid place-items-center rounded-xl hover:bg-muted active:scale-95 transition" aria-label="Back to notes">
+          <Link to="/home" className="min-w-[40px] min-h-[40px] grid place-items-center rounded-xl hover:bg-muted active:scale-95 transition" aria-label="Back to notes">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="flex-1 min-w-0">

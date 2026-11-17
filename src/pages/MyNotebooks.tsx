@@ -143,7 +143,7 @@ const MyNotebooks: React.FC = () => {
       {/* Header */}
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border px-4 py-3">
         <div className="max-w-5xl mx-auto flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/home')} className="shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-xl font-bold truncate">My Notebooks</h1>
@@ -243,7 +243,7 @@ const MyNotebooks: React.FC = () => {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ delay: i * 0.03 }}
                   className="group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-lg transition-all cursor-pointer"
-                  onClick={() => navigate(`/app?notebook=${nb.id}`)}
+                  onClick={() => navigate(`/editor/${encodeURIComponent(nb.id)}`)}
                 >
                   <div className="h-2.5 w-full" style={{ backgroundColor: nb.cover_color }} />
                   <div className="p-4">
